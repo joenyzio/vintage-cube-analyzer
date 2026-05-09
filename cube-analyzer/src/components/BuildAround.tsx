@@ -275,7 +275,7 @@ export function BuildAround({ cards }: BuildAroundProps) {
             <Card key={idx} className="p-4 bg-[#111] border-white/8">
               <h4 className="font-medium text-white text-sm mb-1">{synergy.category}</h4>
               <p className="text-xs text-white/40 mb-3">{synergy.explanation}</p>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-2">
                 {synergy.cards.map(cardName => {
                   const card = getCard(cardName);
                   if (!card) {
@@ -288,14 +288,14 @@ export function BuildAround({ cards }: BuildAroundProps) {
                   return (
                     <div
                       key={cardName}
-                      className="w-10 h-14 rounded-md overflow-hidden cursor-pointer hover:scale-110 transition-transform hover:z-10 ring-1 ring-white/10"
+                      className="w-14 aspect-[488/680] rounded-lg overflow-hidden cursor-pointer hover:scale-110 transition-transform hover:z-10 ring-1 ring-white/10"
                       onMouseEnter={() => setHoveredCard(card)}
                       onMouseLeave={() => setHoveredCard(null)}
                     >
                       <img
                         src={getCardImage(card)}
                         alt={cardName}
-                        className="w-full h-full object-cover object-top"
+                        className="w-full h-full object-cover"
                       />
                     </div>
                   );
@@ -359,21 +359,21 @@ export function BuildAround({ cards }: BuildAroundProps) {
             <h3 className="text-sm font-semibold text-white/80 mb-3">
               Sample Decklist
             </h3>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="grid grid-cols-5 sm:grid-cols-6 gap-1.5">
               {selectedGuide.sampleDeck.map((cardName, idx) => {
                 const card = getCard(cardName);
                 if (!card) return null;
                 return (
                   <div
                     key={`${cardName}-${idx}`}
-                    className="w-9 h-12 rounded-md overflow-hidden cursor-pointer hover:scale-110 transition-transform hover:z-10"
+                    className="aspect-[488/680] rounded-lg overflow-hidden cursor-pointer hover:scale-105 transition-transform hover:z-10"
                     onMouseEnter={() => setHoveredCard(card)}
                     onMouseLeave={() => setHoveredCard(null)}
                   >
                     <img
                       src={getCardImage(card)}
                       alt={card.name}
-                      className="w-full h-full object-cover object-top"
+                      className="w-full h-full object-cover"
                     />
                   </div>
                 );

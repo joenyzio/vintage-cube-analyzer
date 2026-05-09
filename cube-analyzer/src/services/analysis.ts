@@ -163,47 +163,128 @@ function determineArchetypes(card: ScryfallCard): string[] {
 
 function calculatePowerLevel(card: ScryfallCard): number {
   const name = card.name;
-  let power = 5; // Base power level
-
-  // Power 9 and equivalent
-  if (POWER_CARDS.has(name)) {
-    power = 10;
-  }
-
-  // Fast mana bonus
-  if (FAST_MANA.has(name)) {
-    power = Math.max(power, 9);
-  }
-
-  // Tutors are powerful
-  if (TUTORS.has(name)) {
-    power = Math.max(power, 8);
-  }
-
-  // EDHREC rank as proxy for power (lower is better)
-  if (card.edhrec_rank) {
-    if (card.edhrec_rank < 100) power = Math.max(power, 9);
-    else if (card.edhrec_rank < 500) power = Math.max(power, 8);
-    else if (card.edhrec_rank < 1000) power = Math.max(power, 7);
-  }
-
-  // Free spells are powerful
+  const typeLine = card.type_line?.toLowerCase() || '';
   const oracleText = card.oracle_text?.toLowerCase() || '';
-  if (oracleText.includes('without paying') || oracleText.includes('you may pay 0')) {
-    power = Math.max(power, 8);
+  const cmc = card.cmc || 0;
+
+  // S Tier (10) - Power 9 and absolute best cards
+  if (POWER_CARDS.has(name)) {
+    return 10;
   }
 
-  // Force cycle
-  if (name.startsWith('Force of')) {
-    power = Math.max(power, 8);
+  // A Tier (8-9) - Premium cards
+  if (FAST_MANA.has(name)) {
+    return 9;
+  }
+  if (TUTORS.has(name)) {
+    return 8;
+  }
+  if (COMBO_PIECES.has(name)) {
+    return 8;
+  }
+  if (REANIMATION_TARGETS.has(name)) {
+    return 8;
   }
 
-  // Elemental Incarnations
-  if (['Solitude', 'Subtlety', 'Endurance', 'Fury', 'Grief'].includes(name)) {
-    power = Math.max(power, 8);
+  // Force cycle and free spells
+  if (name.startsWith('Force of') || ['Solitude', 'Subtlety', 'Endurance', 'Fury', 'Grief'].includes(name)) {
+    return 8;
   }
 
-  return power;
+  // Premium planeswalkers
+  if (['Jace, the Mind Sculptor', 'Oko, Thief of Crowns', 'Teferi, Time Raveler', 'Narset, Parter of Veils', 'The Wandering Emperor', 'Liliana of the Veil', 'Wrenn and Six', 'Dack Fayden'].includes(name)) {
+    return 8;
+  }
+
+  // Premium creatures
+  if (['Ragavan, Nimble Pilferer', 'Orcish Bowmasters', 'Dark Confidant', 'Snapcaster Mage', 'True-Name Nemesis', 'Monastery Mentor', 'Young Pyromancer', 'Thalia, Guardian of Thraben'].includes(name)) {
+    return 8;
+  }
+
+  // B Tier (6-7) - Strong cards
+  // Good planeswalkers
+  if (typeLine.includes('planeswalker')) {
+    return 7;
+  }
+
+  // Fetch lands and best lands
+  if (typeLine.includes('land')) {
+    if (name.includes('Strand') || name.includes('Delta') || name.includes('Foothills') ||
+        name.includes('Heath') || name.includes('Mire') || name.includes('Flats') ||
+        name.includes('Tarn') || name.includes('Catacombs') || name.includes('Mesa') ||
+        name.includes('Rainforest') || name.includes('Vista')) {
+      return 7;
+    }
+    // Dual lands
+    if (['Tundra', 'Underground Sea', 'Badlands', 'Taiga', 'Savannah', 'Scrubland', 'Volcanic Island', 'Bayou', 'Plateau', 'Tropical Island'].includes(name)) {
+      return 7;
+    }
+    // Shock lands
+    if (name.includes('Fountain') || name.includes('Tomb') || name.includes('Crypt') ||
+        name.includes('Garden') || name.includes('Pool') || name.includes('Heath') ||
+        name.includes('Grounds') || name.includes('Vents') || name.includes('Foundry') ||
+        name.includes('Temple')) {
+      return 6;
+    }
+    return 5; // Other lands
+  }
+
+  // Efficient removal
+  if (['Swords to Plowshares', 'Path to Exile', 'Lightning Bolt', 'Fatal Push', 'Prismatic Ending', 'Thoughtseize', 'Inquisition of Kozilek', 'Hymn to Tourach'].includes(name)) {
+    return 7;
+  }
+
+  // Strong counterspells
+  if (['Counterspell', 'Mana Drain', 'Mana Leak', 'Spell Pierce', 'Daze', 'Flusterstorm'].includes(name)) {
+    return 7;
+  }
+
+  // Card advantage
+  if (['Brainstorm', 'Ponder', 'Preordain', 'Gitaxian Probe', 'Sylvan Library', 'Treasure Cruise', 'Dig Through Time'].includes(name)) {
+    return 7;
+  }
+
+  // Good creatures by CMC efficiency
+  if (typeLine.includes('creature')) {
+    // 1-drops with high impact
+    if (cmc <= 1 && (oracleText.includes('when') || oracleText.includes('whenever'))) {
+      return 6;
+    }
+    // Creatures with strong stats for cost
+    const power = parseInt(card.power || '0');
+    const toughness = parseInt(card.toughness || '0');
+    if (cmc > 0 && (power + toughness) / cmc >= 3) {
+      return 6;
+    }
+    // ETB creatures
+    if (oracleText.includes('enters the battlefield') || oracleText.includes('enters, ')) {
+      return 6;
+    }
+    return 5;
+  }
+
+  // C Tier (4-5) - Playable
+  // Instants and sorceries with draw or removal
+  if (typeLine.includes('instant') || typeLine.includes('sorcery')) {
+    if (oracleText.includes('draw') || oracleText.includes('destroy') || oracleText.includes('exile') || oracleText.includes('damage')) {
+      return 5;
+    }
+  }
+
+  // Artifacts and enchantments
+  if (typeLine.includes('artifact') || typeLine.includes('enchantment')) {
+    if (cmc <= 3) return 5;
+    return 4;
+  }
+
+  // D Tier (1-3) - Situational
+  // High CMC without immediate impact
+  if (cmc >= 5 && !oracleText.includes('enters the battlefield')) {
+    return 3;
+  }
+
+  // Default - moderate playable
+  return 5;
 }
 
 function calculateDraftPriority(card: ScryfallCard, powerLevel: number): number {
@@ -256,7 +337,7 @@ function identifySynergyTags(card: ScryfallCard): string[] {
   return tags;
 }
 
-export function generateArchetypes(cards: CubeCard[]): Archetype[] {
+export function generateArchetypes(_cards: CubeCard[]): Archetype[] {
   return [
     {
       id: 'uw-control',

@@ -1,19 +1,17 @@
 import { useState, useMemo } from 'react';
-import type { CubeCard, Archetype } from '../types/card';
+import type { CubeCard } from '../types/card';
 import { getCardImage } from '../services/scryfall';
-import { Card } from './ui/Card';
-import { Badge } from './ui/Badge';
-import { Search, X, ChevronDown, ChevronUp, Zap } from 'lucide-react';
+import { Search, X, Zap } from 'lucide-react';
 
 interface SynergyExplorerProps {
   cards: CubeCard[];
-  archetypes: Archetype[];
 }
 
 interface SynergyCategory {
   id: string;
   name: string;
   color: string;
+  description: string;
   cards: string[];
 }
 
@@ -22,53 +20,61 @@ const SYNERGY_CATEGORIES: SynergyCategory[] = [
     id: 'reanimator',
     name: 'Reanimator',
     color: 'bg-purple-500',
+    description: 'Cheat creatures from graveyard into play',
     cards: ['Entomb', 'Reanimate', 'Animate Dead', 'Griselbrand', 'Archon of Cruelty', 'Shallow Grave', 'Necromancy', 'Recurring Nightmare'],
   },
   {
     id: 'storm',
     name: 'Storm',
     color: 'bg-blue-500',
+    description: 'Chain spells for massive storm counts',
     cards: ['Underworld Breach', 'Brain Freeze', "Lion's Eye Diamond", 'Time Spiral', 'Frantic Search', "Yawgmoth's Will", 'Echo of Eons'],
   },
   {
     id: 'artifacts',
     name: 'Artifacts',
     color: 'bg-amber-500',
+    description: 'Artifact mana and Tinker targets',
     cards: ['Tinker', 'Tolarian Academy', 'Blightsteel Colossus', 'Mana Crypt', 'Sol Ring', 'Mox Sapphire'],
   },
   {
     id: 'cheaty',
     name: 'Cheat In Play',
     color: 'bg-red-500',
+    description: 'Put huge threats into play without paying',
     cards: ['Show and Tell', 'Sneak Attack', 'Through the Breach', 'Channel', 'Emrakul, the Aeons Torn', 'Omniscience'],
   },
   {
     id: 'blink',
     name: 'Blink',
     color: 'bg-white',
+    description: 'Flicker creatures for repeated ETB triggers',
     cards: ['Ephemerate', 'Restoration Angel', 'Flickerwisp', 'Solitude', 'Skyclave Apparition'],
   },
   {
     id: 'green-ramp',
     name: 'Green Ramp',
     color: 'bg-green-500',
+    description: 'Accelerate into huge creatures',
     cards: ['Natural Order', "Green Sun's Zenith", 'Craterhoof Behemoth', 'Survival of the Fittest', 'Birds of Paradise', 'Llanowar Elves', 'Noble Hierarch'],
   },
   {
     id: 'control',
     name: 'Control',
     color: 'bg-sky-500',
+    description: 'Counter everything and win with planeswalkers',
     cards: ['Jace, the Mind Sculptor', 'Force of Will', 'Counterspell', 'Mana Drain', 'Brainstorm', 'Ponder', 'Snapcaster Mage'],
   },
   {
     id: 'aggro',
     name: 'Aggro',
     color: 'bg-orange-500',
+    description: 'Fast, efficient threats with disruption',
     cards: ['Ragavan, Nimble Pilferer', 'Lightning Bolt', 'Thoughtseize', 'Dark Confidant', 'Orcish Bowmasters'],
   },
 ];
 
-const SYNERGY_MAP: Record<string, { partners: string[]; strength: 'core' | 'strong' | 'good' }[]> = {
+const SYNERGY_MAP: Record<string, { partners: string[]; strength: 'core' | 'strong' }[]> = {
   'Entomb': [
     { partners: ['Reanimate', 'Animate Dead', 'Necromancy', 'Shallow Grave'], strength: 'core' },
     { partners: ['Griselbrand', 'Archon of Cruelty', 'Atraxa, Grand Unifier'], strength: 'strong' },
@@ -121,25 +127,17 @@ const SYNERGY_MAP: Record<string, { partners: string[]; strength: 'core' | 'stro
     { partners: ['Solitude', 'Skyclave Apparition'], strength: 'core' },
     { partners: ['Restoration Angel', 'Flickerwisp'], strength: 'strong' },
   ],
-  'Restoration Angel': [
-    { partners: ['Ephemerate', 'Solitude'], strength: 'core' },
-    { partners: ['Flickerwisp', 'Skyclave Apparition'], strength: 'strong' },
-  ],
   'Natural Order': [
     { partners: ['Craterhoof Behemoth'], strength: 'core' },
     { partners: ['Birds of Paradise', 'Llanowar Elves', 'Noble Hierarch'], strength: 'strong' },
   ],
   "Green Sun's Zenith": [
     { partners: ['Dryad Arbor'], strength: 'core' },
-    { partners: ['Llanowar Elves', 'Craterhoof Behemoth', 'Scavenging Ooze'], strength: 'strong' },
+    { partners: ['Llanowar Elves', 'Craterhoof Behemoth'], strength: 'strong' },
   ],
   'Recurring Nightmare': [
     { partners: ['Griselbrand', 'Archon of Cruelty'], strength: 'core' },
     { partners: ['Eternal Witness', 'Woodfall Primus'], strength: 'strong' },
-  ],
-  'Survival of the Fittest': [
-    { partners: ['Recurring Nightmare', 'Vengevine'], strength: 'core' },
-    { partners: ['Craterhoof Behemoth', 'Griselbrand'], strength: 'strong' },
   ],
   'Jace, the Mind Sculptor': [
     { partners: ['Brainstorm', 'Force of Will'], strength: 'core' },
@@ -164,12 +162,11 @@ const COLOR_FILTERS = [
   { id: 'G', label: 'G', className: 'bg-green-600 text-white' },
 ];
 
-export function SynergyExplorer({ cards, archetypes }: SynergyExplorerProps) {
+export function SynergyExplorer({ cards }: SynergyExplorerProps) {
   const [selectedCard, setSelectedCard] = useState<CubeCard | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [colorFilter, setColorFilter] = useState('all');
-  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['reanimator', 'storm', 'artifacts']));
+  const [hoveredCard, setHoveredCard] = useState<CubeCard | null>(null);
 
   const cardsByName = useMemo(() => {
     const map = new Map<string, CubeCard>();
@@ -179,18 +176,16 @@ export function SynergyExplorer({ cards, archetypes }: SynergyExplorerProps) {
 
   const getCard = (name: string) => cardsByName.get(name);
 
-  // Get synergy count for a card
   const getSynergyCount = (cardName: string): number => {
     const synergies = SYNERGY_MAP[cardName];
     if (!synergies) return 0;
     return synergies.reduce((sum, s) => sum + s.partners.length, 0);
   };
 
-  // Get all synergies for selected card
   const selectedCardSynergies = useMemo(() => {
-    if (!selectedCard) return { core: [], strong: [], good: [] };
+    if (!selectedCard) return { core: [], strong: [] };
     const synergies = SYNERGY_MAP[selectedCard.name];
-    if (!synergies) return { core: [], strong: [], good: [] };
+    if (!synergies) return { core: [], strong: [] };
 
     const core: CubeCard[] = [];
     const strong: CubeCard[] = [];
@@ -205,10 +200,9 @@ export function SynergyExplorer({ cards, archetypes }: SynergyExplorerProps) {
       });
     });
 
-    return { core, strong, good: [] };
+    return { core, strong };
   }, [selectedCard, cardsByName]);
 
-  // Cards that want the selected card
   const wantsSelectedCard = useMemo(() => {
     if (!selectedCard) return [];
     const results: CubeCard[] = [];
@@ -225,7 +219,6 @@ export function SynergyExplorer({ cards, archetypes }: SynergyExplorerProps) {
     return results;
   }, [selectedCard, cardsByName]);
 
-  // Search results
   const filteredCards = useMemo(() => {
     if (!searchTerm) return [];
     const term = searchTerm.toLowerCase();
@@ -234,8 +227,7 @@ export function SynergyExplorer({ cards, archetypes }: SynergyExplorerProps) {
       .slice(0, 12);
   }, [cards, searchTerm]);
 
-  // Categories with their cards filtered
-  const filteredCategories = useMemo(() => {
+  const categoriesWithCards = useMemo(() => {
     return SYNERGY_CATEGORIES.map(cat => {
       let catCards = cat.cards
         .map(name => getCard(name))
@@ -249,24 +241,10 @@ export function SynergyExplorer({ cards, archetypes }: SynergyExplorerProps) {
     }).filter(cat => cat.cardObjects.length > 0);
   }, [cardsByName, colorFilter]);
 
-  const toggleCategory = (id: string) => {
-    const next = new Set(expandedCategories);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
-    setExpandedCategories(next);
-  };
-
-  // Stats
-  const totalSynergies = Object.values(SYNERGY_MAP).reduce((sum, s) => sum + s.reduce((ss, syn) => ss + syn.partners.length, 0), 0);
-  const mostConnected = Object.entries(SYNERGY_MAP)
-    .map(([name, syn]) => ({ name, count: syn.reduce((s, ss) => s + ss.partners.length, 0) }))
-    .sort((a, b) => b.count - a.count)[0];
-
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Filter Bar */}
       <div className="flex flex-wrap gap-3 items-center">
-        {/* Search */}
         <div className="relative flex-1 min-w-[200px] max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
           <input
@@ -274,7 +252,7 @@ export function SynergyExplorer({ cards, archetypes }: SynergyExplorerProps) {
             placeholder="Search cards..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-8 py-2 bg-[#111] border border-white/10 rounded-lg text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white/20"
+            className="w-full pl-9 pr-8 py-2 bg-black border border-white/10 rounded-lg text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white/20"
           />
           {searchTerm && (
             <button
@@ -285,9 +263,8 @@ export function SynergyExplorer({ cards, archetypes }: SynergyExplorerProps) {
             </button>
           )}
 
-          {/* Search Dropdown */}
           {filteredCards.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-[#111] border border-white/10 rounded-lg shadow-xl z-50 max-h-64 overflow-auto">
+            <div className="absolute top-full left-0 right-0 mt-1 bg-black border border-white/10 rounded-lg shadow-xl z-50 max-h-64 overflow-auto">
               {filteredCards.map(card => (
                 <button
                   key={card.id}
@@ -318,7 +295,6 @@ export function SynergyExplorer({ cards, archetypes }: SynergyExplorerProps) {
           )}
         </div>
 
-        {/* Color Filter */}
         <div className="flex gap-1">
           {COLOR_FILTERS.map(c => (
             <button
@@ -337,188 +313,174 @@ export function SynergyExplorer({ cards, archetypes }: SynergyExplorerProps) {
           ))}
         </div>
 
-        {/* Stats */}
-        <div className="hidden sm:flex items-center gap-4 ml-auto text-xs text-white/40">
-          <span>{totalSynergies} synergies</span>
-          <span>·</span>
-          <span>Most connected: <span className="text-white/60">{mostConnected?.name}</span></span>
-        </div>
+        <span className="text-xs text-white/30 ml-auto">{categoriesWithCards.length} synergy packages</span>
       </div>
 
       {/* Selected Card Detail */}
       {selectedCard && (
-        <Card className="bg-[#0a0a0a] border-white/10 p-4">
-          <div className="flex gap-4">
-            {/* Card Image */}
+        <div className="bg-black border border-white/10 rounded-xl p-5">
+          <div className="flex gap-5">
             <div className="flex-shrink-0">
               <img
                 src={getCardImage(selectedCard)}
                 alt={selectedCard.name}
-                className="w-32 rounded-lg"
+                className="w-40 rounded-xl shadow-lg"
               />
             </div>
 
-            {/* Card Info */}
             <div className="flex-1 min-w-0">
-              <div className="flex items-start justify-between gap-2">
+              <div className="flex items-start justify-between gap-2 mb-4">
                 <div>
-                  <h3 className="text-lg font-semibold text-white">{selectedCard.name}</h3>
+                  <h3 className="text-xl font-bold text-white">{selectedCard.name}</h3>
                   <p className="text-sm text-white/40">{selectedCard.type_line}</p>
                 </div>
                 <button
                   onClick={() => setSelectedCard(null)}
-                  className="p-1.5 hover:bg-white/5 rounded-lg flex-shrink-0"
+                  className="p-2 hover:bg-white/5 rounded-lg"
                 >
                   <X className="w-4 h-4 text-white/40" />
                 </button>
               </div>
 
-              {/* Synergy Tags */}
-              {selectedCard.synergyTags.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mt-2">
-                  {selectedCard.synergyTags.map(tag => (
-                    <Badge key={tag} variant="info" className="text-xs">{tag}</Badge>
-                  ))}
-                </div>
-              )}
-
-              {/* Core Synergies */}
-              {selectedCardSynergies.core.length > 0 && (
-                <div className="mt-3">
-                  <div className="text-xs text-amber-400/80 font-medium mb-1.5 flex items-center gap-1">
-                    <Zap className="w-3 h-3" /> Core Synergies
-                  </div>
-                  <div className="flex gap-1.5 flex-wrap">
-                    {selectedCardSynergies.core.map(card => (
-                      <button
-                        key={card.id}
-                        onClick={() => setSelectedCard(card)}
-                        className="w-12 aspect-[488/680] rounded overflow-hidden hover:scale-110 transition-transform ring-1 ring-amber-400/30"
-                      >
-                        <img src={getCardImage(card)} alt={card.name} className="w-full h-full object-cover" />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Strong Synergies */}
-              {selectedCardSynergies.strong.length > 0 && (
-                <div className="mt-3">
-                  <div className="text-xs text-white/40 font-medium mb-1.5">Strong Synergies</div>
-                  <div className="flex gap-1.5 flex-wrap">
-                    {selectedCardSynergies.strong.map(card => (
-                      <button
-                        key={card.id}
-                        onClick={() => setSelectedCard(card)}
-                        className="w-12 aspect-[488/680] rounded overflow-hidden hover:scale-110 transition-transform ring-1 ring-white/10"
-                      >
-                        <img src={getCardImage(card)} alt={card.name} className="w-full h-full object-cover" />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Wants This Card */}
-              {wantsSelectedCard.length > 0 && (
-                <div className="mt-3">
-                  <div className="text-xs text-white/40 font-medium mb-1.5">Cards that want {selectedCard.name}</div>
-                  <div className="flex gap-1.5 flex-wrap">
-                    {wantsSelectedCard.slice(0, 8).map(card => (
-                      <button
-                        key={card.id}
-                        onClick={() => setSelectedCard(card)}
-                        className="w-12 aspect-[488/680] rounded overflow-hidden hover:scale-110 transition-transform ring-1 ring-white/10"
-                      >
-                        <img src={getCardImage(card)} alt={card.name} className="w-full h-full object-cover" />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* No synergies message */}
-              {selectedCardSynergies.core.length === 0 && selectedCardSynergies.strong.length === 0 && wantsSelectedCard.length === 0 && (
-                <p className="text-sm text-white/30 mt-3">No documented synergies for this card.</p>
-              )}
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {/* Synergy Categories */}
-      <div className="space-y-2">
-        {filteredCategories.map(cat => {
-          const isExpanded = expandedCategories.has(cat.id);
-
-          return (
-            <Card key={cat.id} className="bg-[#111] border-white/8 overflow-hidden">
-              {/* Category Header */}
-              <button
-                onClick={() => toggleCategory(cat.id)}
-                className="w-full flex items-center gap-3 p-3 text-left hover:bg-white/2 transition-colors"
-              >
-                <div className={`w-3 h-3 rounded-full ${cat.color}`} />
-                <span className="font-medium text-white flex-1">{cat.name}</span>
-                <span className="text-xs text-white/40">{cat.cardObjects.length} cards</span>
-                {isExpanded ? (
-                  <ChevronUp className="w-4 h-4 text-white/40" />
-                ) : (
-                  <ChevronDown className="w-4 h-4 text-white/40" />
-                )}
-              </button>
-
-              {/* Category Cards */}
-              {isExpanded && (
-                <div className="px-3 pb-3 pt-0">
-                  <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
-                    {cat.cardObjects.map(card => {
-                      const synergyCount = getSynergyCount(card.name);
-                      return (
+              <div className="grid md:grid-cols-3 gap-4">
+                {selectedCardSynergies.core.length > 0 && (
+                  <div>
+                    <div className="text-xs text-amber-400 font-medium mb-2 flex items-center gap-1">
+                      <Zap className="w-3 h-3" /> Core Synergies
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedCardSynergies.core.map(card => (
                         <button
                           key={card.id}
                           onClick={() => setSelectedCard(card)}
-                          className={`
-                            relative aspect-[488/680] rounded-lg overflow-hidden transition-all
-                            hover:scale-105 hover:z-10
-                            ${selectedCard?.id === card.id ? 'ring-2 ring-white scale-105 z-10' : ''}
-                          `}
+                          className="w-16 aspect-[488/680] rounded-lg overflow-hidden hover:scale-105 transition-transform ring-1 ring-amber-400/30 shadow-lg"
                         >
-                          <img
-                            src={getCardImage(card)}
-                            alt={card.name}
-                            className="w-full h-full object-cover"
-                          />
-                          {synergyCount > 0 && (
-                            <div className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-black/80 flex items-center justify-center">
-                              <span className="text-[9px] text-white font-bold">{synergyCount}</span>
-                            </div>
-                          )}
+                          <img src={getCardImage(card)} alt={card.name} className="w-full h-full object-cover" />
                         </button>
-                      );
-                    })}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
-            </Card>
-          );
-        })}
+                )}
+
+                {selectedCardSynergies.strong.length > 0 && (
+                  <div>
+                    <div className="text-xs text-white/40 font-medium mb-2">Strong Synergies</div>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedCardSynergies.strong.map(card => (
+                        <button
+                          key={card.id}
+                          onClick={() => setSelectedCard(card)}
+                          className="w-16 aspect-[488/680] rounded-lg overflow-hidden hover:scale-105 transition-transform ring-1 ring-white/10 shadow-lg"
+                        >
+                          <img src={getCardImage(card)} alt={card.name} className="w-full h-full object-cover" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {wantsSelectedCard.length > 0 && (
+                  <div>
+                    <div className="text-xs text-white/40 font-medium mb-2">Cards that want this</div>
+                    <div className="flex flex-wrap gap-2">
+                      {wantsSelectedCard.slice(0, 6).map(card => (
+                        <button
+                          key={card.id}
+                          onClick={() => setSelectedCard(card)}
+                          className="w-16 aspect-[488/680] rounded-lg overflow-hidden hover:scale-105 transition-transform ring-1 ring-white/10 shadow-lg"
+                        >
+                          <img src={getCardImage(card)} alt={card.name} className="w-full h-full object-cover" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {selectedCardSynergies.core.length === 0 && selectedCardSynergies.strong.length === 0 && wantsSelectedCard.length === 0 && (
+                  <p className="text-sm text-white/30 col-span-3">No documented synergies for this card.</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Synergy Categories Grid */}
+      <div className="grid md:grid-cols-2 gap-5">
+        {categoriesWithCards.map(cat => (
+          <div
+            key={cat.id}
+            className="bg-black border border-white/[0.06] rounded-xl overflow-hidden"
+          >
+            {/* Header */}
+            <div className="flex items-center gap-3 p-4 border-b border-white/[0.04]">
+              <div className={`w-3 h-3 rounded-full ${cat.color}`} />
+              <div className="flex-1">
+                <h3 className="font-semibold text-white">{cat.name}</h3>
+                <p className="text-xs text-white/40">{cat.description}</p>
+              </div>
+              <span className="text-xs text-white/30">{cat.cardObjects.length} cards</span>
+            </div>
+
+            {/* Cards Grid */}
+            <div className="p-4">
+              <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+                {cat.cardObjects.map(card => {
+                  const synergyCount = getSynergyCount(card.name);
+                  return (
+                    <button
+                      key={card.id}
+                      onClick={() => setSelectedCard(card)}
+                      onMouseEnter={() => setHoveredCard(card)}
+                      onMouseLeave={() => setHoveredCard(null)}
+                      className={`
+                        relative aspect-[488/680] rounded-lg overflow-hidden shadow-lg transition-all
+                        hover:scale-105 hover:z-10
+                        ${selectedCard?.id === card.id ? 'ring-2 ring-white scale-105 z-10' : ''}
+                      `}
+                    >
+                      <img
+                        src={getCardImage(card)}
+                        alt={card.name}
+                        className="w-full h-full object-cover"
+                      />
+                      {synergyCount > 0 && (
+                        <div className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/80 flex items-center justify-center">
+                          <span className="text-[10px] text-white font-bold">{synergyCount}</span>
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Empty state */}
-      {filteredCategories.length === 0 && (
+      {categoriesWithCards.length === 0 && (
         <div className="text-center py-12">
           <p className="text-white/40">No synergy cards match your filters</p>
           <button
-            onClick={() => {
-              setColorFilter('all');
-              setCategoryFilter(null);
-            }}
+            onClick={() => setColorFilter('all')}
             className="mt-2 text-sm text-white/60 hover:text-white"
           >
             Clear filters
           </button>
+        </div>
+      )}
+
+      {/* Hover Preview */}
+      {hoveredCard && !selectedCard && (
+        <div className="fixed bottom-4 right-4 z-50 hidden lg:block pointer-events-none">
+          <div className="bg-black border border-white/10 p-2 rounded-xl shadow-2xl">
+            <img src={getCardImage(hoveredCard)} alt={hoveredCard.name} className="w-56 rounded-lg" />
+            <div className="mt-2 px-1">
+              <div className="text-sm font-medium text-white">{hoveredCard.name}</div>
+              <div className="text-xs text-white/40">{hoveredCard.type_line}</div>
+            </div>
+          </div>
         </div>
       )}
     </div>

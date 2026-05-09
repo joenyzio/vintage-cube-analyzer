@@ -44,7 +44,6 @@ const MATCHUP_EXPLANATIONS: Record<string, Record<string, string>> = {
   'ub-reanimator': {
     'uw-control': 'Reanimator can go under control before they establish counters. Turn 1-2 Griselbrand is hard to answer.',
     'ur-storm': 'Both fast combo decks. Storm is slightly faster but Reanimator has Thoughtseize/Grief for disruption.',
-    'mono-white': 'Thalia slows Reanimator but they can still combo through it. Grief evoked is devastating.',
     'mono-white': 'Thalia taxes reanimation spells but Grief + Reanimate is backbreaking. Reanimator wins the long game.',
   },
   'artifact-combo': {

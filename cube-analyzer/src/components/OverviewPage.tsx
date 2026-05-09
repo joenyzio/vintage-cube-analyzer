@@ -1,7 +1,5 @@
 import { useMemo } from 'react';
 import type { CubeCard, Archetype } from '../types/card';
-import { Card } from './ui/Card';
-import { Badge } from './ui/Badge';
 import { getCardImage } from '../services/scryfall';
 import { ColorDistributionChart } from './charts/ColorDistributionChart';
 import { ManaCurveChart } from './charts/ManaCurveChart';
@@ -29,7 +27,6 @@ export function OverviewPage({
   powerRankings,
   onNavigate,
 }: OverviewPageProps) {
-  // Computed stats
   const stats = useMemo(() => {
     const nonLands = cards.filter(c => !c.type_line?.toLowerCase().includes('land'));
     const avgCmc = nonLands.reduce((sum, c) => sum + (c.cmc || 0), 0) / nonLands.length;
@@ -68,10 +65,9 @@ export function OverviewPage({
   const topArchetypes = archetypes.slice(0, 3);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Row 1: Key Metrics + Quick Action */}
-      <div className="flex flex-col lg:flex-row gap-4">
-        {/* Metrics Grid */}
+      <div className="flex flex-col lg:flex-row gap-3">
         <div className="flex-1 grid grid-cols-3 md:grid-cols-6 gap-3">
           <MetricCard label="Cards" value={stats.total} />
           <MetricCard label="Avg CMC" value={stats.avgCmc} />
@@ -81,30 +77,31 @@ export function OverviewPage({
           <MetricCard label="Lands" value={stats.lands} />
         </div>
 
-        {/* Quick Action */}
         <button
           onClick={() => onNavigate('draft')}
-          className="flex items-center justify-center gap-3 px-6 py-4 bg-white text-black font-semibold rounded-xl hover:bg-white/90 transition-colors lg:w-auto"
+          className="flex items-center justify-center gap-3 px-8 py-4 bg-white text-black font-semibold rounded-xl hover:bg-white/90 transition-all duration-300 lg:w-auto group"
         >
-          <Play className="w-5 h-5" />
+          <Play className="w-5 h-5 group-hover:scale-110 transition-transform" />
           Start Draft
         </button>
       </div>
 
       {/* Row 2: Top Picks + Role Breakdown */}
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Top Picks - 2/3 width */}
-        <Card className="lg:col-span-2 bg-[#111] border-white/8">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Crown className="w-4 h-4 text-amber-400" />
-              <h3 className="font-semibold text-white">Top Picks</h3>
+      <div className="grid lg:grid-cols-3 gap-5">
+        {/* Top Picks */}
+        <div className="lg:col-span-2 bg-black border border-white/[0.06] rounded-xl p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-amber-400/10 flex items-center justify-center">
+                <Crown className="w-3.5 h-3.5 text-amber-400" />
+              </div>
+              <h3 className="font-semibold text-white text-sm">Top Picks</h3>
             </div>
             <button
               onClick={() => onNavigate('power')}
-              className="flex items-center gap-1 text-xs text-white/40 hover:text-white/60 transition-colors"
+              className="flex items-center gap-1 text-xs text-white/40 hover:text-white/70 transition-colors group"
             >
-              View all <ChevronRight className="w-3 h-3" />
+              View all <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
             </button>
           </div>
           <div className="grid grid-cols-4 md:grid-cols-8 gap-2">
@@ -114,105 +111,104 @@ export function OverviewPage({
                 className="relative group cursor-pointer"
                 onClick={() => onNavigate('cards')}
               >
-                <div className="aspect-[488/680] rounded-lg overflow-hidden bg-white/5">
+                <div className="aspect-[488/680] rounded-lg overflow-hidden shadow-lg hover:scale-105 transition-transform">
                   <img
                     src={getCardImage(card)}
                     alt={card.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                    className="w-full h-full object-cover"
                     loading="lazy"
                   />
                 </div>
                 <div className={`
-                  absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold
-                  ${idx < 3 ? 'bg-amber-400 text-black' : 'bg-white/20 text-white'}
+                  absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shadow-lg
+                  ${idx < 3 ? 'bg-gradient-to-br from-amber-400 to-amber-500 text-black' : 'bg-black/80 text-white border border-white/20'}
                 `}>
                   {idx + 1}
                 </div>
               </div>
             ))}
           </div>
-        </Card>
+        </div>
 
-        {/* Role Breakdown - 1/3 width */}
-        <Card className="bg-[#111] border-white/8">
-          <h3 className="font-semibold text-white mb-4">By Role</h3>
-          <div className="space-y-3">
+        {/* Role Breakdown */}
+        <div className="bg-black border border-white/[0.06] rounded-xl p-4">
+          <h3 className="font-semibold text-white text-sm mb-3">By Role</h3>
+          <div className="space-y-2.5">
             <RoleRow icon={Zap} label="Fast Mana" count={stats.fastMana.length} color="text-amber-400" />
             <RoleRow icon={Shield} label="Removal" count={stats.removal.length} color="text-red-400" />
             <RoleRow icon={Wand2} label="Counterspells" count={stats.counterspells.length} color="text-blue-400" />
             <RoleRow icon={Target} label="Tutors" count={stats.tutors.length} color="text-purple-400" />
-            <RoleRow icon={Sparkles} label="Combo Pieces" count={stats.comboPieces.length} color="text-green-400" />
+            <RoleRow icon={Sparkles} label="Combo Pieces" count={stats.comboPieces.length} color="text-emerald-400" />
             <RoleRow icon={Skull} label="Finishers" count={stats.finishers.length} color="text-white/60" />
           </div>
 
-          {/* Power 9 indicator */}
           {stats.power9.length > 0 && (
-            <div className="mt-4 pt-4 border-t border-white/5">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-white/40">Power 9</span>
+            <div className="mt-4 pt-3 border-t border-white/[0.06]">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-white/40 font-medium">Power 9</span>
                 <span className="text-xs font-mono text-amber-400">{stats.power9.length}/9</span>
               </div>
-              <div className="flex gap-0.5 mt-2">
+              <div className="flex gap-1">
                 {Array.from({ length: 9 }).map((_, i) => (
                   <div
                     key={i}
-                    className={`flex-1 h-1.5 rounded-full ${i < stats.power9.length ? 'bg-amber-400' : 'bg-white/10'}`}
+                    className={`flex-1 h-1.5 rounded-full ${i < stats.power9.length ? 'bg-amber-400' : 'bg-white/[0.06]'}`}
                   />
                 ))}
               </div>
             </div>
           )}
-        </Card>
+        </div>
       </div>
 
       {/* Row 3: Color Balance + Mana Curve */}
-      <div className="grid lg:grid-cols-2 gap-6">
-        <Card className="bg-[#111] border-white/8">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-white">Color Balance</h3>
-            <div className="flex gap-2 text-xs">
+      <div className="grid lg:grid-cols-2 gap-5">
+        <div className="bg-black border border-white/[0.06] rounded-xl p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-white text-sm">Color Balance</h3>
+            <div className="flex gap-3 text-xs">
               {['W', 'U', 'B', 'R', 'G'].map(c => (
                 <span key={c} className="text-white/40">
-                  {c}: <span className="text-white/60 font-mono">{colorDistribution[c] || 0}</span>
+                  {c}: <span className="text-white/70 font-mono">{colorDistribution[c] || 0}</span>
                 </span>
               ))}
             </div>
           </div>
           <ColorDistributionChart data={colorDistribution} />
-        </Card>
+        </div>
 
-        <Card className="bg-[#111] border-white/8">
-          <h3 className="font-semibold text-white mb-4">Mana Curve</h3>
+        <div className="bg-black border border-white/[0.06] rounded-xl p-4">
+          <h3 className="font-semibold text-white text-sm mb-3">Mana Curve</h3>
           <ManaCurveChart data={manaCurve} />
-        </Card>
+        </div>
       </div>
 
       {/* Row 4: Top Archetypes */}
-      <Card className="bg-[#111] border-white/8">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-white/40" />
-            <h3 className="font-semibold text-white">Top Archetypes</h3>
+      <div className="bg-black border border-white/[0.06] rounded-xl p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-white/[0.04] flex items-center justify-center">
+              <TrendingUp className="w-3.5 h-3.5 text-white/50" />
+            </div>
+            <h3 className="font-semibold text-white text-sm">Top Archetypes</h3>
           </div>
           <button
             onClick={() => onNavigate('archetypes')}
-            className="flex items-center gap-1 text-xs text-white/40 hover:text-white/60 transition-colors"
+            className="flex items-center gap-1 text-xs text-white/40 hover:text-white/70 transition-colors group"
           >
-            View all <ChevronRight className="w-3 h-3" />
+            View all <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
           </button>
         </div>
-        <div className="grid md:grid-cols-3 gap-4">
+        <div className="grid md:grid-cols-3 gap-3">
           {topArchetypes.map((arch, idx) => (
             <button
               key={arch.id}
               onClick={() => onNavigate('archetypes')}
-              className="flex items-start gap-3 p-4 bg-white/2 hover:bg-white/5 border border-white/5 rounded-xl text-left transition-colors"
+              className="flex items-start gap-3 p-3 hover:bg-white/[0.02] border border-white/[0.04] hover:border-white/[0.08] rounded-xl text-left transition-all duration-200 group"
             >
               <div className={`
                 w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm
-                ${idx === 0 ? 'bg-amber-400/20 text-amber-400' : ''}
-                ${idx === 1 ? 'bg-white/10 text-white/60' : ''}
-                ${idx === 2 ? 'bg-amber-700/20 text-amber-600' : ''}
+                ${idx === 0 ? 'bg-amber-400/10 text-amber-400' : 'bg-white/[0.04] text-white/50'}
               `}>
                 {idx + 1}
               </div>
@@ -234,56 +230,29 @@ export function OverviewPage({
                     ))}
                   </div>
                 </div>
-                <p className="text-xs text-white/40 mt-1 line-clamp-2">{arch.strategy}</p>
-                <div className="flex items-center gap-2 mt-2">
-                  <Badge variant={arch.difficulty === 'Easy' ? 'success' : arch.difficulty === 'Expert' ? 'info' : 'warning'}>
-                    {arch.difficulty}
-                  </Badge>
-                  <span className="text-xs text-white/30 font-mono">{arch.powerRating}/10</span>
-                </div>
+                <p className="text-xs text-white/40 mt-1 line-clamp-1">{arch.strategy}</p>
               </div>
             </button>
           ))}
         </div>
-      </Card>
+      </div>
 
-      {/* Row 5: Quick Actions Grid */}
+      {/* Row 5: Quick Actions */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <QuickAction
-          icon={Sparkles}
-          label="Build Around"
-          description="Deep dive guides"
-          onClick={() => onNavigate('buildaround')}
-        />
-        <QuickAction
-          icon={Target}
-          label="Synergies"
-          description="Card combos"
-          onClick={() => onNavigate('synergies')}
-        />
-        <QuickAction
-          icon={Shield}
-          label="Matchups"
-          description="Archetype matrix"
-          onClick={() => onNavigate('matchups')}
-        />
-        <QuickAction
-          icon={Crown}
-          label="Sample Decks"
-          description="Optimized lists"
-          onClick={() => onNavigate('decks')}
-        />
+        <QuickAction icon={Sparkles} label="Build Around" onClick={() => onNavigate('buildaround')} />
+        <QuickAction icon={Target} label="Synergies" onClick={() => onNavigate('synergies')} />
+        <QuickAction icon={Shield} label="Matchups" onClick={() => onNavigate('matchups')} />
+        <QuickAction icon={Crown} label="Sample Decks" onClick={() => onNavigate('decks')} />
       </div>
     </div>
   );
 }
 
-// Sub-components
 function MetricCard({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="bg-[#111] border border-white/8 rounded-xl p-4 text-center">
-      <div className="text-xl font-semibold text-white">{value}</div>
-      <div className="text-xs text-white/40 mt-1">{label}</div>
+    <div className="bg-black border border-white/[0.06] rounded-xl p-3 text-center">
+      <div className="text-lg font-semibold text-white">{value}</div>
+      <div className="text-[10px] text-white/40 mt-0.5 font-medium uppercase tracking-wider">{label}</div>
     </div>
   );
 }
@@ -292,27 +261,24 @@ function RoleRow({ icon: Icon, label, count, color }: { icon: any; label: string
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-2">
-        <Icon className={`w-4 h-4 ${color}`} />
+        <Icon className={`w-3.5 h-3.5 ${color}`} />
         <span className="text-sm text-white/60">{label}</span>
       </div>
-      <span className="text-sm font-mono text-white">{count}</span>
+      <span className="text-sm font-mono text-white tabular-nums">{count}</span>
     </div>
   );
 }
 
-function QuickAction({ icon: Icon, label, description, onClick }: { icon: any; label: string; description: string; onClick: () => void }) {
+function QuickAction({ icon: Icon, label, onClick }: { icon: any; label: string; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-3 p-4 bg-[#111] border border-white/8 rounded-xl hover:bg-[#161616] hover:border-white/12 transition-all text-left group"
+      className="flex items-center gap-3 p-3 bg-black border border-white/[0.06] rounded-xl hover:border-white/[0.12] transition-all group"
     >
-      <div className="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center group-hover:bg-white/10 transition-colors">
-        <Icon className="w-5 h-5 text-white/40" />
+      <div className="w-9 h-9 bg-white/[0.04] rounded-lg flex items-center justify-center group-hover:bg-white/[0.08] transition-colors">
+        <Icon className="w-4 h-4 text-white/50 group-hover:text-white/70 transition-colors" />
       </div>
-      <div>
-        <div className="font-medium text-white text-sm">{label}</div>
-        <div className="text-xs text-white/40">{description}</div>
-      </div>
+      <span className="font-medium text-white text-sm">{label}</span>
     </button>
   );
 }

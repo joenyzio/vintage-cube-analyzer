@@ -3,19 +3,12 @@ import type { Archetype, CubeCard } from '../types/card';
 import { Card } from './ui/Card';
 import { Badge } from './ui/Badge';
 import { getCardImage } from '../services/scryfall';
-import { Search, ChevronDown, ChevronUp, X, Filter, ArrowUpDown } from 'lucide-react';
+import { Search, X, ArrowUpDown } from 'lucide-react';
 
 interface ArchetypesPageProps {
   archetypes: Archetype[];
   cards: CubeCard[];
 }
-
-const TIER_CONFIG = {
-  S: { min: 10, color: 'text-amber-400', bg: 'bg-amber-400/10', border: 'border-amber-400/20' },
-  A: { min: 9, color: 'text-purple-400', bg: 'bg-purple-400/10', border: 'border-purple-400/20' },
-  B: { min: 7, color: 'text-blue-400', bg: 'bg-blue-400/10', border: 'border-blue-400/20' },
-  C: { min: 0, color: 'text-white/40', bg: 'bg-white/5', border: 'border-white/10' },
-};
 
 const COLOR_FILTERS = [
   { id: 'all', label: 'All' },
@@ -26,21 +19,11 @@ const COLOR_FILTERS = [
   { id: 'G', label: 'G', className: 'bg-green-600 text-white' },
 ];
 
-const DIFFICULTY_FILTERS = ['All', 'Easy', 'Medium', 'Hard', 'Expert'];
-
-function getTier(power: number): keyof typeof TIER_CONFIG {
-  if (power >= 10) return 'S';
-  if (power >= 9) return 'A';
-  if (power >= 7) return 'B';
-  return 'C';
-}
-
 export function ArchetypesPage({ archetypes, cards }: ArchetypesPageProps) {
   const [search, setSearch] = useState('');
   const [colorFilter, setColorFilter] = useState('all');
-  const [difficultyFilter, setDifficultyFilter] = useState('All');
-  const [sortBy, setSortBy] = useState<'power' | 'name' | 'difficulty'>('power');
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<'power' | 'name'>('power');
+  const [selectedArchetype, setSelectedArchetype] = useState<Archetype | null>(null);
   const [hoveredCard, setHoveredCard] = useState<CubeCard | null>(null);
 
   const cardsByName = useMemo(() => {
@@ -52,47 +35,40 @@ export function ArchetypesPage({ archetypes, cards }: ArchetypesPageProps) {
   const filteredArchetypes = useMemo(() => {
     let result = [...archetypes];
 
-    // Search
     if (search) {
       const lower = search.toLowerCase();
       result = result.filter(a =>
         a.name.toLowerCase().includes(lower) ||
-        a.description.toLowerCase().includes(lower) ||
-        a.keyCards.some(c => c.toLowerCase().includes(lower))
+        a.description.toLowerCase().includes(lower)
       );
     }
 
-    // Color filter
     if (colorFilter !== 'all') {
       result = result.filter(a => a.colors.includes(colorFilter));
     }
 
-    // Difficulty filter
-    if (difficultyFilter !== 'All') {
-      result = result.filter(a => a.difficulty === difficultyFilter);
-    }
-
-    // Sort
     result.sort((a, b) => {
       if (sortBy === 'power') return b.powerRating - a.powerRating;
-      if (sortBy === 'name') return a.name.localeCompare(b.name);
-      if (sortBy === 'difficulty') {
-        const order = { Easy: 1, Medium: 2, Hard: 3, Expert: 4 };
-        return order[a.difficulty] - order[b.difficulty];
-      }
-      return 0;
+      return a.name.localeCompare(b.name);
     });
 
     return result;
-  }, [archetypes, search, colorFilter, difficultyFilter, sortBy]);
+  }, [archetypes, search, colorFilter, sortBy]);
 
   const getCard = (name: string) => cardsByName.get(name);
 
+  // Get featured cards for an archetype (first 4 key cards that exist in cube)
+  const getFeaturedCards = (arch: Archetype): CubeCard[] => {
+    return arch.keyCards
+      .map(name => getCard(name))
+      .filter((c): c is CubeCard => c !== undefined)
+      .slice(0, 4);
+  };
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Filter Bar */}
       <div className="flex flex-wrap gap-3 items-center">
-        {/* Search */}
         <div className="relative flex-1 min-w-[200px] max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
           <input
@@ -104,7 +80,6 @@ export function ArchetypesPage({ archetypes, cards }: ArchetypesPageProps) {
           />
         </div>
 
-        {/* Color Filter */}
         <div className="flex gap-1">
           {COLOR_FILTERS.map(c => (
             <button
@@ -123,129 +98,41 @@ export function ArchetypesPage({ archetypes, cards }: ArchetypesPageProps) {
           ))}
         </div>
 
-        {/* Difficulty Filter */}
-        <select
-          value={difficultyFilter}
-          onChange={(e) => setDifficultyFilter(e.target.value)}
-          className="px-3 py-2 bg-[#111] border border-white/10 rounded-lg text-sm text-white/60 focus:outline-none"
-        >
-          {DIFFICULTY_FILTERS.map(d => (
-            <option key={d} value={d}>{d === 'All' ? 'All Difficulties' : d}</option>
-          ))}
-        </select>
-
-        {/* Sort */}
         <button
-          onClick={() => setSortBy(sortBy === 'power' ? 'name' : sortBy === 'name' ? 'difficulty' : 'power')}
+          onClick={() => setSortBy(sortBy === 'power' ? 'name' : 'power')}
           className="flex items-center gap-2 px-3 py-2 bg-[#111] border border-white/10 rounded-lg text-sm text-white/60 hover:text-white/80 transition-colors"
         >
           <ArrowUpDown className="w-4 h-4" />
-          {sortBy === 'power' ? 'Power' : sortBy === 'name' ? 'Name' : 'Difficulty'}
+          {sortBy === 'power' ? 'Power' : 'Name'}
         </button>
+
+        <span className="text-xs text-white/30 ml-auto">{filteredArchetypes.length} archetypes</span>
       </div>
 
-      {/* Results count */}
-      <div className="text-xs text-white/30">
-        {filteredArchetypes.length} archetype{filteredArchetypes.length !== 1 ? 's' : ''}
-      </div>
-
-      {/* Archetypes List */}
-      <div className="space-y-2">
+      {/* Archetype Grid */}
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
         {filteredArchetypes.map((arch) => {
-          const tier = getTier(arch.powerRating);
-          const tierConfig = TIER_CONFIG[tier];
-          const isExpanded = expandedId === arch.id;
-          const keyCardObjects = arch.keyCards.map(name => getCard(name)).filter(Boolean) as CubeCard[];
+          const featuredCards = getFeaturedCards(arch);
 
           return (
             <Card
               key={arch.id}
-              className={`bg-[#111] border-white/8 overflow-hidden transition-all ${isExpanded ? 'ring-1 ring-white/20' : ''}`}
+              className="group bg-[#0a0a0a] border-white/8 overflow-hidden cursor-pointer hover:border-white/20 transition-all duration-300"
+              onClick={() => setSelectedArchetype(arch)}
             >
-              {/* Header Row - Always Visible */}
-              <button
-                onClick={() => setExpandedId(isExpanded ? null : arch.id)}
-                className="w-full flex items-center gap-4 p-4 text-left hover:bg-white/2 transition-colors"
-              >
-                {/* Tier Badge */}
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm ${tierConfig.bg} ${tierConfig.color} ${tierConfig.border} border`}>
-                  {tier}
-                </div>
-
-                {/* Colors */}
-                <div className="flex gap-0.5">
-                  {arch.colors.map(c => (
-                    <div
-                      key={c}
-                      className={`w-5 h-5 rounded-full
-                        ${c === 'W' ? 'bg-amber-100' : ''}
-                        ${c === 'U' ? 'bg-blue-500' : ''}
-                        ${c === 'B' ? 'bg-neutral-500' : ''}
-                        ${c === 'R' ? 'bg-red-500' : ''}
-                        ${c === 'G' ? 'bg-green-500' : ''}
-                      `}
-                    />
-                  ))}
-                </div>
-
-                {/* Name & Description */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-semibold text-white">{arch.name}</h3>
-                    <Badge variant={arch.difficulty === 'Easy' ? 'success' : arch.difficulty === 'Expert' ? 'info' : arch.difficulty === 'Hard' ? 'danger' : 'warning'}>
-                      {arch.difficulty}
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-white/40 truncate">{arch.description}</p>
-                </div>
-
-                {/* Power */}
-                <div className="text-right hidden sm:block">
-                  <div className="text-lg font-mono text-white">{arch.powerRating}</div>
-                  <div className="text-[10px] text-white/30 uppercase">Power</div>
-                </div>
-
-                {/* Expand Icon */}
-                {isExpanded ? (
-                  <ChevronUp className="w-5 h-5 text-white/40" />
-                ) : (
-                  <ChevronDown className="w-5 h-5 text-white/40" />
-                )}
-              </button>
-
-              {/* Expanded Content */}
-              {isExpanded && (
-                <div className="px-4 pb-4 pt-0 border-t border-white/5 space-y-5">
-                  {/* Top Row: Power + Description */}
-                  <div className="pt-4 flex gap-6">
-                    {/* Power Rating */}
-                    <div className="flex-shrink-0 text-center">
-                      <div className="w-16 h-16 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
-                        <span className="text-2xl font-bold text-white">{arch.powerRating}</span>
-                      </div>
-                      <div className="text-[10px] text-white/30 mt-1 uppercase">Power</div>
-                    </div>
-
-                    {/* Description + Strategy */}
-                    <div className="flex-1 space-y-3">
-                      <p className="text-sm text-white/60">{arch.description}</p>
-                      <div>
-                        <h4 className="text-xs font-medium text-white/40 uppercase tracking-wide mb-1">Gameplan</h4>
-                        <p className="text-sm text-white/80">{arch.strategy}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Key Cards with Images */}
-                  <div>
-                    <h4 className="text-xs font-medium text-white/40 uppercase tracking-wide mb-3">Key Cards ({arch.keyCards.length})</h4>
-                    <div className="flex gap-2 overflow-x-auto pb-2">
-                      {keyCardObjects.map((card) => (
+              {/* Card Image Stack - Visual Preview */}
+              <div className="relative h-44 bg-gradient-to-b from-white/[0.02] to-transparent overflow-hidden">
+                <div className="absolute inset-0 flex items-center justify-center">
+                  {featuredCards.length > 0 && (
+                    <div className="flex -space-x-16 transform group-hover:scale-105 transition-transform duration-500">
+                      {featuredCards.slice(0, 4).map((card, i) => (
                         <div
                           key={card.id}
-                          className="relative w-20 flex-shrink-0 aspect-[488/680] rounded-lg overflow-hidden bg-white/5 cursor-pointer hover:scale-105 transition-transform"
-                          onMouseEnter={() => setHoveredCard(card)}
-                          onMouseLeave={() => setHoveredCard(null)}
+                          className="relative w-28 aspect-[488/680] rounded-xl overflow-hidden shadow-2xl transform transition-transform duration-300"
+                          style={{
+                            transform: `rotate(${(i - 1.5) * 6}deg)`,
+                            zIndex: 4 - i,
+                          }}
                         >
                           <img
                             src={getCardImage(card)}
@@ -253,47 +140,50 @@ export function ArchetypesPage({ archetypes, cards }: ArchetypesPageProps) {
                             className="w-full h-full object-cover"
                             loading="lazy"
                           />
-                          <div className={`
-                            absolute top-0.5 right-0.5 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold
-                            ${card.powerLevel >= 9 ? 'bg-amber-400 text-black' : 'bg-black/70 text-white'}
-                          `}>
-                            {card.powerLevel}
-                          </div>
                         </div>
                       ))}
-                      {/* Show missing cards as text if not in cube */}
-                      {arch.keyCards.filter(name => !getCard(name)).length > 0 && (
-                        <div className="flex-shrink-0 flex items-center px-3 text-xs text-white/30">
-                          +{arch.keyCards.filter(name => !getCard(name)).length} not in cube
-                        </div>
-                      )}
                     </div>
-                  </div>
-
-                  {/* Draft Tips */}
-                  <div>
-                    <h4 className="text-xs font-medium text-white/40 uppercase tracking-wide mb-2">Draft Tips</h4>
-                    <ul className="space-y-1.5">
-                      {arch.tips.map((tip, idx) => (
-                        <li key={idx} className="text-sm text-white/60 flex items-start gap-2">
-                          <span className="text-green-400/60 mt-0.5">✓</span>
-                          {tip}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {/* Matchup hint */}
-                  <div className="pt-2 border-t border-white/5 flex items-center justify-between text-xs">
-                    <span className="text-white/30">
-                      Tier {tier} • {arch.difficulty} difficulty
-                    </span>
-                    <span className="text-white/40">
-                      Hover cards for preview
-                    </span>
-                  </div>
+                  )}
                 </div>
-              )}
+
+                {/* Power Badge */}
+                <div className={`
+                  absolute top-3 right-3 w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg shadow-lg
+                  ${arch.powerRating >= 10 ? 'bg-gradient-to-br from-amber-400 to-amber-500 text-black' : ''}
+                  ${arch.powerRating === 9 ? 'bg-gradient-to-br from-purple-400 to-purple-500 text-white' : ''}
+                  ${arch.powerRating >= 7 && arch.powerRating < 9 ? 'bg-gradient-to-br from-blue-400 to-blue-500 text-white' : ''}
+                  ${arch.powerRating < 7 ? 'bg-white/10 text-white/70 backdrop-blur-sm' : ''}
+                `}>
+                  {arch.powerRating}
+                </div>
+
+                {/* Color Pips */}
+                <div className="absolute top-3 left-3 flex gap-1">
+                  {arch.colors.map(c => (
+                    <div
+                      key={c}
+                      className={`w-6 h-6 rounded-full shadow-lg border border-black/20
+                        ${c === 'W' ? 'bg-gradient-to-br from-amber-100 to-amber-200' : ''}
+                        ${c === 'U' ? 'bg-gradient-to-br from-blue-400 to-blue-600' : ''}
+                        ${c === 'B' ? 'bg-gradient-to-br from-neutral-500 to-neutral-700' : ''}
+                        ${c === 'R' ? 'bg-gradient-to-br from-red-400 to-red-600' : ''}
+                        ${c === 'G' ? 'bg-gradient-to-br from-green-500 to-green-700' : ''}
+                      `}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <h3 className="font-semibold text-white text-lg">{arch.name}</h3>
+                  <Badge variant={arch.difficulty === 'Easy' ? 'success' : arch.difficulty === 'Expert' ? 'info' : arch.difficulty === 'Hard' ? 'danger' : 'warning'}>
+                    {arch.difficulty}
+                  </Badge>
+                </div>
+                <p className="text-sm text-white/50 line-clamp-2 leading-relaxed">{arch.description}</p>
+              </div>
             </Card>
           );
         })}
@@ -304,11 +194,7 @@ export function ArchetypesPage({ archetypes, cards }: ArchetypesPageProps) {
         <div className="text-center py-12">
           <p className="text-white/40">No archetypes match your filters</p>
           <button
-            onClick={() => {
-              setSearch('');
-              setColorFilter('all');
-              setDifficultyFilter('All');
-            }}
+            onClick={() => { setSearch(''); setColorFilter('all'); }}
             className="mt-2 text-sm text-white/60 hover:text-white"
           >
             Clear filters
@@ -316,15 +202,120 @@ export function ArchetypesPage({ archetypes, cards }: ArchetypesPageProps) {
         </div>
       )}
 
+      {/* Archetype Detail Modal */}
+      {selectedArchetype && (
+        <div
+          className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={() => setSelectedArchetype(null)}
+        >
+          <div
+            className="bg-[#0a0a0a] border border-white/10 rounded-2xl max-w-5xl w-full max-h-[90vh] overflow-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-start justify-between p-6 border-b border-white/5">
+              <div className="flex items-center gap-4">
+                <div className="flex gap-1">
+                  {selectedArchetype.colors.map(c => (
+                    <div
+                      key={c}
+                      className={`w-8 h-8 rounded-full shadow-lg
+                        ${c === 'W' ? 'bg-gradient-to-br from-amber-100 to-amber-200' : ''}
+                        ${c === 'U' ? 'bg-gradient-to-br from-blue-400 to-blue-600' : ''}
+                        ${c === 'B' ? 'bg-gradient-to-br from-neutral-500 to-neutral-700' : ''}
+                        ${c === 'R' ? 'bg-gradient-to-br from-red-400 to-red-600' : ''}
+                        ${c === 'G' ? 'bg-gradient-to-br from-green-500 to-green-700' : ''}
+                      `}
+                    />
+                  ))}
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-white">{selectedArchetype.name}</h2>
+                  <div className="flex items-center gap-3 mt-1">
+                    <Badge variant={selectedArchetype.difficulty === 'Easy' ? 'success' : selectedArchetype.difficulty === 'Expert' ? 'info' : selectedArchetype.difficulty === 'Hard' ? 'danger' : 'warning'}>
+                      {selectedArchetype.difficulty}
+                    </Badge>
+                    <span className={`font-bold ${
+                      selectedArchetype.powerRating >= 10 ? 'text-amber-400' :
+                      selectedArchetype.powerRating >= 9 ? 'text-purple-400' :
+                      'text-blue-400'
+                    }`}>
+                      Power {selectedArchetype.powerRating}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedArchetype(null)}
+                className="p-2 hover:bg-white/5 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-white/40" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-6">
+              {/* Description & Strategy */}
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <h3 className="text-xs font-medium text-white/40 uppercase tracking-wide mb-2">Overview</h3>
+                  <p className="text-white/70 leading-relaxed">{selectedArchetype.description}</p>
+                </div>
+                <div>
+                  <h3 className="text-xs font-medium text-white/40 uppercase tracking-wide mb-2">Gameplan</h3>
+                  <p className="text-white/70 leading-relaxed">{selectedArchetype.strategy}</p>
+                </div>
+              </div>
+
+              {/* Key Cards - Visual Grid */}
+              <div>
+                <h3 className="text-xs font-medium text-white/40 uppercase tracking-wide mb-3">Key Cards</h3>
+                <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-3">
+                  {selectedArchetype.keyCards.map((name) => {
+                    const card = getCard(name);
+                    if (!card) return null;
+                    return (
+                      <div
+                        key={card.id}
+                        className="relative aspect-[488/680] rounded-xl overflow-hidden cursor-pointer hover:scale-105 transition-transform hover:z-10 shadow-lg"
+                        onMouseEnter={() => setHoveredCard(card)}
+                        onMouseLeave={() => setHoveredCard(null)}
+                      >
+                        <img src={getCardImage(card)} alt={card.name} className="w-full h-full object-cover" loading="lazy" />
+                        <div className={`
+                          absolute top-1 right-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold
+                          ${card.powerLevel >= 9 ? 'bg-amber-400 text-black' : 'bg-black/70 text-white'}
+                        `}>
+                          {card.powerLevel}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Draft Tips */}
+              <div>
+                <h3 className="text-xs font-medium text-white/40 uppercase tracking-wide mb-3">Draft Tips</h3>
+                <div className="grid md:grid-cols-2 gap-3">
+                  {selectedArchetype.tips.map((tip, idx) => (
+                    <div key={idx} className="flex items-start gap-3 p-3 bg-white/[0.02] border border-white/5 rounded-xl">
+                      <span className="text-green-400/70 mt-0.5">✓</span>
+                      <p className="text-sm text-white/60">{tip}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Hover Preview */}
       {hoveredCard && (
-        <div className="fixed bottom-4 right-4 z-50 hidden lg:block">
+        <div className="fixed bottom-4 right-4 z-[60] hidden lg:block pointer-events-none">
           <div className="bg-[#111] border border-white/10 p-2 rounded-xl shadow-2xl">
-            <img
-              src={getCardImage(hoveredCard)}
-              alt={hoveredCard.name}
-              className="w-56 rounded-lg"
-            />
+            <img src={getCardImage(hoveredCard)} alt={hoveredCard.name} className="w-56 rounded-lg" />
             <div className="mt-2 px-1">
               <div className="text-sm font-medium text-white">{hoveredCard.name}</div>
               <div className="text-xs text-white/40">{hoveredCard.type_line}</div>

@@ -32,10 +32,6 @@ const colorClasses: Record<string, string> = {
 };
 
 export function ArchetypeCard({ archetype, onSelect }: ArchetypeCardProps) {
-  const colorString = archetype.colors.length > 0
-    ? archetype.colors.map(c => colorLetters[c] || '').join('')
-    : 'C';
-
   return (
     <Card hover className="cursor-pointer bg-[#111] border-white/8" onClick={() => onSelect?.(archetype)}>
       <CardHeader>

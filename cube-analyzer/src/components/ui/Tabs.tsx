@@ -1,4 +1,5 @@
-import { ReactNode, useState, createContext, useContext } from 'react';
+import type { ReactNode } from 'react';
+import { useState, createContext, useContext } from 'react';
 
 interface TabsContextType {
   activeTab: string;
