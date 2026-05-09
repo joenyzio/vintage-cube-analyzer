@@ -184,9 +184,9 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     return (
       <div className="space-y-8">
         {/* Hero Section */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white/[0.02] to-transparent border border-white/[0.06] p-8">
-          {/* Card fan background */}
-          <div className="absolute -right-8 top-1/2 -translate-y-1/2 flex -space-x-20 opacity-60">
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-white/[0.02] to-transparent border border-white/[0.06] p-6 sm:p-8">
+          {/* Card fan background - hidden on mobile */}
+          <div className="hidden sm:flex absolute -right-8 top-1/2 -translate-y-1/2 -space-x-20 opacity-60">
             {featuredCards.slice(0, 5).map((card, i) => (
               <div
                 key={card.id}
@@ -203,14 +203,14 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
 
           {/* Content */}
           <div className="relative z-10 max-w-md">
-            <h2 className="text-3xl font-bold text-white mb-2">Draft Simulator</h2>
-            <p className="text-white/50 mb-6">
+            <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">Draft Simulator</h2>
+            <p className="text-white/50 mb-6 text-sm sm:text-base">
               Practice drafting against 7 AI opponents. Build the best deck from 3 packs of 15 cards each.
             </p>
 
             <button
               onClick={startDraft}
-              className="flex items-center gap-3 px-8 py-4 bg-white text-black font-semibold rounded-xl hover:bg-white/90 transition-all duration-300 group"
+              className="flex items-center justify-center gap-3 w-full sm:w-auto px-8 py-4 bg-white text-black font-semibold rounded-xl hover:bg-white/90 transition-all duration-300 group active:scale-95"
             >
               <Play className="w-5 h-5 group-hover:scale-110 transition-transform" />
               Start Draft
