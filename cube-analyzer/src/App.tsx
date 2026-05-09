@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useCubeData } from './hooks/useCubeData';
 import { OverviewPage } from './components/OverviewPage';
 import { ArchetypesPage } from './components/ArchetypesPage';
@@ -109,6 +109,12 @@ function App() {
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const mainRef = useRef<HTMLElement>(null);
+
+  // Scroll to top when tab changes
+  useEffect(() => {
+    mainRef.current?.scrollTo(0, 0);
+  }, [activeTab]);
 
   if (loading) {
     return <LoadingScreen progress={progress} />;
@@ -285,7 +291,7 @@ function App() {
         </header>
 
         {/* Content */}
-        <main className="flex-1 overflow-auto">
+        <main ref={mainRef} className="flex-1 overflow-auto">
           <div className="max-w-6xl mx-auto px-4 lg:px-8 py-8">
             {renderContent()}
           </div>
