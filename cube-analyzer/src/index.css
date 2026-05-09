@@ -1,0 +1,250 @@
+@import "tailwindcss";
+
+:root {
+  --color-mtg-white: #f8f6d8;
+  --color-mtg-blue: #0e68ab;
+  --color-mtg-black: #150b00;
+  --color-mtg-red: #d32029;
+  --color-mtg-green: #00733e;
+  --color-mtg-gold: #c9a227;
+  --color-mtg-colorless: #ccc2c0;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #4b5563 #1f2937;
+}
+
+body {
+  @apply bg-gray-950 text-gray-100 antialiased;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+#root {
+  @apply min-h-screen;
+}
+
+/* Scrollbar styling */
+.scrollbar-thin::-webkit-scrollbar,
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track,
+::-webkit-scrollbar-track {
+  @apply bg-gray-900 rounded;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb,
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-700 rounded hover:bg-gray-600;
+}
+
+/* Card hover effect */
+.card-hover {
+  @apply transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-purple-500/20;
+}
+
+/* Gradient backgrounds for color identity */
+.bg-mtg-white { background: linear-gradient(135deg, #f8f6d8 0%, #e8e6c8 100%); }
+.bg-mtg-blue { background: linear-gradient(135deg, #0e68ab 0%, #0a4d80 100%); }
+.bg-mtg-black { background: linear-gradient(135deg, #2d2d2d 0%, #150b00 100%); }
+.bg-mtg-red { background: linear-gradient(135deg, #d32029 0%, #a01a20 100%); }
+.bg-mtg-green { background: linear-gradient(135deg, #00733e 0%, #005830 100%); }
+.bg-mtg-gold { background: linear-gradient(135deg, #c9a227 0%, #a68520 100%); }
+.bg-mtg-colorless { background: linear-gradient(135deg, #ccc2c0 0%, #a8a0a0 100%); }
+
+/* Radial gradient */
+.bg-gradient-radial {
+  background: radial-gradient(circle, var(--tw-gradient-stops));
+}
+
+/* Mana symbol colors */
+.text-mtg-white { color: #f8f6d8; }
+.text-mtg-blue { color: #0e68ab; }
+.text-mtg-black { color: #6b6b6b; }
+.text-mtg-red { color: #d32029; }
+.text-mtg-green { color: #00733e; }
+.text-mtg-gold { color: #c9a227; }
+.text-mtg-colorless { color: #ccc2c0; }
+
+/* Animations */
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes card-float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-5px) rotate(1deg); }
+  75% { transform: translateY(5px) rotate(-1deg); }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(168, 85, 247, 0.4); }
+  50% { box-shadow: 0 0 40px rgba(168, 85, 247, 0.8); }
+}
+
+.loading-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+.animate-card-float {
+  animation: card-float 4s ease-in-out infinite;
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+/* Animate in utilities */
+.animate-in {
+  animation-duration: 300ms;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  animation-fill-mode: both;
+}
+
+.fade-in {
+  animation-name: fadeIn;
+}
+
+.slide-in-from-bottom-4 {
+  animation-name: slideInFromBottom;
+}
+
+.zoom-in-95 {
+  animation-name: zoomIn95;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInFromBottom {
+  from { transform: translateY(16px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes zoomIn95 {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* Chart tooltip styling */
+.recharts-tooltip-wrapper {
+  @apply !outline-none;
+}
+
+.custom-tooltip {
+  @apply bg-gray-900/95 backdrop-blur-sm border border-gray-700 rounded-lg p-3 shadow-xl;
+}
+
+/* Card 3D effects */
+.card-3d {
+  transform-style: preserve-3d;
+  perspective: 1000px;
+}
+
+.card-3d:hover {
+  transform: rotateY(-5deg) rotateX(5deg);
+}
+
+/* Glass effect */
+.glass {
+  @apply bg-white/5 backdrop-blur-xl border border-white/10;
+}
+
+/* Selection */
+::selection {
+  @apply bg-purple-500/30;
+}
+
+/* Focus ring */
+:focus-visible {
+  @apply outline-none ring-2 ring-purple-500 ring-offset-2 ring-offset-gray-950;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Card grid responsiveness */
+@media (max-width: 640px) {
+  .card-grid {
+    @apply grid-cols-2;
+  }
+}
+
+/* Print styles */
+@media print {
+  body {
+    @apply bg-white text-black;
+  }
+}
+
+/* Gradient text */
+.gradient-text {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-pink-500 to-cyan-400;
+}
+
+/* Hover glow effect for cards */
+.hover-glow {
+  @apply relative;
+}
+
+.hover-glow::before {
+  content: '';
+  @apply absolute -inset-1 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl blur opacity-0 transition-opacity duration-300;
+}
+
+.hover-glow:hover::before {
+  @apply opacity-50;
+}
+
+/* Magic card frame gradient */
+.card-frame-gradient {
+  background: linear-gradient(
+    135deg,
+    rgba(168, 85, 247, 0.1) 0%,
+    rgba(236, 72, 153, 0.1) 50%,
+    rgba(6, 182, 212, 0.1) 100%
+  );
+}
+
+/* Tab indicator animation */
+.tab-indicator {
+  @apply relative;
+}
+
+.tab-indicator::after {
+  content: '';
+  @apply absolute bottom-0 left-0 right-0 h-0.5 bg-purple-500 transform scale-x-0 transition-transform duration-200;
+}
+
+.tab-indicator:hover::after,
+.tab-indicator[data-state="active"]::after {
+  @apply scale-x-100;
+}
