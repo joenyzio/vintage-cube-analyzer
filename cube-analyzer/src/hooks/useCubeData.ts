@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { ScryfallCard, CubeCard, Archetype, DraftStrategy } from '../types/card';
+import type { CubeCard, Archetype, DraftStrategy } from '../types/card';
 import { fetchCardsBatch } from '../services/scryfall';
 import {
   analyzeCard,
@@ -90,6 +90,49 @@ const CUBE_CARDS = [
   "Troll of Khazad-dum", "Lorien Revealed"
 ];
 
+const CACHE_KEY = 'cube-analyzer-card-cache';
+const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+
+interface CacheData {
+  cards: CubeCard[];
+  timestamp: number;
+  version: string;
+}
+
+const CACHE_VERSION = '1.0'; // Bump this to invalidate cache when data structure changes
+
+function getCache(): CacheData | null {
+  try {
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (!cached) return null;
+
+    const data: CacheData = JSON.parse(cached);
+
+    // Check version
+    if (data.version !== CACHE_VERSION) return null;
+
+    // Check if expired
+    if (Date.now() - data.timestamp > CACHE_DURATION) return null;
+
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+function setCache(cards: CubeCard[]): void {
+  try {
+    const data: CacheData = {
+      cards,
+      timestamp: Date.now(),
+      version: CACHE_VERSION,
+    };
+    localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+  } catch {
+    // Ignore storage errors (e.g., quota exceeded)
+  }
+}
+
 export interface CubeData {
   cards: CubeCard[];
   archetypes: Archetype[];
@@ -115,13 +158,26 @@ export function useCubeData(): CubeData {
         setLoading(true);
         setProgress(10);
 
-        // Fetch card data from Scryfall
+        // Check cache first
+        const cached = getCache();
+        if (cached) {
+          setCards(cached.cards);
+          setProgress(100);
+          setLoading(false);
+          return;
+        }
+
+        // Fetch from Scryfall if not cached
+        setProgress(20);
         const scryfallCards = await fetchCardsBatch(CUBE_CARDS);
-        setProgress(60);
+        setProgress(70);
 
         // Analyze each card
         const analyzedCards = scryfallCards.map((card) => analyzeCard(card));
         setProgress(90);
+
+        // Cache the results
+        setCache(analyzedCards);
 
         setCards(analyzedCards);
         setProgress(100);

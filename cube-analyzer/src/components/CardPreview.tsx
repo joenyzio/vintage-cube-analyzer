@@ -60,26 +60,26 @@ export function CardPreview({ card, children }: CardPreviewProps) {
           }}
         >
           <div className="relative animate-in fade-in zoom-in-95 duration-150">
-            {/* Glow effect */}
-            <div className="absolute -inset-2 bg-purple-500/30 rounded-2xl blur-xl" />
-
-            {/* Card image */}
-            <img
-              src={imageUrl}
-              alt={card.name}
-              className="relative w-[250px] rounded-xl shadow-2xl shadow-black/50 border border-white/10"
-              style={{
-                transform: 'perspective(1000px) rotateY(-5deg)',
-              }}
-            />
+            {/* Card container */}
+            <div className="bg-[#111] p-2 rounded-xl border border-white/10 shadow-2xl">
+              <img
+                src={imageUrl}
+                alt={card.name}
+                className="w-[250px] rounded-lg"
+              />
+              <div className="mt-2 px-1">
+                <h4 className="font-medium text-white text-sm">{card.name}</h4>
+                <p className="text-xs text-white/40">{card.type_line}</p>
+              </div>
+            </div>
 
             {/* Power level badge */}
             <div className={`
-              absolute -top-2 -right-2 w-10 h-10 rounded-full flex items-center justify-center
-              text-sm font-bold shadow-lg
-              ${card.powerLevel >= 9 ? 'bg-gradient-to-br from-yellow-400 to-amber-600 text-black' : ''}
-              ${card.powerLevel >= 7 && card.powerLevel < 9 ? 'bg-gradient-to-br from-purple-500 to-pink-600 text-white' : ''}
-              ${card.powerLevel < 7 ? 'bg-gradient-to-br from-gray-600 to-gray-800 text-white' : ''}
+              absolute -top-2 -right-2 w-8 h-8 rounded-full flex items-center justify-center
+              text-xs font-mono shadow-lg
+              ${card.powerLevel >= 9 ? 'bg-amber-400 text-black' : ''}
+              ${card.powerLevel >= 7 && card.powerLevel < 9 ? 'bg-white/80 text-black' : ''}
+              ${card.powerLevel < 7 ? 'bg-white/20 text-white/70' : ''}
             `}>
               {card.powerLevel}
             </div>
@@ -94,7 +94,7 @@ export function CardPreview({ card, children }: CardPreviewProps) {
 export function CardLink({ card, className = '' }: { card: CubeCard; className?: string }) {
   return (
     <CardPreview card={card}>
-      <span className={`cursor-pointer hover:text-purple-400 transition-colors ${className}`}>
+      <span className={`cursor-pointer hover:text-white transition-colors ${className}`}>
         {card.name}
       </span>
     </CardPreview>

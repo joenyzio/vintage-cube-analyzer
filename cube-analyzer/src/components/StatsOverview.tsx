@@ -25,43 +25,31 @@ export function StatsOverview({ cards, colorDistribution, typeDistribution }: St
       label: 'Total Cards',
       value: cards.length,
       icon: LayoutGrid,
-      color: 'text-blue-400',
-      bgColor: 'bg-blue-500/10',
     },
     {
       label: 'Avg. Mana Value',
       value: avgCmc.toFixed(2),
       icon: Zap,
-      color: 'text-yellow-400',
-      bgColor: 'bg-yellow-500/10',
     },
     {
       label: 'Avg. Power Level',
       value: avgPower.toFixed(1) + '/10',
       icon: Sparkles,
-      color: 'text-purple-400',
-      bgColor: 'bg-purple-500/10',
     },
     {
       label: 'Creatures',
       value: typeDistribution.Creature || 0,
       icon: Swords,
-      color: 'text-green-400',
-      bgColor: 'bg-green-500/10',
     },
     {
       label: 'Spells',
       value: (typeDistribution.Instant || 0) + (typeDistribution.Sorcery || 0),
       icon: Palette,
-      color: 'text-red-400',
-      bgColor: 'bg-red-500/10',
     },
     {
       label: 'Lands',
       value: typeDistribution.Land || 0,
       icon: Mountain,
-      color: 'text-amber-400',
-      bgColor: 'bg-amber-500/10',
     },
   ];
 
@@ -69,12 +57,12 @@ export function StatsOverview({ cards, colorDistribution, typeDistribution }: St
     <div className="space-y-6">
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {stats.map((stat) => (
-          <Card key={stat.label} className="text-center">
-            <div className={`w-12 h-12 mx-auto mb-3 rounded-xl ${stat.bgColor} flex items-center justify-center`}>
-              <stat.icon className={`w-6 h-6 ${stat.color}`} />
+          <Card key={stat.label} className="text-center bg-[#111] border-white/8">
+            <div className="w-10 h-10 mx-auto mb-3 rounded-lg bg-white/5 flex items-center justify-center">
+              <stat.icon className="w-5 h-5 text-white/60" />
             </div>
-            <div className="text-2xl font-bold text-white">{stat.value}</div>
-            <div className="text-sm text-gray-400">{stat.label}</div>
+            <div className="text-2xl font-semibold text-white">{stat.value}</div>
+            <div className="text-sm text-white/40">{stat.label}</div>
           </Card>
         ))}
       </div>
@@ -82,20 +70,18 @@ export function StatsOverview({ cards, colorDistribution, typeDistribution }: St
       {/* Power 9 Badge */}
       {power9Count > 0 && (
         <div className="flex items-center justify-center">
-          <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-yellow-900/30 via-amber-900/30 to-yellow-900/30 border border-yellow-600/30 rounded-full">
-            <span className="text-2xl">👑</span>
-            <span className="text-yellow-400 font-semibold">
-              This cube contains {power9Count} of 9 Power cards!
+          <div className="inline-flex items-center gap-3 px-5 py-2.5 bg-amber-500/10 border border-amber-500/20 rounded-full">
+            <span className="text-amber-400 font-medium text-sm">
+              {power9Count} of 9 Power cards
             </span>
-            <span className="text-2xl">💎</span>
           </div>
         </div>
       )}
 
       {/* Color Balance Indicator */}
-      <Card>
-        <h3 className="text-lg font-semibold text-white mb-4">Color Balance</h3>
-        <div className="flex gap-2 h-8">
+      <Card className="bg-[#111] border-white/8">
+        <h3 className="text-sm font-medium text-white/60 mb-4">Color Balance</h3>
+        <div className="flex gap-1 h-6">
           {Object.entries(colorDistribution)
             .filter(([key]) => ['W', 'U', 'B', 'R', 'G'].includes(key))
             .map(([color, count]) => {
@@ -105,10 +91,10 @@ export function StatsOverview({ cards, colorDistribution, typeDistribution }: St
               const percentage = (count / total) * 100;
               const colors: Record<string, string> = {
                 W: 'bg-amber-100',
-                U: 'bg-blue-600',
-                B: 'bg-gray-700',
-                R: 'bg-red-600',
-                G: 'bg-green-600',
+                U: 'bg-blue-500',
+                B: 'bg-neutral-500',
+                R: 'bg-red-500',
+                G: 'bg-green-500',
               };
               return (
                 <div
@@ -116,19 +102,19 @@ export function StatsOverview({ cards, colorDistribution, typeDistribution }: St
                   className={`${colors[color]} rounded relative overflow-hidden group`}
                   style={{ width: `${percentage}%` }}
                 >
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/50">
-                    <span className="text-xs font-bold text-white">{count}</span>
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/60">
+                    <span className="text-xs font-medium text-white">{count}</span>
                   </div>
                 </div>
               );
             })}
         </div>
-        <div className="flex justify-between mt-2 text-xs text-gray-500">
-          <span>White</span>
-          <span>Blue</span>
-          <span>Black</span>
-          <span>Red</span>
-          <span>Green</span>
+        <div className="flex justify-between mt-2 text-xs text-white/30">
+          <span>W</span>
+          <span>U</span>
+          <span>B</span>
+          <span>R</span>
+          <span>G</span>
         </div>
       </Card>
     </div>

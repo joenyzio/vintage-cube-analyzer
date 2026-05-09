@@ -322,12 +322,12 @@ export function BuildAround({ cards }: BuildAroundProps) {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center">
-          <Lightbulb className="w-6 h-6 text-white" />
+        <div className="w-10 h-10 bg-[#111] border border-white/10 rounded-lg flex items-center justify-center">
+          <Lightbulb className="w-5 h-5 text-white/60" />
         </div>
         <div>
-          <h2 className="text-2xl font-bold text-white">Build Around Guide</h2>
-          <p className="text-gray-400">Deep dive into the cube's most powerful cards</p>
+          <h2 className="text-xl font-semibold text-white">Build Around Guide</h2>
+          <p className="text-white/40 text-sm">Deep dive into the cube's most powerful cards</p>
         </div>
       </div>
 
@@ -340,10 +340,10 @@ export function BuildAround({ cards }: BuildAroundProps) {
               key={guide.cardName}
               onClick={() => setSelectedGuide(guide)}
               className={`
-                flex items-center gap-2 px-4 py-2 rounded-xl transition-all
+                flex items-center gap-2 px-3 py-2 rounded-lg transition-all
                 ${selectedGuide.cardName === guide.cardName
-                  ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/25'
-                  : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                  ? 'bg-white/10 text-white border border-white/20'
+                  : 'bg-white/5 text-white/60 hover:bg-white/10 border border-transparent'
                 }
               `}
             >
@@ -364,36 +364,33 @@ export function BuildAround({ cards }: BuildAroundProps) {
         <div className="space-y-6">
           {/* Card Image */}
           {mainCard && (
-            <div className="relative">
-              <div className="absolute -inset-3 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-2xl blur-xl opacity-30" />
-              <img
-                src={getCardImage(mainCard)}
-                alt={mainCard.name}
-                className="relative w-full max-w-[300px] mx-auto rounded-xl shadow-2xl"
-              />
-            </div>
+            <img
+              src={getCardImage(mainCard)}
+              alt={mainCard.name}
+              className="w-full max-w-[280px] mx-auto rounded-lg"
+            />
           )}
 
           {/* Why It's Broken */}
-          <Card className="bg-gradient-to-br from-red-900/30 to-transparent border-red-800/30">
+          <Card className="bg-[#111] border-white/8">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-red-400">
-                <AlertTriangle className="w-5 h-5" />
+              <CardTitle className="flex items-center gap-2 text-white">
+                <AlertTriangle className="w-4 h-4 text-red-400" />
                 Why It's Broken
               </CardTitle>
             </CardHeader>
-            <p className="text-gray-300 text-sm leading-relaxed">{selectedGuide.whyItsBroken}</p>
+            <p className="text-white/60 text-sm leading-relaxed">{selectedGuide.whyItsBroken}</p>
           </Card>
 
           {/* Key Strategy */}
-          <Card className="bg-gradient-to-br from-purple-900/30 to-transparent border-purple-800/30">
+          <Card className="bg-[#111] border-white/8">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-purple-400">
-                <Target className="w-5 h-5" />
+              <CardTitle className="flex items-center gap-2 text-white">
+                <Target className="w-4 h-4 text-white/40" />
                 Key Strategy
               </CardTitle>
             </CardHeader>
-            <p className="text-gray-300 text-sm leading-relaxed">{selectedGuide.keyStrategy}</p>
+            <p className="text-white/60 text-sm leading-relaxed">{selectedGuide.keyStrategy}</p>
           </Card>
         </div>
 
@@ -405,9 +402,9 @@ export function BuildAround({ cards }: BuildAroundProps) {
           </h3>
 
           {selectedGuide.synergies.map((synergy, idx) => (
-            <Card key={idx} className="p-4">
-              <h4 className="font-bold text-white mb-1">{synergy.category}</h4>
-              <p className="text-sm text-gray-400 mb-3">{synergy.explanation}</p>
+            <Card key={idx} className="p-4 bg-[#111] border-white/8">
+              <h4 className="font-medium text-white text-sm mb-1">{synergy.category}</h4>
+              <p className="text-xs text-white/40 mb-3">{synergy.explanation}</p>
               <div className="flex flex-wrap gap-1">
                 {synergy.cards.map(cardName => {
                   const card = getCard(cardName);
@@ -416,7 +413,7 @@ export function BuildAround({ cards }: BuildAroundProps) {
                       key={cardName}
                       className={`
                         text-xs px-2 py-1 rounded cursor-pointer transition-colors
-                        ${card ? 'bg-green-900/30 text-green-400 hover:bg-green-800/50' : 'bg-gray-800 text-gray-500 line-through'}
+                        ${card ? 'bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20' : 'bg-white/5 text-white/30 line-through'}
                       `}
                       onMouseEnter={() => card && setHoveredCard(card)}
                       onMouseLeave={() => setHoveredCard(null)}
@@ -431,15 +428,15 @@ export function BuildAround({ cards }: BuildAroundProps) {
           ))}
 
           {/* Anti-Synergies */}
-          <Card className="p-4 bg-red-900/10 border-red-900/30">
-            <h4 className="font-bold text-red-400 mb-2 flex items-center gap-2">
+          <Card className="p-4 bg-[#111] border-white/8">
+            <h4 className="font-medium text-red-400 text-sm mb-2 flex items-center gap-2">
               <X className="w-4 h-4" />
               Avoid
             </h4>
             <ul className="space-y-1">
               {selectedGuide.antiSynergies.map((item, idx) => (
-                <li key={idx} className="text-sm text-gray-400 flex items-start gap-2">
-                  <span className="text-red-500">✕</span>
+                <li key={idx} className="text-xs text-white/40 flex items-start gap-2">
+                  <span className="text-red-400/60">-</span>
                   {item}
                 </li>
               ))}
@@ -450,15 +447,15 @@ export function BuildAround({ cards }: BuildAroundProps) {
         {/* Right Column - Sample Deck & Tips */}
         <div className="space-y-4">
           {/* Draft Tips */}
-          <Card className="p-4 bg-gradient-to-br from-cyan-900/20 to-transparent border-cyan-800/30">
-            <h4 className="font-bold text-cyan-400 mb-3 flex items-center gap-2">
-              <Lightbulb className="w-4 h-4" />
+          <Card className="p-4 bg-[#111] border-white/8">
+            <h4 className="font-medium text-white text-sm mb-3 flex items-center gap-2">
+              <Lightbulb className="w-4 h-4 text-white/40" />
               Draft Tips
             </h4>
             <ul className="space-y-2">
               {selectedGuide.draftTips.map((tip, idx) => (
-                <li key={idx} className="text-sm text-gray-300 flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-cyan-500 flex-shrink-0 mt-0.5" />
+                <li key={idx} className="text-xs text-white/60 flex items-start gap-2">
+                  <CheckCircle2 className="w-3 h-3 text-green-400 flex-shrink-0 mt-0.5" />
                   {tip}
                 </li>
               ))}
@@ -466,24 +463,24 @@ export function BuildAround({ cards }: BuildAroundProps) {
           </Card>
 
           {/* Nut Draws */}
-          <Card className="p-4 bg-gradient-to-br from-yellow-900/20 to-transparent border-yellow-800/30">
-            <h4 className="font-bold text-yellow-400 mb-3 flex items-center gap-2">
-              <Sparkles className="w-4 h-4" />
+          <Card className="p-4 bg-[#111] border-white/8">
+            <h4 className="font-medium text-white text-sm mb-3 flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-amber-400" />
               Dream Opening Hands
             </h4>
-            <div className="space-y-3">
+            <div className="space-y-2">
               {selectedGuide.openingHands.map((hand, idx) => (
-                <div key={idx} className="p-2 bg-gray-800/50 rounded-lg">
-                  <p className="text-xs text-gray-300 font-mono">{hand}</p>
+                <div key={idx} className="p-2 bg-white/2 border border-white/5 rounded-lg">
+                  <p className="text-xs text-white/50 font-mono">{hand}</p>
                 </div>
               ))}
             </div>
           </Card>
 
           {/* Sample Decklist Preview */}
-          <Card className="p-4">
+          <Card className="p-4 bg-[#111] border-white/8">
             <h4 className="font-bold text-white mb-3">Sample Decklist</h4>
-            <div className="flex flex-wrap gap-1 max-h-48 overflow-y-auto scrollbar-thin">
+            <div className="flex flex-wrap gap-1 max-h-48 overflow-y-auto">
               {[...selectedGuide.sampleDeck.mainboard, ...selectedGuide.sampleDeck.lands].map((cardName, idx) => {
                 const card = getCard(cardName);
                 if (!card) return null;
@@ -503,7 +500,7 @@ export function BuildAround({ cards }: BuildAroundProps) {
                 );
               })}
             </div>
-            <p className="text-xs text-gray-500 mt-2">
+            <p className="text-xs text-white/40 mt-2">
               {selectedGuide.sampleDeck.mainboard.filter(n => getCard(n)).length} spells + {selectedGuide.sampleDeck.lands.filter(n => getCard(n)).length} lands
             </p>
           </Card>
@@ -512,15 +509,17 @@ export function BuildAround({ cards }: BuildAroundProps) {
 
       {/* Hover Preview */}
       {hoveredCard && (
-        <div className="fixed bottom-4 right-4 z-50 animate-in slide-in-from-bottom-4 hidden lg:block">
-          <div className="relative">
-            <div className="absolute -inset-3 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl blur-xl opacity-50" />
-            <div className="relative bg-gray-900 p-3 rounded-2xl border border-gray-700 shadow-2xl">
-              <img
-                src={getCardImage(hoveredCard)}
-                alt={hoveredCard.name}
-                className="w-64 rounded-xl"
-              />
+        <div className="fixed bottom-4 right-4 z-50 animate-in fade-in hidden lg:block">
+          <div className="bg-[#111] border border-white/10 p-2 rounded-xl shadow-2xl">
+            <img
+              src={getCardImage(hoveredCard)}
+              alt={hoveredCard.name}
+              className="w-56 rounded-lg"
+            />
+            <div className="mt-2 px-1">
+              <h4 className="font-medium text-white text-sm">{hoveredCard.name}</h4>
+              <p className="text-xs text-white/40">{hoveredCard.type_line}</p>
+              <span className="text-xs text-white/30 font-mono">{hoveredCard.powerLevel}/10</span>
             </div>
           </div>
         </div>

@@ -1,83 +1,161 @@
 @import "tailwindcss";
 
 :root {
-  --color-mtg-white: #f8f6d8;
-  --color-mtg-blue: #0e68ab;
-  --color-mtg-black: #150b00;
-  --color-mtg-red: #d32029;
-  --color-mtg-green: #00733e;
-  --color-mtg-gold: #c9a227;
-  --color-mtg-colorless: #ccc2c0;
+  /* Empress-style black mode palette */
+  --color-background: #000000;
+  --color-surface: #111111;
+  --color-surface-raised: #161616;
+  --color-foreground: #ffffff;
+  --color-muted: rgba(255, 255, 255, 0.5);
+  --color-subtle: rgba(255, 255, 255, 0.3);
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-border-medium: rgba(255, 255, 255, 0.12);
+
+  /* MTG color identities - more muted for black mode */
+  --color-mtg-white: #e8e6d0;
+  --color-mtg-blue: #4a90d9;
+  --color-mtg-black: #8b8b8b;
+  --color-mtg-red: #e05050;
+  --color-mtg-green: #3da060;
+  --color-mtg-gold: #d4a82a;
+  --color-mtg-colorless: #9e9e9e;
+
+  /* Accent - subtle emerald like empress */
+  --color-accent: #22c55e;
+  --color-accent-muted: rgba(34, 197, 94, 0.2);
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: #4b5563 #1f2937;
+  scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
 }
 
 body {
-  @apply bg-gray-950 text-gray-100 antialiased;
+  background-color: var(--color-background);
+  color: var(--color-foreground);
   font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 #root {
-  @apply min-h-screen;
+  min-height: 100vh;
 }
 
-/* Scrollbar styling */
-.scrollbar-thin::-webkit-scrollbar,
+/* Scrollbar styling - thin and subtle */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
-.scrollbar-thin::-webkit-scrollbar-track,
 ::-webkit-scrollbar-track {
-  @apply bg-gray-900 rounded;
+  background: transparent;
 }
 
-.scrollbar-thin::-webkit-scrollbar-thumb,
 ::-webkit-scrollbar-thumb {
-  @apply bg-gray-700 rounded hover:bg-gray-600;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
 }
 
-/* Card hover effect */
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Surface utilities */
+.surface-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.surface-raised {
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+}
+
+.surface-panel {
+  background: var(--color-background);
+  border: 1px solid var(--color-border-medium);
+}
+
+/* Card hover effect - subtle */
 .card-hover {
-  @apply transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl hover:shadow-purple-500/20;
+  transition: all 200ms ease-out;
 }
 
-/* Gradient backgrounds for color identity */
-.bg-mtg-white { background: linear-gradient(135deg, #f8f6d8 0%, #e8e6c8 100%); }
-.bg-mtg-blue { background: linear-gradient(135deg, #0e68ab 0%, #0a4d80 100%); }
-.bg-mtg-black { background: linear-gradient(135deg, #2d2d2d 0%, #150b00 100%); }
-.bg-mtg-red { background: linear-gradient(135deg, #d32029 0%, #a01a20 100%); }
-.bg-mtg-green { background: linear-gradient(135deg, #00733e 0%, #005830 100%); }
-.bg-mtg-gold { background: linear-gradient(135deg, #c9a227 0%, #a68520 100%); }
-.bg-mtg-colorless { background: linear-gradient(135deg, #ccc2c0 0%, #a8a0a0 100%); }
-
-/* Radial gradient */
-.bg-gradient-radial {
-  background: radial-gradient(circle, var(--tw-gradient-stops));
+.card-hover:hover {
+  background: var(--color-surface-raised);
+  border-color: var(--color-border-medium);
 }
 
-/* Mana symbol colors */
-.text-mtg-white { color: #f8f6d8; }
-.text-mtg-blue { color: #0e68ab; }
-.text-mtg-black { color: #6b6b6b; }
-.text-mtg-red { color: #d32029; }
-.text-mtg-green { color: #00733e; }
-.text-mtg-gold { color: #c9a227; }
-.text-mtg-colorless { color: #ccc2c0; }
+/* MTG color backgrounds - solid, not gradient */
+.bg-mtg-white { background: var(--color-mtg-white); }
+.bg-mtg-blue { background: var(--color-mtg-blue); }
+.bg-mtg-black { background: var(--color-mtg-black); }
+.bg-mtg-red { background: var(--color-mtg-red); }
+.bg-mtg-green { background: var(--color-mtg-green); }
+.bg-mtg-gold { background: var(--color-mtg-gold); }
+.bg-mtg-colorless { background: var(--color-mtg-colorless); }
 
-/* Animations */
-@keyframes pulse-glow {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 1; }
+/* MTG color text */
+.text-mtg-white { color: var(--color-mtg-white); }
+.text-mtg-blue { color: var(--color-mtg-blue); }
+.text-mtg-black { color: var(--color-mtg-black); }
+.text-mtg-red { color: var(--color-mtg-red); }
+.text-mtg-green { color: var(--color-mtg-green); }
+.text-mtg-gold { color: var(--color-mtg-gold); }
+.text-mtg-colorless { color: var(--color-mtg-colorless); }
+
+/* Muted text utility */
+.text-muted {
+  color: var(--color-muted);
 }
 
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
+.text-subtle {
+  color: var(--color-subtle);
+}
+
+/* Animations - clean and minimal */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInFromBottom {
+  from {
+    transform: translateY(12px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 @keyframes shimmer {
@@ -85,43 +163,9 @@ body {
   100% { background-position: 200% 0; }
 }
 
-@keyframes card-float {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  25% { transform: translateY(-5px) rotate(1deg); }
-  75% { transform: translateY(5px) rotate(-1deg); }
-}
-
-@keyframes glow-pulse {
-  0%, 100% { box-shadow: 0 0 20px rgba(168, 85, 247, 0.4); }
-  50% { box-shadow: 0 0 40px rgba(168, 85, 247, 0.8); }
-}
-
-.loading-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
-}
-
-.animate-float {
-  animation: float 3s ease-in-out infinite;
-}
-
-.animate-shimmer {
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-  background-size: 200% 100%;
-  animation: shimmer 2s infinite;
-}
-
-.animate-card-float {
-  animation: card-float 4s ease-in-out infinite;
-}
-
-.animate-glow-pulse {
-  animation: glow-pulse 2s ease-in-out infinite;
-}
-
-/* Animate in utilities */
 .animate-in {
-  animation-duration: 300ms;
-  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  animation-duration: 200ms;
+  animation-timing-function: ease-out;
   animation-fill-mode: both;
 }
 
@@ -129,61 +173,50 @@ body {
   animation-name: fadeIn;
 }
 
+.slide-in {
+  animation-name: slideIn;
+}
+
 .slide-in-from-bottom-4 {
   animation-name: slideInFromBottom;
 }
 
 .zoom-in-95 {
-  animation-name: zoomIn95;
+  animation-name: scaleIn;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+.animate-pulse-slow {
+  animation: pulse 2s ease-in-out infinite;
 }
 
-@keyframes slideInFromBottom {
-  from { transform: translateY(16px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
-@keyframes zoomIn95 {
-  from { transform: scale(0.95); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.04), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
 }
 
 /* Chart tooltip styling */
 .recharts-tooltip-wrapper {
-  @apply !outline-none;
+  outline: none !important;
 }
 
 .custom-tooltip {
-  @apply bg-gray-900/95 backdrop-blur-sm border border-gray-700 rounded-lg p-3 shadow-xl;
-}
-
-/* Card 3D effects */
-.card-3d {
-  transform-style: preserve-3d;
-  perspective: 1000px;
-}
-
-.card-3d:hover {
-  transform: rotateY(-5deg) rotateX(5deg);
-}
-
-/* Glass effect */
-.glass {
-  @apply bg-white/5 backdrop-blur-xl border border-white/10;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
 }
 
 /* Selection */
 ::selection {
-  @apply bg-purple-500/30;
+  background: rgba(34, 197, 94, 0.3);
 }
 
-/* Focus ring */
+/* Focus ring - subtle */
 :focus-visible {
-  @apply outline-none ring-2 ring-purple-500 ring-offset-2 ring-offset-gray-950;
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 
 /* Smooth scrolling */
@@ -194,57 +227,108 @@ html {
 /* Card grid responsiveness */
 @media (max-width: 640px) {
   .card-grid {
-    @apply grid-cols-2;
+    grid-template-columns: repeat(2, 1fr);
   }
+}
+
+/* Interactive elements */
+.interactive {
+  cursor: pointer;
+  transition: opacity 150ms ease-out, transform 150ms ease-out;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.interactive:active {
+  opacity: 0.7;
+  transform: scale(0.98);
+}
+
+@media (min-width: 1024px) {
+  .interactive:hover {
+    opacity: 0.9;
+  }
+}
+
+/* Button press feedback */
+.btn-press {
+  transition: transform 100ms ease-out;
+}
+
+.btn-press:active {
+  transform: scale(0.97);
+}
+
+/* Border utilities */
+.border-subtle {
+  border-color: var(--color-border);
+}
+
+.border-medium {
+  border-color: var(--color-border-medium);
+}
+
+/* Background utilities */
+.bg-raised {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.bg-raised:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* Tier colors for archetype rankings */
+.tier-s {
+  border-left: 3px solid #fbbf24;
+  background: linear-gradient(90deg, rgba(251, 191, 36, 0.1) 0%, transparent 100%);
+}
+
+.tier-a {
+  border-left: 3px solid #a78bfa;
+  background: linear-gradient(90deg, rgba(167, 139, 250, 0.1) 0%, transparent 100%);
+}
+
+.tier-b {
+  border-left: 3px solid #60a5fa;
+  background: linear-gradient(90deg, rgba(96, 165, 250, 0.1) 0%, transparent 100%);
+}
+
+.tier-c {
+  border-left: 3px solid rgba(255, 255, 255, 0.3);
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0%, transparent 100%);
+}
+
+/* Data display */
+.label-data {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.value-data {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: 600;
+  color: var(--color-foreground);
 }
 
 /* Print styles */
 @media print {
   body {
-    @apply bg-white text-black;
+    background: white;
+    color: black;
   }
 }
 
-/* Gradient text */
-.gradient-text {
-  @apply bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-pink-500 to-cyan-400;
-}
-
-/* Hover glow effect for cards */
-.hover-glow {
-  @apply relative;
-}
-
-.hover-glow::before {
-  content: '';
-  @apply absolute -inset-1 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl blur opacity-0 transition-opacity duration-300;
-}
-
-.hover-glow:hover::before {
-  @apply opacity-50;
-}
-
-/* Magic card frame gradient */
-.card-frame-gradient {
-  background: linear-gradient(
-    135deg,
-    rgba(168, 85, 247, 0.1) 0%,
-    rgba(236, 72, 153, 0.1) 50%,
-    rgba(6, 182, 212, 0.1) 100%
-  );
-}
-
-/* Tab indicator animation */
-.tab-indicator {
-  @apply relative;
-}
-
-.tab-indicator::after {
-  content: '';
-  @apply absolute bottom-0 left-0 right-0 h-0.5 bg-purple-500 transform scale-x-0 transition-transform duration-200;
-}
-
-.tab-indicator:hover::after,
-.tab-indicator[data-state="active"]::after {
-  @apply scale-x-100;
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

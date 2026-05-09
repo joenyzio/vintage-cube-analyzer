@@ -24,7 +24,7 @@ export function TypeDistributionChart({ data }: TypeDistributionChartProps) {
       return (
         <div className="custom-tooltip">
           <p className="text-white font-semibold">{payload[0].payload.type}</p>
-          <p className="text-gray-300">{payload[0].value} cards</p>
+          <p className="text-white/60">{payload[0].value} cards</p>
         </div>
       );
     }
@@ -34,12 +34,12 @@ export function TypeDistributionChart({ data }: TypeDistributionChartProps) {
   return (
     <ResponsiveContainer width="100%" height={300}>
       <BarChart data={chartData} layout="vertical" margin={{ top: 5, right: 30, left: 80, bottom: 5 }}>
-        <XAxis type="number" tick={{ fill: '#9ca3af' }} axisLine={{ stroke: '#374151' }} />
+        <XAxis type="number" tick={{ fill: 'rgba(255,255,255,0.4)' }} axisLine={{ stroke: 'rgba(255,255,255,0.1)' }} />
         <YAxis
           type="category"
           dataKey="type"
-          tick={{ fill: '#9ca3af' }}
-          axisLine={{ stroke: '#374151' }}
+          tick={{ fill: 'rgba(255,255,255,0.4)' }}
+          axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
           width={75}
         />
         <Tooltip content={<CustomTooltip />} />

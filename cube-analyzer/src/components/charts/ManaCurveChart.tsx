@@ -32,7 +32,7 @@ export function ManaCurveChart({ data }: ManaCurveChartProps) {
               {entry.name}: {entry.value}
             </p>
           ))}
-          <p className="text-gray-400 mt-2 pt-2 border-t border-gray-700">
+          <p className="text-white/40 mt-2 pt-2 border-t border-white/10">
             Total: {total}
           </p>
         </div>
@@ -46,15 +46,15 @@ export function ManaCurveChart({ data }: ManaCurveChartProps) {
       <BarChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
         <XAxis
           dataKey="cmc"
-          tick={{ fill: '#9ca3af' }}
-          axisLine={{ stroke: '#374151' }}
+          tick={{ fill: 'rgba(255,255,255,0.4)' }}
+          axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
         />
         <YAxis
-          tick={{ fill: '#9ca3af' }}
-          axisLine={{ stroke: '#374151' }}
+          tick={{ fill: 'rgba(255,255,255,0.4)' }}
+          axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
         />
         <Tooltip content={<CustomTooltip />} />
-        <Legend formatter={(value) => <span className="text-gray-300 text-sm">{value}</span>} />
+        <Legend formatter={(value) => <span className="text-white/60 text-sm">{value}</span>} />
         {Object.keys(COLORS).map((color) => (
           <Bar
             key={color}

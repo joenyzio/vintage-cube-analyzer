@@ -567,12 +567,12 @@ export function SampleDecks({ cards }: SampleDecksProps) {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center">
-          <Layers className="w-6 h-6 text-white" />
+        <div className="w-10 h-10 bg-[#111] border border-white/10 rounded-lg flex items-center justify-center">
+          <Layers className="w-5 h-5 text-white/60" />
         </div>
         <div>
-          <h2 className="text-2xl font-bold text-white">Sample Decklists</h2>
-          <p className="text-gray-400">Optimized builds for each archetype using cards from this cube</p>
+          <h2 className="text-xl font-semibold text-white">Sample Decklists</h2>
+          <p className="text-white/40 text-sm">Optimized builds for each archetype using cards from this cube</p>
         </div>
       </div>
 
@@ -585,11 +585,11 @@ export function SampleDecks({ cards }: SampleDecksProps) {
           const allCards = [...mainboard, ...lands];
 
           return (
-            <Card key={deck.id} className="overflow-hidden">
+            <Card key={deck.id} className="overflow-hidden bg-[#111] border-white/8">
               {/* Deck Header - Clickable */}
               <button
                 onClick={() => setExpandedDeck(isExpanded ? null : deck.id)}
-                className="w-full p-6 flex items-start justify-between text-left hover:bg-gray-800/50 transition-colors"
+                className="w-full p-6 flex items-start justify-between text-left hover:bg-white/5 transition-colors"
               >
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
@@ -597,16 +597,16 @@ export function SampleDecks({ cards }: SampleDecksProps) {
                       {deck.colors.length > 0 ? deck.colors.map(c => (
                         <div
                           key={c}
-                          className={`w-6 h-6 rounded-full border-2 border-gray-900
+                          className={`w-5 h-5 rounded-full border border-[#111]
                             ${c === 'W' ? 'bg-amber-100' : ''}
                             ${c === 'U' ? 'bg-blue-500' : ''}
-                            ${c === 'B' ? 'bg-gray-700' : ''}
+                            ${c === 'B' ? 'bg-neutral-500' : ''}
                             ${c === 'R' ? 'bg-red-500' : ''}
                             ${c === 'G' ? 'bg-green-500' : ''}
                           `}
                         />
                       )) : (
-                        <div className="w-6 h-6 rounded-full border-2 border-gray-900 bg-gray-500" />
+                        <div className="w-5 h-5 rounded-full border border-[#111] bg-neutral-500" />
                       )}
                     </div>
                     <h3 className="text-xl font-bold text-white">{deck.name}</h3>
@@ -614,29 +614,25 @@ export function SampleDecks({ cards }: SampleDecksProps) {
                       {deck.difficulty}
                     </Badge>
                   </div>
-                  <p className="text-gray-400 text-sm mb-3">{deck.description}</p>
+                  <p className="text-white/40 text-sm mb-3">{deck.description}</p>
 
                   {/* Quick Stats */}
-                  <div className="flex flex-wrap gap-4 text-sm">
+                  <div className="flex flex-wrap gap-4 text-xs">
                     <div className="flex items-center gap-1.5">
-                      <Sparkles className="w-4 h-4 text-yellow-500" />
-                      <span className="text-gray-400">Power:</span>
-                      <span className="font-bold text-yellow-500">{deck.powerRating}/10</span>
+                      <span className="text-white/40">Power:</span>
+                      <span className="font-mono text-white">{deck.powerRating}/10</span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <Zap className="w-4 h-4 text-purple-400" />
-                      <span className="text-gray-400">Avg CMC:</span>
-                      <span className="font-bold text-purple-400">{stats.avgCmc.toFixed(1)}</span>
+                      <span className="text-white/40">Avg CMC:</span>
+                      <span className="font-mono text-white">{stats.avgCmc.toFixed(1)}</span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <Target className="w-4 h-4 text-cyan-400" />
-                      <span className="text-gray-400">Cards:</span>
-                      <span className="font-bold text-cyan-400">{stats.total}</span>
+                      <span className="text-white/40">Cards:</span>
+                      <span className="font-mono text-white">{stats.total}</span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <Mountain className="w-4 h-4 text-amber-400" />
-                      <span className="text-gray-400">Lands:</span>
-                      <span className="font-bold text-amber-400">{stats.lands}</span>
+                      <span className="text-white/40">Lands:</span>
+                      <span className="font-mono text-white">{stats.lands}</span>
                     </div>
                   </div>
                 </div>
@@ -659,20 +655,20 @@ export function SampleDecks({ cards }: SampleDecksProps) {
                     ))}
                   </div>
                   {isExpanded ? (
-                    <ChevronUp className="w-6 h-6 text-gray-400" />
+                    <ChevronUp className="w-5 h-5 text-white/40" />
                   ) : (
-                    <ChevronDown className="w-6 h-6 text-gray-400" />
+                    <ChevronDown className="w-5 h-5 text-white/40" />
                   )}
                 </div>
               </button>
 
               {/* Expanded Deck Content */}
               {isExpanded && (
-                <div className="border-t border-gray-800 p-6 space-y-6 animate-in fade-in duration-200">
+                <div className="border-t border-white/5 p-6 space-y-6 animate-in fade-in duration-200">
                   {/* Gameplan */}
-                  <div className="p-4 bg-gradient-to-r from-purple-900/30 to-transparent border-l-4 border-purple-500 rounded-r-lg">
-                    <h4 className="font-bold text-purple-400 mb-1">Gameplan</h4>
-                    <p className="text-gray-300 text-sm">{deck.gameplan}</p>
+                  <div className="p-4 bg-white/2 border border-white/5 rounded-lg">
+                    <h4 className="font-medium text-white/60 mb-1 text-sm">Gameplan</h4>
+                    <p className="text-white/80 text-sm">{deck.gameplan}</p>
                   </div>
 
                   {/* Mainboard */}
@@ -684,7 +680,7 @@ export function SampleDecks({ cards }: SampleDecksProps) {
                       {mainboard.map((card, idx) => (
                         <div
                           key={`${card.id}-${idx}`}
-                          className="relative aspect-[488/680] rounded-lg overflow-hidden bg-gray-800 cursor-pointer hover:scale-110 hover:z-10 transition-transform shadow-lg"
+                          className="relative aspect-[488/680] rounded-lg overflow-hidden bg-white/5 cursor-pointer hover:scale-105 hover:z-10 transition-transform"
                           onMouseEnter={() => setHoveredCard(card)}
                           onMouseLeave={() => setHoveredCard(null)}
                         >
@@ -695,10 +691,10 @@ export function SampleDecks({ cards }: SampleDecksProps) {
                             loading="lazy"
                           />
                           <div className={`
-                            absolute top-0.5 right-0.5 w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold
-                            ${card.powerLevel >= 9 ? 'bg-yellow-500 text-black' : ''}
-                            ${card.powerLevel >= 7 && card.powerLevel < 9 ? 'bg-purple-500 text-white' : ''}
-                            ${card.powerLevel < 7 ? 'bg-gray-800/90 text-white' : ''}
+                            absolute top-0.5 right-0.5 w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-mono
+                            ${card.powerLevel >= 9 ? 'bg-amber-400 text-black' : ''}
+                            ${card.powerLevel >= 7 && card.powerLevel < 9 ? 'bg-white/80 text-black' : ''}
+                            ${card.powerLevel < 7 ? 'bg-black/60 text-white/70' : ''}
                           `}>
                             {card.powerLevel}
                           </div>
@@ -717,7 +713,7 @@ export function SampleDecks({ cards }: SampleDecksProps) {
                       {lands.map((card, idx) => (
                         <div
                           key={`${card.id}-land-${idx}`}
-                          className="relative aspect-[488/680] rounded-lg overflow-hidden bg-gray-800 cursor-pointer hover:scale-110 hover:z-10 transition-transform shadow-lg"
+                          className="relative aspect-[488/680] rounded-lg overflow-hidden bg-white/5 cursor-pointer hover:scale-105 hover:z-10 transition-transform"
                           onMouseEnter={() => setHoveredCard(card)}
                           onMouseLeave={() => setHoveredCard(null)}
                         >
@@ -755,28 +751,17 @@ export function SampleDecks({ cards }: SampleDecksProps) {
 
       {/* Hover Preview */}
       {hoveredCard && (
-        <div className="fixed bottom-4 right-4 z-50 animate-in slide-in-from-bottom-4 hidden lg:block">
-          <div className="relative">
-            <div className="absolute -inset-3 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl blur-xl opacity-50" />
-            <div className="relative bg-gray-900 p-3 rounded-2xl border border-gray-700 shadow-2xl">
-              <img
-                src={getCardImage(hoveredCard)}
-                alt={hoveredCard.name}
-                className="w-64 rounded-xl"
-              />
-              <div className="mt-2">
-                <h4 className="font-bold text-white">{hoveredCard.name}</h4>
-                <p className="text-sm text-gray-400">{hoveredCard.type_line}</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-xs text-gray-500">Power:</span>
-                  <span className={`text-xs font-bold ${
-                    hoveredCard.powerLevel >= 9 ? 'text-yellow-400' :
-                    hoveredCard.powerLevel >= 7 ? 'text-purple-400' : 'text-gray-400'
-                  }`}>
-                    {hoveredCard.powerLevel}/10
-                  </span>
-                </div>
-              </div>
+        <div className="fixed bottom-4 right-4 z-50 animate-in fade-in hidden lg:block">
+          <div className="bg-[#111] border border-white/10 p-2 rounded-xl">
+            <img
+              src={getCardImage(hoveredCard)}
+              alt={hoveredCard.name}
+              className="w-56 rounded-lg"
+            />
+            <div className="mt-2 px-1">
+              <h4 className="font-medium text-white text-sm">{hoveredCard.name}</h4>
+              <p className="text-xs text-white/40">{hoveredCard.type_line}</p>
+              <span className="text-xs text-white/30 font-mono">{hoveredCard.powerLevel}/10</span>
             </div>
           </div>
         </div>

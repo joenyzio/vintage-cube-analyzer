@@ -7,22 +7,22 @@ interface BadgeProps {
 }
 
 const variantStyles = {
-  default: 'bg-gray-700 text-gray-200',
-  success: 'bg-green-900/50 text-green-400 border border-green-700/50',
-  warning: 'bg-yellow-900/50 text-yellow-400 border border-yellow-700/50',
-  danger: 'bg-red-900/50 text-red-400 border border-red-700/50',
-  info: 'bg-blue-900/50 text-blue-400 border border-blue-700/50',
-  mana: '', // Will be set by color
+  default: 'bg-white/10 text-white/70 border border-white/10',
+  success: 'bg-green-500/10 text-green-400 border border-green-500/20',
+  warning: 'bg-amber-500/10 text-amber-400 border border-amber-500/20',
+  danger: 'bg-red-500/10 text-red-400 border border-red-500/20',
+  info: 'bg-blue-500/10 text-blue-400 border border-blue-500/20',
+  mana: '',
 };
 
 const manaStyles: Record<string, string> = {
-  W: 'bg-amber-100 text-amber-900',
-  U: 'bg-blue-600 text-white',
-  B: 'bg-gray-800 text-gray-200 border border-gray-600',
-  R: 'bg-red-600 text-white',
-  G: 'bg-green-700 text-white',
-  gold: 'bg-gradient-to-r from-yellow-500 to-amber-600 text-white',
-  colorless: 'bg-gray-500 text-white',
+  W: 'bg-amber-100/90 text-amber-900',
+  U: 'bg-blue-500/80 text-white',
+  B: 'bg-neutral-600 text-white border border-neutral-500',
+  R: 'bg-red-500/80 text-white',
+  G: 'bg-green-600/80 text-white',
+  gold: 'bg-amber-500/80 text-white',
+  colorless: 'bg-neutral-500/80 text-white',
 };
 
 export function Badge({ children, variant = 'default', color }: BadgeProps) {
@@ -31,7 +31,7 @@ export function Badge({ children, variant = 'default', color }: BadgeProps) {
     : variantStyles[variant];
 
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${style}`}>
+    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${style}`}>
       {children}
     </span>
   );

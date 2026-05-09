@@ -1,11 +1,11 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import type { CubeCard } from '../types/card';
 import { getCardImage } from '../services/scryfall';
 import { Card, CardHeader, CardTitle } from './ui/Card';
 import { Badge } from './ui/Badge';
 import {
-  Play, RotateCcw, ChevronRight, Sparkles, Trophy,
-  Target, Package, CheckCircle2, Users, ArrowLeftRight
+  Play, RotateCcw, ChevronRight,
+  Target, Package, CheckCircle2, Users, ArrowLeftRight, Trophy
 } from 'lucide-react';
 
 interface DraftSimulatorProps {
@@ -13,12 +13,11 @@ interface DraftSimulatorProps {
 }
 
 interface DraftState {
-  // All 8 players' current packs (index 0 is you)
   tablePacks: CubeCard[][];
   picks: CubeCard[];
-  packNumber: number; // 1, 2, or 3
-  pickNumber: number; // 1-15 within the pack
-  direction: 'left' | 'right'; // Pack 1 & 3 go left, Pack 2 goes right
+  packNumber: number;
+  pickNumber: number;
+  direction: 'left' | 'right';
   isComplete: boolean;
 }
 
@@ -41,7 +40,6 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
   const [showAnalysis, setShowAnalysis] = useState(false);
 
   const startDraft = useCallback(() => {
-    // Shuffle all cards and create packs for all 8 players (pack 1)
     const shuffled = shuffleArray([...cards]);
     const tablePacks: CubeCard[][] = [];
 
@@ -61,16 +59,15 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     setSelectedForPick(null);
   }, [cards]);
 
-  // Each AI player has a preferred color pair (simulates real drafters with preferences)
   const aiPreferences = useMemo(() => [
-    null, // Player 0 is human
-    ['U', 'B'], // Player 1 likes UB
-    ['R', 'W'], // Player 2 likes RW aggro
-    ['U', 'G'], // Player 3 likes UG ramp
-    ['B', 'R'], // Player 4 likes BR
-    ['U', 'W'], // Player 5 likes UW control
-    ['G', 'W'], // Player 6 likes GW
-    ['U', 'R'], // Player 7 likes UR
+    null,
+    ['U', 'B'],
+    ['R', 'W'],
+    ['U', 'G'],
+    ['B', 'R'],
+    ['U', 'W'],
+    ['G', 'W'],
+    ['U', 'R'],
   ], []);
 
   const simulateOtherPlayersPicks = (packs: CubeCard[][]): CubeCard[][] => {
@@ -79,34 +76,28 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
 
       const prefs = aiPreferences[playerIndex] || [];
 
-      // Score each card: base power + bonus for matching colors + small random factor
       const scoredCards = pack.map(card => {
-        let score = card.powerLevel * 10; // Base score
+        let score = card.powerLevel * 10;
 
-        // Bonus for colorless cards (go in any deck)
         if ((card.color_identity?.length || 0) === 0) {
           score += 15;
         }
 
-        // Bonus for matching AI's color preferences
         const cardColors = card.color_identity || [];
         const matchingColors = cardColors.filter(c => prefs.includes(c)).length;
         if (matchingColors > 0) {
           score += matchingColors * 20;
         }
 
-        // Penalty for off-color cards (AI won't splash for medium cards)
         if (cardColors.length > 0 && matchingColors === 0 && card.powerLevel < 9) {
           score -= 30;
         }
 
-        // Small random factor to break ties and add variety
         score += Math.random() * 10;
 
         return { card, score };
       });
 
-      // Pick highest scored card
       scoredCards.sort((a, b) => b.score - a.score);
       const picked = scoredCards[0].card;
       return pack.filter(c => c.id !== picked.id);
@@ -116,14 +107,12 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
   const rotatePacks = (packs: CubeCard[][], direction: 'left' | 'right'): CubeCard[][] => {
     const newPacks = [...packs];
     if (direction === 'left') {
-      // Each player passes to the left (lower index, wrapping)
       const first = newPacks[0];
       for (let i = 0; i < NUM_PLAYERS - 1; i++) {
         newPacks[i] = newPacks[i + 1];
       }
       newPacks[NUM_PLAYERS - 1] = first;
     } else {
-      // Each player passes to the right (higher index, wrapping)
       const last = newPacks[NUM_PLAYERS - 1];
       for (let i = NUM_PLAYERS - 1; i > 0; i--) {
         newPacks[i] = newPacks[i - 1];
@@ -134,7 +123,6 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
   };
 
   const startNewPack = useCallback((currentPicks: CubeCard[], nextPackNumber: number): DraftState => {
-    // Create new packs for all players
     const shuffled = shuffleArray([...cards].filter(c => !currentPicks.some(p => p.id === c.id)));
     const tablePacks: CubeCard[][] = [];
 
@@ -155,26 +143,19 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
   const makePick = useCallback((card: CubeCard) => {
     if (!draftState || draftState.isComplete) return;
 
-    // Add card to picks
     const newPicks = [...draftState.picks, card];
 
-    // Remove card from player 0's pack
     let newTablePacks = draftState.tablePacks.map((pack, idx) =>
       idx === 0 ? pack.filter(c => c.id !== card.id) : pack
     );
 
-    // Simulate other players picking
     newTablePacks = simulateOtherPlayersPicks(newTablePacks);
-
-    // Rotate packs
     newTablePacks = rotatePacks(newTablePacks, draftState.direction);
 
     const newPickNumber = draftState.pickNumber + 1;
 
-    // Check if pack is done (15 picks made)
     if (newPickNumber > CARDS_PER_PACK) {
       if (draftState.packNumber >= 3) {
-        // Draft complete!
         setDraftState({
           ...draftState,
           picks: newPicks,
@@ -182,7 +163,6 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
         });
         setShowAnalysis(true);
       } else {
-        // Start next pack
         setDraftState(startNewPack(newPicks, draftState.packNumber + 1));
       }
     } else {
@@ -232,7 +212,6 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     const avgPower = picks.length > 0 ? totalPower / picks.length : 0;
     const avgCmc = nonLandCount > 0 ? totalCmc / nonLandCount : 0;
 
-    // Determine suggested archetype
     let archetype = 'Goodstuff';
     const hasCard = (name: string) => picks.some(c => c.name === name);
 
@@ -274,28 +253,25 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
   if (!draftState) {
     return (
       <div className="flex flex-col items-center justify-center py-16 space-y-8">
-        <div className="relative">
-          <div className="absolute -inset-4 bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 rounded-full blur-2xl opacity-30 animate-pulse" />
-          <div className="relative bg-gray-900 p-8 rounded-2xl border border-gray-800">
-            <Package className="w-20 h-20 text-purple-400 mx-auto mb-4" />
-            <h2 className="text-3xl font-bold text-white text-center mb-2">Draft Simulator</h2>
-            <p className="text-gray-400 text-center max-w-md">
-              Experience a realistic 8-player draft. Packs rotate around the table just like a real draft pod.
-            </p>
-          </div>
+        <div className="bg-[#111] border border-white/10 p-8 rounded-xl">
+          <Package className="w-16 h-16 text-white/40 mx-auto mb-4" />
+          <h2 className="text-2xl font-semibold text-white text-center mb-2">Draft Simulator</h2>
+          <p className="text-white/40 text-center max-w-md text-sm">
+            Experience a realistic 8-player draft. Packs rotate around the table just like a real draft pod.
+          </p>
         </div>
 
         <button
           onClick={startDraft}
-          className="group relative px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl font-bold text-lg text-white shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 transition-all hover:scale-105"
+          className="px-6 py-3 bg-white/10 border border-white/20 rounded-lg font-medium text-white hover:bg-white/15 transition-all"
         >
           <span className="flex items-center gap-3">
-            <Play className="w-6 h-6" />
+            <Play className="w-5 h-5" />
             Start Draft
           </span>
         </button>
 
-        <div className="flex items-center gap-6 text-sm text-gray-500">
+        <div className="flex items-center gap-6 text-sm text-white/30">
           <div className="flex items-center gap-2">
             <Users className="w-4 h-4" />
             <span>8 Players</span>
@@ -310,15 +286,15 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
           </div>
         </div>
 
-        <Card className="max-w-lg">
+        <Card className="max-w-lg bg-[#111] border-white/8">
           <CardHeader>
             <CardTitle className="text-sm">How It Works</CardTitle>
           </CardHeader>
-          <div className="text-sm text-gray-400 space-y-2">
-            <p>• <strong className="text-white">Pack 1:</strong> Open 15 cards, pick 1, pass left. Repeat until pack is empty.</p>
-            <p>• <strong className="text-white">Pack 2:</strong> Open 15 new cards, pick 1, pass right.</p>
-            <p>• <strong className="text-white">Pack 3:</strong> Open 15 new cards, pick 1, pass left.</p>
-            <p>• AI opponents pick the most powerful available card.</p>
+          <div className="text-sm text-white/40 space-y-2">
+            <p>- <span className="text-white/60">Pack 1:</span> Open 15 cards, pick 1, pass left</p>
+            <p>- <span className="text-white/60">Pack 2:</span> Open 15 new cards, pick 1, pass right</p>
+            <p>- <span className="text-white/60">Pack 3:</span> Open 15 new cards, pick 1, pass left</p>
+            <p>- AI opponents have color preferences and prioritize power</p>
           </div>
         </Card>
       </div>
@@ -334,15 +310,15 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-              <Trophy className="w-6 h-6 text-yellow-500" />
-              Draft Complete!
+            <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+              <Trophy className="w-5 h-5 text-amber-400" />
+              Draft Complete
             </h2>
-            <p className="text-gray-400">You drafted {draftState.picks.length} cards</p>
+            <p className="text-white/40 text-sm">{draftState.picks.length} cards drafted</p>
           </div>
           <button
             onClick={startDraft}
-            className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-white transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-white/10 border border-white/10 rounded-lg text-white hover:bg-white/15 transition-colors text-sm"
           >
             <RotateCcw className="w-4 h-4" />
             Draft Again
@@ -351,45 +327,45 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
 
         {/* Analysis Summary */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="text-center p-4">
-            <div className="text-3xl font-bold text-purple-400">{analysis.deckRating}/10</div>
-            <div className="text-sm text-gray-400">Deck Rating</div>
+          <Card className="text-center p-4 bg-[#111] border-white/8">
+            <div className="text-2xl font-semibold text-white">{analysis.deckRating}/10</div>
+            <div className="text-xs text-white/40">Deck Rating</div>
           </Card>
-          <Card className="text-center p-4">
-            <div className="text-3xl font-bold text-white">
+          <Card className="text-center p-4 bg-[#111] border-white/8">
+            <div className="text-2xl font-semibold">
               {analysis.mainColors.map(c => (
                 <span key={c} className={`
                   ${c === 'W' ? 'text-amber-200' : ''}
                   ${c === 'U' ? 'text-blue-400' : ''}
-                  ${c === 'B' ? 'text-gray-400' : ''}
+                  ${c === 'B' ? 'text-neutral-400' : ''}
                   ${c === 'R' ? 'text-red-400' : ''}
                   ${c === 'G' ? 'text-green-400' : ''}
                 `}>{c}</span>
               ))}
-              {analysis.mainColors.length === 0 && <span className="text-gray-500">?</span>}
+              {analysis.mainColors.length === 0 && <span className="text-white/30">?</span>}
             </div>
-            <div className="text-sm text-gray-400">Main Colors</div>
+            <div className="text-xs text-white/40">Main Colors</div>
           </Card>
-          <Card className="text-center p-4">
-            <div className="text-3xl font-bold text-yellow-400">{analysis.avgCmc.toFixed(1)}</div>
-            <div className="text-sm text-gray-400">Avg CMC</div>
+          <Card className="text-center p-4 bg-[#111] border-white/8">
+            <div className="text-2xl font-semibold text-white">{analysis.avgCmc.toFixed(1)}</div>
+            <div className="text-xs text-white/40">Avg CMC</div>
           </Card>
-          <Card className="text-center p-4">
-            <div className="text-lg font-bold text-cyan-400">{analysis.archetype}</div>
-            <div className="text-sm text-gray-400">Archetype</div>
+          <Card className="text-center p-4 bg-[#111] border-white/8">
+            <div className="text-base font-semibold text-white">{analysis.archetype}</div>
+            <div className="text-xs text-white/40">Archetype</div>
           </Card>
         </div>
 
         {/* Picks Grid */}
-        <Card>
+        <Card className="bg-[#111] border-white/8">
           <CardHeader>
-            <CardTitle>Your {draftState.picks.length} Picks</CardTitle>
+            <CardTitle className="text-sm">Your {draftState.picks.length} Picks</CardTitle>
           </CardHeader>
           <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
             {draftState.picks.map((card, idx) => (
               <div
                 key={`${card.id}-${idx}`}
-                className="relative aspect-[488/680] rounded-lg overflow-hidden bg-gray-800 group cursor-pointer hover:scale-105 transition-transform"
+                className="relative aspect-[488/680] rounded-lg overflow-hidden bg-white/5 group cursor-pointer hover:scale-105 transition-transform"
                 onMouseEnter={() => setHoveredCard(card)}
                 onMouseLeave={() => setHoveredCard(null)}
               >
@@ -399,7 +375,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                   className="w-full h-full object-cover"
                   loading="lazy"
                 />
-                <div className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/70 flex items-center justify-center text-[10px] font-bold text-white">
+                <div className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-black/70 flex items-center justify-center text-[9px] font-mono text-white">
                   {idx + 1}
                 </div>
               </div>
@@ -409,13 +385,12 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
 
         {/* Hover Preview */}
         {hoveredCard && (
-          <div className="fixed bottom-4 right-4 z-50 animate-in slide-in-from-bottom-4 hidden lg:block">
-            <div className="relative">
-              <div className="absolute -inset-2 bg-purple-500/30 rounded-2xl blur-xl" />
+          <div className="fixed bottom-4 right-4 z-50 animate-in fade-in hidden lg:block">
+            <div className="bg-[#111] border border-white/10 p-2 rounded-xl">
               <img
                 src={getCardImage(hoveredCard)}
                 alt={hoveredCard.name}
-                className="relative w-64 rounded-xl shadow-2xl border border-white/10"
+                className="w-56 rounded-lg"
               />
             </div>
           </div>
@@ -433,42 +408,40 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
       {/* Draft Progress Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h2 className="text-xl font-bold text-white flex items-center gap-3">
+          <h2 className="text-lg font-semibold text-white">
             Pack {draftState.packNumber}, Pick {draftState.pickNumber}
-            <span className="text-sm font-normal text-gray-400">
-              ({cardsInPack} cards in pack)
+            <span className="text-sm font-normal text-white/40 ml-2">
+              ({cardsInPack} cards)
             </span>
           </h2>
-          <div className="flex items-center gap-4 mt-1 text-sm text-gray-400">
+          <div className="flex items-center gap-4 mt-1 text-sm text-white/40">
             <span className="flex items-center gap-1">
               <ArrowLeftRight className="w-4 h-4" />
               Passing {draftState.direction}
             </span>
-            <span>{draftState.picks.length} cards picked</span>
+            <span>{draftState.picks.length} picked</span>
           </div>
         </div>
 
         <div className="flex items-center gap-4">
-          {/* Pack progress indicators */}
           <div className="flex gap-2">
             {[1, 2, 3].map(p => (
               <div key={p} className="flex flex-col items-center gap-1">
                 <div className={`
-                  w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold
-                  ${p < draftState.packNumber ? 'bg-green-500 text-white' : ''}
-                  ${p === draftState.packNumber ? 'bg-purple-500 text-white ring-2 ring-purple-400 ring-offset-2 ring-offset-gray-950' : ''}
-                  ${p > draftState.packNumber ? 'bg-gray-800 text-gray-500' : ''}
+                  w-7 h-7 rounded-full flex items-center justify-center text-sm font-mono
+                  ${p < draftState.packNumber ? 'bg-green-500/20 text-green-400 border border-green-500/30' : ''}
+                  ${p === draftState.packNumber ? 'bg-white/10 text-white border border-white/30' : ''}
+                  ${p > draftState.packNumber ? 'bg-white/5 text-white/30 border border-white/10' : ''}
                 `}>
                   {p < draftState.packNumber ? '✓' : p}
                 </div>
-                <span className="text-[10px] text-gray-500">Pack {p}</span>
               </div>
             ))}
           </div>
 
           <button
             onClick={startDraft}
-            className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm text-gray-300 transition-colors"
+            className="flex items-center gap-2 px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm text-white/60 transition-colors"
           >
             <RotateCcw className="w-4 h-4" />
             Restart
@@ -478,15 +451,15 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
 
       {/* Pick Progress Bar */}
       <div className="relative">
-        <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+        <div className="h-1 bg-white/5 rounded-full overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-300"
+            className="h-full bg-white/30 transition-all duration-300"
             style={{ width: `${((draftState.pickNumber - 1) / CARDS_PER_PACK) * 100}%` }}
           />
         </div>
-        <div className="flex justify-between mt-1 text-[10px] text-gray-600">
+        <div className="flex justify-between mt-1 text-[10px] text-white/20">
           {Array.from({ length: 15 }).map((_, i) => (
-            <span key={i} className={i < draftState.pickNumber - 1 ? 'text-purple-400' : ''}>
+            <span key={i} className={i < draftState.pickNumber - 1 ? 'text-white/40' : ''}>
               {i + 1}
             </span>
           ))}
@@ -505,7 +478,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
             className={`
               relative aspect-[488/680] rounded-xl overflow-hidden cursor-pointer
               transition-all duration-200 hover:scale-105 hover:z-10
-              ${selectedForPick?.id === card.id ? 'ring-4 ring-purple-500 scale-105 z-10' : ''}
+              ${selectedForPick?.id === card.id ? 'ring-2 ring-white/50 scale-105 z-10' : ''}
             `}
           >
             <img
@@ -515,20 +488,18 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
               loading="lazy"
             />
 
-            {/* Power indicator */}
             <div className={`
-              absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shadow-lg
-              ${card.powerLevel >= 9 ? 'bg-yellow-500 text-black' : ''}
-              ${card.powerLevel >= 7 && card.powerLevel < 9 ? 'bg-purple-500 text-white' : ''}
-              ${card.powerLevel < 7 ? 'bg-gray-800/90 text-white' : ''}
+              absolute top-1.5 right-1.5 w-5 h-5 rounded-full flex items-center justify-center text-xs font-mono
+              ${card.powerLevel >= 9 ? 'bg-amber-400 text-black' : ''}
+              ${card.powerLevel >= 7 && card.powerLevel < 9 ? 'bg-white/80 text-black' : ''}
+              ${card.powerLevel < 7 ? 'bg-black/60 text-white/70' : ''}
             `}>
               {card.powerLevel}
             </div>
 
-            {/* Selection overlay */}
             {selectedForPick?.id === card.id && (
-              <div className="absolute inset-0 bg-purple-500/20 flex items-center justify-center">
-                <CheckCircle2 className="w-10 h-10 text-purple-400 drop-shadow-lg" />
+              <div className="absolute inset-0 bg-white/10 flex items-center justify-center">
+                <CheckCircle2 className="w-8 h-8 text-white drop-shadow-lg" />
               </div>
             )}
           </div>
@@ -537,21 +508,21 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
 
       {/* Pick Button */}
       {selectedForPick && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-4">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in fade-in">
           <button
             onClick={() => makePick(selectedForPick)}
-            className="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl font-bold text-white shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 transition-all hover:scale-105"
+            className="flex items-center gap-3 px-5 py-2.5 bg-white/10 border border-white/20 rounded-lg font-medium text-white hover:bg-white/15 transition-all"
           >
-            <Target className="w-5 h-5" />
+            <Target className="w-4 h-4" />
             Pick {selectedForPick.name}
-            <ChevronRight className="w-5 h-5" />
+            <ChevronRight className="w-4 h-4" />
           </button>
         </div>
       )}
 
       {/* Picks Sidebar */}
       {draftState.picks.length > 0 && (
-        <Card className="mt-6">
+        <Card className="mt-6 bg-[#111] border-white/8">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center justify-between">
               <span>Your Picks ({draftState.picks.length}/45)</span>
@@ -570,11 +541,11 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
               </div>
             </CardTitle>
           </CardHeader>
-          <div className="flex gap-1 overflow-x-auto pb-2 scrollbar-thin">
+          <div className="flex gap-1 overflow-x-auto pb-2">
             {draftState.picks.map((card, idx) => (
               <div
                 key={`${card.id}-${idx}`}
-                className="relative w-14 flex-shrink-0 aspect-[488/680] rounded overflow-hidden hover:scale-110 transition-transform cursor-pointer"
+                className="relative w-12 flex-shrink-0 aspect-[488/680] rounded overflow-hidden hover:scale-110 transition-transform cursor-pointer"
                 onMouseEnter={() => setHoveredCard(card)}
                 onMouseLeave={() => setHoveredCard(null)}
               >
@@ -583,7 +554,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                   alt={card.name}
                   className="w-full h-full object-cover"
                 />
-                <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-[8px] text-center text-white py-0.5">
+                <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-[7px] text-center text-white py-0.5 font-mono">
                   P{Math.ceil((idx + 1) / 15)}P{((idx) % 15) + 1}
                 </div>
               </div>
@@ -594,17 +565,16 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
 
       {/* Hovered Card Preview */}
       {hoveredCard && (
-        <div className="fixed bottom-4 right-4 z-50 animate-in slide-in-from-bottom-4 hidden lg:block">
-          <div className="relative">
-            <div className="absolute -inset-2 bg-purple-500/30 rounded-2xl blur-xl" />
+        <div className="fixed bottom-4 right-4 z-50 animate-in fade-in hidden lg:block">
+          <div className="bg-[#111] border border-white/10 p-2 rounded-xl">
             <img
               src={getCardImage(hoveredCard)}
               alt={hoveredCard.name}
-              className="relative w-56 rounded-xl shadow-2xl border border-white/10"
+              className="w-48 rounded-lg"
             />
-            <div className="absolute bottom-2 left-2 right-2 bg-black/80 rounded-lg p-2">
-              <div className="text-sm font-bold text-white truncate">{hoveredCard.name}</div>
-              <div className="text-xs text-gray-400">{hoveredCard.type_line?.split('—')[0]}</div>
+            <div className="mt-2 px-1">
+              <div className="text-sm font-medium text-white truncate">{hoveredCard.name}</div>
+              <div className="text-xs text-white/40">{hoveredCard.type_line?.split('—')[0]}</div>
             </div>
           </div>
         </div>

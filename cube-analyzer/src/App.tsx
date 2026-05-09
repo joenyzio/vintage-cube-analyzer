@@ -1,5 +1,5 @@
+import { useState } from 'react';
 import { useCubeData } from './hooks/useCubeData';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from './components/ui/Tabs';
 import { Card, CardHeader, CardTitle, CardDescription } from './components/ui/Card';
 import { ColorDistributionChart } from './components/charts/ColorDistributionChart';
 import { ManaCurveChart } from './components/charts/ManaCurveChart';
@@ -16,69 +16,68 @@ import { SampleDecks } from './components/SampleDecks';
 import { BuildAround } from './components/BuildAround';
 import {
   BarChart3, Layers, Trophy, BookOpen, Search, Sparkles,
-  Gamepad2, Link2, Swords, ExternalLink, FileStack, Lightbulb
+  Gamepad2, Link2, Swords, ExternalLink, FileStack, Lightbulb,
+  Menu, ChevronLeft
 } from 'lucide-react';
+
+type TabId = 'overview' | 'draft' | 'archetypes' | 'decks' | 'matchups' | 'synergies' | 'buildaround' | 'power' | 'guide' | 'cards';
+
+interface NavItem {
+  id: TabId;
+  label: string;
+  icon: React.ElementType;
+}
+
+const NAV_ITEMS: NavItem[] = [
+  { id: 'overview', label: 'Overview', icon: BarChart3 },
+  { id: 'draft', label: 'Draft Simulator', icon: Gamepad2 },
+  { id: 'archetypes', label: 'Archetypes', icon: Layers },
+  { id: 'decks', label: 'Sample Decks', icon: FileStack },
+  { id: 'matchups', label: 'Matchups', icon: Swords },
+  { id: 'synergies', label: 'Synergies', icon: Link2 },
+  { id: 'buildaround', label: 'Build Around', icon: Lightbulb },
+  { id: 'power', label: 'Power Rankings', icon: Trophy },
+  { id: 'guide', label: 'Draft Guide', icon: BookOpen },
+  { id: 'cards', label: 'Card Browser', icon: Search },
+];
 
 function LoadingScreen({ progress }: { progress: number }) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-950">
+    <div className="min-h-screen flex items-center justify-center bg-black">
       <div className="text-center space-y-8">
-        {/* Animated card stack */}
-        <div className="relative w-32 h-44 mx-auto">
-          {[0, 1, 2].map((i) => (
-            <div
-              key={i}
-              className="absolute inset-0 rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 shadow-xl"
-              style={{
-                transform: `rotate(${(i - 1) * 8}deg) translateY(${i * 4}px)`,
-                opacity: 1 - i * 0.2,
-                animation: `float ${2 + i * 0.5}s ease-in-out infinite`,
-                animationDelay: `${i * 0.2}s`,
-              }}
-            />
-          ))}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <Sparkles className="w-12 h-12 text-white animate-pulse" />
+        <div className="relative w-20 h-20 mx-auto">
+          <div className="absolute inset-0 rounded-xl bg-[#111] border border-white/10 flex items-center justify-center">
+            <Sparkles className="w-8 h-8 text-white/60 animate-pulse" />
           </div>
         </div>
-
         <div>
-          <h2 className="text-3xl font-bold text-white mb-2">Loading Cube Data</h2>
-          <p className="text-gray-400 mb-6">Fetching card data from Scryfall...</p>
-
-          {/* Progress bar */}
-          <div className="w-64 mx-auto h-2 bg-gray-800 rounded-full overflow-hidden">
+          <h2 className="text-2xl font-semibold text-white mb-2">Loading Cube Data</h2>
+          <p className="text-white/50 mb-6">Fetching card data from Scryfall...</p>
+          <div className="w-64 mx-auto h-1 bg-white/5 rounded-full overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 transition-all duration-300"
+              className="h-full bg-white/40 transition-all duration-300"
               style={{ width: `${progress}%` }}
             />
           </div>
-          <p className="text-purple-400 mt-3 font-mono">{progress}%</p>
+          <p className="text-white/30 mt-3 font-mono text-sm">{progress}%</p>
         </div>
       </div>
-
-      <style>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0) rotate(var(--rotate, 0deg)); }
-          50% { transform: translateY(-10px) rotate(var(--rotate, 0deg)); }
-        }
-      `}</style>
     </div>
   );
 }
 
 function ErrorScreen({ error }: { error: string }) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-950">
+    <div className="min-h-screen flex items-center justify-center bg-black">
       <div className="text-center space-y-6 max-w-md px-4">
-        <div className="w-20 h-20 mx-auto bg-red-500/20 rounded-full flex items-center justify-center">
-          <span className="text-4xl">💀</span>
+        <div className="w-16 h-16 mx-auto bg-red-500/10 border border-red-500/20 rounded-xl flex items-center justify-center">
+          <span className="text-2xl">!</span>
         </div>
-        <h2 className="text-2xl font-bold text-white">Error Loading Data</h2>
-        <p className="text-red-400">{error}</p>
+        <h2 className="text-xl font-semibold text-white">Error Loading Data</h2>
+        <p className="text-red-400/80 text-sm">{error}</p>
         <button
           onClick={() => window.location.reload()}
-          className="px-6 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors font-medium"
+          className="px-6 py-2.5 bg-white/5 text-white border border-white/10 rounded-lg hover:bg-white/10 transition-colors text-sm font-medium"
         >
           Try Again
         </button>
@@ -101,6 +100,10 @@ function App() {
     progress,
   } = useCubeData();
 
+  const [activeTab, setActiveTab] = useState<TabId>('overview');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   if (loading) {
     return <LoadingScreen progress={progress} />;
   }
@@ -109,402 +112,299 @@ function App() {
     return <ErrorScreen error={error} />;
   }
 
-  return (
-    <div className="min-h-screen bg-gray-950">
-      {/* Gradient background effect */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-1/2 -left-1/2 w-full h-full bg-gradient-radial from-purple-900/20 via-transparent to-transparent" />
-        <div className="absolute -bottom-1/2 -right-1/2 w-full h-full bg-gradient-radial from-cyan-900/20 via-transparent to-transparent" />
-      </div>
-
-      {/* Header */}
-      <header className="relative border-b border-gray-800/50 bg-gray-950/80 backdrop-blur-xl sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="relative group">
-                <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl blur opacity-50 group-hover:opacity-75 transition-opacity" />
-                <div className="relative w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
-                  <Sparkles className="w-6 h-6 text-white" />
-                </div>
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-white">Vintage Cube Analyzer</h1>
-                <p className="text-sm text-gray-400">360 cards • Deep analysis & draft strategies</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <a
-                href="https://cubecobra.com/cube/list/8eec0c91-6c4e-4f96-957b-1ccc5ecac8fd"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 px-4 py-2 text-sm text-purple-400 hover:text-purple-300 hover:bg-purple-500/10 rounded-lg transition-all"
-              >
-                <ExternalLink className="w-4 h-4" />
-                View on CubeCobra
-              </a>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="relative max-w-7xl mx-auto px-4 py-8">
-        <Tabs defaultValue="overview" className="space-y-8">
-          <TabsList className="flex-wrap bg-gray-900/50 backdrop-blur-sm border border-gray-800/50">
-            <TabsTrigger value="overview">
-              <BarChart3 className="w-4 h-4 mr-2" />
-              Overview
-            </TabsTrigger>
-            <TabsTrigger value="draft">
-              <Gamepad2 className="w-4 h-4 mr-2" />
-              Draft Simulator
-            </TabsTrigger>
-            <TabsTrigger value="archetypes">
-              <Layers className="w-4 h-4 mr-2" />
-              Archetypes
-            </TabsTrigger>
-            <TabsTrigger value="decks">
-              <FileStack className="w-4 h-4 mr-2" />
-              Sample Decks
-            </TabsTrigger>
-            <TabsTrigger value="matchups">
-              <Swords className="w-4 h-4 mr-2" />
-              Matchups
-            </TabsTrigger>
-            <TabsTrigger value="synergies">
-              <Link2 className="w-4 h-4 mr-2" />
-              Synergies
-            </TabsTrigger>
-            <TabsTrigger value="buildaround">
-              <Lightbulb className="w-4 h-4 mr-2" />
-              Build Around
-            </TabsTrigger>
-            <TabsTrigger value="power">
-              <Trophy className="w-4 h-4 mr-2" />
-              Power Rankings
-            </TabsTrigger>
-            <TabsTrigger value="guide">
-              <BookOpen className="w-4 h-4 mr-2" />
-              Draft Guide
-            </TabsTrigger>
-            <TabsTrigger value="cards">
-              <Search className="w-4 h-4 mr-2" />
-              Card Browser
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Overview Tab */}
-          <TabsContent value="overview" className="space-y-8 animate-in fade-in duration-300">
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'overview':
+        return (
+          <div className="space-y-8">
             <StatsOverview
               cards={cards}
               colorDistribution={colorDistribution}
               typeDistribution={typeDistribution}
             />
-
             <div className="grid gap-6 lg:grid-cols-2">
-              <Card className="backdrop-blur-sm bg-gray-900/80 border-gray-800/50">
+              <Card className="bg-[#111] border-white/8">
                 <CardHeader>
                   <CardTitle>Color Distribution</CardTitle>
-                  <CardDescription>
-                    Breakdown of mono-colored cards (excluding lands)
-                  </CardDescription>
+                  <CardDescription>Breakdown of mono-colored cards</CardDescription>
                 </CardHeader>
                 <ColorDistributionChart data={colorDistribution} />
               </Card>
-
-              <Card className="backdrop-blur-sm bg-gray-900/80 border-gray-800/50">
+              <Card className="bg-[#111] border-white/8">
                 <CardHeader>
                   <CardTitle>Mana Curve</CardTitle>
-                  <CardDescription>
-                    Distribution of cards by mana value and color
-                  </CardDescription>
+                  <CardDescription>Distribution by mana value and color</CardDescription>
                 </CardHeader>
                 <ManaCurveChart data={manaCurve} />
               </Card>
             </div>
-
-            <Card className="backdrop-blur-sm bg-gray-900/80 border-gray-800/50">
+            <Card className="bg-[#111] border-white/8">
               <CardHeader>
-                <CardTitle>Card Type Distribution</CardTitle>
-                <CardDescription>
-                  Number of cards by type
-                </CardDescription>
+                <CardTitle>Card Types</CardTitle>
+                <CardDescription>Number of cards by type</CardDescription>
               </CardHeader>
               <TypeDistributionChart data={typeDistribution} />
             </Card>
-
-            {/* Quick Insights */}
-            <Card className="backdrop-blur-sm bg-gray-900/80 border-gray-800/50">
+            <Card className="bg-[#111] border-white/8">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-yellow-500" />
+                  <Sparkles className="w-5 h-5 text-amber-400" />
                   Quick Insights
                 </CardTitle>
               </CardHeader>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <div className="p-4 bg-gradient-to-br from-purple-900/30 to-transparent rounded-xl border border-purple-500/20">
-                  <h4 className="font-semibold text-white mb-2 flex items-center gap-2">
-                    <span className="text-xl">🎯</span> Best First Picks
-                  </h4>
-                  <p className="text-sm text-gray-400">
+                <div className="p-4 bg-white/2 rounded-xl border border-white/5">
+                  <h4 className="font-medium text-white mb-2">Best First Picks</h4>
+                  <p className="text-sm text-white/50">
                     Black Lotus, Ancestral Recall, Sol Ring, Mana Crypt - colorless power goes in every deck
                   </p>
                 </div>
-                <div className="p-4 bg-gradient-to-br from-blue-900/30 to-transparent rounded-xl border border-blue-500/20">
-                  <h4 className="font-semibold text-white mb-2 flex items-center gap-2">
-                    <span className="text-xl">💧</span> Blue is King
-                  </h4>
-                  <p className="text-sm text-gray-400">
+                <div className="p-4 bg-white/2 rounded-xl border border-white/5">
+                  <h4 className="font-medium text-white mb-2">Blue is King</h4>
+                  <p className="text-sm text-white/50">
                     Blue has the most powerful spells. Time Walk, Ancestral, and counterspells are premium.
                   </p>
                 </div>
-                <div className="p-4 bg-gradient-to-br from-red-900/30 to-transparent rounded-xl border border-red-500/20">
-                  <h4 className="font-semibold text-white mb-2 flex items-center gap-2">
-                    <span className="text-xl">⚡</span> Fast Mana Wins
-                  </h4>
-                  <p className="text-sm text-gray-400">
+                <div className="p-4 bg-white/2 rounded-xl border border-white/5">
+                  <h4 className="font-medium text-white mb-2">Fast Mana Wins</h4>
+                  <p className="text-sm text-white/50">
                     Turn 1 Sol Ring or Mana Crypt is often game-deciding. Prioritize acceleration.
-                  </p>
-                </div>
-                <div className="p-4 bg-gradient-to-br from-green-900/30 to-transparent rounded-xl border border-green-500/20">
-                  <h4 className="font-semibold text-white mb-2 flex items-center gap-2">
-                    <span className="text-xl">🌿</span> Green Ramps Hard
-                  </h4>
-                  <p className="text-sm text-gray-400">
-                    8 one-mana dorks plus Channel means green can deploy threats incredibly fast.
-                  </p>
-                </div>
-                <div className="p-4 bg-gradient-to-br from-gray-800/50 to-transparent rounded-xl border border-gray-600/20">
-                  <h4 className="font-semibold text-white mb-2 flex items-center gap-2">
-                    <span className="text-xl">⚙️</span> Artifacts Matter
-                  </h4>
-                  <p className="text-sm text-gray-400">
-                    Tinker, Tolarian Academy, and Workshop enable broken artifact synergies.
-                  </p>
-                </div>
-                <div className="p-4 bg-gradient-to-br from-yellow-900/30 to-transparent rounded-xl border border-yellow-500/20">
-                  <h4 className="font-semibold text-white mb-2 flex items-center gap-2">
-                    <span className="text-xl">🏆</span> Combo Potential
-                  </h4>
-                  <p className="text-sm text-gray-400">
-                    Multiple combo kills: Storm, Reanimator, Show & Tell, Channel. Be prepared!
                   </p>
                 </div>
               </div>
             </Card>
-          </TabsContent>
-
-          {/* Draft Simulator Tab */}
-          <TabsContent value="draft" className="animate-in fade-in duration-300">
-            <DraftSimulator cards={cards} />
-          </TabsContent>
-
-          {/* Archetypes Tab */}
-          <TabsContent value="archetypes" className="space-y-6 animate-in fade-in duration-300">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center">
-                <Layers className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-white">Cube Archetypes</h2>
-                <p className="text-gray-400">
-                  The most powerful strategies and how to draft them
-                </p>
-              </div>
-            </div>
-
+          </div>
+        );
+      case 'draft':
+        return <DraftSimulator cards={cards} />;
+      case 'archetypes':
+        return (
+          <div className="space-y-6">
             <div className="grid gap-6 md:grid-cols-2">
               {archetypes.map((archetype) => (
                 <ArchetypeCard key={archetype.id} archetype={archetype} />
               ))}
             </div>
-
-            {/* Archetype Tier List */}
-            <Card className="backdrop-blur-sm bg-gray-900/80 border-gray-800/50">
+            <Card className="bg-[#111] border-white/8">
               <CardHeader>
                 <CardTitle>Archetype Tier List</CardTitle>
-                <CardDescription>
-                  Relative power level of each strategy when optimally drafted
-                </CardDescription>
+                <CardDescription>Relative power level when optimally drafted</CardDescription>
               </CardHeader>
-              <div className="space-y-4">
-                <div className="p-4 bg-gradient-to-r from-yellow-900/40 to-transparent border-l-4 border-yellow-500 rounded-r-lg">
-                  <h4 className="font-bold text-yellow-400 mb-2">S Tier - The Best</h4>
-                  <p className="text-gray-300">UB Reanimator, Artifact Combo, UR Storm</p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Can win on turns 1-3 with the right draw. Maximum power potential.
-                  </p>
+              <div className="space-y-3">
+                <div className="p-4 tier-s rounded-lg">
+                  <h4 className="font-semibold text-amber-400 mb-1">S Tier</h4>
+                  <p className="text-white/80 text-sm">UB Reanimator, Artifact Combo, UR Storm</p>
                 </div>
-                <div className="p-4 bg-gradient-to-r from-purple-900/40 to-transparent border-l-4 border-purple-500 rounded-r-lg">
-                  <h4 className="font-bold text-purple-400 mb-2">A Tier - Very Strong</h4>
-                  <p className="text-gray-300">UW Control, UG Ramp, Show & Tell, Oath</p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Consistently powerful. Can compete with S-tier when well-drafted.
-                  </p>
+                <div className="p-4 tier-a rounded-lg">
+                  <h4 className="font-semibold text-purple-400 mb-1">A Tier</h4>
+                  <p className="text-white/80 text-sm">UW Control, UG Ramp, Show & Tell</p>
                 </div>
-                <div className="p-4 bg-gradient-to-r from-blue-900/40 to-transparent border-l-4 border-blue-500 rounded-r-lg">
-                  <h4 className="font-bold text-blue-400 mb-2">B Tier - Solid</h4>
-                  <p className="text-gray-300">BR Aggro, RW Aggro, BG Midrange, UW Blink</p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Good fallback options. Can steal games from better decks.
-                  </p>
-                </div>
-                <div className="p-4 bg-gradient-to-r from-gray-800/50 to-transparent border-l-4 border-gray-600 rounded-r-lg">
-                  <h4 className="font-bold text-gray-400 mb-2">C Tier - Playable</h4>
-                  <p className="text-gray-300">Mono White Aggro, Other color pairs</p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Requires the table to cooperate. Draft when wide open.
-                  </p>
+                <div className="p-4 tier-b rounded-lg">
+                  <h4 className="font-semibold text-blue-400 mb-1">B Tier</h4>
+                  <p className="text-white/80 text-sm">BR Aggro, RW Aggro, BG Midrange</p>
                 </div>
               </div>
             </Card>
-          </TabsContent>
-
-          {/* Sample Decks Tab */}
-          <TabsContent value="decks" className="animate-in fade-in duration-300">
-            <SampleDecks cards={cards} />
-          </TabsContent>
-
-          {/* Matchups Tab */}
-          <TabsContent value="matchups" className="animate-in fade-in duration-300">
-            <MatchupMatrix archetypes={archetypes} />
-          </TabsContent>
-
-          {/* Synergies Tab */}
-          <TabsContent value="synergies" className="animate-in fade-in duration-300">
-            <SynergyExplorer cards={cards} archetypes={archetypes} />
-          </TabsContent>
-
-          {/* Build Around Tab */}
-          <TabsContent value="buildaround" className="animate-in fade-in duration-300">
-            <BuildAround cards={cards} />
-          </TabsContent>
-
-          {/* Power Rankings Tab */}
-          <TabsContent value="power" className="space-y-6 animate-in fade-in duration-300">
+          </div>
+        );
+      case 'decks':
+        return <SampleDecks cards={cards} />;
+      case 'matchups':
+        return <MatchupMatrix archetypes={archetypes} />;
+      case 'synergies':
+        return <SynergyExplorer cards={cards} archetypes={archetypes} />;
+      case 'buildaround':
+        return <BuildAround cards={cards} />;
+      case 'power':
+        return (
+          <div className="space-y-6">
             <PowerRankings cards={powerRankings} />
-
-            {/* Power Categories */}
             <div className="grid gap-6 md:grid-cols-2">
-              <Card className="backdrop-blur-sm bg-gray-900/80 border-gray-800/50">
+              <Card className="bg-[#111] border-white/8">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <span className="text-xl">💎</span> The Power Nine
-                  </CardTitle>
-                  <CardDescription>The most iconic and powerful cards ever printed</CardDescription>
+                  <CardTitle>The Power Nine</CardTitle>
+                  <CardDescription>The most iconic cards ever printed</CardDescription>
                 </CardHeader>
-                <div className="space-y-2">
+                <div className="space-y-1">
                   {cards
                     .filter(c => ['Black Lotus', 'Ancestral Recall', 'Time Walk', 'Mox Pearl',
                                   'Mox Sapphire', 'Mox Jet', 'Mox Ruby', 'Mox Emerald', 'Timetwister'].includes(c.name))
                     .map(card => (
-                      <div key={card.id} className="flex items-center gap-3 p-2 bg-gray-800/50 rounded-lg hover:bg-gray-800 transition-colors">
-                        <span className="text-white font-medium">{card.name}</span>
-                        <span className="text-yellow-500 text-sm ml-auto font-bold">Power: 10</span>
+                      <div key={card.id} className="flex items-center gap-3 p-2 bg-white/2 rounded-lg">
+                        <span className="text-white text-sm">{card.name}</span>
+                        <span className="text-amber-400 text-xs ml-auto font-mono">10</span>
                       </div>
                     ))
                   }
                 </div>
               </Card>
-
-              <Card className="backdrop-blur-sm bg-gray-900/80 border-gray-800/50">
+              <Card className="bg-[#111] border-white/8">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <span className="text-xl">⚡</span> Fast Mana
-                  </CardTitle>
-                  <CardDescription>Cards that accelerate you ahead of the curve</CardDescription>
+                  <CardTitle>Fast Mana</CardTitle>
+                  <CardDescription>Cards that accelerate you</CardDescription>
                 </CardHeader>
-                <div className="space-y-2 max-h-80 overflow-y-auto scrollbar-thin">
+                <div className="space-y-1 max-h-80 overflow-y-auto">
                   {cards
                     .filter(c => c.role === 'fast_mana')
                     .sort((a, b) => b.powerLevel - a.powerLevel)
+                    .slice(0, 10)
                     .map(card => (
-                      <div key={card.id} className="flex items-center gap-3 p-2 bg-gray-800/50 rounded-lg hover:bg-gray-800 transition-colors">
-                        <span className="text-white font-medium">{card.name}</span>
-                        <span className="text-purple-400 text-sm ml-auto">Power: {card.powerLevel}</span>
-                      </div>
-                    ))
-                  }
-                </div>
-              </Card>
-
-              <Card className="backdrop-blur-sm bg-gray-900/80 border-gray-800/50">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <span className="text-xl">📚</span> Tutors
-                  </CardTitle>
-                  <CardDescription>Find exactly what you need</CardDescription>
-                </CardHeader>
-                <div className="space-y-2 max-h-80 overflow-y-auto scrollbar-thin">
-                  {cards
-                    .filter(c => c.role === 'tutor')
-                    .sort((a, b) => b.powerLevel - a.powerLevel)
-                    .map(card => (
-                      <div key={card.id} className="flex items-center gap-3 p-2 bg-gray-800/50 rounded-lg hover:bg-gray-800 transition-colors">
-                        <span className="text-white font-medium">{card.name}</span>
-                        <span className="text-blue-400 text-sm ml-auto">Power: {card.powerLevel}</span>
-                      </div>
-                    ))
-                  }
-                </div>
-              </Card>
-
-              <Card className="backdrop-blur-sm bg-gray-900/80 border-gray-800/50">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <span className="text-xl">💀</span> Reanimation Targets
-                  </CardTitle>
-                  <CardDescription>The fatties you want to cheat into play</CardDescription>
-                </CardHeader>
-                <div className="space-y-2 max-h-80 overflow-y-auto scrollbar-thin">
-                  {cards
-                    .filter(c => c.role === 'reanimation_target')
-                    .sort((a, b) => b.powerLevel - a.powerLevel)
-                    .map(card => (
-                      <div key={card.id} className="flex items-center gap-3 p-2 bg-gray-800/50 rounded-lg hover:bg-gray-800 transition-colors">
-                        <span className="text-white font-medium">{card.name}</span>
-                        <span className="text-red-400 text-sm ml-auto">Power: {card.powerLevel}</span>
+                      <div key={card.id} className="flex items-center gap-3 p-2 bg-white/2 rounded-lg">
+                        <span className="text-white text-sm">{card.name}</span>
+                        <span className="text-white/40 text-xs ml-auto font-mono">{card.powerLevel}</span>
                       </div>
                     ))
                   }
                 </div>
               </Card>
             </div>
-          </TabsContent>
+          </div>
+        );
+      case 'guide':
+        return <DraftGuide strategies={draftStrategies} />;
+      case 'cards':
+        return <CardBrowser cards={cards} />;
+      default:
+        return null;
+    }
+  };
 
-          {/* Draft Guide Tab */}
-          <TabsContent value="guide" className="animate-in fade-in duration-300">
-            <DraftGuide strategies={draftStrategies} />
-          </TabsContent>
+  const activeNavItem = NAV_ITEMS.find(item => item.id === activeTab);
 
-          {/* Card Browser Tab */}
-          <TabsContent value="cards" className="animate-in fade-in duration-300">
-            <CardBrowser cards={cards} />
-          </TabsContent>
-        </Tabs>
-      </main>
+  return (
+    <div className="min-h-screen bg-black flex">
+      {/* Mobile Menu Overlay */}
+      {mobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black/80 z-40 lg:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
 
-      {/* Footer */}
-      <footer className="relative border-t border-gray-800/50 mt-16">
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-gray-500 text-sm">
-              Card data from{' '}
-              <a href="https://scryfall.com" className="text-purple-400 hover:text-purple-300" target="_blank" rel="noopener noreferrer">
-                Scryfall
-              </a>
-              {' '}• Cube from{' '}
-              <a href="https://cubecobra.com" className="text-purple-400 hover:text-purple-300" target="_blank" rel="noopener noreferrer">
-                CubeCobra
-              </a>
-            </p>
-            <p className="text-gray-600 text-xs">
-              Not affiliated with Wizards of the Coast. Magic: The Gathering is a trademark of Wizards of the Coast LLC.
-            </p>
+      {/* Sidebar */}
+      <aside
+        className={`
+          fixed lg:sticky top-0 left-0 z-50 h-screen bg-[#0a0a0a] border-r border-white/8
+          transition-all duration-200 flex flex-col
+          ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+          ${sidebarCollapsed ? 'w-[68px]' : 'w-60'}
+        `}
+      >
+        {/* Logo */}
+        <div className={`h-14 flex items-center border-b border-white/8 flex-shrink-0 ${sidebarCollapsed ? 'px-4 justify-center' : 'px-4'}`}>
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-[#111] border border-white/10 rounded-lg flex items-center justify-center flex-shrink-0">
+              <Sparkles className="w-4 h-4 text-white/60" />
+            </div>
+            {!sidebarCollapsed && (
+              <div className="overflow-hidden">
+                <h1 className="text-sm font-semibold text-white truncate">Vintage Cube</h1>
+                <p className="text-[11px] text-white/40">360 cards</p>
+              </div>
+            )}
           </div>
         </div>
-      </footer>
+
+        {/* Navigation */}
+        <nav className="flex-1 py-3 overflow-y-auto">
+          <ul className="space-y-0.5 px-2">
+            {NAV_ITEMS.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              return (
+                <li key={item.id}>
+                  <button
+                    onClick={() => {
+                      setActiveTab(item.id);
+                      setMobileMenuOpen(false);
+                    }}
+                    className={`
+                      w-full flex items-center gap-3 rounded-lg transition-all text-[13px]
+                      ${sidebarCollapsed ? 'px-3 py-2.5 justify-center' : 'px-3 py-2'}
+                      ${isActive
+                        ? 'bg-white/10 text-white'
+                        : 'text-white/50 hover:text-white/80 hover:bg-white/5'
+                      }
+                    `}
+                    title={sidebarCollapsed ? item.label : undefined}
+                  >
+                    <Icon className="w-4 h-4 flex-shrink-0" />
+                    {!sidebarCollapsed && (
+                      <span className="truncate">{item.label}</span>
+                    )}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+
+        {/* Footer */}
+        <div className={`border-t border-white/8 flex-shrink-0 ${sidebarCollapsed ? 'p-2' : 'p-3'}`}>
+          {!sidebarCollapsed && (
+            <a
+              href="https://cubecobra.com/cube/list/8eec0c91-6c4e-4f96-957b-1ccc5ecac8fd"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-3 py-2 text-[13px] text-white/40 hover:text-white/60 rounded-lg hover:bg-white/5 transition-all"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              CubeCobra
+            </a>
+          )}
+          <button
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            className={`
+              hidden lg:flex items-center justify-center gap-2 text-white/40 hover:text-white/60 rounded-lg hover:bg-white/5 transition-all text-[13px]
+              ${sidebarCollapsed ? 'w-full p-2.5' : 'w-full px-3 py-2 mt-1'}
+            `}
+          >
+            <ChevronLeft className={`w-4 h-4 transition-transform ${sidebarCollapsed ? 'rotate-180' : ''}`} />
+            {!sidebarCollapsed && <span>Collapse</span>}
+          </button>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Top Bar */}
+        <header className="h-14 bg-[#0a0a0a] border-b border-white/8 flex items-center px-4 lg:px-6 sticky top-0 z-30 flex-shrink-0">
+          <button
+            onClick={() => setMobileMenuOpen(true)}
+            className="lg:hidden p-2 -ml-2 text-white/60 hover:text-white"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+          <div className="flex items-center gap-3 lg:ml-0 ml-2">
+            {activeNavItem && (
+              <>
+                <activeNavItem.icon className="w-4 h-4 text-white/40" />
+                <span className="text-sm font-medium text-white">{activeNavItem.label}</span>
+              </>
+            )}
+          </div>
+        </header>
+
+        {/* Content */}
+        <main className="flex-1 overflow-auto">
+          <div className="max-w-6xl mx-auto px-4 lg:px-6 py-6">
+            {renderContent()}
+          </div>
+        </main>
+
+        {/* Footer */}
+        <footer className="border-t border-white/5 flex-shrink-0">
+          <div className="max-w-6xl mx-auto px-4 lg:px-6 py-4">
+            <p className="text-white/30 text-xs">
+              Data from{' '}
+              <a href="https://scryfall.com" className="text-white/50 hover:text-white/70" target="_blank" rel="noopener noreferrer">
+                Scryfall
+              </a>
+              {' '}· Not affiliated with Wizards of the Coast
+            </p>
+          </div>
+        </footer>
+      </div>
     </div>
   );
 }

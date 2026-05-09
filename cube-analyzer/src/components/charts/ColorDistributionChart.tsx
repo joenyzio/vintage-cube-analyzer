@@ -38,7 +38,7 @@ export function ColorDistributionChart({ data }: ColorDistributionChartProps) {
       return (
         <div className="custom-tooltip">
           <p className="text-white font-semibold">{payload[0].name}</p>
-          <p className="text-gray-300">{payload[0].value} cards</p>
+          <p className="text-white/60">{payload[0].value} cards</p>
         </div>
       );
     }
@@ -64,7 +64,7 @@ export function ColorDistributionChart({ data }: ColorDistributionChartProps) {
         </Pie>
         <Tooltip content={<CustomTooltip />} />
         <Legend
-          formatter={(value) => <span className="text-gray-300">{value}</span>}
+          formatter={(value) => <span className="text-white/60">{value}</span>}
         />
       </PieChart>
     </ResponsiveContainer>
