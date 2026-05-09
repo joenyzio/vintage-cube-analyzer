@@ -181,13 +181,13 @@ function App() {
         className={`
           fixed lg:sticky top-0 left-0 z-50 h-screen
           bg-[#0a0a0a]/95 backdrop-blur-xl border-r border-white/[0.06]
-          transition-all duration-300 ease-out flex flex-col
+          transition-all duration-300 ease-out flex flex-col safe-top
           ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
           ${sidebarCollapsed ? 'w-[72px]' : 'w-64'}
         `}
       >
         {/* Logo */}
-        <div className={`h-16 flex items-center border-b border-white/[0.06] flex-shrink-0 ${sidebarCollapsed ? 'px-4 justify-center' : 'px-5'}`}>
+        <div className={`min-h-16 flex items-center border-b border-white/[0.06] flex-shrink-0 ${sidebarCollapsed ? 'px-4 justify-center' : 'px-5'}`}>
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 glass-card rounded-xl flex items-center justify-center flex-shrink-0">
               <Sparkles className="w-4 h-4 text-white/70" />
@@ -271,7 +271,7 @@ function App() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 relative">
         {/* Top Bar */}
-        <header className="h-16 bg-[#0a0a0a]/80 backdrop-blur-xl border-b border-white/[0.06] flex items-center px-4 lg:px-6 sticky top-0 z-30 flex-shrink-0">
+        <header className="bg-[#0a0a0a]/80 backdrop-blur-xl border-b border-white/[0.06] flex items-center px-4 lg:px-6 sticky top-0 z-30 flex-shrink-0 safe-area-header min-h-16">
           <button
             onClick={() => setMobileMenuOpen(true)}
             className="lg:hidden p-2.5 -ml-2 text-white/60 hover:text-white hover:bg-white/[0.04] rounded-xl transition-colors"
@@ -298,7 +298,7 @@ function App() {
         </main>
 
         {/* Footer */}
-        <footer className="border-t border-white/[0.04] flex-shrink-0 bg-black/50">
+        <footer className="border-t border-white/[0.04] flex-shrink-0 bg-black/50 safe-bottom">
           <div className="max-w-6xl mx-auto px-4 lg:px-8 py-5">
             <p className="text-white/30 text-xs">
               Data from{' '}

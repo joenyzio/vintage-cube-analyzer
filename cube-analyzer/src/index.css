@@ -1,5 +1,18 @@
 @import "tailwindcss";
 
+/* Safe area insets for PWA on iOS */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .safe-area-header {
+    padding-top: max(0px, env(safe-area-inset-top));
+  }
+}
+
 :root {
   /* Premium dark mode palette */
   --color-background: #000000;
