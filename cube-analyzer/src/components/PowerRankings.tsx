@@ -99,52 +99,54 @@ export function PowerRankings({ cards }: PowerRankingsProps) {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="flex flex-wrap gap-3 items-center">
-        <div className="relative flex-1 min-w-[200px] max-w-xs">
+      <div className="flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-center">
+        <div className="relative flex-1 min-w-0 sm:min-w-[200px] sm:max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
           <input
             type="text"
             placeholder="Search cards..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 bg-black border border-white/10 rounded-lg text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white/20"
+            className="w-full pl-9 pr-3 py-3 sm:py-2 bg-black border border-white/10 rounded-xl sm:rounded-lg text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white/20"
           />
         </div>
 
-        <div className="flex gap-1">
-          {COLOR_FILTERS.map(c => (
-            <button
-              key={c.id}
-              onClick={() => setColorFilter(c.id)}
-              className={`
-                w-7 h-7 rounded flex items-center justify-center text-xs font-bold transition-all
-                ${c.id === 'all'
-                  ? colorFilter === 'all' ? 'bg-white/20 text-white' : 'bg-white/5 text-white/40'
-                  : colorFilter === c.id ? c.className + ' ring-2 ring-white/30' : c.className + ' opacity-40 hover:opacity-70'
-                }
-              `}
-            >
-              {c.label}
-            </button>
-          ))}
+        <div className="flex gap-3 sm:gap-1 justify-between sm:justify-start">
+          <div className="flex gap-1">
+            {COLOR_FILTERS.map(c => (
+              <button
+                key={c.id}
+                onClick={() => setColorFilter(c.id)}
+                className={`
+                  w-9 h-9 sm:w-7 sm:h-7 rounded-lg sm:rounded flex items-center justify-center text-xs font-bold transition-all active:scale-90
+                  ${c.id === 'all'
+                    ? colorFilter === 'all' ? 'bg-white/20 text-white' : 'bg-white/5 text-white/40'
+                    : colorFilter === c.id ? c.className + ' ring-2 ring-white/30' : c.className + ' opacity-40 hover:opacity-70'
+                  }
+                `}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            className="px-3 py-2 bg-black border border-white/10 rounded-xl sm:rounded-lg text-sm text-white/60 focus:outline-none"
+          >
+            <option value="all">All Types</option>
+            <option value="creature">Creature</option>
+            <option value="instant">Instant</option>
+            <option value="sorcery">Sorcery</option>
+            <option value="artifact">Artifact</option>
+            <option value="enchantment">Enchantment</option>
+            <option value="planeswalker">Planeswalker</option>
+            <option value="land">Land</option>
+          </select>
         </div>
 
-        <select
-          value={typeFilter}
-          onChange={(e) => setTypeFilter(e.target.value)}
-          className="px-3 py-2 bg-black border border-white/10 rounded-lg text-sm text-white/60 focus:outline-none"
-        >
-          <option value="all">All Types</option>
-          <option value="creature">Creature</option>
-          <option value="instant">Instant</option>
-          <option value="sorcery">Sorcery</option>
-          <option value="artifact">Artifact</option>
-          <option value="enchantment">Enchantment</option>
-          <option value="planeswalker">Planeswalker</option>
-          <option value="land">Land</option>
-        </select>
-
-        <span className="text-xs text-white/30 ml-auto">{filteredCards.length} cards</span>
+        <span className="text-xs text-white/30 text-center sm:text-left sm:ml-auto">{filteredCards.length} cards</span>
       </div>
 
       {/* Tier Summary Bar */}
@@ -192,12 +194,12 @@ export function PowerRankings({ cards }: PowerRankingsProps) {
 
               {/* Cards Grid */}
               {!isCollapsed && (
-                <div className="p-4">
-                  <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 xl:grid-cols-12 gap-2">
+                <div className="p-3 sm:p-4">
+                  <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-7 lg:grid-cols-9 xl:grid-cols-11 gap-2">
                     {tierCards.map((card) => (
                       <div
                         key={card.id}
-                        className="relative aspect-[488/680] rounded-lg overflow-hidden cursor-pointer hover:scale-105 transition-transform hover:z-10 shadow-lg"
+                        className="relative aspect-[488/680] rounded-lg overflow-hidden cursor-pointer hover:scale-105 active:scale-95 transition-transform hover:z-10 shadow-lg"
                         onMouseEnter={() => setHoveredCard(card)}
                         onMouseLeave={() => setHoveredCard(null)}
                       >

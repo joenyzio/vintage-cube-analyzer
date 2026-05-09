@@ -67,8 +67,8 @@ export function OverviewPage({
   return (
     <div className="space-y-5">
       {/* Row 1: Key Metrics + Quick Action */}
-      <div className="flex flex-col lg:flex-row gap-3">
-        <div className="flex-1 grid grid-cols-3 md:grid-cols-6 gap-3">
+      <div className="flex flex-col lg:flex-row gap-4">
+        <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 sm:gap-3">
           <MetricCard label="Cards" value={stats.total} />
           <MetricCard label="Avg CMC" value={stats.avgCmc} />
           <MetricCard label="Avg Power" value={`${stats.avgPower}/10`} />
@@ -79,7 +79,7 @@ export function OverviewPage({
 
         <button
           onClick={() => onNavigate('draft')}
-          className="flex items-center justify-center gap-3 px-8 py-4 bg-white text-black font-semibold rounded-xl hover:bg-white/90 transition-all duration-300 lg:w-auto group"
+          className="flex items-center justify-center gap-3 px-8 py-4 bg-white text-black font-semibold rounded-xl hover:bg-white/90 transition-all duration-300 lg:w-auto group active:scale-95"
         >
           <Play className="w-5 h-5 group-hover:scale-110 transition-transform" />
           Start Draft
@@ -104,11 +104,11 @@ export function OverviewPage({
               View all <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
             </button>
           </div>
-          <div className="grid grid-cols-4 md:grid-cols-8 gap-2">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-8 gap-2 sm:gap-3">
             {topPicks.map((card, idx) => (
               <div
                 key={card.id}
-                className="relative group cursor-pointer"
+                className="relative group cursor-pointer active:scale-95 transition-transform"
                 onClick={() => onNavigate('cards')}
               >
                 <div className="aspect-[488/680] rounded-lg overflow-hidden shadow-lg hover:scale-105 transition-transform">
@@ -120,7 +120,7 @@ export function OverviewPage({
                   />
                 </div>
                 <div className={`
-                  absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shadow-lg
+                  absolute -top-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold shadow-lg
                   ${idx < 3 ? 'bg-gradient-to-br from-amber-400 to-amber-500 text-black' : 'bg-black/80 text-white border border-white/20'}
                 `}>
                   {idx + 1}
@@ -250,9 +250,9 @@ export function OverviewPage({
 
 function MetricCard({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="bg-black border border-white/[0.06] rounded-xl p-3 text-center">
-      <div className="text-lg font-semibold text-white">{value}</div>
-      <div className="text-[10px] text-white/40 mt-0.5 font-medium uppercase tracking-wider">{label}</div>
+    <div className="bg-black border border-white/[0.06] rounded-xl p-3 sm:p-4 text-center">
+      <div className="text-xl sm:text-lg font-semibold text-white">{value}</div>
+      <div className="text-[10px] sm:text-[11px] text-white/40 mt-0.5 font-medium uppercase tracking-wider">{label}</div>
     </div>
   );
 }

@@ -209,8 +209,8 @@ function App() {
                       setMobileMenuOpen(false);
                     }}
                     className={`
-                      w-full flex items-center gap-3 rounded-xl transition-all duration-200 text-[13px] font-medium
-                      ${sidebarCollapsed ? 'px-3 py-3 justify-center' : 'px-3.5 py-2.5'}
+                      w-full flex items-center gap-3 rounded-xl transition-all duration-200 text-[13px] font-medium active:scale-[0.98]
+                      ${sidebarCollapsed ? 'px-3 py-3 justify-center' : 'px-3.5 py-3 lg:py-2.5'}
                       ${isActive
                         ? 'bg-white/[0.08] text-white shadow-sm'
                         : 'text-white/50 hover:text-white/80 hover:bg-white/[0.04]'
@@ -244,12 +244,12 @@ function App() {
           </div>
         )}
 
-        {/* Collapse Button - below the line */}
-        <div className={`border-t border-white/[0.06] flex-shrink-0 ${sidebarCollapsed ? 'p-3' : 'px-3 py-2'}`}>
+        {/* Collapse Button - desktop only */}
+        <div className={`hidden lg:block border-t border-white/[0.06] flex-shrink-0 ${sidebarCollapsed ? 'p-3' : 'px-3 py-2'}`}>
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
             className={`
-              hidden lg:flex items-center gap-2 text-white/30 hover:text-white/50 transition-all duration-200 text-[12px]
+              flex items-center gap-2 text-white/30 hover:text-white/50 transition-all duration-200 text-[12px]
               ${sidebarCollapsed ? 'w-full justify-center p-2' : 'px-3.5 py-2'}
             `}
           >
@@ -257,6 +257,9 @@ function App() {
             {!sidebarCollapsed && <span>Collapse</span>}
           </button>
         </div>
+
+        {/* Mobile: Add safe area padding at bottom */}
+        <div className="lg:hidden h-4 flex-shrink-0" />
       </aside>
 
       {/* Main Content */}
