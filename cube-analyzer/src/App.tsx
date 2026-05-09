@@ -1,11 +1,8 @@
 import { useState } from 'react';
 import { useCubeData } from './hooks/useCubeData';
 import { Card, CardHeader, CardTitle, CardDescription } from './components/ui/Card';
-import { ColorDistributionChart } from './components/charts/ColorDistributionChart';
-import { ManaCurveChart } from './components/charts/ManaCurveChart';
-import { TypeDistributionChart } from './components/charts/TypeDistributionChart';
-import { StatsOverview } from './components/StatsOverview';
-import { ArchetypeCard } from './components/ArchetypeCard';
+import { OverviewPage } from './components/OverviewPage';
+import { ArchetypesPage } from './components/ArchetypesPage';
 import { PowerRankings } from './components/PowerRankings';
 import { DraftGuide } from './components/DraftGuide';
 import { CardBrowser } from './components/CardBrowser';
@@ -116,97 +113,20 @@ function App() {
     switch (activeTab) {
       case 'overview':
         return (
-          <div className="space-y-8">
-            <StatsOverview
-              cards={cards}
-              colorDistribution={colorDistribution}
-              typeDistribution={typeDistribution}
-            />
-            <div className="grid gap-6 lg:grid-cols-2">
-              <Card className="bg-[#111] border-white/8">
-                <CardHeader>
-                  <CardTitle>Color Distribution</CardTitle>
-                  <CardDescription>Breakdown of mono-colored cards</CardDescription>
-                </CardHeader>
-                <ColorDistributionChart data={colorDistribution} />
-              </Card>
-              <Card className="bg-[#111] border-white/8">
-                <CardHeader>
-                  <CardTitle>Mana Curve</CardTitle>
-                  <CardDescription>Distribution by mana value and color</CardDescription>
-                </CardHeader>
-                <ManaCurveChart data={manaCurve} />
-              </Card>
-            </div>
-            <Card className="bg-[#111] border-white/8">
-              <CardHeader>
-                <CardTitle>Card Types</CardTitle>
-                <CardDescription>Number of cards by type</CardDescription>
-              </CardHeader>
-              <TypeDistributionChart data={typeDistribution} />
-            </Card>
-            <Card className="bg-[#111] border-white/8">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-amber-400" />
-                  Quick Insights
-                </CardTitle>
-              </CardHeader>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <div className="p-4 bg-white/2 rounded-xl border border-white/5">
-                  <h4 className="font-medium text-white mb-2">Best First Picks</h4>
-                  <p className="text-sm text-white/50">
-                    Black Lotus, Ancestral Recall, Sol Ring, Mana Crypt - colorless power goes in every deck
-                  </p>
-                </div>
-                <div className="p-4 bg-white/2 rounded-xl border border-white/5">
-                  <h4 className="font-medium text-white mb-2">Blue is King</h4>
-                  <p className="text-sm text-white/50">
-                    Blue has the most powerful spells. Time Walk, Ancestral, and counterspells are premium.
-                  </p>
-                </div>
-                <div className="p-4 bg-white/2 rounded-xl border border-white/5">
-                  <h4 className="font-medium text-white mb-2">Fast Mana Wins</h4>
-                  <p className="text-sm text-white/50">
-                    Turn 1 Sol Ring or Mana Crypt is often game-deciding. Prioritize acceleration.
-                  </p>
-                </div>
-              </div>
-            </Card>
-          </div>
+          <OverviewPage
+            cards={cards}
+            archetypes={archetypes}
+            colorDistribution={colorDistribution}
+            manaCurve={manaCurve}
+            typeDistribution={typeDistribution}
+            powerRankings={powerRankings}
+            onNavigate={(tab) => setActiveTab(tab as TabId)}
+          />
         );
       case 'draft':
         return <DraftSimulator cards={cards} />;
       case 'archetypes':
-        return (
-          <div className="space-y-6">
-            <div className="grid gap-6 md:grid-cols-2">
-              {archetypes.map((archetype) => (
-                <ArchetypeCard key={archetype.id} archetype={archetype} />
-              ))}
-            </div>
-            <Card className="bg-[#111] border-white/8">
-              <CardHeader>
-                <CardTitle>Archetype Tier List</CardTitle>
-                <CardDescription>Relative power level when optimally drafted</CardDescription>
-              </CardHeader>
-              <div className="space-y-3">
-                <div className="p-4 tier-s rounded-lg">
-                  <h4 className="font-semibold text-amber-400 mb-1">S Tier</h4>
-                  <p className="text-white/80 text-sm">UB Reanimator, Artifact Combo, UR Storm</p>
-                </div>
-                <div className="p-4 tier-a rounded-lg">
-                  <h4 className="font-semibold text-purple-400 mb-1">A Tier</h4>
-                  <p className="text-white/80 text-sm">UW Control, UG Ramp, Show & Tell</p>
-                </div>
-                <div className="p-4 tier-b rounded-lg">
-                  <h4 className="font-semibold text-blue-400 mb-1">B Tier</h4>
-                  <p className="text-white/80 text-sm">BR Aggro, RW Aggro, BG Midrange</p>
-                </div>
-              </div>
-            </Card>
-          </div>
-        );
+        return <ArchetypesPage archetypes={archetypes} cards={cards} />;
       case 'decks':
         return <SampleDecks cards={cards} />;
       case 'matchups':
