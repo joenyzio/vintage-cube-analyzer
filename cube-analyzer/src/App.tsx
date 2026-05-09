@@ -136,50 +136,7 @@ function App() {
       case 'buildaround':
         return <BuildAround cards={cards} />;
       case 'power':
-        return (
-          <div className="space-y-6">
-            <PowerRankings cards={powerRankings} />
-            <div className="grid gap-6 md:grid-cols-2">
-              <Card className="bg-[#111] border-white/8">
-                <CardHeader>
-                  <CardTitle>The Power Nine</CardTitle>
-                  <CardDescription>The most iconic cards ever printed</CardDescription>
-                </CardHeader>
-                <div className="space-y-1">
-                  {cards
-                    .filter(c => ['Black Lotus', 'Ancestral Recall', 'Time Walk', 'Mox Pearl',
-                                  'Mox Sapphire', 'Mox Jet', 'Mox Ruby', 'Mox Emerald', 'Timetwister'].includes(c.name))
-                    .map(card => (
-                      <div key={card.id} className="flex items-center gap-3 p-2 bg-white/2 rounded-lg">
-                        <span className="text-white text-sm">{card.name}</span>
-                        <span className="text-amber-400 text-xs ml-auto font-mono">10</span>
-                      </div>
-                    ))
-                  }
-                </div>
-              </Card>
-              <Card className="bg-[#111] border-white/8">
-                <CardHeader>
-                  <CardTitle>Fast Mana</CardTitle>
-                  <CardDescription>Cards that accelerate you</CardDescription>
-                </CardHeader>
-                <div className="space-y-1 max-h-80 overflow-y-auto">
-                  {cards
-                    .filter(c => c.role === 'fast_mana')
-                    .sort((a, b) => b.powerLevel - a.powerLevel)
-                    .slice(0, 10)
-                    .map(card => (
-                      <div key={card.id} className="flex items-center gap-3 p-2 bg-white/2 rounded-lg">
-                        <span className="text-white text-sm">{card.name}</span>
-                        <span className="text-white/40 text-xs ml-auto font-mono">{card.powerLevel}</span>
-                      </div>
-                    ))
-                  }
-                </div>
-              </Card>
-            </div>
-          </div>
-        );
+        return <PowerRankings cards={powerRankings} />;
       case 'guide':
         return <DraftGuide strategies={draftStrategies} />;
       case 'cards':

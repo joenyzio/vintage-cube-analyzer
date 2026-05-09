@@ -1,12 +1,8 @@
 import { useState, useMemo } from 'react';
 import type { CubeCard } from '../types/card';
 import { getCardImage } from '../services/scryfall';
-import { Card, CardHeader, CardTitle, CardDescription } from './ui/Card';
-import { Badge } from './ui/Badge';
-import {
-  Lightbulb, Zap, Target, AlertTriangle, CheckCircle2,
-  ChevronDown, ChevronUp, Sparkles, Search, X
-} from 'lucide-react';
+import { Card } from './ui/Card';
+import { Zap, Target, AlertTriangle, Lightbulb, Sparkles, X } from 'lucide-react';
 
 interface BuildAroundProps {
   cards: CubeCard[];
@@ -14,6 +10,7 @@ interface BuildAroundProps {
 
 interface BuildAroundGuide {
   cardName: string;
+  colors: string[];
   whyItsBroken: string;
   keyStrategy: string;
   synergies: {
@@ -22,10 +19,7 @@ interface BuildAroundGuide {
     cards: string[];
   }[];
   antiSynergies: string[];
-  sampleDeck: {
-    mainboard: string[];
-    lands: string[];
-  };
+  sampleDeck: string[];
   draftTips: string[];
   openingHands: string[];
 }
@@ -33,6 +27,7 @@ interface BuildAroundGuide {
 const BUILD_AROUND_GUIDES: BuildAroundGuide[] = [
   {
     cardName: 'Balance',
+    colors: ['W'],
     whyItsBroken: `Balance is a 2-mana spell that equalizes lands, cards in hand, AND creatures. The trick is: you build your deck so YOU have the fewest of each, then Balance destroys everything your opponent has. It's essentially a one-sided Armageddon + Mind Twist + Wrath of God combined.`,
     keyStrategy: `Play out your hand using artifact mana (Moxen, Sol Ring), then cast Balance when you have 0-1 lands, 0 cards in hand, and 0 creatures. Your opponent sacrifices all their lands, discards their hand, and loses all creatures. You keep your artifacts and planeswalkers (Balance doesn't touch them). Then win with whatever's left.`,
     synergies: [
@@ -49,54 +44,16 @@ const BUILD_AROUND_GUIDES: BuildAroundGuide[] = [
       {
         category: 'Win Conditions That Survive',
         explanation: `Artifacts and enchantments survive Balance. These can close the game after you've devastated them.`,
-        cards: ['Batterskull', 'The One Ring', 'Bolas\'s Citadel', 'Treachery', 'Parallax Wave', 'Umezawa\'s Jitte', 'Retrofitter Foundry'],
-      },
-      {
-        category: 'Card Draw to Empty Hand',
-        explanation: `Draw cards, play them all out, then Balance. Opponent discards their hand, you already spent yours.`,
-        cards: ['Ancestral Recall', 'Brainstorm', 'Ponder', 'Preordain', 'Gitaxian Probe', 'Night\'s Whisper'],
+        cards: ['Batterskull', 'The One Ring', 'Bolas\'s Citadel', 'Umezawa\'s Jitte'],
       },
       {
         category: 'Counterspell Backup',
         explanation: `Protect your Balance from their counters, or counter their attempts to rebuild.`,
-        cards: ['Force of Will', 'Force of Negation', 'Mana Drain', 'Counterspell', 'Spell Pierce', 'Daze'],
-      },
-      {
-        category: 'Creature-Light Win Cons',
-        explanation: `If you must play creatures, use these that either come back or you play AFTER Balance.`,
-        cards: ['Monastery Mentor', 'Snapcaster Mage', 'True-Name Nemesis', 'Solitude'],
+        cards: ['Force of Will', 'Force of Negation', 'Mana Drain', 'Counterspell', 'Spell Pierce'],
       },
     ],
-    antiSynergies: [
-      'Creature-heavy strategies',
-      'Expensive spells that clog your hand',
-      'Land-based ramp (you want artifact ramp)',
-      'Cards that require a board presence',
-    ],
-    sampleDeck: {
-      mainboard: [
-        // The star
-        'Balance',
-        // Fast mana (12)
-        'Black Lotus', 'Mox Pearl', 'Mox Sapphire', 'Mox Jet', 'Mox Ruby', 'Mox Emerald',
-        'Sol Ring', 'Mana Crypt', 'Mana Vault', 'Chrome Mox', 'Lotus Petal', 'Grim Monolith',
-        // Card draw (6)
-        'Ancestral Recall', 'Brainstorm', 'Ponder', 'Preordain', 'Gitaxian Probe', 'Time Walk',
-        // Planeswalkers (4)
-        'Jace, the Mind Sculptor', 'The Wandering Emperor', 'Teferi, Time Raveler', 'Narset, Parter of Veils',
-        // Protection (5)
-        'Force of Will', 'Force of Negation', 'Mana Drain', 'Counterspell', 'Spell Pierce',
-        // Win cons (4)
-        'Batterskull', 'Monastery Mentor', 'True-Name Nemesis', 'The One Ring',
-        // Removal (2)
-        'Swords to Plowshares', 'Council\'s Judgment',
-      ],
-      lands: [
-        'Tundra', 'Hallowed Fountain', 'Flooded Strand', 'Polluted Delta',
-        'Scalding Tarn', 'Misty Rainforest', 'Prismatic Vista',
-        'Island', 'Island', 'Plains',
-      ],
-    },
+    antiSynergies: ['Creature-heavy strategies', 'Expensive spells that clog your hand', 'Land-based ramp'],
+    sampleDeck: ['Balance', 'Black Lotus', 'Mox Pearl', 'Mox Sapphire', 'Mox Jet', 'Mox Ruby', 'Mox Emerald', 'Sol Ring', 'Mana Crypt', 'Mana Vault', 'Chrome Mox', 'Lotus Petal', 'Ancestral Recall', 'Brainstorm', 'Ponder', 'Preordain', 'Time Walk', 'Jace, the Mind Sculptor', 'The Wandering Emperor', 'Teferi, Time Raveler', 'Narset, Parter of Veils', 'Force of Will', 'Force of Negation', 'Mana Drain', 'Batterskull', 'Monastery Mentor', 'Swords to Plowshares'],
     draftTips: [
       'P1P1 Balance is incredible - you can build around it in UW, Esper, or Jeskai',
       'Prioritize Moxen and Sol Ring even higher than usual',
@@ -112,56 +69,33 @@ const BUILD_AROUND_GUIDES: BuildAroundGuide[] = [
   },
   {
     cardName: 'Tinker',
+    colors: ['U'],
     whyItsBroken: `Tinker lets you sacrifice any artifact (even a Mox or Lotus Petal) and search your library for ANY artifact and put it directly into play. For 3 mana, you get Blightsteel Colossus (an 11/11 infect trampler that kills in one hit).`,
     keyStrategy: `Play artifact mana, then Tinker a cheap artifact into Blightsteel Colossus. Attack once, opponent dies to infect. The whole combo costs just 3 mana and can happen turn 1 with Black Lotus.`,
     synergies: [
       {
         category: 'Tinker Targets',
         explanation: `The fatties you're searching for. Blightsteel is the best because it's an instant kill.`,
-        cards: ['Blightsteel Colossus', 'Kaldra Compleat', 'Wurmcoil Engine', 'Myr Battlesphere', 'Portal to Phyrexia', 'Batterskull', 'The One Ring'],
+        cards: ['Blightsteel Colossus', 'Kaldra Compleat', 'Wurmcoil Engine', 'Myr Battlesphere', 'Portal to Phyrexia', 'The One Ring'],
       },
       {
         category: 'Tinker Fodder',
         explanation: `Cheap artifacts to sacrifice. You don't care about losing a Mox if you get Blightsteel.`,
-        cards: ['Lotus Petal', 'Mox Sapphire', 'Mox Pearl', 'Chrome Mox', 'Mishra\'s Bauble', 'Urza\'s Bauble', 'Chromatic Star', 'Sol Ring'],
+        cards: ['Lotus Petal', 'Mox Sapphire', 'Mox Pearl', 'Chrome Mox', 'Mishra\'s Bauble', 'Sol Ring', 'Mana Crypt'],
       },
       {
         category: 'Protection',
         explanation: `Make sure Tinker resolves and Blightsteel connects.`,
-        cards: ['Force of Will', 'Force of Negation', 'Spell Pierce', 'Daze', 'Lightning Greaves'],
+        cards: ['Force of Will', 'Force of Negation', 'Spell Pierce', 'Daze', 'Mana Drain'],
       },
       {
         category: 'Plan B',
         explanation: `If Blightsteel gets answered, have backup plans.`,
-        cards: ['Show and Tell', 'Sneak Attack', 'Goblin Welder', 'Goblin Engineer', 'Daretti, Scrap Savant'],
+        cards: ['Show and Tell', 'Sneak Attack', 'Goblin Welder', 'Goblin Engineer'],
       },
     ],
-    antiSynergies: [
-      'Creature removal (they can still kill Blightsteel before it attacks)',
-      'Artifact hate like Null Rod',
-      'Not having enough artifacts to sacrifice',
-    ],
-    sampleDeck: {
-      mainboard: [
-        'Tinker',
-        // Targets (3)
-        'Blightsteel Colossus', 'Kaldra Compleat', 'Wurmcoil Engine',
-        // Fodder/Mana (11)
-        'Black Lotus', 'Mox Sapphire', 'Mox Pearl', 'Mox Jet', 'Sol Ring', 'Mana Crypt',
-        'Mana Vault', 'Lotus Petal', 'Chrome Mox', 'Grim Monolith', 'Mishra\'s Bauble',
-        // Protection (5)
-        'Force of Will', 'Force of Negation', 'Spell Pierce', 'Daze', 'Mana Drain',
-        // Card draw (6)
-        'Ancestral Recall', 'Brainstorm', 'Ponder', 'Preordain', 'Time Walk', 'Gitaxian Probe',
-        // Backup plans (4)
-        'Show and Tell', 'Goblin Welder', 'Goblin Engineer', 'Urza, Lord High Artificer',
-      ],
-      lands: [
-        'Tolarian Academy', 'Volcanic Island', 'Steam Vents', 'Scalding Tarn',
-        'Polluted Delta', 'Misty Rainforest', 'Ancient Tomb',
-        'Island', 'Island', 'Mountain',
-      ],
-    },
+    antiSynergies: ['Creature removal can still kill Blightsteel', 'Artifact hate like Null Rod', 'Not having enough artifacts to sacrifice'],
+    sampleDeck: ['Tinker', 'Blightsteel Colossus', 'Kaldra Compleat', 'Wurmcoil Engine', 'Black Lotus', 'Mox Sapphire', 'Mox Pearl', 'Mox Jet', 'Sol Ring', 'Mana Crypt', 'Mana Vault', 'Lotus Petal', 'Chrome Mox', 'Tolarian Academy', 'Force of Will', 'Force of Negation', 'Spell Pierce', 'Mana Drain', 'Brainstorm', 'Ponder', 'Time Walk', 'Ancestral Recall', 'Show and Tell', 'Goblin Welder'],
     draftTips: [
       'P1P1 Tinker is a signal to go all-in on artifacts',
       'Blightsteel is the #1 priority after Tinker',
@@ -177,6 +111,7 @@ const BUILD_AROUND_GUIDES: BuildAroundGuide[] = [
   },
   {
     cardName: 'Channel',
+    colors: ['G'],
     whyItsBroken: `Channel lets you pay life instead of mana. With 20 life, you can generate 19 mana on turn 1 or 2. Cast Emrakul, attack with annihilator 6, and they lose. It's a 2-card combo that wins the game instantly.`,
     keyStrategy: `Cast Channel (GG), pay 15+ life, cast Emrakul, the Aeons Torn (15 mana but you paid life). Emrakul gives you an extra turn, you attack, annihilator 6 makes them sacrifice 6 permanents, and the 15 damage usually kills them.`,
     synergies: [
@@ -188,38 +123,16 @@ const BUILD_AROUND_GUIDES: BuildAroundGuide[] = [
       {
         category: 'Fast Mana for GG',
         explanation: `You need GG on turn 1-2 to cast Channel. Green dorks and Moxen help.`,
-        cards: ['Mox Emerald', 'Birds of Paradise', 'Llanowar Elves', 'Elvish Mystic', 'Noble Hierarch', 'Black Lotus', 'Fastbond'],
+        cards: ['Mox Emerald', 'Birds of Paradise', 'Llanowar Elves', 'Elvish Mystic', 'Noble Hierarch', 'Black Lotus'],
       },
       {
         category: 'Finding the Combo',
         explanation: `Card selection to find Channel + payoff.`,
-        cards: ['Sylvan Library', 'Once Upon a Time', 'Green Sun\'s Zenith', 'Ponder', 'Brainstorm', 'Demonic Tutor'],
+        cards: ['Sylvan Library', 'Once Upon a Time', 'Green Sun\'s Zenith', 'Demonic Tutor', 'Vampiric Tutor'],
       },
     ],
-    antiSynergies: [
-      'Paying too much life against aggro',
-      'Counterspells (except Emrakul can\'t be countered)',
-      'Not having a big enough payoff',
-    ],
-    sampleDeck: {
-      mainboard: [
-        'Channel',
-        // Payoffs (4)
-        'Emrakul, the Aeons Torn', 'Blightsteel Colossus', 'Walking Ballista', 'Craterhoof Behemoth',
-        // Green mana (10)
-        'Mox Emerald', 'Black Lotus', 'Birds of Paradise', 'Llanowar Elves', 'Elvish Mystic',
-        'Noble Hierarch', 'Ignoble Hierarch', 'Arbor Elf', 'Lotus Cobra', 'Rofellos, Llanowar Emissary',
-        // Card selection (6)
-        'Once Upon a Time', 'Green Sun\'s Zenith', 'Sylvan Library', 'Ponder', 'Brainstorm', 'Ancestral Recall',
-        // Protection/Backup (5)
-        'Force of Will', 'Force of Negation', 'Natural Order', 'Show and Tell', 'Fastbond',
-      ],
-      lands: [
-        'Tropical Island', 'Breeding Pool', 'Gaea\'s Cradle', 'Misty Rainforest',
-        'Windswept Heath', 'Wooded Foothills',
-        'Forest', 'Forest', 'Forest', 'Island',
-      ],
-    },
+    antiSynergies: ['Paying too much life against aggro', 'Counterspells (except Emrakul can\'t be countered)', 'Not having a big enough payoff'],
+    sampleDeck: ['Channel', 'Emrakul, the Aeons Torn', 'Blightsteel Colossus', 'Walking Ballista', 'Craterhoof Behemoth', 'Mox Emerald', 'Black Lotus', 'Birds of Paradise', 'Llanowar Elves', 'Noble Hierarch', 'Elvish Mystic', 'Rofellos, Llanowar Emissary', 'Once Upon a Time', 'Green Sun\'s Zenith', 'Sylvan Library', 'Force of Will', 'Natural Order'],
     draftTips: [
       'P1P1 Channel is great but you NEED payoffs',
       'Emrakul is the #1 priority - it can\'t be countered',
@@ -234,6 +147,7 @@ const BUILD_AROUND_GUIDES: BuildAroundGuide[] = [
   },
   {
     cardName: 'Entomb',
+    colors: ['B'],
     whyItsBroken: `Entomb is a 1-mana instant that puts ANY creature from your deck into your graveyard. Combine with Reanimate (1 mana) and you have a 2-mana combo that puts Griselbrand into play on turn 1. Griselbrand draws 14 cards and you win from there.`,
     keyStrategy: `Turn 1: Swamp, Dark Ritual, Entomb (get Griselbrand), Reanimate (pay 8 life). You now have a 7/7 flying lifelink that draws 7 cards per activation. Draw 14, find more action, win.`,
     synergies: [
@@ -258,31 +172,8 @@ const BUILD_AROUND_GUIDES: BuildAroundGuide[] = [
         cards: ['Faithless Looting', 'Frantic Search', 'Careful Study', 'Brainstorm', 'Grief'],
       },
     ],
-    antiSynergies: [
-      'Graveyard hate (Leyline, Surgical)',
-      'Not having enough reanimation spells',
-      'Too many reanimation targets clogging your hand',
-    ],
-    sampleDeck: {
-      mainboard: [
-        'Entomb',
-        // Targets (4)
-        'Griselbrand', 'Archon of Cruelty', 'Atraxa, Grand Unifier', 'Sheoldred, the Apocalypse',
-        // Reanimation (6)
-        'Reanimate', 'Animate Dead', 'Necromancy', 'Exhume', 'Shallow Grave', 'Recurring Nightmare',
-        // Fast mana (5)
-        'Dark Ritual', 'Mox Jet', 'Mox Sapphire', 'Lotus Petal', 'Black Lotus',
-        // Disruption (5)
-        'Thoughtseize', 'Grief', 'Force of Will', 'Force of Negation', 'Duress',
-        // Card selection (5)
-        'Brainstorm', 'Ponder', 'Faithless Looting', 'Frantic Search', 'Vampiric Tutor',
-      ],
-      lands: [
-        'Underground Sea', 'Watery Grave', 'Polluted Delta', 'Bloodstained Mire',
-        'Scalding Tarn', 'Verdant Catacombs',
-        'Swamp', 'Swamp', 'Island', 'Island',
-      ],
-    },
+    antiSynergies: ['Graveyard hate (Leyline, Surgical)', 'Not having enough reanimation spells', 'Too many reanimation targets clogging your hand'],
+    sampleDeck: ['Entomb', 'Griselbrand', 'Archon of Cruelty', 'Atraxa, Grand Unifier', 'Reanimate', 'Animate Dead', 'Necromancy', 'Shallow Grave', 'Recurring Nightmare', 'Dark Ritual', 'Mox Jet', 'Mox Sapphire', 'Lotus Petal', 'Black Lotus', 'Thoughtseize', 'Grief', 'Force of Will', 'Brainstorm', 'Faithless Looting', 'Vampiric Tutor'],
     draftTips: [
       'P1P1 Entomb means you\'re in Reanimator',
       'Griselbrand is the best target by far',
@@ -299,9 +190,8 @@ const BUILD_AROUND_GUIDES: BuildAroundGuide[] = [
 ];
 
 export function BuildAround({ cards }: BuildAroundProps) {
-  const [selectedGuide, setSelectedGuide] = useState<BuildAroundGuide | null>(BUILD_AROUND_GUIDES[0]);
+  const [selectedGuide, setSelectedGuide] = useState<BuildAroundGuide>(BUILD_AROUND_GUIDES[0]);
   const [hoveredCard, setHoveredCard] = useState<CubeCard | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
 
   const cardsByName = useMemo(() => {
     const map = new Map<string, CubeCard>();
@@ -310,45 +200,29 @@ export function BuildAround({ cards }: BuildAroundProps) {
   }, [cards]);
 
   const getCard = (name: string): CubeCard | undefined => cardsByName.get(name);
-  const mainCard = selectedGuide ? getCard(selectedGuide.cardName) : null;
-
-  const filteredGuides = BUILD_AROUND_GUIDES.filter(g =>
-    g.cardName.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  if (!selectedGuide) return null;
+  const mainCard = getCard(selectedGuide.cardName);
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 bg-[#111] border border-white/10 rounded-lg flex items-center justify-center">
-          <Lightbulb className="w-5 h-5 text-white/60" />
-        </div>
-        <div>
-          <h2 className="text-xl font-semibold text-white">Build Around Guide</h2>
-          <p className="text-white/40 text-sm">Deep dive into the cube's most powerful cards</p>
-        </div>
-      </div>
-
-      {/* Card Selector */}
+      {/* Card Selector Tabs */}
       <div className="flex flex-wrap gap-2">
         {BUILD_AROUND_GUIDES.map(guide => {
           const card = getCard(guide.cardName);
+          const isSelected = selectedGuide.cardName === guide.cardName;
           return (
             <button
               key={guide.cardName}
               onClick={() => setSelectedGuide(guide)}
               className={`
-                flex items-center gap-2 px-3 py-2 rounded-lg transition-all
-                ${selectedGuide.cardName === guide.cardName
-                  ? 'bg-white/10 text-white border border-white/20'
-                  : 'bg-white/5 text-white/60 hover:bg-white/10 border border-transparent'
+                flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all
+                ${isSelected
+                  ? 'bg-white/10 text-white ring-1 ring-white/20'
+                  : 'bg-[#111] text-white/60 hover:bg-white/5 hover:text-white/80'
                 }
               `}
             >
               {card && (
-                <div className="w-8 h-10 rounded overflow-hidden">
+                <div className="w-8 h-11 rounded-md overflow-hidden flex-shrink-0">
                   <img src={getCardImage(card)} alt="" className="w-full h-full object-cover object-top" />
                 </div>
               )}
@@ -358,46 +232,42 @@ export function BuildAround({ cards }: BuildAroundProps) {
         })}
       </div>
 
-      {/* Main Content */}
+      {/* Main Content Grid */}
       <div className="grid lg:grid-cols-3 gap-6">
-        {/* Left Column - Card & Why It's Broken */}
-        <div className="space-y-6">
+        {/* Left Column - Card & Strategy */}
+        <div className="space-y-4">
           {/* Card Image */}
           {mainCard && (
             <img
               src={getCardImage(mainCard)}
               alt={mainCard.name}
-              className="w-full max-w-[280px] mx-auto rounded-lg"
+              className="w-full max-w-[260px] rounded-xl shadow-2xl"
             />
           )}
 
           {/* Why It's Broken */}
-          <Card className="bg-[#111] border-white/8">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-white">
-                <AlertTriangle className="w-4 h-4 text-red-400" />
-                Why It's Broken
-              </CardTitle>
-            </CardHeader>
-            <p className="text-white/60 text-sm leading-relaxed">{selectedGuide.whyItsBroken}</p>
+          <Card className="p-4 bg-[#111] border-white/8">
+            <h3 className="text-sm font-semibold text-red-400 mb-2 flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4" />
+              Why It's Broken
+            </h3>
+            <p className="text-sm text-white/70 leading-relaxed">{selectedGuide.whyItsBroken}</p>
           </Card>
 
           {/* Key Strategy */}
-          <Card className="bg-[#111] border-white/8">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-white">
-                <Target className="w-4 h-4 text-white/40" />
-                Key Strategy
-              </CardTitle>
-            </CardHeader>
-            <p className="text-white/60 text-sm leading-relaxed">{selectedGuide.keyStrategy}</p>
+          <Card className="p-4 bg-[#111] border-white/8">
+            <h3 className="text-sm font-semibold text-white/80 mb-2 flex items-center gap-2">
+              <Target className="w-4 h-4 text-white/40" />
+              Key Strategy
+            </h3>
+            <p className="text-sm text-white/60 leading-relaxed">{selectedGuide.keyStrategy}</p>
           </Card>
         </div>
 
         {/* Middle Column - Synergies */}
         <div className="space-y-4">
-          <h3 className="text-lg font-bold text-white flex items-center gap-2">
-            <Zap className="w-5 h-5 text-yellow-500" />
+          <h3 className="text-sm font-semibold text-amber-400 flex items-center gap-2">
+            <Zap className="w-4 h-4" />
             Synergies
           </h3>
 
@@ -405,22 +275,29 @@ export function BuildAround({ cards }: BuildAroundProps) {
             <Card key={idx} className="p-4 bg-[#111] border-white/8">
               <h4 className="font-medium text-white text-sm mb-1">{synergy.category}</h4>
               <p className="text-xs text-white/40 mb-3">{synergy.explanation}</p>
-              <div className="flex flex-wrap gap-1">
+              <div className="flex flex-wrap gap-1.5">
                 {synergy.cards.map(cardName => {
                   const card = getCard(cardName);
+                  if (!card) {
+                    return (
+                      <span key={cardName} className="text-xs px-2 py-1 bg-white/5 text-white/30 rounded">
+                        {cardName}
+                      </span>
+                    );
+                  }
                   return (
-                    <span
+                    <div
                       key={cardName}
-                      className={`
-                        text-xs px-2 py-1 rounded cursor-pointer transition-colors
-                        ${card ? 'bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20' : 'bg-white/5 text-white/30 line-through'}
-                      `}
-                      onMouseEnter={() => card && setHoveredCard(card)}
+                      className="w-10 h-14 rounded-md overflow-hidden cursor-pointer hover:scale-110 transition-transform hover:z-10 ring-1 ring-white/10"
+                      onMouseEnter={() => setHoveredCard(card)}
                       onMouseLeave={() => setHoveredCard(null)}
                     >
-                      {cardName}
-                      {card && <span className="ml-1 opacity-50">({card.powerLevel})</span>}
-                    </span>
+                      <img
+                        src={getCardImage(card)}
+                        alt={cardName}
+                        className="w-full h-full object-cover object-top"
+                      />
+                    </div>
                   );
                 })}
               </div>
@@ -429,14 +306,14 @@ export function BuildAround({ cards }: BuildAroundProps) {
 
           {/* Anti-Synergies */}
           <Card className="p-4 bg-[#111] border-white/8">
-            <h4 className="font-medium text-red-400 text-sm mb-2 flex items-center gap-2">
+            <h4 className="font-medium text-red-400/80 text-sm mb-2 flex items-center gap-2">
               <X className="w-4 h-4" />
               Avoid
             </h4>
-            <ul className="space-y-1">
+            <ul className="space-y-1.5">
               {selectedGuide.antiSynergies.map((item, idx) => (
-                <li key={idx} className="text-xs text-white/40 flex items-start gap-2">
-                  <span className="text-red-400/60">-</span>
+                <li key={idx} className="text-xs text-white/50 flex items-start gap-2">
+                  <span className="text-red-400/50">×</span>
                   {item}
                 </li>
               ))}
@@ -444,50 +321,52 @@ export function BuildAround({ cards }: BuildAroundProps) {
           </Card>
         </div>
 
-        {/* Right Column - Sample Deck & Tips */}
+        {/* Right Column - Tips & Sample */}
         <div className="space-y-4">
           {/* Draft Tips */}
           <Card className="p-4 bg-[#111] border-white/8">
-            <h4 className="font-medium text-white text-sm mb-3 flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-white/80 mb-3 flex items-center gap-2">
               <Lightbulb className="w-4 h-4 text-white/40" />
               Draft Tips
-            </h4>
+            </h3>
             <ul className="space-y-2">
               {selectedGuide.draftTips.map((tip, idx) => (
-                <li key={idx} className="text-xs text-white/60 flex items-start gap-2">
-                  <CheckCircle2 className="w-3 h-3 text-green-400 flex-shrink-0 mt-0.5" />
+                <li key={idx} className="text-sm text-white/60 flex items-start gap-2">
+                  <span className="text-green-400/70 mt-0.5">✓</span>
                   {tip}
                 </li>
               ))}
             </ul>
           </Card>
 
-          {/* Nut Draws */}
+          {/* Dream Opening Hands */}
           <Card className="p-4 bg-[#111] border-white/8">
-            <h4 className="font-medium text-white text-sm mb-3 flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-amber-400" />
+            <h3 className="text-sm font-semibold text-amber-400/80 mb-3 flex items-center gap-2">
+              <Sparkles className="w-4 h-4" />
               Dream Opening Hands
-            </h4>
+            </h3>
             <div className="space-y-2">
               {selectedGuide.openingHands.map((hand, idx) => (
-                <div key={idx} className="p-2 bg-white/2 border border-white/5 rounded-lg">
-                  <p className="text-xs text-white/50 font-mono">{hand}</p>
+                <div key={idx} className="p-2.5 bg-black/30 rounded-lg">
+                  <p className="text-xs text-white/50 font-mono leading-relaxed">{hand}</p>
                 </div>
               ))}
             </div>
           </Card>
 
-          {/* Sample Decklist Preview */}
+          {/* Sample Decklist */}
           <Card className="p-4 bg-[#111] border-white/8">
-            <h4 className="font-bold text-white mb-3">Sample Decklist</h4>
-            <div className="flex flex-wrap gap-1 max-h-48 overflow-y-auto">
-              {[...selectedGuide.sampleDeck.mainboard, ...selectedGuide.sampleDeck.lands].map((cardName, idx) => {
+            <h3 className="text-sm font-semibold text-white/80 mb-3">
+              Sample Decklist
+            </h3>
+            <div className="flex flex-wrap gap-1.5">
+              {selectedGuide.sampleDeck.map((cardName, idx) => {
                 const card = getCard(cardName);
                 if (!card) return null;
                 return (
                   <div
                     key={`${cardName}-${idx}`}
-                    className="w-10 h-14 rounded overflow-hidden cursor-pointer hover:scale-110 transition-transform"
+                    className="w-9 h-12 rounded-md overflow-hidden cursor-pointer hover:scale-110 transition-transform hover:z-10"
                     onMouseEnter={() => setHoveredCard(card)}
                     onMouseLeave={() => setHoveredCard(null)}
                   >
@@ -500,8 +379,8 @@ export function BuildAround({ cards }: BuildAroundProps) {
                 );
               })}
             </div>
-            <p className="text-xs text-white/40 mt-2">
-              {selectedGuide.sampleDeck.mainboard.filter(n => getCard(n)).length} spells + {selectedGuide.sampleDeck.lands.filter(n => getCard(n)).length} lands
+            <p className="text-xs text-white/30 mt-3">
+              {selectedGuide.sampleDeck.filter(n => getCard(n)).length} cards
             </p>
           </Card>
         </div>
@@ -509,7 +388,7 @@ export function BuildAround({ cards }: BuildAroundProps) {
 
       {/* Hover Preview */}
       {hoveredCard && (
-        <div className="fixed bottom-4 right-4 z-50 animate-in fade-in hidden lg:block">
+        <div className="fixed bottom-4 right-4 z-50 hidden lg:block pointer-events-none">
           <div className="bg-[#111] border border-white/10 p-2 rounded-xl shadow-2xl">
             <img
               src={getCardImage(hoveredCard)}
