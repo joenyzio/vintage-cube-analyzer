@@ -838,19 +838,70 @@ function SynergySnapGame({ cards, stats, onUpdate, onBack }: GameComponentProps)
     const aType = (a.type_line || '').toLowerCase();
     const bType = (b.type_line || '').toLowerCase();
 
-    // Check various synergy patterns
-    if (aType.includes('artifact') && bText.includes('artifact')) return { synergy: true, reason: 'Artifact synergy' };
-    if (bType.includes('artifact') && aText.includes('artifact')) return { synergy: true, reason: 'Artifact synergy' };
-    if (aText.includes('graveyard') && bText.includes('graveyard')) return { synergy: true, reason: 'Graveyard synergy' };
-    if (aText.includes('discard') && bText.includes('graveyard')) return { synergy: true, reason: 'Discard synergy' };
-    if (bText.includes('discard') && aText.includes('graveyard')) return { synergy: true, reason: 'Discard synergy' };
-    if (aText.includes('sacrifice') && bText.includes('dies')) return { synergy: true, reason: 'Sacrifice synergy' };
-    if (bText.includes('sacrifice') && aText.includes('dies')) return { synergy: true, reason: 'Sacrifice synergy' };
-    if (aText.includes('token') && bText.includes('creature')) return { synergy: true, reason: 'Token synergy' };
-    if (bText.includes('token') && aText.includes('creature')) return { synergy: true, reason: 'Token synergy' };
-    if (aText.includes('counter') && bText.includes('counter')) return { synergy: true, reason: '+1/+1 counter synergy' };
-    if (aType.includes('creature') && bText.includes('all creatures')) return { synergy: true, reason: 'Creature buff synergy' };
-    if (bType.includes('creature') && aText.includes('all creatures')) return { synergy: true, reason: 'Creature buff synergy' };
+    // Helper: check if card creates tokens
+    const makesTokens = (text: string) => /create[s]?\s+(\d+|a|an|x)\s+.*\s+token/.test(text) || text.includes('creature token');
+    // Helper: check if card cares about creatures entering/dying/being sacrificed
+    const caresAboutCreatures = (text: string) =>
+      text.includes('whenever a creature') ||
+      text.includes('whenever another creature') ||
+      text.includes('sacrifice a creature') ||
+      text.includes('sacrifice another') ||
+      text.includes('number of creatures');
+    // Helper: check if card is a sacrifice outlet
+    const isSacOutlet = (text: string) => /sacrifice (a|another) (creature|permanent|artifact)/.test(text);
+    // Helper: check if card benefits from graveyard
+    const graveyardPayoff = (text: string) =>
+      text.includes('from your graveyard') ||
+      text.includes('in your graveyard') ||
+      text.includes('return') && text.includes('graveyard') ||
+      text.includes('reanimate') ||
+      text.includes('unearth');
+    // Helper: check if card fills graveyard
+    const fillsGraveyard = (text: string) =>
+      text.includes('mill') ||
+      text.includes('discard') ||
+      text.includes('put') && text.includes('into your graveyard');
+
+    // Token maker + token payoff (sacrifice, "whenever a creature", anthems)
+    if (makesTokens(aText) && caresAboutCreatures(bText)) return { synergy: true, reason: 'Token + payoff synergy' };
+    if (makesTokens(bText) && caresAboutCreatures(aText)) return { synergy: true, reason: 'Token + payoff synergy' };
+
+    // Token maker + sacrifice outlet
+    if (makesTokens(aText) && isSacOutlet(bText)) return { synergy: true, reason: 'Tokens + sacrifice outlet' };
+    if (makesTokens(bText) && isSacOutlet(aText)) return { synergy: true, reason: 'Tokens + sacrifice outlet' };
+
+    // Artifact type + explicit "artifacts you control" or "artifact enters"
+    if (aType.includes('artifact') && (bText.includes('artifacts you control') || bText.includes('artifact enters')))
+      return { synergy: true, reason: 'Artifact synergy' };
+    if (bType.includes('artifact') && (aText.includes('artifacts you control') || aText.includes('artifact enters')))
+      return { synergy: true, reason: 'Artifact synergy' };
+
+    // Graveyard filler + graveyard payoff
+    if (fillsGraveyard(aText) && graveyardPayoff(bText)) return { synergy: true, reason: 'Graveyard synergy' };
+    if (fillsGraveyard(bText) && graveyardPayoff(aText)) return { synergy: true, reason: 'Graveyard synergy' };
+
+    // Dies trigger + sacrifice outlet
+    if (aText.includes('when') && aText.includes('dies') && isSacOutlet(bText)) return { synergy: true, reason: 'Sacrifice synergy' };
+    if (bText.includes('when') && bText.includes('dies') && isSacOutlet(aText)) return { synergy: true, reason: 'Sacrifice synergy' };
+
+    // +1/+1 counters (need both cards to reference counters meaningfully)
+    const countersA = aText.includes('+1/+1 counter');
+    const countersB = bText.includes('+1/+1 counter');
+    if (countersA && countersB) return { synergy: true, reason: '+1/+1 counter synergy' };
+
+    // Blink/flicker + ETB
+    const isFlicker = (text: string) => text.includes('exile') && (text.includes('return') || text.includes('returns'));
+    const hasETB = (text: string) => text.includes('when') && (text.includes('enters') || text.includes('enters the battlefield'));
+    if (isFlicker(aText) && hasETB(bText) && bType.includes('creature')) return { synergy: true, reason: 'Blink + ETB synergy' };
+    if (isFlicker(bText) && hasETB(aText) && aType.includes('creature')) return { synergy: true, reason: 'Blink + ETB synergy' };
+
+    // Storm + cheap spells (cmc 0-1 instant/sorcery)
+    if (aText.includes('storm') && bType.match(/instant|sorcery/) && (b.cmc ?? 0) <= 1) return { synergy: true, reason: 'Storm synergy' };
+    if (bText.includes('storm') && aType.match(/instant|sorcery/) && (a.cmc ?? 0) <= 1) return { synergy: true, reason: 'Storm synergy' };
+
+    // Equipment + creature
+    if (aType.includes('equipment') && bType.includes('creature')) return { synergy: true, reason: 'Equipment + creature' };
+    if (bType.includes('equipment') && aType.includes('creature')) return { synergy: true, reason: 'Equipment + creature' };
 
     return { synergy: false, reason: 'No clear synergy' };
   }, []);
