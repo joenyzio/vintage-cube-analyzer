@@ -1181,16 +1181,18 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                   </div>
                 )}
 
-                {/* Power badge */}
-                <div className={`
-                  absolute top-1 right-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shadow
-                  ${card.powerLevel >= 10 ? 'bg-amber-400 text-black' : ''}
-                  ${card.powerLevel === 9 ? 'bg-purple-400 text-white' : ''}
-                  ${card.powerLevel >= 7 && card.powerLevel < 9 ? 'bg-blue-400 text-white' : ''}
-                  ${card.powerLevel < 7 ? 'bg-black/70 text-white/80' : ''}
-                `}>
-                  {card.powerLevel}
-                </div>
+                {/* Power badge - ONLY show after reveal (it's derived from ELO, would give away answer) */}
+                {quizState.revealed && (
+                  <div className={`
+                    absolute top-1 right-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shadow
+                    ${card.powerLevel >= 10 ? 'bg-amber-400 text-black' : ''}
+                    ${card.powerLevel === 9 ? 'bg-purple-400 text-white' : ''}
+                    ${card.powerLevel >= 7 && card.powerLevel < 9 ? 'bg-blue-400 text-white' : ''}
+                    ${card.powerLevel < 7 ? 'bg-black/70 text-white/80' : ''}
+                  `}>
+                    {card.powerLevel}
+                  </div>
+                )}
 
                 {/* Revealed indicators */}
                 {quizState.revealed && (
