@@ -336,7 +336,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
               >
                 <img src={getCardImage(card)} alt={card.name} className="w-full h-full object-cover" loading="lazy" />
                 <div className={`
-                  absolute top-1.5 right-1.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold
+                  absolute bottom-1.5 right-1.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold
                   ${card.powerLevel >= 10 ? 'bg-amber-400 text-black' : 'bg-purple-400 text-white'}
                 `}>
                   {card.powerLevel}
@@ -617,11 +617,11 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                   </div>
                 )}
 
-                {/* Power badge */}
+                {/* Power badge - bottom-right to avoid covering mana cost */}
                 <div className={`
-                  absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold shadow-lg
+                  absolute bottom-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold shadow-lg
                   ${card.powerLevel >= 10 ? 'bg-gradient-to-br from-amber-400 to-amber-500 text-black' : ''}
-                  ${card.powerLevel === 9 ? 'bg-gradient-to-br from-purple-400 to-purple-500 text-white' : ''}
+                  ${card.powerLevel >= 9 ? 'bg-gradient-to-br from-purple-400 to-purple-500 text-white' : ''}
                   ${card.powerLevel >= 7 && card.powerLevel < 9 ? 'bg-gradient-to-br from-blue-400 to-blue-500 text-white' : ''}
                   ${card.powerLevel < 7 ? 'bg-black/70 text-white/80' : ''}
                 `}>
