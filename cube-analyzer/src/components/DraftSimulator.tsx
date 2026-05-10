@@ -153,6 +153,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
   const [draftState, setDraftState] = useState<DraftState | null>(null);
   const [quizState, setQuizState] = useState<QuizState | null>(null);
   const [hoveredCard, setHoveredCard] = useState<CubeCard | null>(null);
+  const [mobileSelectedCard, setMobileSelectedCard] = useState<CubeCard | null>(null);
 
   // New: Coach mode and history
   const [coachMode, setCoachMode] = useState(true);
@@ -1779,10 +1780,19 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
             const wheelPrediction = getWheelPrediction(card);
             const keyboardNum = index + 1;
 
+            const handleCardClick = () => {
+              // On mobile (< 640px), open drawer first; on desktop, pick immediately
+              if (window.innerWidth < 640) {
+                setMobileSelectedCard(card);
+              } else {
+                makePick(card);
+              }
+            };
+
             return (
               <div
                 key={card.id}
-                onClick={() => makePick(card)}
+                onClick={handleCardClick}
                 onMouseEnter={() => setHoveredCard(card)}
                 onMouseLeave={() => setHoveredCard(null)}
                 className={`
@@ -1927,6 +1937,109 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                   </div>
                 );
               })()}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Card Drawer */}
+      {mobileSelectedCard && (
+        <div className="fixed inset-0 z-50 sm:hidden">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            onClick={() => setMobileSelectedCard(null)}
+          />
+
+          {/* Drawer */}
+          <div className="absolute bottom-0 left-0 right-0 bg-black border-t border-white/10 rounded-t-2xl p-4 pb-8 animate-in slide-in-from-bottom duration-200">
+            <div className="flex gap-4">
+              {/* Card Image */}
+              <div className="w-40 flex-shrink-0">
+                <img
+                  src={getCardImage(mobileSelectedCard)}
+                  alt={mobileSelectedCard.name}
+                  className="w-full rounded-xl shadow-2xl"
+                />
+              </div>
+
+              {/* Card Info */}
+              <div className="flex-1 min-w-0">
+                <h3 className="text-lg font-bold text-white truncate">{mobileSelectedCard.name}</h3>
+                <p className="text-xs text-white/50 mb-3">{mobileSelectedCard.type_line}</p>
+
+                {(() => {
+                  const eloData = getEloData(mobileSelectedCard.name);
+                  const percentile = getPercentile(mobileSelectedCard.name);
+                  const wheelLikelihood = getWheelLikelihood(mobileSelectedCard.name);
+                  const synergy = getCardSynergy(mobileSelectedCard);
+
+                  return (
+                    <div className="space-y-2">
+                      {eloData && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-white/40">ELO</span>
+                          <span className="text-sm font-mono text-white">{Math.round(eloData.elo)}</span>
+                          <span className={`text-xs px-1.5 py-0.5 rounded ${
+                            percentile >= 75 ? 'bg-amber-500/20 text-amber-400' :
+                            percentile >= 50 ? 'bg-purple-500/20 text-purple-400' :
+                            'bg-white/10 text-white/50'
+                          }`}>
+                            Top {100 - percentile}%
+                          </span>
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-white/40">Wheel</span>
+                        <span className={`text-xs px-1.5 py-0.5 rounded ${
+                          wheelLikelihood === 'likely' ? 'bg-green-500/20 text-green-400' :
+                          wheelLikelihood === 'maybe' ? 'bg-amber-500/20 text-amber-400' :
+                          'bg-red-500/20 text-red-400'
+                        }`}>
+                          {wheelLikelihood === 'likely' ? 'Likely' :
+                           wheelLikelihood === 'maybe' ? 'Maybe' :
+                           'Unlikely'}
+                        </span>
+                      </div>
+
+                      {synergy && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-white/40">Fit</span>
+                          <span className={`text-xs px-1.5 py-0.5 rounded ${
+                            synergy === 'high' ? 'bg-green-500/20 text-green-400' :
+                            synergy === 'medium' ? 'bg-amber-500/20 text-amber-400' :
+                            'bg-red-500/20 text-red-400'
+                          }`}>
+                            {synergy === 'high' ? 'Great fit' :
+                             synergy === 'medium' ? 'OK fit' :
+                             'Off-color'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={() => setMobileSelectedCard(null)}
+                className="flex-1 py-3 px-4 bg-white/10 border border-white/10 rounded-xl text-white font-medium active:scale-95 transition-transform"
+              >
+                Back
+              </button>
+              <button
+                onClick={() => {
+                  makePick(mobileSelectedCard);
+                  setMobileSelectedCard(null);
+                }}
+                className="flex-1 py-3 px-4 bg-white text-black rounded-xl font-semibold active:scale-95 transition-transform"
+              >
+                Pick This Card
+              </button>
             </div>
           </div>
         </div>
