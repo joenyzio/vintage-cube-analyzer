@@ -10,13 +10,14 @@ import { SynergyExplorer } from './components/SynergyExplorer';
 import { MatchupMatrix } from './components/MatchupMatrix';
 import { SampleDecks } from './components/SampleDecks';
 import { BuildAround } from './components/BuildAround';
+import { GamesPage } from './components/GamesPage';
 import {
   BarChart3, Layers, Trophy, BookOpen, Search, Sparkles,
   Gamepad2, Link2, Swords, ExternalLink, FileStack, Lightbulb,
-  Menu, ChevronLeft
+  Menu, ChevronLeft, Dices
 } from 'lucide-react';
 
-type TabId = 'overview' | 'draft' | 'archetypes' | 'decks' | 'matchups' | 'synergies' | 'buildaround' | 'power' | 'guide' | 'cards';
+type TabId = 'overview' | 'draft' | 'games' | 'archetypes' | 'decks' | 'matchups' | 'synergies' | 'buildaround' | 'power' | 'guide' | 'cards';
 
 interface NavItem {
   id: TabId;
@@ -27,6 +28,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { id: 'overview', label: 'Overview', icon: BarChart3 },
   { id: 'draft', label: 'Draft Simulator', icon: Gamepad2 },
+  { id: 'games', label: 'Games', icon: Dices },
   { id: 'archetypes', label: 'Archetypes', icon: Layers },
   { id: 'decks', label: 'Sample Decks', icon: FileStack },
   { id: 'matchups', label: 'Matchups', icon: Swords },
@@ -140,6 +142,8 @@ function App() {
         );
       case 'draft':
         return <DraftSimulator cards={cards} />;
+      case 'games':
+        return <GamesPage cards={cards} />;
       case 'archetypes':
         return <ArchetypesPage archetypes={archetypes} cards={cards} />;
       case 'decks':
