@@ -824,6 +824,9 @@ function GuessCmcGame({ cards, stats, onUpdate, onBack }: GameComponentProps) {
   );
 }
 
+// Vector API URL
+const VECTOR_API = 'https://cube-vectors.jdnyzio.workers.dev';
+
 // ============ GAME 7: Synergy Snap ============
 function SynergySnapGame({ cards, stats, onUpdate, onBack }: GameComponentProps) {
   const [pair, setPair] = useState<[CubeCard, CubeCard] | null>(null);
@@ -831,94 +834,58 @@ function SynergySnapGame({ cards, stats, onUpdate, onBack }: GameComponentProps)
   const [revealed, setRevealed] = useState(false);
   const [guess, setGuess] = useState<boolean | null>(null);
   const [explanation, setExplanation] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [similarity, setSimilarity] = useState<number | null>(null);
 
-  const checkSynergy = useCallback((a: CubeCard, b: CubeCard): { synergy: boolean; reason: string } => {
-    const aText = (a.oracle_text || '').toLowerCase();
-    const bText = (b.oracle_text || '').toLowerCase();
-    const aType = (a.type_line || '').toLowerCase();
-    const bType = (b.type_line || '').toLowerCase();
-
-    // Helper: check if card creates tokens
-    const makesTokens = (text: string) => /create[s]?\s+(\d+|a|an|x)\s+.*\s+token/.test(text) || text.includes('creature token');
-    // Helper: check if card cares about creatures entering/dying/being sacrificed
-    const caresAboutCreatures = (text: string) =>
-      text.includes('whenever a creature') ||
-      text.includes('whenever another creature') ||
-      text.includes('sacrifice a creature') ||
-      text.includes('sacrifice another') ||
-      text.includes('number of creatures');
-    // Helper: check if card is a sacrifice outlet
-    const isSacOutlet = (text: string) => /sacrifice (a|another) (creature|permanent|artifact)/.test(text);
-    // Helper: check if card benefits from graveyard
-    const graveyardPayoff = (text: string) =>
-      text.includes('from your graveyard') ||
-      text.includes('in your graveyard') ||
-      text.includes('return') && text.includes('graveyard') ||
-      text.includes('reanimate') ||
-      text.includes('unearth');
-    // Helper: check if card fills graveyard
-    const fillsGraveyard = (text: string) =>
-      text.includes('mill') ||
-      text.includes('discard') ||
-      text.includes('put') && text.includes('into your graveyard');
-
-    // Token maker + token payoff (sacrifice, "whenever a creature", anthems)
-    if (makesTokens(aText) && caresAboutCreatures(bText)) return { synergy: true, reason: 'Token + payoff synergy' };
-    if (makesTokens(bText) && caresAboutCreatures(aText)) return { synergy: true, reason: 'Token + payoff synergy' };
-
-    // Token maker + sacrifice outlet
-    if (makesTokens(aText) && isSacOutlet(bText)) return { synergy: true, reason: 'Tokens + sacrifice outlet' };
-    if (makesTokens(bText) && isSacOutlet(aText)) return { synergy: true, reason: 'Tokens + sacrifice outlet' };
-
-    // Artifact type + explicit "artifacts you control" or "artifact enters"
-    if (aType.includes('artifact') && (bText.includes('artifacts you control') || bText.includes('artifact enters')))
-      return { synergy: true, reason: 'Artifact synergy' };
-    if (bType.includes('artifact') && (aText.includes('artifacts you control') || aText.includes('artifact enters')))
-      return { synergy: true, reason: 'Artifact synergy' };
-
-    // Graveyard filler + graveyard payoff
-    if (fillsGraveyard(aText) && graveyardPayoff(bText)) return { synergy: true, reason: 'Graveyard synergy' };
-    if (fillsGraveyard(bText) && graveyardPayoff(aText)) return { synergy: true, reason: 'Graveyard synergy' };
-
-    // Dies trigger + sacrifice outlet
-    if (aText.includes('when') && aText.includes('dies') && isSacOutlet(bText)) return { synergy: true, reason: 'Sacrifice synergy' };
-    if (bText.includes('when') && bText.includes('dies') && isSacOutlet(aText)) return { synergy: true, reason: 'Sacrifice synergy' };
-
-    // +1/+1 counters (need both cards to reference counters meaningfully)
-    const countersA = aText.includes('+1/+1 counter');
-    const countersB = bText.includes('+1/+1 counter');
-    if (countersA && countersB) return { synergy: true, reason: '+1/+1 counter synergy' };
-
-    // Blink/flicker + ETB
-    const isFlicker = (text: string) => text.includes('exile') && (text.includes('return') || text.includes('returns'));
-    const hasETB = (text: string) => text.includes('when') && (text.includes('enters') || text.includes('enters the battlefield'));
-    if (isFlicker(aText) && hasETB(bText) && bType.includes('creature')) return { synergy: true, reason: 'Blink + ETB synergy' };
-    if (isFlicker(bText) && hasETB(aText) && aType.includes('creature')) return { synergy: true, reason: 'Blink + ETB synergy' };
-
-    // Storm + cheap spells (cmc 0-1 instant/sorcery)
-    if (aText.includes('storm') && bType.match(/instant|sorcery/) && (b.cmc ?? 0) <= 1) return { synergy: true, reason: 'Storm synergy' };
-    if (bText.includes('storm') && aType.match(/instant|sorcery/) && (a.cmc ?? 0) <= 1) return { synergy: true, reason: 'Storm synergy' };
-
-    // Equipment + creature
-    if (aType.includes('equipment') && bType.includes('creature')) return { synergy: true, reason: 'Equipment + creature' };
-    if (bType.includes('equipment') && aType.includes('creature')) return { synergy: true, reason: 'Equipment + creature' };
-
-    return { synergy: false, reason: 'No clear synergy' };
-  }, []);
-
-  const newRound = useCallback(() => {
+  const newRound = useCallback(async () => {
+    setLoading(true);
     const [a, b] = getRandomCards(cards, 2);
-    const result = checkSynergy(a, b);
     setPair([a, b]);
-    setHasSynergy(result.synergy);
-    setExplanation(result.reason);
     setRevealed(false);
     setGuess(null);
-  }, [cards, checkSynergy]);
+    setSimilarity(null);
+
+    try {
+      const response = await fetch(`${VECTOR_API}/similarity`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          card1: { name: a.name, type_line: a.type_line || '', oracle_text: a.oracle_text || '' },
+          card2: { name: b.name, type_line: b.type_line || '', oracle_text: b.oracle_text || '' },
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setHasSynergy(result.hasSynergy);
+        setSimilarity(result.similarity);
+        setExplanation(result.strength === 'strong' ? 'Strong synergy' : result.strength === 'moderate' ? 'Moderate synergy' : 'No clear synergy');
+      } else {
+        // Fallback: no synergy if API fails
+        setHasSynergy(false);
+        setExplanation('No clear synergy');
+      }
+    } catch {
+      // Fallback: no synergy if API fails
+      setHasSynergy(false);
+      setExplanation('No clear synergy');
+    }
+
+    setLoading(false);
+  }, [cards]);
 
   useEffect(() => { newRound(); }, [newRound]);
 
-  if (!pair) return null;
+  if (!pair || loading) {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <GameHeader title="Synergy Snap" subtitle="Analyzing cards with AI..." streak={stats.streak} onBack={onBack} />
+        <div className="flex justify-center py-12">
+          <div className="animate-spin w-8 h-8 border-2 border-pink-400 border-t-transparent rounded-full" />
+        </div>
+      </div>
+    );
+  }
 
   const handleGuess = (g: boolean) => {
     if (revealed) return;
@@ -970,6 +937,20 @@ function SynergySnapGame({ cards, stats, onUpdate, onBack }: GameComponentProps)
             {guess === hasSynergy ? 'Correct!' : 'Wrong!'}
           </div>
           <div className="text-sm text-white/50">{explanation}</div>
+          {similarity !== null && (
+            <div className="flex items-center justify-center gap-2">
+              <span className="text-xs text-white/30">AI Similarity:</span>
+              <div className="w-24 h-2 bg-white/10 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full ${
+                    similarity >= 0.72 ? 'bg-green-500' : similarity >= 0.65 ? 'bg-yellow-500' : 'bg-white/30'
+                  }`}
+                  style={{ width: `${similarity * 100}%` }}
+                />
+              </div>
+              <span className="text-xs font-mono text-white/50">{Math.round(similarity * 100)}%</span>
+            </div>
+          )}
           <button onClick={newRound} className="px-6 py-2.5 bg-white text-black rounded-lg font-semibold hover:bg-white/90 transition-colors">
             Next
           </button>
