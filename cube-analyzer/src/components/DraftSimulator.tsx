@@ -2039,21 +2039,38 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
 
             {/* Fixed Action Buttons at Bottom */}
             <div className="flex gap-3 p-4 pb-8 border-t border-white/10 bg-black">
-              <button
-                onClick={() => setMobileSelectedCard(null)}
-                className="flex-1 py-4 px-4 bg-white/10 border border-white/10 rounded-xl text-white font-medium active:scale-95 transition-transform"
-              >
-                Back
-              </button>
-              <button
-                onClick={() => {
-                  makePick(mobileSelectedCard);
-                  setMobileSelectedCard(null);
-                }}
-                className="flex-1 py-4 px-4 bg-white text-black rounded-xl font-bold active:scale-95 transition-transform"
-              >
-                Pick This Card
-              </button>
+              {/* Check if card is already picked */}
+              {draftState?.picks.some(p => p.id === mobileSelectedCard.id) ? (
+                // Card is from picks - just show back button
+                <button
+                  onClick={() => {
+                    setMobileSelectedCard(null);
+                    setShowMobileDeck(true);
+                  }}
+                  className="flex-1 py-4 px-4 bg-white/10 border border-white/10 rounded-xl text-white font-medium active:scale-95 transition-transform"
+                >
+                  Back to Deck
+                </button>
+              ) : (
+                // Card is from pack - show pick options
+                <>
+                  <button
+                    onClick={() => setMobileSelectedCard(null)}
+                    className="flex-1 py-4 px-4 bg-white/10 border border-white/10 rounded-xl text-white font-medium active:scale-95 transition-transform"
+                  >
+                    Back
+                  </button>
+                  <button
+                    onClick={() => {
+                      makePick(mobileSelectedCard);
+                      setMobileSelectedCard(null);
+                    }}
+                    className="flex-1 py-4 px-4 bg-white text-black rounded-xl font-bold active:scale-95 transition-transform"
+                  >
+                    Pick This Card
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
