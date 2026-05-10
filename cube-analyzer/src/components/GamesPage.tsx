@@ -269,47 +269,43 @@ function HigherLowerGame({ cards, stats, onUpdate, onBack }: GameComponentProps)
   };
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-2xl mx-auto">
       <GameHeader title="Higher or Lower" subtitle="Which card has higher ELO?" streak={stats.streak} onBack={onBack} />
 
-      <div className="grid grid-cols-2 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3">
         {pair.map((card, idx) => {
           const elo = idx === 0 ? eloA : eloB;
           const isCorrect = idx === correctIndex;
           const isPicked = picked === idx;
 
           return (
-            <button
-              key={card.id}
-              onClick={() => handleCardClick(card, idx as 0 | 1)}
-              className={`relative rounded-xl overflow-hidden transition-all ${
-                revealed
-                  ? isCorrect ? 'ring-2 ring-green-500 cursor-zoom-in' : isPicked ? 'ring-2 ring-red-500 opacity-70 cursor-zoom-in' : 'opacity-50 cursor-zoom-in'
-                  : 'hover:scale-[1.02] active:scale-[0.98]'
-              }`}
-            >
-              <img src={getCardImage(card)} alt={card.name} className="w-full" />
+            <div key={card.id} className="flex flex-col">
+              <button
+                onClick={() => handleCardClick(card, idx as 0 | 1)}
+                className={`rounded-xl overflow-hidden transition-all ${
+                  revealed
+                    ? isCorrect ? 'ring-2 ring-green-500 cursor-zoom-in' : isPicked ? 'ring-2 ring-red-500 opacity-70 cursor-zoom-in' : 'opacity-50 cursor-zoom-in'
+                    : 'hover:scale-[1.02] active:scale-[0.98]'
+                }`}
+              >
+                <img src={getCardImage(card)} alt={card.name} className="w-full" />
+              </button>
               {revealed && (
-                <div className={`absolute bottom-0 left-0 right-0 py-2 flex items-center justify-center gap-3 ${isCorrect ? 'bg-green-500' : 'bg-red-500'}`}>
+                <div className={`mt-2 py-2 rounded-lg flex items-center justify-center gap-4 ${isCorrect ? 'bg-green-500' : 'bg-red-500'}`}>
                   <div className="text-center">
-                    <div className="text-white font-bold">{Math.round(elo)}</div>
+                    <div className="text-white font-bold text-sm">{Math.round(elo)}</div>
                     <div className="text-white/80 text-[10px]">ELO</div>
                   </div>
-                  <div className="w-px h-8 bg-white/30" />
                   <div className="text-center">
-                    <div className="text-white font-bold">{card.powerLevel.toFixed(1)}</div>
+                    <div className="text-white font-bold text-sm">{card.powerLevel.toFixed(1)}</div>
                     <div className="text-white/80 text-[10px]">Power</div>
                   </div>
                 </div>
               )}
-            </button>
+            </div>
           );
         })}
       </div>
-
-      {revealed && (
-        <p className="text-center text-xs text-white/30 mt-2">Tap a card to view it full size</p>
-      )}
 
       {revealed && (
         <div className="text-center mt-4 space-y-3">
