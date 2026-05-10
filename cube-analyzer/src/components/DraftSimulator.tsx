@@ -1952,30 +1952,23 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
           />
 
           {/* Drawer - Full screen style */}
-          <div className="absolute bottom-0 left-0 right-0 top-16 bg-black border-t border-white/10 rounded-t-3xl animate-in slide-in-from-bottom duration-200 flex flex-col">
+          <div className="absolute bottom-0 left-0 right-0 top-4 bg-black border-t border-white/10 rounded-t-3xl animate-in slide-in-from-bottom duration-200 flex flex-col">
             {/* Drag handle */}
-            <div className="flex justify-center py-3">
+            <div className="flex justify-center py-2">
               <div className="w-10 h-1 bg-white/20 rounded-full" />
             </div>
 
-            {/* Scrollable content */}
-            <div className="flex-1 overflow-y-auto px-6 pb-4">
-              {/* Large Card Image */}
-              <div className="flex justify-center mb-4">
-                <img
-                  src={getCardImage(mobileSelectedCard)}
-                  alt={mobileSelectedCard.name}
-                  className="w-64 max-w-[70vw] rounded-xl shadow-2xl"
-                />
-              </div>
+            {/* Large Card Image - fills available space */}
+            <div className="flex-1 flex items-center justify-center px-4">
+              <img
+                src={getCardImage(mobileSelectedCard)}
+                alt={mobileSelectedCard.name}
+                className="max-h-full w-auto max-w-[85vw] rounded-xl shadow-2xl"
+              />
+            </div>
 
-              {/* Card Info */}
-              <div className="text-center mb-4">
-                <h3 className="text-xl font-bold text-white">{mobileSelectedCard.name}</h3>
-                <p className="text-sm text-white/50">{mobileSelectedCard.type_line}</p>
-              </div>
-
-              {/* Stats Grid */}
+            {/* Stats Grid - same as before */}
+            <div className="px-4 py-3">
               {(() => {
                 const eloData = getEloData(mobileSelectedCard.name);
                 const percentile = getPercentile(mobileSelectedCard.name);
@@ -1983,7 +1976,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                 const synergy = getCardSynergy(mobileSelectedCard);
 
                 return (
-                  <div className="grid grid-cols-3 gap-3 mb-4">
+                  <div className="grid grid-cols-3 gap-3">
                     {/* ELO Rating */}
                     <div className="bg-white/5 rounded-xl p-3 text-center">
                       <div className="text-[10px] text-white/40 uppercase tracking-wider mb-1">ELO</div>
