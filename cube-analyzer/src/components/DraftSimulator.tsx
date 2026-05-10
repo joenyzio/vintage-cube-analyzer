@@ -1103,53 +1103,59 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     const isCorrect = quizState.userPick?.id === quizState.correctCard.id;
 
     return (
-      <div className="space-y-6">
+      <div className="pb-24"> {/* Padding for fixed bottom bar */}
         {/* Quiz Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400/20 to-amber-500/10 flex items-center justify-center">
-              <HelpCircle className="w-6 h-6 text-amber-400" />
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400/20 to-amber-500/10 flex items-center justify-center">
+              <HelpCircle className="w-5 h-5 text-amber-400" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-white tracking-tight">P1P1 Quiz</h2>
-              <p className="text-sm text-white/40 mt-0.5">
-                Pick the best card based on ELO rating
-              </p>
+              <h2 className="text-lg font-semibold text-white tracking-tight">P1P1 Quiz</h2>
+              <p className="text-xs text-white/40">Pick the best card based on ELO</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             {/* Score */}
             {quizState.history.length > 0 && (
-              <div className="text-right">
-                <div className="text-xs text-white/40">Accuracy</div>
-                <div className={`text-lg font-bold ${
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-lg">
+                <span className="text-xs text-white/40">{quizState.history.filter(h => h.correct).length}/{quizState.history.length}</span>
+                <span className={`text-sm font-bold ${
                   quizAccuracy && quizAccuracy >= 70 ? 'text-green-400' :
                   quizAccuracy && quizAccuracy >= 50 ? 'text-amber-400' :
                   'text-red-400'
                 }`}>
                   {quizAccuracy}%
-                </div>
+                </span>
               </div>
             )}
 
             <button
               onClick={returnToMenu}
-              className="flex items-center gap-2.5 px-5 py-2.5 bg-white/10 border border-white/10 rounded-xl text-white font-medium hover:bg-white/15 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-white/10 border border-white/10 rounded-lg text-sm text-white font-medium hover:bg-white/15 transition-colors"
             >
-              <RotateCcw className="w-4 h-4" />
-              Exit Quiz
+              <RotateCcw className="w-3.5 h-3.5" />
+              Exit
             </button>
           </div>
         </div>
 
-        {/* Pack Grid */}
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 sm:gap-4">
-          {quizState.currentPack.map((card) => {
+        {/* Compact instruction */}
+        {!quizState.revealed && (
+          <div className="text-center text-white/30 text-xs mb-3">
+            Click the card you would first-pick · Press 1-9 for quick select
+          </div>
+        )}
+
+        {/* Pack Grid - More compact with 5 columns */}
+        <div className="grid grid-cols-5 gap-2">
+          {quizState.currentPack.map((card, index) => {
             const isThisCorrect = card.id === quizState.correctCard.id;
             const isUserPick = card.id === quizState.userPick?.id;
             const cardElo = getEloData(card.name);
             const percentile = getPercentile(card.name);
+            const keyNum = index + 1;
 
             return (
               <div
@@ -1158,22 +1164,29 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                 onMouseEnter={() => setHoveredCard(card)}
                 onMouseLeave={() => setHoveredCard(null)}
                 className={`
-                  relative aspect-[488/680] rounded-xl overflow-hidden shadow-lg
+                  relative aspect-[488/680] rounded-lg overflow-hidden shadow-lg
                   transition-all duration-200
-                  ${!quizState.revealed ? 'cursor-pointer hover:scale-[1.04] hover:-translate-y-1 hover:z-10 hover:shadow-xl' : ''}
-                  ${quizState.revealed && isThisCorrect ? 'ring-4 ring-green-400 shadow-green-400/30' : ''}
-                  ${quizState.revealed && isUserPick && !isThisCorrect ? 'ring-4 ring-red-400 shadow-red-400/30' : ''}
-                  ${quizState.revealed && !isThisCorrect && !isUserPick ? 'opacity-50' : ''}
+                  ${!quizState.revealed ? 'cursor-pointer hover:scale-105 hover:z-10 hover:shadow-xl' : ''}
+                  ${quizState.revealed && isThisCorrect ? 'ring-3 ring-green-400 shadow-green-400/30 scale-105 z-10' : ''}
+                  ${quizState.revealed && isUserPick && !isThisCorrect ? 'ring-3 ring-red-400 shadow-red-400/30' : ''}
+                  ${quizState.revealed && !isThisCorrect && !isUserPick ? 'opacity-40 scale-95' : ''}
                 `}
               >
                 <img src={getCardImage(card)} alt={card.name} className="w-full h-full object-cover" loading="lazy" />
 
+                {/* Keyboard hint (before reveal) */}
+                {!quizState.revealed && keyNum <= 9 && (
+                  <div className="absolute bottom-1 left-1 w-5 h-5 rounded bg-black/60 flex items-center justify-center text-[10px] font-mono text-white/60">
+                    {keyNum}
+                  </div>
+                )}
+
                 {/* Power badge */}
                 <div className={`
-                  absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold shadow-lg
-                  ${card.powerLevel >= 10 ? 'bg-gradient-to-br from-amber-400 to-amber-500 text-black' : ''}
-                  ${card.powerLevel === 9 ? 'bg-gradient-to-br from-purple-400 to-purple-500 text-white' : ''}
-                  ${card.powerLevel >= 7 && card.powerLevel < 9 ? 'bg-gradient-to-br from-blue-400 to-blue-500 text-white' : ''}
+                  absolute top-1 right-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shadow
+                  ${card.powerLevel >= 10 ? 'bg-amber-400 text-black' : ''}
+                  ${card.powerLevel === 9 ? 'bg-purple-400 text-white' : ''}
+                  ${card.powerLevel >= 7 && card.powerLevel < 9 ? 'bg-blue-400 text-white' : ''}
                   ${card.powerLevel < 7 ? 'bg-black/70 text-white/80' : ''}
                 `}>
                   {card.powerLevel}
@@ -1183,33 +1196,34 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                 {quizState.revealed && (
                   <>
                     {isThisCorrect && (
-                      <div className="absolute top-1.5 left-1.5">
-                        <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center shadow-lg">
-                          <CheckCircle className="w-4 h-4 text-white" />
+                      <div className="absolute top-1 left-1">
+                        <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center shadow">
+                          <CheckCircle className="w-3 h-3 text-white" />
                         </div>
                       </div>
                     )}
                     {isUserPick && !isThisCorrect && (
-                      <div className="absolute top-1.5 left-1.5">
-                        <div className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center shadow-lg">
-                          <XCircle className="w-4 h-4 text-white" />
+                      <div className="absolute top-1 left-1">
+                        <div className="w-5 h-5 rounded-full bg-red-500 flex items-center justify-center shadow">
+                          <XCircle className="w-3 h-3 text-white" />
                         </div>
                       </div>
                     )}
-                    {/* ELO overlay */}
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-2 pt-6">
-                      <div className="text-center">
-                        <div className="text-xs font-mono text-white/80">ELO {cardElo ? Math.round(cardElo.elo) : '?'}</div>
-                        <div className={`text-[10px] ${
-                          percentile >= 75 ? 'text-amber-400' :
-                          percentile >= 50 ? 'text-purple-400' :
-                          percentile >= 25 ? 'text-blue-400' :
-                          'text-white/40'
-                        }`}>
-                          Top {100 - percentile}%
+                    {/* ELO overlay - only on correct/picked */}
+                    {(isThisCorrect || isUserPick) && (
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-1.5 pt-4">
+                        <div className="text-center">
+                          <div className="text-[10px] font-mono text-white/90">ELO {cardElo ? Math.round(cardElo.elo) : '?'}</div>
+                          <div className={`text-[9px] ${
+                            percentile >= 75 ? 'text-amber-400' :
+                            percentile >= 50 ? 'text-purple-400' :
+                            'text-white/50'
+                          }`}>
+                            Top {100 - percentile}%
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    )}
                   </>
                 )}
               </div>
@@ -1217,51 +1231,46 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
           })}
         </div>
 
-        {/* Result / Next Button */}
+        {/* Fixed Bottom Result Bar */}
         {quizState.revealed && (
-          <div className="flex items-center justify-center gap-6">
-            <div className={`
-              flex items-center gap-3 px-6 py-4 rounded-xl
-              ${isCorrect ? 'bg-green-500/10 border border-green-500/20' : 'bg-red-500/10 border border-red-500/20'}
-            `}>
-              {isCorrect ? (
-                <>
-                  <CheckCircle className="w-6 h-6 text-green-400" />
-                  <div>
-                    <div className="font-semibold text-green-400">Correct!</div>
-                    <div className="text-sm text-white/50">
-                      {quizState.correctCard.name} has ELO {correctElo ? Math.round(correctElo.elo) : '?'}
+          <div className="fixed bottom-0 left-0 right-0 z-40 bg-black/95 backdrop-blur-sm border-t border-white/10">
+            <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+              <div className={`
+                flex items-center gap-3 px-4 py-2 rounded-lg flex-1
+                ${isCorrect ? 'bg-green-500/10 border border-green-500/20' : 'bg-red-500/10 border border-red-500/20'}
+              `}>
+                {isCorrect ? (
+                  <>
+                    <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
+                    <div className="min-w-0">
+                      <div className="font-semibold text-green-400 text-sm">Correct!</div>
+                      <div className="text-xs text-white/50 truncate">
+                        {quizState.correctCard.name} · ELO {correctElo ? Math.round(correctElo.elo) : '?'}
+                      </div>
                     </div>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <XCircle className="w-6 h-6 text-red-400" />
-                  <div>
-                    <div className="font-semibold text-red-400">Not quite!</div>
-                    <div className="text-sm text-white/50">
-                      Best pick: {quizState.correctCard.name} (ELO {correctElo ? Math.round(correctElo.elo) : '?'})
-                      {userElo && <span className="text-white/30"> vs your pick: {Math.round(userElo.elo)}</span>}
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
+                    <div className="min-w-0">
+                      <div className="font-semibold text-red-400 text-sm">Not quite!</div>
+                      <div className="text-xs text-white/50 truncate">
+                        Best: {quizState.correctCard.name} ({correctElo ? Math.round(correctElo.elo) : '?'})
+                        {userElo && <span className="text-white/30"> vs {Math.round(userElo.elo)}</span>}
+                      </div>
                     </div>
-                  </div>
-                </>
-              )}
+                  </>
+                )}
+              </div>
+
+              <button
+                onClick={nextQuizQuestion}
+                className="flex items-center justify-center gap-2 px-6 py-3 bg-white text-black font-semibold rounded-lg hover:bg-white/90 transition-all active:scale-95 flex-shrink-0"
+              >
+                Next Pack
+                <ArrowRight className="w-4 h-4" />
+              </button>
             </div>
-
-            <button
-              onClick={nextQuizQuestion}
-              className="flex items-center justify-center gap-3 px-8 py-4 bg-white text-black font-semibold rounded-xl hover:bg-white/90 transition-all duration-300 active:scale-95"
-            >
-              Next Pack
-              <ArrowRight className="w-5 h-5" />
-            </button>
-          </div>
-        )}
-
-        {/* Instructions */}
-        {!quizState.revealed && (
-          <div className="text-center text-white/40 text-sm">
-            Click on the card you would first-pick from this pack
           </div>
         )}
 
