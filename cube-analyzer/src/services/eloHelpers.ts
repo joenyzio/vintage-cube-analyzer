@@ -38,10 +38,28 @@ const ELO_MAX = ELO_METADATA.eloRange.max;
 const ALL_ELOS = Object.values(ELO_CARDS).map(c => c.elo).sort((a, b) => a - b);
 
 /**
+ * Normalize card name for lookup
+ * Handles adventure cards (e.g., "Brazen Borrower // Petty Theft" -> "Brazen Borrower")
+ */
+function normalizeCardName(name: string): string {
+  // Handle adventure/split cards - try front face first
+  if (name.includes(' // ')) {
+    return name.split(' // ')[0];
+  }
+  return name;
+}
+
+/**
  * Get raw ELO data for a card
  */
 export function getEloData(cardName: string): EloCardData | null {
-  return ELO_CARDS[cardName] || null;
+  // Try exact match first
+  if (ELO_CARDS[cardName]) {
+    return ELO_CARDS[cardName];
+  }
+  // Try normalized name (for adventure/split cards)
+  const normalized = normalizeCardName(cardName);
+  return ELO_CARDS[normalized] || null;
 }
 
 /**
@@ -49,7 +67,7 @@ export function getEloData(cardName: string): EloCardData | null {
  * Higher percentile = more frequently picked
  */
 export function getPercentile(cardName: string): number {
-  const data = ELO_CARDS[cardName];
+  const data = getEloData(cardName);
   if (!data) return 0;
 
   const rank = ALL_ELOS.filter(e => e <= data.elo).length;
@@ -74,7 +92,7 @@ export function getWheelLikelihood(cardName: string): WheelLikelihood {
  * Get pick rate (picks per cube) as a rough popularity indicator
  */
 export function getPickRate(cardName: string): number {
-  const data = ELO_CARDS[cardName];
+  const data = getEloData(cardName);
   if (!data || data.cubeCount === 0) return 0;
 
   return data.pickCount / data.cubeCount;
@@ -94,7 +112,7 @@ export function calculateDeckElo(cardNames: string[]): {
   const missingCards: string[] = [];
 
   for (const name of cardNames) {
-    const data = ELO_CARDS[name];
+    const data = getEloData(name);
     if (data) {
       found.push(data.elo);
     } else {
@@ -135,7 +153,7 @@ export function calculateArchetypeElo(keyCards: string[]): {
   let premiumCount = 0;
 
   for (const name of keyCards) {
-    const data = ELO_CARDS[name];
+    const data = getEloData(name);
     if (data) {
       const percentile = getPercentile(name);
       breakdown.push({ name, elo: Math.round(data.elo), percentile });
@@ -234,7 +252,7 @@ export function getEloRange(): { min: number; max: number } {
  * Calculate visual bar width (0-100) for ELO display
  */
 export function getEloBarWidth(cardName: string): number {
-  const data = ELO_CARDS[cardName];
+  const data = getEloData(cardName);
   if (!data) return 0;
 
   return Math.round(((data.elo - ELO_MIN) / (ELO_MAX - ELO_MIN)) * 100);
@@ -244,8 +262,8 @@ export function getEloBarWidth(cardName: string): number {
  * Compare two cards by ELO
  */
 export function compareByElo(cardNameA: string, cardNameB: string): number {
-  const eloA = ELO_CARDS[cardNameA]?.elo || 0;
-  const eloB = ELO_CARDS[cardNameB]?.elo || 0;
+  const eloA = getEloData(cardNameA)?.elo || 0;
+  const eloB = getEloData(cardNameB)?.elo || 0;
   return eloB - eloA; // Descending order
 }
 
@@ -254,7 +272,7 @@ export function compareByElo(cardNameA: string, cardNameB: string): number {
  */
 export function getTopByElo(cardNames: string[], n: number): string[] {
   return cardNames
-    .filter(name => ELO_CARDS[name])
+    .filter(name => getEloData(name))
     .sort((a, b) => compareByElo(a, b))
     .slice(0, n);
 }
@@ -264,7 +282,7 @@ export function getTopByElo(cardNames: string[], n: number): string[] {
  */
 export function getBottomByElo(cardNames: string[], n: number): string[] {
   return cardNames
-    .filter(name => ELO_CARDS[name])
+    .filter(name => getEloData(name))
     .sort((a, b) => compareByElo(b, a))
     .slice(0, n);
 }
