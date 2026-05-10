@@ -83,6 +83,8 @@ interface DraftState {
   pickNumber: number;
   direction: 'left' | 'right';
   isComplete: boolean;
+  // Track all cards used in draft (dealt to any player) to prevent repeats
+  usedCardIds: Set<string>;
   // New: Pack memory for wheel predictions
   passedCards: Map<string, { card: CubeCard; passedAtPick: number; packNumber: number }>;
   // New: Decision history for recap
@@ -549,9 +551,16 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
   const startDraft = useCallback(() => {
     const shuffled = shuffleArray([...cards]);
     const tablePacks: CubeCard[][] = [];
+    const usedCardIds = new Set<string>();
+
+    // Deal 8 packs of 15 cards (120 cards total for pack 1)
     for (let i = 0; i < NUM_PLAYERS; i++) {
-      tablePacks.push(shuffled.slice(i * CARDS_PER_PACK, (i + 1) * CARDS_PER_PACK));
+      const pack = shuffled.slice(i * CARDS_PER_PACK, (i + 1) * CARDS_PER_PACK);
+      tablePacks.push(pack);
+      // Track all cards dealt to prevent them from appearing in pack 2/3
+      pack.forEach(c => usedCardIds.add(c.id));
     }
+
     setDraftState({
       tablePacks,
       picks: [],
@@ -559,6 +568,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
       direction: 'left',
       pickNumber: 1,
       isComplete: false,
+      usedCardIds,
       passedCards: new Map(),
       decisions: [],
     });
@@ -609,12 +619,20 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     return newPacks;
   };
 
-  const startNewPack = useCallback((currentPicks: CubeCard[], nextPackNumber: number, currentPassedCards: Map<string, { card: CubeCard; passedAtPick: number; packNumber: number }>, currentDecisions: PickDecision[]): DraftState => {
-    const shuffled = shuffleArray([...cards].filter(c => !currentPicks.some(p => p.id === c.id)));
+  const startNewPack = useCallback((currentPicks: CubeCard[], nextPackNumber: number, currentUsedCardIds: Set<string>, currentPassedCards: Map<string, { card: CubeCard; passedAtPick: number; packNumber: number }>, currentDecisions: PickDecision[]): DraftState => {
+    // Filter out ALL cards that have been dealt in previous packs
+    const availableCards = cards.filter(c => !currentUsedCardIds.has(c.id));
+    const shuffled = shuffleArray(availableCards);
     const tablePacks: CubeCard[][] = [];
+    const newUsedCardIds = new Set(currentUsedCardIds);
+
+    // Deal new packs and track the cards
     for (let i = 0; i < NUM_PLAYERS; i++) {
-      tablePacks.push(shuffled.slice(i * CARDS_PER_PACK, (i + 1) * CARDS_PER_PACK));
+      const pack = shuffled.slice(i * CARDS_PER_PACK, (i + 1) * CARDS_PER_PACK);
+      tablePacks.push(pack);
+      pack.forEach(c => newUsedCardIds.add(c.id));
     }
+
     return {
       tablePacks,
       picks: currentPicks,
@@ -622,6 +640,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
       direction: nextPackNumber === 2 ? 'right' : 'left',
       pickNumber: 1,
       isComplete: false,
+      usedCardIds: newUsedCardIds,
       passedCards: currentPassedCards,
       decisions: currentDecisions,
     };
@@ -675,7 +694,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
       if (draftState.packNumber >= 3) {
         setDraftState({ ...draftState, picks: newPicks, isComplete: true, passedCards: newPassedCards, decisions: newDecisions });
       } else {
-        setDraftState(startNewPack(newPicks, draftState.packNumber + 1, newPassedCards, newDecisions));
+        setDraftState(startNewPack(newPicks, draftState.packNumber + 1, draftState.usedCardIds, newPassedCards, newDecisions));
       }
     } else {
       setDraftState({ ...draftState, tablePacks: newTablePacks, picks: newPicks, pickNumber: newPickNumber, passedCards: newPassedCards, decisions: newDecisions });
