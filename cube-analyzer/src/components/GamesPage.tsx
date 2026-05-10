@@ -7,19 +7,22 @@ import {
   getWheelLikelihood,
   type WheelLikelihood,
 } from '../services/eloHelpers';
-import { Scale, CircleDot, Layers, Trophy, ChevronLeft, Flame } from 'lucide-react';
+import { Scale, CircleDot, Layers, Trophy, ChevronLeft, Flame, Timer, Hash, Sparkles } from 'lucide-react';
 
 interface GamesPageProps {
   cards: CubeCard[];
 }
 
-type GameType = 'menu' | 'higher-lower' | 'wheel-or-not' | 'first-pick' | 'color-commit';
+type GameType = 'menu' | 'higher-lower' | 'wheel-or-not' | 'first-pick' | 'color-commit' | 'speed-round' | 'guess-cmc' | 'synergy-snap';
 
 interface GameStats {
   higherLower: { played: number; correct: number; streak: number; bestStreak: number };
   wheelOrNot: { played: number; correct: number; streak: number; bestStreak: number };
   firstPick: { played: number; correct: number; streak: number; bestStreak: number };
   colorCommit: { played: number; correct: number; streak: number; bestStreak: number };
+  speedRound: { played: number; correct: number; streak: number; bestStreak: number };
+  guessCmc: { played: number; correct: number; streak: number; bestStreak: number };
+  synergySnap: { played: number; correct: number; streak: number; bestStreak: number };
 }
 
 const STORAGE_KEY = 'cube-games-stats';
@@ -27,13 +30,28 @@ const STORAGE_KEY = 'cube-games-stats';
 function loadStats(): GameStats {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) return JSON.parse(saved);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // Ensure new games have default stats
+      return {
+        higherLower: parsed.higherLower || { played: 0, correct: 0, streak: 0, bestStreak: 0 },
+        wheelOrNot: parsed.wheelOrNot || { played: 0, correct: 0, streak: 0, bestStreak: 0 },
+        firstPick: parsed.firstPick || { played: 0, correct: 0, streak: 0, bestStreak: 0 },
+        colorCommit: parsed.colorCommit || { played: 0, correct: 0, streak: 0, bestStreak: 0 },
+        speedRound: parsed.speedRound || { played: 0, correct: 0, streak: 0, bestStreak: 0 },
+        guessCmc: parsed.guessCmc || { played: 0, correct: 0, streak: 0, bestStreak: 0 },
+        synergySnap: parsed.synergySnap || { played: 0, correct: 0, streak: 0, bestStreak: 0 },
+      };
+    }
   } catch {}
   return {
     higherLower: { played: 0, correct: 0, streak: 0, bestStreak: 0 },
     wheelOrNot: { played: 0, correct: 0, streak: 0, bestStreak: 0 },
     firstPick: { played: 0, correct: 0, streak: 0, bestStreak: 0 },
     colorCommit: { played: 0, correct: 0, streak: 0, bestStreak: 0 },
+    speedRound: { played: 0, correct: 0, streak: 0, bestStreak: 0 },
+    guessCmc: { played: 0, correct: 0, streak: 0, bestStreak: 0 },
+    synergySnap: { played: 0, correct: 0, streak: 0, bestStreak: 0 },
   };
 }
 
@@ -81,8 +99,11 @@ export function GamesPage({ cards }: GamesPageProps) {
 
   const games = [
     { id: 'higher-lower' as GameType, name: 'Higher or Lower', desc: 'Which has higher ELO?', icon: Scale, color: 'blue', stats: stats.higherLower },
+    { id: 'speed-round' as GameType, name: 'Speed Round', desc: '30 seconds, how many right?', icon: Timer, color: 'red', stats: stats.speedRound },
     { id: 'wheel-or-not' as GameType, name: 'Will It Wheel?', desc: 'Will it come back around?', icon: CircleDot, color: 'green', stats: stats.wheelOrNot },
     { id: 'first-pick' as GameType, name: 'First Pickable?', desc: 'Is this P1P1 worthy?', icon: Trophy, color: 'amber', stats: stats.firstPick },
+    { id: 'guess-cmc' as GameType, name: 'Guess the CMC', desc: 'What does this card cost?', icon: Hash, color: 'cyan', stats: stats.guessCmc },
+    { id: 'synergy-snap' as GameType, name: 'Synergy Snap', desc: 'Do these cards combo?', icon: Sparkles, color: 'pink', stats: stats.synergySnap },
     { id: 'color-commit' as GameType, name: 'Stay in Lane', desc: 'Pick the on-color card', icon: Layers, color: 'purple', stats: stats.colorCommit },
   ];
 
@@ -92,6 +113,9 @@ export function GamesPage({ cards }: GamesPageProps) {
       'wheel-or-not': WheelOrNotGame,
       'first-pick': FirstPickGame,
       'color-commit': ColorCommitGame,
+      'speed-round': SpeedRoundGame,
+      'guess-cmc': GuessCmcGame,
+      'synergy-snap': SynergySnapGame,
     }[game];
 
     const gameKey = {
@@ -99,6 +123,9 @@ export function GamesPage({ cards }: GamesPageProps) {
       'wheel-or-not': 'wheelOrNot',
       'first-pick': 'firstPick',
       'color-commit': 'colorCommit',
+      'speed-round': 'speedRound',
+      'guess-cmc': 'guessCmc',
+      'synergy-snap': 'synergySnap',
     }[game] as keyof GameStats;
 
     return (
@@ -126,12 +153,18 @@ export function GamesPage({ cards }: GamesPageProps) {
             green: 'bg-green-500/10 border-green-500/20 hover:bg-green-500/20',
             amber: 'bg-amber-500/10 border-amber-500/20 hover:bg-amber-500/20',
             purple: 'bg-purple-500/10 border-purple-500/20 hover:bg-purple-500/20',
+            red: 'bg-red-500/10 border-red-500/20 hover:bg-red-500/20',
+            cyan: 'bg-cyan-500/10 border-cyan-500/20 hover:bg-cyan-500/20',
+            pink: 'bg-pink-500/10 border-pink-500/20 hover:bg-pink-500/20',
           }[g.color];
           const iconColor = {
             blue: 'text-blue-400',
             green: 'text-green-400',
             amber: 'text-amber-400',
             purple: 'text-purple-400',
+            red: 'text-red-400',
+            cyan: 'text-cyan-400',
+            pink: 'text-pink-400',
           }[g.color];
 
           return (
@@ -596,6 +629,296 @@ function ColorCommitGame({ cards, stats, onUpdate, onBack }: GameComponentProps)
           <div className={`font-bold ${picked === state.correctIndex ? 'text-green-400' : 'text-red-400'}`}>
             {picked === state.correctIndex ? 'Correct! You stayed in lane.' : 'Wrong! The highlighted card fits better.'}
           </div>
+          <button onClick={newRound} className="px-6 py-2.5 bg-white text-black rounded-lg font-semibold hover:bg-white/90 transition-colors">
+            Next
+          </button>
+        </div>
+      )}
+
+      <GameStats stats={stats} />
+    </div>
+  );
+}
+
+// ============ GAME 5: Speed Round ============
+function SpeedRoundGame({ cards, stats, onUpdate, onBack }: GameComponentProps) {
+  const [gameState, setGameState] = useState<'ready' | 'playing' | 'done'>('ready');
+  const [pair, setPair] = useState<[CubeCard, CubeCard] | null>(null);
+  const [score, setScore] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(30);
+  const [lastResult, setLastResult] = useState<'correct' | 'wrong' | null>(null);
+
+  const newPair = useCallback(() => {
+    const [a, b] = getRandomCards(cards, 2);
+    setPair([a, b]);
+    setLastResult(null);
+  }, [cards]);
+
+  const startGame = useCallback(() => {
+    setGameState('playing');
+    setScore(0);
+    setTimeLeft(30);
+    newPair();
+  }, [newPair]);
+
+  useEffect(() => {
+    if (gameState !== 'playing') return;
+    if (timeLeft <= 0) {
+      setGameState('done');
+      return;
+    }
+    const timer = setTimeout(() => setTimeLeft(t => t - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [gameState, timeLeft]);
+
+  const handlePick = (index: 0 | 1) => {
+    if (!pair || gameState !== 'playing') return;
+    const eloA = getEloData(pair[0].name)?.elo || 0;
+    const eloB = getEloData(pair[1].name)?.elo || 0;
+    const correct = (index === 0 && eloA >= eloB) || (index === 1 && eloB > eloA);
+
+    if (correct) {
+      setScore(s => s + 1);
+      setLastResult('correct');
+      onUpdate(true);
+    } else {
+      setLastResult('wrong');
+      onUpdate(false);
+    }
+
+    setTimeout(newPair, 150);
+  };
+
+  if (gameState === 'ready') {
+    return (
+      <div className="max-w-sm mx-auto text-center">
+        <GameHeader title="Speed Round" subtitle="30 seconds of Higher/Lower" streak={stats.bestStreak} onBack={onBack} />
+        <div className="my-8">
+          <Timer className="w-16 h-16 text-red-400 mx-auto mb-4" />
+          <p className="text-white/60 mb-6">Pick the higher ELO card as fast as you can!</p>
+          <button onClick={startGame} className="px-8 py-4 bg-red-500 text-white rounded-xl font-bold text-lg hover:bg-red-600 transition-colors">
+            Start!
+          </button>
+        </div>
+        {stats.bestStreak > 0 && (
+          <div className="text-white/40 text-sm">Best score: {stats.bestStreak}</div>
+        )}
+      </div>
+    );
+  }
+
+  if (gameState === 'done') {
+    return (
+      <div className="max-w-sm mx-auto text-center">
+        <GameHeader title="Speed Round" subtitle="Time's up!" streak={stats.bestStreak} onBack={onBack} />
+        <div className="my-8">
+          <div className="text-6xl font-bold text-white mb-2">{score}</div>
+          <div className="text-white/50 mb-6">correct picks</div>
+          {score > stats.bestStreak && (
+            <div className="text-amber-400 font-semibold mb-4">New best score!</div>
+          )}
+          <button onClick={startGame} className="px-8 py-4 bg-red-500 text-white rounded-xl font-bold text-lg hover:bg-red-600 transition-colors">
+            Play Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!pair) return null;
+
+  return (
+    <div className="max-w-2xl mx-auto">
+      <div className="flex items-center justify-between mb-4">
+        <div className="text-4xl font-bold text-white">{score}</div>
+        <div className={`text-4xl font-mono font-bold ${timeLeft <= 5 ? 'text-red-400 animate-pulse' : 'text-white'}`}>
+          {timeLeft}
+        </div>
+      </div>
+
+      <div className={`grid grid-cols-2 gap-2 transition-all ${lastResult === 'correct' ? 'scale-[1.01]' : lastResult === 'wrong' ? 'opacity-90' : ''}`}>
+        {pair.map((card, idx) => (
+          <button
+            key={card.id}
+            onClick={() => handlePick(idx as 0 | 1)}
+            className="rounded-xl overflow-hidden hover:scale-[1.02] active:scale-[0.98] transition-transform"
+          >
+            <img src={getCardImage(card)} alt={card.name} className="w-full" />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ============ GAME 6: Guess the CMC ============
+function GuessCmcGame({ cards, stats, onUpdate, onBack }: GameComponentProps) {
+  const [card, setCard] = useState<CubeCard | null>(null);
+  const [revealed, setRevealed] = useState(false);
+  const [guess, setGuess] = useState<number | null>(null);
+
+  const newRound = useCallback(() => {
+    const [c] = getRandomCards(cards, 1);
+    setCard(c);
+    setRevealed(false);
+    setGuess(null);
+  }, [cards]);
+
+  useEffect(() => { newRound(); }, [newRound]);
+
+  if (!card) return null;
+
+  const actualCmc = card.cmc ?? 0;
+
+  const handleGuess = (g: number) => {
+    if (revealed) return;
+    setGuess(g);
+    setRevealed(true);
+    onUpdate(g === Math.min(actualCmc, 7));
+  };
+
+  return (
+    <div className="max-w-sm mx-auto">
+      <GameHeader title="Guess the CMC" subtitle="What's this card's mana value?" streak={stats.streak} onBack={onBack} />
+
+      <div className="flex justify-center mb-4">
+        <img src={getCardImage(card)} alt={card.name} className="w-48 sm:w-56 rounded-xl shadow-xl" />
+      </div>
+
+      <div className="grid grid-cols-8 gap-1 mb-4">
+        {[0, 1, 2, 3, 4, 5, 6, 7].map(n => {
+          const isCorrect = n === Math.min(actualCmc, 7);
+          const isGuessed = guess === n;
+
+          return (
+            <button
+              key={n}
+              onClick={() => handleGuess(n)}
+              disabled={revealed}
+              className={`py-3 rounded-lg font-bold text-sm transition-all ${
+                revealed
+                  ? isCorrect ? 'bg-green-500 text-white' : isGuessed ? 'bg-red-500 text-white' : 'bg-white/5 text-white/30'
+                  : 'bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 active:scale-95'
+              }`}
+            >
+              {n === 7 ? '7+' : n}
+            </button>
+          );
+        })}
+      </div>
+
+      {revealed && (
+        <div className="text-center space-y-3">
+          <div className={`font-bold ${guess === Math.min(actualCmc, 7) ? 'text-green-400' : 'text-red-400'}`}>
+            {guess === Math.min(actualCmc, 7) ? 'Correct!' : `Wrong! It costs ${actualCmc}`}
+          </div>
+          <div className="text-sm text-white/50">{card.name}</div>
+          <button onClick={newRound} className="px-6 py-2.5 bg-white text-black rounded-lg font-semibold hover:bg-white/90 transition-colors">
+            Next
+          </button>
+        </div>
+      )}
+
+      <GameStats stats={stats} />
+    </div>
+  );
+}
+
+// ============ GAME 7: Synergy Snap ============
+function SynergySnapGame({ cards, stats, onUpdate, onBack }: GameComponentProps) {
+  const [pair, setPair] = useState<[CubeCard, CubeCard] | null>(null);
+  const [hasSynergy, setHasSynergy] = useState(false);
+  const [revealed, setRevealed] = useState(false);
+  const [guess, setGuess] = useState<boolean | null>(null);
+  const [explanation, setExplanation] = useState('');
+
+  const checkSynergy = useCallback((a: CubeCard, b: CubeCard): { synergy: boolean; reason: string } => {
+    const aText = (a.oracle_text || '').toLowerCase();
+    const bText = (b.oracle_text || '').toLowerCase();
+    const aType = (a.type_line || '').toLowerCase();
+    const bType = (b.type_line || '').toLowerCase();
+
+    // Check various synergy patterns
+    if (aType.includes('artifact') && bText.includes('artifact')) return { synergy: true, reason: 'Artifact synergy' };
+    if (bType.includes('artifact') && aText.includes('artifact')) return { synergy: true, reason: 'Artifact synergy' };
+    if (aText.includes('graveyard') && bText.includes('graveyard')) return { synergy: true, reason: 'Graveyard synergy' };
+    if (aText.includes('discard') && bText.includes('graveyard')) return { synergy: true, reason: 'Discard synergy' };
+    if (bText.includes('discard') && aText.includes('graveyard')) return { synergy: true, reason: 'Discard synergy' };
+    if (aText.includes('sacrifice') && bText.includes('dies')) return { synergy: true, reason: 'Sacrifice synergy' };
+    if (bText.includes('sacrifice') && aText.includes('dies')) return { synergy: true, reason: 'Sacrifice synergy' };
+    if (aText.includes('token') && bText.includes('creature')) return { synergy: true, reason: 'Token synergy' };
+    if (bText.includes('token') && aText.includes('creature')) return { synergy: true, reason: 'Token synergy' };
+    if (aText.includes('counter') && bText.includes('counter')) return { synergy: true, reason: '+1/+1 counter synergy' };
+    if (aType.includes('creature') && bText.includes('all creatures')) return { synergy: true, reason: 'Creature buff synergy' };
+    if (bType.includes('creature') && aText.includes('all creatures')) return { synergy: true, reason: 'Creature buff synergy' };
+
+    return { synergy: false, reason: 'No clear synergy' };
+  }, []);
+
+  const newRound = useCallback(() => {
+    const [a, b] = getRandomCards(cards, 2);
+    const result = checkSynergy(a, b);
+    setPair([a, b]);
+    setHasSynergy(result.synergy);
+    setExplanation(result.reason);
+    setRevealed(false);
+    setGuess(null);
+  }, [cards, checkSynergy]);
+
+  useEffect(() => { newRound(); }, [newRound]);
+
+  if (!pair) return null;
+
+  const handleGuess = (g: boolean) => {
+    if (revealed) return;
+    setGuess(g);
+    setRevealed(true);
+    onUpdate(g === hasSynergy);
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto">
+      <GameHeader title="Synergy Snap" subtitle="Do these cards work together?" streak={stats.streak} onBack={onBack} />
+
+      <div className="grid grid-cols-2 gap-2 mb-4">
+        {pair.map((card) => (
+          <div key={card.id} className="rounded-xl overflow-hidden">
+            <img src={getCardImage(card)} alt={card.name} className="w-full" />
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <button
+          onClick={() => handleGuess(true)}
+          disabled={revealed}
+          className={`py-4 rounded-xl font-bold text-lg transition-all ${
+            revealed
+              ? hasSynergy ? 'bg-green-500 text-white' : guess === true ? 'bg-red-500/50 text-white/70' : 'bg-white/5 text-white/30'
+              : 'bg-pink-500/20 text-pink-400 hover:bg-pink-500/30 active:scale-95'
+          }`}
+        >
+          Synergy!
+        </button>
+        <button
+          onClick={() => handleGuess(false)}
+          disabled={revealed}
+          className={`py-4 rounded-xl font-bold text-lg transition-all ${
+            revealed
+              ? !hasSynergy ? 'bg-green-500 text-white' : guess === false ? 'bg-red-500/50 text-white/70' : 'bg-white/5 text-white/30'
+              : 'bg-white/10 text-white/60 hover:bg-white/20 active:scale-95'
+          }`}
+        >
+          No synergy
+        </button>
+      </div>
+
+      {revealed && (
+        <div className="text-center space-y-3">
+          <div className={`font-bold ${guess === hasSynergy ? 'text-green-400' : 'text-red-400'}`}>
+            {guess === hasSynergy ? 'Correct!' : 'Wrong!'}
+          </div>
+          <div className="text-sm text-white/50">{explanation}</div>
           <button onClick={newRound} className="px-6 py-2.5 bg-white text-black rounded-lg font-semibold hover:bg-white/90 transition-colors">
             Next
           </button>
