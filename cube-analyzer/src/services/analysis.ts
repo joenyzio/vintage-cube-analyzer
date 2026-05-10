@@ -1,4 +1,10 @@
 import type { ScryfallCard, CubeCard, CardRole, Archetype, DraftStrategy } from '../types/card';
+import eloRatingsData from '../data/elo-ratings.json';
+
+// ELO data from CubeCobra - based on actual pick data from thousands of drafts
+const ELO_RATINGS: Record<string, { elo: number; pickCount: number; cubeCount: number }> = eloRatingsData.cards;
+const ELO_MIN = eloRatingsData.metadata.eloRange.min;
+const ELO_MAX = eloRatingsData.metadata.eloRange.max;
 
 // Power 9 and other iconic power cards
 const POWER_CARDS = new Set([
@@ -163,8 +169,40 @@ function determineArchetypes(card: ScryfallCard): string[] {
 
 function calculatePowerLevel(card: ScryfallCard): number {
   const name = card.name;
+
+  // Use real ELO data from CubeCobra (based on thousands of draft picks)
+  const eloData = ELO_RATINGS[name];
+  if (eloData) {
+    // Convert ELO to power level
+    // ELO range: ~1240 to ~2377 (1137 point spread)
+    const normalized = (eloData.elo - ELO_MIN) / (ELO_MAX - ELO_MIN);
+
+    // Apply a curved scale:
+    // - Power 9/Moxen (normalized > 0.8) get 9-10
+    // - Premium cards (0.4-0.8) get 6-9
+    // - Good cards (0.1-0.4) get 4-6
+    // - Role players (0-0.1) get 3-4
+    // All cards in a Vintage Cube are at least a 3
+    let powerLevel: number;
+    if (normalized > 0.8) {
+      // Power 9 tier: 9-10
+      powerLevel = 9 + (normalized - 0.8) / 0.2;
+    } else if (normalized > 0.4) {
+      // Premium tier: 6-9
+      powerLevel = 6 + (normalized - 0.4) / 0.4 * 3;
+    } else if (normalized > 0.1) {
+      // Good tier: 4-6
+      powerLevel = 4 + (normalized - 0.1) / 0.3 * 2;
+    } else {
+      // Role player tier: 3-4
+      powerLevel = 3 + normalized / 0.1;
+    }
+
+    return Math.round(powerLevel * 10) / 10; // Round to 1 decimal
+  }
+
+  // Fallback for cards not in ELO data (shouldn't happen for cube cards)
   const typeLine = card.type_line?.toLowerCase() || '';
-  const oracleText = card.oracle_text?.toLowerCase() || '';
   const cmc = card.cmc || 0;
 
   // S Tier (10) - Power 9 and absolute best cards
@@ -191,23 +229,12 @@ function calculatePowerLevel(card: ScryfallCard): number {
     return 8;
   }
 
-  // Premium planeswalkers
-  if (['Jace, the Mind Sculptor', 'Oko, Thief of Crowns', 'Teferi, Time Raveler', 'Narset, Parter of Veils', 'The Wandering Emperor', 'Liliana of the Veil', 'Wrenn and Six', 'Dack Fayden'].includes(name)) {
-    return 8;
-  }
-
-  // Premium creatures
-  if (['Ragavan, Nimble Pilferer', 'Orcish Bowmasters', 'Dark Confidant', 'Snapcaster Mage', 'True-Name Nemesis', 'Monastery Mentor', 'Young Pyromancer', 'Thalia, Guardian of Thraben'].includes(name)) {
-    return 8;
-  }
-
   // B Tier (6-7) - Strong cards
-  // Good planeswalkers
   if (typeLine.includes('planeswalker')) {
     return 7;
   }
 
-  // Fetch lands and best lands
+  // Lands
   if (typeLine.includes('land')) {
     if (name.includes('Strand') || name.includes('Delta') || name.includes('Foothills') ||
         name.includes('Heath') || name.includes('Mire') || name.includes('Flats') ||
@@ -215,75 +242,24 @@ function calculatePowerLevel(card: ScryfallCard): number {
         name.includes('Rainforest') || name.includes('Vista')) {
       return 7;
     }
-    // Dual lands
-    if (['Tundra', 'Underground Sea', 'Badlands', 'Taiga', 'Savannah', 'Scrubland', 'Volcanic Island', 'Bayou', 'Plateau', 'Tropical Island'].includes(name)) {
-      return 7;
-    }
-    // Shock lands
-    if (name.includes('Fountain') || name.includes('Tomb') || name.includes('Crypt') ||
-        name.includes('Garden') || name.includes('Pool') || name.includes('Heath') ||
-        name.includes('Grounds') || name.includes('Vents') || name.includes('Foundry') ||
-        name.includes('Temple')) {
-      return 6;
-    }
-    return 5; // Other lands
+    return 5;
   }
 
-  // Efficient removal
-  if (['Swords to Plowshares', 'Path to Exile', 'Lightning Bolt', 'Fatal Push', 'Prismatic Ending', 'Thoughtseize', 'Inquisition of Kozilek', 'Hymn to Tourach'].includes(name)) {
+  // Efficient removal/counterspells
+  if (['Swords to Plowshares', 'Lightning Bolt', 'Counterspell', 'Thoughtseize'].includes(name)) {
     return 7;
   }
 
-  // Strong counterspells
-  if (['Counterspell', 'Mana Drain', 'Mana Leak', 'Spell Pierce', 'Daze', 'Flusterstorm'].includes(name)) {
-    return 7;
-  }
-
-  // Card advantage
-  if (['Brainstorm', 'Ponder', 'Preordain', 'Gitaxian Probe', 'Sylvan Library', 'Treasure Cruise', 'Dig Through Time'].includes(name)) {
-    return 7;
-  }
-
-  // Good creatures by CMC efficiency
+  // Good creatures
   if (typeLine.includes('creature')) {
-    // 1-drops with high impact
-    if (cmc <= 1 && (oracleText.includes('when') || oracleText.includes('whenever'))) {
-      return 6;
-    }
-    // Creatures with strong stats for cost
     const power = parseInt(card.power || '0');
-    const toughness = parseInt(card.toughness || '0');
-    if (cmc > 0 && (power + toughness) / cmc >= 3) {
-      return 6;
-    }
-    // ETB creatures
-    if (oracleText.includes('enters the battlefield') || oracleText.includes('enters, ')) {
+    if (cmc > 0 && power / cmc >= 1.5) {
       return 6;
     }
     return 5;
   }
 
-  // C Tier (4-5) - Playable
-  // Instants and sorceries with draw or removal
-  if (typeLine.includes('instant') || typeLine.includes('sorcery')) {
-    if (oracleText.includes('draw') || oracleText.includes('destroy') || oracleText.includes('exile') || oracleText.includes('damage')) {
-      return 5;
-    }
-  }
-
-  // Artifacts and enchantments
-  if (typeLine.includes('artifact') || typeLine.includes('enchantment')) {
-    if (cmc <= 3) return 5;
-    return 4;
-  }
-
-  // D Tier (1-3) - Situational
-  // High CMC without immediate impact
-  if (cmc >= 5 && !oracleText.includes('enters the battlefield')) {
-    return 3;
-  }
-
-  // Default - moderate playable
+  // Default
   return 5;
 }
 
