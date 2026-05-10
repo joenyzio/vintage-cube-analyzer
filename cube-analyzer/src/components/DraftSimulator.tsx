@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import type { CubeCard } from '../types/card';
 import { getCardImage } from '../services/scryfall';
 import {
@@ -8,12 +8,72 @@ import {
   calculateDeckElo,
   compareByElo,
 } from '../services/eloHelpers';
-import { Play, RotateCcw, Trophy, Star, ArrowLeft, ArrowRight, Users, Package, Target, Clock, TrendingUp, AlertCircle, HelpCircle, CheckCircle, XCircle, Zap } from 'lucide-react';
+import { Play, RotateCcw, Trophy, Star, ArrowLeft, ArrowRight, Users, Package, Target, Clock, TrendingUp, AlertCircle, HelpCircle, CheckCircle, XCircle, Zap, History, Keyboard, Award, Lightbulb, Eye, EyeOff } from 'lucide-react';
 
 type SimulatorMode = 'menu' | 'draft' | 'quiz';
 
+// Draft history for persistence
+interface DraftHistoryEntry {
+  id: string;
+  date: string;
+  deckElo: number;
+  grade: string;
+  optimalRate: number;
+  mainColors: string[];
+  totalPicks: number;
+  topPicks: { name: string; elo: number }[];
+}
+
+// Achievement definitions
+interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  condition: (stats: DraftStats) => boolean;
+}
+
+interface DraftStats {
+  totalDrafts: number;
+  totalPicks: number;
+  avgOptimalRate: number;
+  avgDeckElo: number;
+  bestGrade: string;
+  perfectPacks: number; // All picks optimal in a pack
+  streakOptimal: number; // Current streak of optimal picks
+  maxStreakOptimal: number;
+  rarePicks: number; // Cards with <25% pick rate
+  quizAccuracy: number;
+  quizTotal: number;
+}
+
+const ACHIEVEMENTS: Achievement[] = [
+  { id: 'first-draft', name: 'First Draft', description: 'Complete your first draft', icon: '🎯', condition: (s) => s.totalDrafts >= 1 },
+  { id: 'deck-builder', name: 'Deck Builder', description: 'Complete 5 drafts', icon: '🏗️', condition: (s) => s.totalDrafts >= 5 },
+  { id: 'veteran', name: 'Draft Veteran', description: 'Complete 25 drafts', icon: '🎖️', condition: (s) => s.totalDrafts >= 25 },
+  { id: 's-tier', name: 'S Tier', description: 'Get an S grade on a draft', icon: '🏆', condition: (s) => s.bestGrade === 'S' },
+  { id: 'perfectionist', name: 'Perfectionist', description: '80%+ optimal pick rate', icon: '💎', condition: (s) => s.avgOptimalRate >= 80 },
+  { id: 'streak-5', name: 'Hot Streak', description: '5 optimal picks in a row', icon: '🔥', condition: (s) => s.maxStreakOptimal >= 5 },
+  { id: 'streak-10', name: 'On Fire', description: '10 optimal picks in a row', icon: '⚡', condition: (s) => s.maxStreakOptimal >= 10 },
+  { id: 'gem-hunter', name: 'Gem Hunter', description: 'Pick 10 underrated cards', icon: '💠', condition: (s) => s.rarePicks >= 10 },
+  { id: 'quiz-master', name: 'Quiz Master', description: '90%+ quiz accuracy (10+ questions)', icon: '🧠', condition: (s) => s.quizTotal >= 10 && s.quizAccuracy >= 90 },
+  { id: 'elite-deck', name: 'Elite Deck', description: 'Build a deck with 1700+ avg ELO', icon: '👑', condition: (s) => s.avgDeckElo >= 1700 },
+];
+
 interface DraftSimulatorProps {
   cards: CubeCard[];
+}
+
+// Track each pick decision for analysis
+interface PickDecision {
+  pick: CubeCard;
+  packNumber: number;
+  pickNumber: number;
+  packContents: CubeCard[]; // What was in the pack
+  bestAvailable: CubeCard; // Highest ELO card
+  passed: CubeCard[]; // What we passed
+  wasOptimal: boolean; // Did we pick the best ELO?
+  eloDiff: number; // How much ELO we left on the table (if any)
 }
 
 interface DraftState {
@@ -23,6 +83,10 @@ interface DraftState {
   pickNumber: number;
   direction: 'left' | 'right';
   isComplete: boolean;
+  // New: Pack memory for wheel predictions
+  passedCards: Map<string, { card: CubeCard; passedAtPick: number; packNumber: number }>;
+  // New: Decision history for recap
+  decisions: PickDecision[];
 }
 
 interface QuizState {
@@ -46,11 +110,63 @@ function shuffleArray<T>(array: T[]): T[] {
   return shuffled;
 }
 
+// LocalStorage keys
+const STORAGE_KEYS = {
+  history: 'cube-analyzer-draft-history',
+  stats: 'cube-analyzer-draft-stats',
+  achievements: 'cube-analyzer-achievements',
+};
+
+function loadFromStorage<T>(key: string, defaultValue: T): T {
+  try {
+    const stored = localStorage.getItem(key);
+    return stored ? JSON.parse(stored) : defaultValue;
+  } catch {
+    return defaultValue;
+  }
+}
+
+function saveToStorage<T>(key: string, value: T): void {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // Storage full or unavailable
+  }
+}
+
+const DEFAULT_STATS: DraftStats = {
+  totalDrafts: 0,
+  totalPicks: 0,
+  avgOptimalRate: 0,
+  avgDeckElo: 0,
+  bestGrade: '',
+  perfectPacks: 0,
+  streakOptimal: 0,
+  maxStreakOptimal: 0,
+  rarePicks: 0,
+  quizAccuracy: 0,
+  quizTotal: 0,
+};
+
 export function DraftSimulator({ cards }: DraftSimulatorProps) {
   const [mode, setMode] = useState<SimulatorMode>('menu');
   const [draftState, setDraftState] = useState<DraftState | null>(null);
   const [quizState, setQuizState] = useState<QuizState | null>(null);
   const [hoveredCard, setHoveredCard] = useState<CubeCard | null>(null);
+
+  // New: Coach mode and history
+  const [coachMode, setCoachMode] = useState(true);
+  const [showCoachExplanation, setShowCoachExplanation] = useState(false);
+  const [draftHistory, setDraftHistory] = useState<DraftHistoryEntry[]>(() =>
+    loadFromStorage(STORAGE_KEYS.history, [])
+  );
+  const [draftStats, setDraftStats] = useState<DraftStats>(() =>
+    loadFromStorage(STORAGE_KEYS.stats, DEFAULT_STATS)
+  );
+  const [unlockedAchievements, setUnlockedAchievements] = useState<string[]>(() =>
+    loadFromStorage(STORAGE_KEYS.achievements, [])
+  );
+  const [newAchievement, setNewAchievement] = useState<Achievement | null>(null);
 
   // Get some featured cards for the start screen
   const featuredCards = useMemo(() => {
@@ -92,25 +208,341 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     const { pack, correct } = generateQuizPack();
     const wasCorrect = quizState.userPick?.id === quizState.correctCard.id;
 
+    // Update quiz stats
+    const newHistory = [...quizState.history, {
+      correct: wasCorrect,
+      userPick: quizState.userPick!,
+      correctPick: quizState.correctCard,
+    }];
+    const correctCount = newHistory.filter(h => h.correct).length;
+    const accuracy = Math.round((correctCount / newHistory.length) * 100);
+
+    const newStats: DraftStats = {
+      ...draftStats,
+      quizTotal: newHistory.length,
+      quizAccuracy: accuracy,
+    };
+    setDraftStats(newStats);
+    saveToStorage(STORAGE_KEYS.stats, newStats);
+
     setQuizState(prev => prev ? {
       currentPack: pack,
       correctCard: correct,
       userPick: null,
       revealed: false,
-      history: [...prev.history, {
-        correct: wasCorrect,
-        userPick: prev.userPick!,
-        correctPick: prev.correctCard,
-      }],
+      history: newHistory,
       totalQuestions: prev.totalQuestions + 1,
     } : null);
-  }, [quizState, generateQuizPack]);
+  }, [quizState, generateQuizPack, draftStats]);
 
   const quizAccuracy = useMemo(() => {
     if (!quizState || quizState.history.length === 0) return null;
     const correct = quizState.history.filter(h => h.correct).length;
     return Math.round((correct / quizState.history.length) * 100);
   }, [quizState]);
+
+  // Detect synergies between a card and current picks
+  const getCardSynergies = useCallback((card: CubeCard): string[] => {
+    if (!draftState || draftState.picks.length === 0) return [];
+
+    const synergies: string[] = [];
+    const pickNames = draftState.picks.map(p => p.name);
+    const pickTags = new Set(draftState.picks.flatMap(p => p.synergyTags || []));
+    const cardTags = card.synergyTags || [];
+    const cardText = (card.oracle_text || '').toLowerCase();
+
+    // Check for direct synergy tag matches
+    const matchingTags = cardTags.filter(tag => pickTags.has(tag));
+    if (matchingTags.length > 0) {
+      synergies.push(...matchingTags.slice(0, 2)); // Max 2 tags
+    }
+
+    // Reanimator synergy
+    if (card.role === 'reanimation_target') {
+      const hasReanimate = draftState.picks.some(p =>
+        p.oracle_text?.toLowerCase().includes('return') &&
+        p.oracle_text?.toLowerCase().includes('graveyard')
+      );
+      if (hasReanimate) synergies.push('reanimate target');
+    }
+
+    // Artifact synergy
+    if (card.type_line?.toLowerCase().includes('artifact')) {
+      const hasArtifactSynergy = draftState.picks.some(p =>
+        p.name === 'Tinker' || p.name === 'Tolarian Academy' || p.name === "Urza's Saga"
+      );
+      if (hasArtifactSynergy) synergies.push('artifact synergy');
+    }
+
+    // Creature count for Natural Order / Craterhoof
+    if (card.type_line?.toLowerCase().includes('creature')) {
+      const hasNaturalOrder = pickNames.includes('Natural Order');
+      const hasCraterhoof = pickNames.includes('Craterhoof Behemoth');
+      if (hasNaturalOrder && card.color_identity?.includes('G')) synergies.push('Natural Order');
+      if (hasCraterhoof) synergies.push('Craterhoof food');
+    }
+
+    // Storm / spell count
+    if (cardText.includes('storm') || card.name === 'Brain Freeze') {
+      const spellCount = draftState.picks.filter(p =>
+        p.type_line?.toLowerCase().includes('instant') ||
+        p.type_line?.toLowerCase().includes('sorcery')
+      ).length;
+      if (spellCount >= 5) synergies.push('storm enabler');
+    }
+
+    return synergies.slice(0, 3); // Max 3 synergies shown
+  }, [draftState]);
+
+  // Wheel prediction - check if a card we passed might come back
+  const getWheelPrediction = useCallback((card: CubeCard): { mightWheel: boolean; passedAtPick: number } | null => {
+    if (!draftState) return null;
+
+    const passedInfo = draftState.passedCards.get(card.id);
+    if (!passedInfo) return null;
+
+    // Card might wheel if:
+    // 1. We passed it early (pick 1-4)
+    // 2. It has low wheel likelihood (so others might pass it too)
+    const wheelLikelihood = getWheelLikelihood(card.name);
+    const mightWheel = passedInfo.passedAtPick <= 4 && wheelLikelihood !== 'unlikely';
+
+    return {
+      mightWheel,
+      passedAtPick: passedInfo.passedAtPick,
+    };
+  }, [draftState]);
+
+  // Calculate draft grade based on decisions
+  const draftGrade = useMemo(() => {
+    if (!draftState || draftState.decisions.length === 0) return null;
+
+    const totalDecisions = draftState.decisions.length;
+    const optimalPicks = draftState.decisions.filter(d => d.wasOptimal).length;
+    const totalEloDiff = draftState.decisions.reduce((sum, d) => sum + d.eloDiff, 0);
+    const avgEloDiff = totalEloDiff / totalDecisions;
+
+    // Grade based on how often we picked the best card
+    const optimalRate = optimalPicks / totalDecisions;
+    let grade: string;
+    let color: string;
+
+    if (optimalRate >= 0.8) { grade = 'S'; color = 'text-amber-400'; }
+    else if (optimalRate >= 0.6) { grade = 'A'; color = 'text-purple-400'; }
+    else if (optimalRate >= 0.4) { grade = 'B'; color = 'text-blue-400'; }
+    else if (optimalRate >= 0.25) { grade = 'C'; color = 'text-green-400'; }
+    else { grade = 'D'; color = 'text-white/40'; }
+
+    // Find worst picks (biggest ELO diff)
+    const worstPicks = [...draftState.decisions]
+      .filter(d => !d.wasOptimal)
+      .sort((a, b) => b.eloDiff - a.eloDiff)
+      .slice(0, 3);
+
+    // Find best picks (optimal picks on hard decisions)
+    const bestPicks = draftState.decisions
+      .filter(d => d.wasOptimal && d.packContents.length >= 10)
+      .slice(0, 3);
+
+    return {
+      grade,
+      color,
+      optimalPicks,
+      totalDecisions,
+      optimalRate: Math.round(optimalRate * 100),
+      avgEloDiff: Math.round(avgEloDiff),
+      worstPicks,
+      bestPicks,
+    };
+  }, [draftState]);
+
+  // Check and unlock achievements
+  const checkAchievements = useCallback((stats: DraftStats) => {
+    const newUnlocked: Achievement[] = [];
+    ACHIEVEMENTS.forEach(achievement => {
+      if (!unlockedAchievements.includes(achievement.id) && achievement.condition(stats)) {
+        newUnlocked.push(achievement);
+      }
+    });
+    if (newUnlocked.length > 0) {
+      const allUnlocked = [...unlockedAchievements, ...newUnlocked.map(a => a.id)];
+      setUnlockedAchievements(allUnlocked);
+      saveToStorage(STORAGE_KEYS.achievements, allUnlocked);
+      // Show the first new achievement
+      setNewAchievement(newUnlocked[0]);
+      setTimeout(() => setNewAchievement(null), 4000);
+    }
+  }, [unlockedAchievements]);
+
+  // Save draft results to history
+  const saveDraftResults = useCallback(() => {
+    if (!draftState || !draftState.isComplete || !draftGrade) return;
+
+    const deckElo = calculateDeckElo(draftState.picks.map(p => p.name));
+    const colorCts: Record<string, number> = {};
+    draftState.picks.forEach(c => {
+      c.color_identity?.forEach(col => {
+        colorCts[col] = (colorCts[col] || 0) + 1;
+      });
+    });
+    const mainColors = Object.entries(colorCts)
+      .filter(([_, count]) => count >= 3)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 2)
+      .map(([color]) => color);
+
+    const topPicks = draftState.picks
+      .map(p => ({ name: p.name, elo: getEloData(p.name)?.elo || 0 }))
+      .sort((a, b) => b.elo - a.elo)
+      .slice(0, 3);
+
+    const entry: DraftHistoryEntry = {
+      id: Date.now().toString(),
+      date: new Date().toLocaleDateString(),
+      deckElo: deckElo.rawAverage,
+      grade: draftGrade.grade,
+      optimalRate: draftGrade.optimalRate,
+      mainColors,
+      totalPicks: draftState.picks.length,
+      topPicks,
+    };
+
+    const updatedHistory = [entry, ...draftHistory].slice(0, 20); // Keep last 20
+    setDraftHistory(updatedHistory);
+    saveToStorage(STORAGE_KEYS.history, updatedHistory);
+
+    // Calculate streak
+    let currentStreak = 0;
+    for (const d of draftState.decisions) {
+      if (d.wasOptimal) currentStreak++;
+      else break;
+    }
+    let maxStreak = currentStreak;
+    let tempStreak = 0;
+    for (const d of draftState.decisions) {
+      if (d.wasOptimal) {
+        tempStreak++;
+        maxStreak = Math.max(maxStreak, tempStreak);
+      } else {
+        tempStreak = 0;
+      }
+    }
+
+    // Count rare picks (cards picked that have low pick rates)
+    const rarePicks = draftState.picks.filter(p => {
+      const percentile = getPercentile(p.name);
+      return percentile < 25;
+    }).length;
+
+    // Update stats
+    const newStats: DraftStats = {
+      totalDrafts: draftStats.totalDrafts + 1,
+      totalPicks: draftStats.totalPicks + draftState.picks.length,
+      avgOptimalRate: Math.round(
+        (draftStats.avgOptimalRate * draftStats.totalDrafts + draftGrade.optimalRate) /
+        (draftStats.totalDrafts + 1)
+      ),
+      avgDeckElo: Math.round(
+        (draftStats.avgDeckElo * draftStats.totalDrafts + deckElo.rawAverage) /
+        (draftStats.totalDrafts + 1)
+      ),
+      bestGrade: ['S', 'A', 'B', 'C', 'D'].indexOf(draftGrade.grade) < ['S', 'A', 'B', 'C', 'D'].indexOf(draftStats.bestGrade || 'D')
+        ? draftGrade.grade
+        : draftStats.bestGrade,
+      perfectPacks: draftStats.perfectPacks, // TODO: calculate
+      streakOptimal: currentStreak,
+      maxStreakOptimal: Math.max(draftStats.maxStreakOptimal, maxStreak),
+      rarePicks: draftStats.rarePicks + rarePicks,
+      quizAccuracy: draftStats.quizAccuracy,
+      quizTotal: draftStats.quizTotal,
+    };
+    setDraftStats(newStats);
+    saveToStorage(STORAGE_KEYS.stats, newStats);
+
+    // Check for new achievements
+    checkAchievements(newStats);
+  }, [draftState, draftGrade, draftHistory, draftStats, checkAchievements]);
+
+  // Save results when draft completes
+  useEffect(() => {
+    if (draftState?.isComplete && draftGrade) {
+      saveDraftResults();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftState?.isComplete]);
+
+  // Check quiz achievements when quiz total changes
+  useEffect(() => {
+    if (draftStats.quizTotal > 0) {
+      checkAchievements(draftStats);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftStats.quizTotal]);
+
+  // Generate coach explanation for recommended pick
+  const coachExplanation = useMemo(() => {
+    if (!draftState || draftState.isComplete) return null;
+
+    const currentPack = draftState.tablePacks[0];
+    if (!currentPack.length) return null;
+
+    // Find top 3 cards by ELO
+    const sortedByElo = [...currentPack]
+      .map(c => ({ card: c, elo: getEloData(c.name)?.elo || 0, percentile: getPercentile(c.name) }))
+      .sort((a, b) => b.elo - a.elo);
+
+    const top = sortedByElo[0];
+    const second = sortedByElo[1];
+
+    // Check colors
+    const mainColors = Object.entries(
+      draftState.picks.reduce((acc, c) => {
+        c.color_identity?.forEach(col => {
+          acc[col] = (acc[col] || 0) + 1;
+        });
+        return acc;
+      }, {} as Record<string, number>)
+    ).filter(([_, count]) => count >= 2).map(([color]) => color);
+
+    const topColors = top.card.color_identity || [];
+    const isOnColor = topColors.length === 0 || topColors.every(c => mainColors.includes(c));
+
+    const reasons: string[] = [];
+
+    // Explain the recommendation
+    if (top.percentile >= 90) {
+      reasons.push(`${top.card.name} is in the top 10% of all cube cards by ELO`);
+    } else if (top.percentile >= 75) {
+      reasons.push(`${top.card.name} is a premium card (top 25%)`);
+    }
+
+    if (draftState.picks.length < 5) {
+      reasons.push('Early in the draft - prioritize raw power over synergy');
+    } else if (isOnColor) {
+      reasons.push(`Fits your ${mainColors.join('')} colors`);
+    } else if (top.percentile >= 85) {
+      reasons.push('Powerful enough to splash or pivot');
+    }
+
+    if (second && top.elo - second.elo > 50) {
+      reasons.push(`Clear best card (+${Math.round(top.elo - second.elo)} ELO over next best)`);
+    } else if (second && top.elo - second.elo < 20) {
+      reasons.push(`Close decision - ${second.card.name} is also good`);
+    }
+
+    const wheelLikelihood = getWheelLikelihood(top.card.name);
+    if (wheelLikelihood === 'unlikely') {
+      reasons.push("Won't wheel - take it now");
+    }
+
+    return {
+      card: top.card,
+      elo: top.elo,
+      percentile: top.percentile,
+      reasons,
+      alternatives: sortedByElo.slice(1, 3).map(s => s.card.name),
+    };
+  }, [draftState]);
 
   const startDraft = useCallback(() => {
     const shuffled = shuffleArray([...cards]);
@@ -125,6 +557,8 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
       direction: 'left',
       pickNumber: 1,
       isComplete: false,
+      passedCards: new Map(),
+      decisions: [],
     });
     setMode('draft');
   }, [cards]);
@@ -173,7 +607,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     return newPacks;
   };
 
-  const startNewPack = useCallback((currentPicks: CubeCard[], nextPackNumber: number): DraftState => {
+  const startNewPack = useCallback((currentPicks: CubeCard[], nextPackNumber: number, currentPassedCards: Map<string, { card: CubeCard; passedAtPick: number; packNumber: number }>, currentDecisions: PickDecision[]): DraftState => {
     const shuffled = shuffleArray([...cards].filter(c => !currentPicks.some(p => p.id === c.id)));
     const tablePacks: CubeCard[][] = [];
     for (let i = 0; i < NUM_PLAYERS; i++) {
@@ -186,12 +620,48 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
       direction: nextPackNumber === 2 ? 'right' : 'left',
       pickNumber: 1,
       isComplete: false,
+      passedCards: currentPassedCards,
+      decisions: currentDecisions,
     };
   }, [cards]);
 
   const makePick = useCallback((card: CubeCard) => {
     if (!draftState || draftState.isComplete) return;
+
+    const currentPack = draftState.tablePacks[0];
+
+    // Find the best available card by ELO
+    const sortedByElo = [...currentPack].sort((a, b) => compareByElo(a.name, b.name));
+    const bestAvailable = sortedByElo[0];
+    const bestElo = getEloData(bestAvailable.name)?.elo || 0;
+    const pickedElo = getEloData(card.name)?.elo || 0;
+
+    // Track what we passed
+    const passed = currentPack.filter(c => c.id !== card.id);
+    const newPassedCards = new Map(draftState.passedCards);
+    passed.forEach(c => {
+      newPassedCards.set(c.id, {
+        card: c,
+        passedAtPick: draftState.pickNumber,
+        packNumber: draftState.packNumber,
+      });
+    });
+
+    // Record this decision
+    const decision: PickDecision = {
+      pick: card,
+      packNumber: draftState.packNumber,
+      pickNumber: draftState.pickNumber,
+      packContents: [...currentPack],
+      bestAvailable,
+      passed,
+      wasOptimal: card.id === bestAvailable.id,
+      eloDiff: Math.max(0, bestElo - pickedElo),
+    };
+
+    const newDecisions = [...draftState.decisions, decision];
     const newPicks = [...draftState.picks, card];
+
     let newTablePacks = draftState.tablePacks.map((pack, idx) =>
       idx === 0 ? pack.filter(c => c.id !== card.id) : pack
     );
@@ -201,14 +671,50 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
 
     if (newPickNumber > CARDS_PER_PACK) {
       if (draftState.packNumber >= 3) {
-        setDraftState({ ...draftState, picks: newPicks, isComplete: true });
+        setDraftState({ ...draftState, picks: newPicks, isComplete: true, passedCards: newPassedCards, decisions: newDecisions });
       } else {
-        setDraftState(startNewPack(newPicks, draftState.packNumber + 1));
+        setDraftState(startNewPack(newPicks, draftState.packNumber + 1, newPassedCards, newDecisions));
       }
     } else {
-      setDraftState({ ...draftState, tablePacks: newTablePacks, picks: newPicks, pickNumber: newPickNumber });
+      setDraftState({ ...draftState, tablePacks: newTablePacks, picks: newPicks, pickNumber: newPickNumber, passedCards: newPassedCards, decisions: newDecisions });
     }
   }, [draftState, startNewPack]);
+
+  // Keyboard shortcuts for fast drafting
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+      if (mode === 'draft' && draftState && !draftState.isComplete) {
+        const currentPack = draftState.tablePacks[0];
+        const num = parseInt(e.key);
+        if (num >= 1 && num <= Math.min(9, currentPack.length)) {
+          makePick(currentPack[num - 1]);
+        }
+      }
+
+      if (mode === 'quiz' && quizState) {
+        if (!quizState.revealed) {
+          const num = parseInt(e.key);
+          if (num >= 1 && num <= Math.min(9, quizState.currentPack.length)) {
+            makeQuizPick(quizState.currentPack[num - 1]);
+          }
+        } else if (e.key === ' ' || e.key === 'Enter') {
+          e.preventDefault();
+          nextQuizQuestion();
+        }
+      }
+
+      // Escape to return to menu
+      if (e.key === 'Escape') {
+        returnToMenu();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [mode, draftState, quizState, makePick, makeQuizPick, nextQuizQuestion, returnToMenu]);
 
   const getRecommendedPick = useMemo(() => {
     if (!draftState) return null;
@@ -453,6 +959,119 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
           </div>
         </div>
 
+        {/* Your Stats */}
+        {draftStats.totalDrafts > 0 && (
+          <div className="grid md:grid-cols-2 gap-4">
+            {/* Stats Summary */}
+            <div className="bg-black border border-white/[0.06] rounded-xl p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <TrendingUp className="w-4 h-4 text-blue-400" />
+                <h3 className="text-sm font-medium text-white/60 uppercase tracking-wide">Your Stats</h3>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <div className="text-2xl font-bold text-white">{draftStats.totalDrafts}</div>
+                  <div className="text-xs text-white/40">Drafts</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-white">{draftStats.avgOptimalRate}%</div>
+                  <div className="text-xs text-white/40">Avg Optimal</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-white">{draftStats.avgDeckElo}</div>
+                  <div className="text-xs text-white/40">Avg Deck ELO</div>
+                </div>
+                <div>
+                  <div className={`text-2xl font-bold ${
+                    draftStats.bestGrade === 'S' ? 'text-amber-400' :
+                    draftStats.bestGrade === 'A' ? 'text-purple-400' :
+                    draftStats.bestGrade === 'B' ? 'text-blue-400' :
+                    'text-white'
+                  }`}>{draftStats.bestGrade || '-'}</div>
+                  <div className="text-xs text-white/40">Best Grade</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Achievements */}
+            <div className="bg-black border border-white/[0.06] rounded-xl p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <Award className="w-4 h-4 text-amber-400" />
+                <h3 className="text-sm font-medium text-white/60 uppercase tracking-wide">
+                  Achievements ({unlockedAchievements.length}/{ACHIEVEMENTS.length})
+                </h3>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {ACHIEVEMENTS.map(achievement => {
+                  const isUnlocked = unlockedAchievements.includes(achievement.id);
+                  return (
+                    <div
+                      key={achievement.id}
+                      className={`
+                        px-3 py-2 rounded-lg text-sm flex items-center gap-2 transition-all
+                        ${isUnlocked
+                          ? 'bg-gradient-to-br from-amber-500/20 to-amber-600/10 border border-amber-500/30 text-amber-400'
+                          : 'bg-white/[0.02] border border-white/[0.06] text-white/30'
+                        }
+                      `}
+                      title={achievement.description}
+                    >
+                      <span className={isUnlocked ? '' : 'grayscale opacity-50'}>{achievement.icon}</span>
+                      <span className={isUnlocked ? 'font-medium' : ''}>{achievement.name}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Recent Drafts */}
+        {draftHistory.length > 0 && (
+          <div className="bg-black border border-white/[0.06] rounded-xl p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <History className="w-4 h-4 text-purple-400" />
+              <h3 className="text-sm font-medium text-white/60 uppercase tracking-wide">Recent Drafts</h3>
+            </div>
+            <div className="space-y-2">
+              {draftHistory.slice(0, 5).map(entry => (
+                <div key={entry.id} className="flex items-center gap-4 p-3 bg-white/[0.02] rounded-lg">
+                  <div className={`
+                    w-10 h-10 rounded-lg flex items-center justify-center font-bold text-lg
+                    ${entry.grade === 'S' ? 'bg-amber-500/20 text-amber-400' :
+                      entry.grade === 'A' ? 'bg-purple-500/20 text-purple-400' :
+                      entry.grade === 'B' ? 'bg-blue-500/20 text-blue-400' :
+                      entry.grade === 'C' ? 'bg-green-500/20 text-green-400' :
+                      'bg-white/5 text-white/40'}
+                  `}>
+                    {entry.grade}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-white">{entry.mainColors.join('') || 'Colorless'}</span>
+                      <span className="text-xs text-white/30">{entry.date}</span>
+                    </div>
+                    <div className="text-xs text-white/40">
+                      ELO {entry.deckElo} · {entry.optimalRate}% optimal
+                    </div>
+                  </div>
+                  <div className="flex -space-x-1">
+                    {entry.topPicks.slice(0, 3).map((p, i) => (
+                      <div
+                        key={i}
+                        className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-[8px] font-mono text-white/50 ring-1 ring-black"
+                        title={p.name}
+                      >
+                        {Math.round(p.elo / 100)}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Featured Cards Preview */}
         <div>
           <h3 className="text-sm font-medium text-white/40 uppercase tracking-wide mb-3">Cards you might see</h3>
@@ -673,6 +1292,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     const avgPower = picks.reduce((sum, c) => sum + c.powerLevel, 0) / picks.length;
     const nonLands = picks.filter(c => !c.type_line?.toLowerCase().includes('land'));
     const avgCmc = nonLands.reduce((sum, c) => sum + (c.cmc || 0), 0) / nonLands.length;
+    const deckElo = calculateDeckElo(picks.map(p => p.name));
 
     const mainColors = Object.entries(colorCounts)
       .filter(([_, count]) => count >= 3)
@@ -680,8 +1300,17 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
       .slice(0, 2)
       .map(([color]) => color);
 
+    // Mana curve data
+    const curveData = [0, 0, 0, 0, 0, 0, 0, 0]; // 0, 1, 2, 3, 4, 5, 6, 7+
+    nonLands.forEach(c => {
+      const cmc = Math.min(7, Math.floor(c.cmc || 0));
+      curveData[cmc]++;
+    });
+    const maxCurve = Math.max(...curveData, 1);
+
     return (
       <div className="space-y-6">
+        {/* Header with Grade */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400/20 to-amber-500/10 flex items-center justify-center">
@@ -694,26 +1323,141 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
               </p>
             </div>
           </div>
-          <button
-            onClick={returnToMenu}
-            className="flex items-center gap-2.5 px-5 py-2.5 bg-white/10 border border-white/10 rounded-xl text-white font-medium hover:bg-white/15 transition-colors"
-          >
-            <RotateCcw className="w-4 h-4" />
-            New Draft
-          </button>
+
+          <div className="flex items-center gap-4">
+            {/* Draft Grade */}
+            {draftGrade && (
+              <div className="text-center px-4">
+                <div className="text-xs text-white/40 mb-1">Draft Grade</div>
+                <div className={`text-4xl font-bold ${draftGrade.color}`}>{draftGrade.grade}</div>
+                <div className="text-[10px] text-white/30">{draftGrade.optimalRate}% optimal picks</div>
+              </div>
+            )}
+
+            <button
+              onClick={returnToMenu}
+              className="flex items-center gap-2.5 px-5 py-2.5 bg-white/10 border border-white/10 rounded-xl text-white font-medium hover:bg-white/15 transition-colors"
+            >
+              <RotateCcw className="w-4 h-4" />
+              New Draft
+            </button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-5 sm:grid-cols-7 md:grid-cols-9 lg:grid-cols-11 gap-2">
-          {picks.map((card, idx) => (
-            <div
-              key={`${card.id}-${idx}`}
-              className="relative aspect-[488/680] rounded-xl overflow-hidden shadow-lg hover:scale-105 transition-transform"
-              onMouseEnter={() => setHoveredCard(card)}
-              onMouseLeave={() => setHoveredCard(null)}
-            >
-              <img src={getCardImage(card)} alt={card.name} className="w-full h-full object-cover" loading="lazy" />
+        {/* Stats Row */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="bg-black border border-white/[0.06] rounded-xl p-4 text-center">
+            <div className="text-2xl font-bold text-white">{deckElo.rawAverage}</div>
+            <div className="text-xs text-white/40 mt-1">Deck ELO</div>
+          </div>
+          <div className="bg-black border border-white/[0.06] rounded-xl p-4 text-center">
+            <div className="text-2xl font-bold text-white">{draftGrade?.optimalPicks || 0}/{draftGrade?.totalDecisions || 0}</div>
+            <div className="text-xs text-white/40 mt-1">Optimal Picks</div>
+          </div>
+          <div className="bg-black border border-white/[0.06] rounded-xl p-4 text-center">
+            <div className="text-2xl font-bold text-white">{picks.length}</div>
+            <div className="text-xs text-white/40 mt-1">Total Cards</div>
+          </div>
+          <div className="bg-black border border-white/[0.06] rounded-xl p-4">
+            <div className="text-xs text-white/40 mb-2 text-center">Mana Curve</div>
+            <div className="flex items-end justify-center gap-1 h-8">
+              {curveData.map((count, cmc) => (
+                <div key={cmc} className="flex flex-col items-center">
+                  <div
+                    className="w-3 bg-gradient-to-t from-blue-500 to-blue-400 rounded-t"
+                    style={{ height: `${(count / maxCurve) * 24}px`, minHeight: count > 0 ? '4px' : '0' }}
+                  />
+                  <span className="text-[8px] text-white/30 mt-0.5">{cmc === 7 ? '7+' : cmc}</span>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
+        </div>
+
+        {/* Decision Analysis */}
+        {draftGrade && (draftGrade.worstPicks.length > 0 || draftGrade.bestPicks.length > 0) && (
+          <div className="grid md:grid-cols-2 gap-4">
+            {/* Missed Opportunities */}
+            {draftGrade.worstPicks.length > 0 && (
+              <div className="bg-gradient-to-br from-red-500/5 to-transparent border border-red-500/10 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <XCircle className="w-4 h-4 text-red-400" />
+                  <h3 className="text-sm font-medium text-red-400">Missed Opportunities</h3>
+                </div>
+                <div className="space-y-2">
+                  {draftGrade.worstPicks.map((decision, i) => (
+                    <div key={i} className="flex items-center gap-3 p-2 bg-white/[0.02] rounded-lg">
+                      <div className="w-8 h-11 rounded overflow-hidden flex-shrink-0">
+                        <img src={getCardImage(decision.pick)} alt="" className="w-full h-full object-cover" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs text-white/60 truncate">Picked: {decision.pick.name}</div>
+                        <div className="text-[10px] text-red-400">
+                          Should have: {decision.bestAvailable.name} (+{decision.eloDiff} ELO)
+                        </div>
+                      </div>
+                      <div className="text-[10px] text-white/30">P{decision.packNumber}P{decision.pickNumber}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Great Picks */}
+            {draftGrade.bestPicks.length > 0 && (
+              <div className="bg-gradient-to-br from-green-500/5 to-transparent border border-green-500/10 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <CheckCircle className="w-4 h-4 text-green-400" />
+                  <h3 className="text-sm font-medium text-green-400">Great Picks</h3>
+                </div>
+                <div className="space-y-2">
+                  {draftGrade.bestPicks.map((decision, i) => (
+                    <div key={i} className="flex items-center gap-3 p-2 bg-white/[0.02] rounded-lg">
+                      <div className="w-8 h-11 rounded overflow-hidden flex-shrink-0">
+                        <img src={getCardImage(decision.pick)} alt="" className="w-full h-full object-cover" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs text-white/80 truncate">{decision.pick.name}</div>
+                        <div className="text-[10px] text-green-400">
+                          Best pick from {decision.packContents.length} cards
+                        </div>
+                      </div>
+                      <div className="text-[10px] text-white/30">P{decision.packNumber}P{decision.pickNumber}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Card Pool */}
+        <div>
+          <h3 className="text-xs font-medium text-white/40 uppercase tracking-wide mb-3">Your Pool ({picks.length} cards)</h3>
+          <div className="grid grid-cols-5 sm:grid-cols-7 md:grid-cols-9 lg:grid-cols-11 gap-2">
+            {picks.map((card, idx) => {
+              const decision = draftState.decisions[idx];
+              const wasOptimal = decision?.wasOptimal;
+
+              return (
+                <div
+                  key={`${card.id}-${idx}`}
+                  className={`relative aspect-[488/680] rounded-xl overflow-hidden shadow-lg hover:scale-105 transition-transform ${
+                    wasOptimal === false ? 'ring-2 ring-red-400/30' : ''
+                  }`}
+                  onMouseEnter={() => setHoveredCard(card)}
+                  onMouseLeave={() => setHoveredCard(null)}
+                >
+                  <img src={getCardImage(card)} alt={card.name} className="w-full h-full object-cover" loading="lazy" />
+                  {wasOptimal === false && (
+                    <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-red-500/80 flex items-center justify-center">
+                      <XCircle className="w-3 h-3 text-white" />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         {hoveredCard && (
@@ -736,9 +1480,67 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
 
   return (
     <div className="flex gap-5">
+      {/* Achievement Popup */}
+      {newAchievement && (
+        <div className="fixed top-4 right-4 z-50 animate-pulse">
+          <div className="bg-gradient-to-br from-amber-500/30 to-amber-600/20 border-2 border-amber-400/50 rounded-xl p-4 shadow-2xl shadow-amber-500/30 backdrop-blur-sm">
+            <div className="flex items-center gap-3">
+              <div className="text-4xl animate-bounce">{newAchievement.icon}</div>
+              <div>
+                <div className="text-xs text-amber-300 uppercase tracking-wider font-semibold">Achievement Unlocked!</div>
+                <div className="text-xl font-bold text-amber-200">{newAchievement.name}</div>
+                <div className="text-sm text-amber-100/70">{newAchievement.description}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Left Panel - Draft Guidance */}
       <div className="w-56 flex-shrink-0 hidden lg:block">
         <div className="sticky top-20 space-y-3">
+          {/* Coach Panel */}
+          {coachMode && coachExplanation && (
+            <div className="bg-gradient-to-br from-amber-500/10 to-transparent border border-amber-500/20 rounded-xl overflow-hidden">
+              <button
+                onClick={() => setShowCoachExplanation(!showCoachExplanation)}
+                className="w-full p-3 flex items-center justify-between hover:bg-white/[0.02] transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <Lightbulb className="w-4 h-4 text-amber-400" />
+                  <span className="text-xs font-medium text-amber-400 uppercase tracking-wider">AI Coach</span>
+                </div>
+                <span className="text-white/30 text-xs">{showCoachExplanation ? '▼' : '▶'}</span>
+              </button>
+              {showCoachExplanation && (
+                <div className="p-3 pt-0 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-10 h-14 rounded overflow-hidden flex-shrink-0">
+                      <img src={getCardImage(coachExplanation.card)} alt="" className="w-full h-full object-cover" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-medium text-white truncate">{coachExplanation.card.name}</div>
+                      <div className="text-[10px] text-amber-400">ELO {Math.round(coachExplanation.elo)} · Top {100 - coachExplanation.percentile}%</div>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    {coachExplanation.reasons.slice(0, 3).map((reason, i) => (
+                      <div key={i} className="flex items-start gap-1.5 text-[10px] text-white/60">
+                        <span className="text-amber-400 mt-0.5">•</span>
+                        <span>{reason}</span>
+                      </div>
+                    ))}
+                  </div>
+                  {coachExplanation.alternatives.length > 0 && (
+                    <div className="text-[10px] text-white/30 pt-1 border-t border-white/[0.06]">
+                      Also consider: {coachExplanation.alternatives.join(', ')}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Archetypes Panel */}
           <div className="bg-black border border-white/[0.06] rounded-xl overflow-hidden">
             <div className="p-3 border-b border-white/[0.06]">
@@ -894,6 +1696,22 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
               <span className="text-xs text-white/40 font-mono tabular-nums">{draftState.picks.length}/45</span>
             </div>
 
+            {/* Coach Toggle */}
+            <button
+              onClick={() => setCoachMode(!coachMode)}
+              className={`
+                hidden lg:flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all
+                ${coachMode
+                  ? 'bg-amber-500/20 border border-amber-500/30 text-amber-400'
+                  : 'bg-white/5 border border-white/10 text-white/40 hover:text-white/60'
+                }
+              `}
+              title={coachMode ? 'Disable coach' : 'Enable coach'}
+            >
+              {coachMode ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+              Coach
+            </button>
+
             <button
               onClick={returnToMenu}
               className="p-2.5 bg-white/5 border border-white/10 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-colors"
@@ -932,14 +1750,23 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
           </div>
         )}
 
+        {/* Keyboard hint */}
+        <div className="hidden sm:flex items-center gap-2 text-[10px] text-white/30">
+          <Keyboard className="w-3.5 h-3.5" />
+          <span>Press 1-9 to quick pick · ESC to exit</span>
+        </div>
+
         {/* Pack Grid */}
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 sm:gap-4">
-          {currentPack.map((card) => {
+          {currentPack.map((card, index) => {
             const isRecommended = recommendedCard?.id === card.id;
             const synergy = getCardSynergy(card);
             const wheelLikelihood = getWheelLikelihood(card.name);
             const percentile = getPercentile(card.name);
             const isPremium = percentile >= 75;
+            const cardSynergies = getCardSynergies(card);
+            const wheelPrediction = getWheelPrediction(card);
+            const keyboardNum = index + 1;
 
             return (
               <div
@@ -953,12 +1780,39 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                   ${isRecommended ? 'ring-2 ring-amber-400/60 shadow-amber-400/20' : ''}
                   ${!isRecommended && synergy === 'high' ? 'ring-2 ring-green-400/50' : ''}
                   ${!isRecommended && synergy === 'low' ? 'ring-2 ring-red-400/30 opacity-75' : ''}
+                  ${wheelPrediction?.mightWheel ? 'ring-2 ring-cyan-400/50' : ''}
                 `}
               >
                 <img src={getCardImage(card)} alt={card.name} className="w-full h-full object-cover" loading="lazy" />
 
+                {/* Keyboard shortcut hint */}
+                {keyboardNum <= 9 && (
+                  <div className="absolute bottom-1.5 left-1.5 w-5 h-5 rounded bg-black/70 flex items-center justify-center text-[10px] font-mono text-white/50">
+                    {keyboardNum}
+                  </div>
+                )}
+
+                {/* Wheeled back indicator */}
+                {wheelPrediction?.mightWheel && (
+                  <div className="absolute top-8 left-1.5 px-1.5 py-0.5 rounded bg-cyan-500/90 text-white text-[8px] font-bold flex items-center gap-1">
+                    <History className="w-2.5 h-2.5" />
+                    Wheeled!
+                  </div>
+                )}
+
+                {/* Synergy tags */}
+                {cardSynergies.length > 0 && (
+                  <div className="absolute bottom-7 left-1.5 right-1.5 flex flex-wrap gap-0.5 justify-start">
+                    {cardSynergies.slice(0, 2).map((syn, i) => (
+                      <span key={i} className="px-1 py-0.5 rounded bg-purple-500/80 text-white text-[7px] font-medium truncate max-w-[60px]">
+                        {syn}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
                 {/* Wheel likelihood indicator */}
-                {!isRecommended && (
+                {!isRecommended && !wheelPrediction?.mightWheel && (
                   <div className={`
                     absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide
                     ${wheelLikelihood === 'likely' ? 'bg-green-500/80 text-white' : ''}
@@ -972,10 +1826,10 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                   </div>
                 )}
 
-                {/* Synergy indicator */}
-                {synergy && !isRecommended && (
+                {/* Synergy indicator (simplified) */}
+                {synergy && !isRecommended && cardSynergies.length === 0 && (
                   <div className={`
-                    absolute bottom-1.5 left-1.5 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide
+                    absolute bottom-7 left-1.5 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide
                     ${synergy === 'high' ? 'bg-green-500/90 text-white' : ''}
                     ${synergy === 'medium' ? 'bg-amber-500/90 text-black' : ''}
                     ${synergy === 'low' ? 'bg-red-500/80 text-white' : ''}
