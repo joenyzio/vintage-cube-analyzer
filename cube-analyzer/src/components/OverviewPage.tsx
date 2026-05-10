@@ -4,8 +4,12 @@ import { getCardImage } from '../services/scryfall';
 import { ColorDistributionChart } from './charts/ColorDistributionChart';
 import { ManaCurveChart } from './charts/ManaCurveChart';
 import {
+  getEloData,
+  getPercentile,
+} from '../services/eloHelpers';
+import {
   Play, Zap, Shield, Target, Wand2, Crown,
-  TrendingUp, ChevronRight, Sparkles, Skull
+  TrendingUp, ChevronRight, Sparkles, Skull, Gem, TrendingDown
 } from 'lucide-react';
 
 interface OverviewPageProps {
@@ -44,6 +48,45 @@ export function OverviewPage({
        'Mox Jet', 'Mox Ruby', 'Mox Emerald', 'Timetwister'].includes(c.name)
     );
 
+    // Find hidden gems (high ELO but low cube count) and overrated (low ELO but high cube count)
+    const cardsWithElo = cards.map(card => {
+      const eloData = getEloData(card.name);
+      if (!eloData) return null;
+      const percentile = getPercentile(card.name);
+      // Normalize cube count - higher = more popular
+      const avgCubeCount = 30000; // rough average
+      const popularityRatio = eloData.cubeCount / avgCubeCount;
+      return {
+        card,
+        elo: eloData.elo,
+        percentile,
+        cubeCount: eloData.cubeCount,
+        pickCount: eloData.pickCount,
+        // Hidden gem: high percentile, low popularity
+        gemScore: percentile - (popularityRatio * 50),
+        // Overrated: low percentile, high popularity
+        overratedScore: (popularityRatio * 50) - percentile,
+      };
+    }).filter(Boolean) as Array<{
+      card: CubeCard;
+      elo: number;
+      percentile: number;
+      cubeCount: number;
+      pickCount: number;
+      gemScore: number;
+      overratedScore: number;
+    }>;
+
+    const hiddenGems = cardsWithElo
+      .filter(c => c.percentile >= 50) // Must be at least decent
+      .sort((a, b) => b.gemScore - a.gemScore)
+      .slice(0, 5);
+
+    const overrated = cardsWithElo
+      .filter(c => c.percentile <= 50) // Below average
+      .sort((a, b) => b.overratedScore - a.overratedScore)
+      .slice(0, 5);
+
     return {
       total: cards.length,
       avgCmc: avgCmc.toFixed(2),
@@ -58,6 +101,8 @@ export function OverviewPage({
       comboPieces,
       finishers,
       power9,
+      hiddenGems,
+      overrated,
     };
   }, [cards, typeDistribution]);
 
@@ -237,7 +282,84 @@ export function OverviewPage({
         </div>
       </div>
 
-      {/* Row 5: Quick Actions */}
+      {/* Row 5: Hidden Gems & Overrated */}
+      {(stats.hiddenGems.length > 0 || stats.overrated.length > 0) && (
+        <div className="grid lg:grid-cols-2 gap-5">
+          {/* Hidden Gems */}
+          {stats.hiddenGems.length > 0 && (
+            <div className="bg-gradient-to-br from-emerald-500/5 to-transparent border border-emerald-500/10 rounded-xl p-4">
+              <div className="flex items-center gap-2.5 mb-4">
+                <div className="w-7 h-7 rounded-lg bg-emerald-400/10 flex items-center justify-center">
+                  <Gem className="w-3.5 h-3.5 text-emerald-400" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-white text-sm">Hidden Gems</h3>
+                  <p className="text-[10px] text-white/40">High ELO, underplayed in other cubes</p>
+                </div>
+              </div>
+              <div className="space-y-2">
+                {stats.hiddenGems.map(({ card, percentile, cubeCount }) => (
+                  <div
+                    key={card.id}
+                    className="flex items-center gap-3 p-2 bg-white/[0.02] rounded-lg hover:bg-white/[0.04] cursor-pointer transition-colors"
+                    onClick={() => onNavigate('cards')}
+                  >
+                    <div className="w-10 h-14 rounded overflow-hidden flex-shrink-0">
+                      <img src={getCardImage(card)} alt={card.name} className="w-full h-full object-cover" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-white text-sm truncate">{card.name}</div>
+                      <div className="text-[10px] text-white/40">{card.type_line?.split('—')[0]}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xs font-semibold text-emerald-400">Top {100 - percentile}%</div>
+                      <div className="text-[10px] text-white/30">Only {(cubeCount / 1000).toFixed(1)}k cubes</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Overrated */}
+          {stats.overrated.length > 0 && (
+            <div className="bg-gradient-to-br from-orange-500/5 to-transparent border border-orange-500/10 rounded-xl p-4">
+              <div className="flex items-center gap-2.5 mb-4">
+                <div className="w-7 h-7 rounded-lg bg-orange-400/10 flex items-center justify-center">
+                  <TrendingDown className="w-3.5 h-3.5 text-orange-400" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-white text-sm">Potentially Overrated</h3>
+                  <p className="text-[10px] text-white/40">Popular but lower ELO than expected</p>
+                </div>
+              </div>
+              <div className="space-y-2">
+                {stats.overrated.map(({ card, percentile, cubeCount }) => (
+                  <div
+                    key={card.id}
+                    className="flex items-center gap-3 p-2 bg-white/[0.02] rounded-lg hover:bg-white/[0.04] cursor-pointer transition-colors"
+                    onClick={() => onNavigate('cards')}
+                  >
+                    <div className="w-10 h-14 rounded overflow-hidden flex-shrink-0">
+                      <img src={getCardImage(card)} alt={card.name} className="w-full h-full object-cover" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-white text-sm truncate">{card.name}</div>
+                      <div className="text-[10px] text-white/40">{card.type_line?.split('—')[0]}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xs font-semibold text-orange-400">Top {100 - percentile}%</div>
+                      <div className="text-[10px] text-white/30">In {(cubeCount / 1000).toFixed(1)}k cubes</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Row 6: Quick Actions */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <QuickAction icon={Sparkles} label="Build Around" onClick={() => onNavigate('buildaround')} />
         <QuickAction icon={Target} label="Synergies" onClick={() => onNavigate('synergies')} />

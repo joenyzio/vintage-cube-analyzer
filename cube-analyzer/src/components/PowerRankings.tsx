@@ -1,7 +1,15 @@
 import { useState, useMemo } from 'react';
 import type { CubeCard } from '../types/card';
 import { getCardImage } from '../services/scryfall';
-import { Search } from 'lucide-react';
+import {
+  getEloData,
+  getPercentile,
+  getWheelLikelihood,
+  formatPickCount,
+  formatCubeCount,
+  getEloBarWidth,
+} from '../services/eloHelpers';
+import { Search, TrendingUp, Users, Target } from 'lucide-react';
 
 interface PowerRankingsProps {
   cards: CubeCard[];
@@ -80,13 +88,31 @@ export function PowerRankings({ cards }: PowerRankingsProps) {
     return groups;
   }, [filteredCards]);
 
-  // Tier counts for summary
-  const tierCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
+  // Tier counts and ELO stats for summary
+  const tierStats = useMemo(() => {
+    const stats: Record<string, { count: number; avgElo: number; totalPicks: number }> = {};
     TIERS.forEach(t => {
-      counts[t.id] = cardsByTier[t.id].length;
+      const tierCards = cardsByTier[t.id];
+      let totalElo = 0;
+      let totalPicks = 0;
+      let eloCount = 0;
+
+      tierCards.forEach(card => {
+        const eloData = getEloData(card.name);
+        if (eloData) {
+          totalElo += eloData.elo;
+          totalPicks += eloData.pickCount;
+          eloCount++;
+        }
+      });
+
+      stats[t.id] = {
+        count: tierCards.length,
+        avgElo: eloCount > 0 ? Math.round(totalElo / eloCount) : 0,
+        totalPicks
+      };
     });
-    return counts;
+    return stats;
   }, [cardsByTier]);
 
   const toggleTier = (tierId: string) => {
@@ -151,20 +177,29 @@ export function PowerRankings({ cards }: PowerRankingsProps) {
 
       {/* Tier Summary Bar */}
       <div className="flex gap-2 flex-wrap">
-        {TIERS.map(tier => (
-          <button
-            key={tier.id}
-            onClick={() => toggleTier(tier.id)}
-            className={`
-              flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all
-              ${tier.bg} ${tier.border} border
-              ${collapsedTiers.has(tier.id) ? 'opacity-50' : ''}
-            `}
-          >
-            <span className={`font-bold ${tier.color}`}>{tier.id}</span>
-            <span className="text-white/50 font-mono text-xs">{tierCounts[tier.id]}</span>
-          </button>
-        ))}
+        {TIERS.map(tier => {
+          const stats = tierStats[tier.id];
+          return (
+            <button
+              key={tier.id}
+              onClick={() => toggleTier(tier.id)}
+              className={`
+                flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all
+                ${tier.bg} ${tier.border} border
+                ${collapsedTiers.has(tier.id) ? 'opacity-50' : ''}
+              `}
+              title={stats.avgElo > 0 ? `Avg ELO: ${stats.avgElo} | ${formatPickCount(stats.totalPicks)} picks` : undefined}
+            >
+              <span className={`font-bold ${tier.color}`}>{tier.id}</span>
+              <span className="text-white/50 font-mono text-xs">{stats.count}</span>
+              {stats.avgElo > 0 && (
+                <span className="text-white/30 font-mono text-[10px] hidden sm:inline">
+                  {stats.avgElo}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {/* Tier Lists */}
@@ -244,16 +279,85 @@ export function PowerRankings({ cards }: PowerRankingsProps) {
       {/* Hover Preview */}
       {hoveredCard && (
         <div className="fixed bottom-4 right-4 z-50 hidden lg:block pointer-events-none">
-          <div className="bg-black border border-white/10 p-2 rounded-xl shadow-2xl">
-            <img src={getCardImage(hoveredCard)} alt={hoveredCard.name} className="w-56 rounded-lg" />
-            <div className="mt-2 px-1">
+          <div className="bg-black border border-white/10 p-2 rounded-xl shadow-2xl w-64">
+            <img src={getCardImage(hoveredCard)} alt={hoveredCard.name} className="w-full rounded-lg" />
+            <div className="mt-2 px-1 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-white">{hoveredCard.name}</span>
+                <span className="text-sm font-medium text-white truncate">{hoveredCard.name}</span>
                 <span className={`text-sm font-bold ${getTier(hoveredCard.powerLevel).color}`}>
                   {hoveredCard.powerLevel}
                 </span>
               </div>
               <div className="text-xs text-white/40">{hoveredCard.type_line}</div>
+
+              {/* ELO Stats Section */}
+              {(() => {
+                const eloData = getEloData(hoveredCard.name);
+                if (!eloData) return null;
+
+                const percentile = getPercentile(hoveredCard.name);
+                const wheelLikelihood = getWheelLikelihood(hoveredCard.name);
+                const barWidth = getEloBarWidth(hoveredCard.name);
+
+                return (
+                  <div className="pt-2 border-t border-white/10 space-y-2">
+                    {/* ELO Rating with bar */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] text-white/40 uppercase tracking-wider flex items-center gap-1">
+                          <TrendingUp className="w-3 h-3" />
+                          ELO Rating
+                        </span>
+                        <span className="text-xs font-mono text-white/70">{Math.round(eloData.elo)}</span>
+                      </div>
+                      <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all ${
+                            percentile >= 75 ? 'bg-gradient-to-r from-amber-400 to-amber-500' :
+                            percentile >= 50 ? 'bg-gradient-to-r from-purple-400 to-purple-500' :
+                            percentile >= 25 ? 'bg-gradient-to-r from-blue-400 to-blue-500' :
+                            'bg-gradient-to-r from-white/30 to-white/40'
+                          }`}
+                          style={{ width: `${barWidth}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Percentile and Wheel */}
+                    <div className="flex items-center justify-between text-xs">
+                      <span className={`font-medium ${
+                        percentile >= 75 ? 'text-amber-400' :
+                        percentile >= 50 ? 'text-purple-400' :
+                        percentile >= 25 ? 'text-blue-400' :
+                        'text-white/50'
+                      }`}>
+                        Top {100 - percentile}%
+                      </span>
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                        wheelLikelihood === 'likely' ? 'bg-green-500/20 text-green-400' :
+                        wheelLikelihood === 'maybe' ? 'bg-amber-500/20 text-amber-400' :
+                        'bg-red-500/20 text-red-400'
+                      }`}>
+                        {wheelLikelihood === 'likely' ? 'Likely wheels' :
+                         wheelLikelihood === 'maybe' ? 'May wheel' :
+                         'Won\'t wheel'}
+                      </span>
+                    </div>
+
+                    {/* Pick Stats */}
+                    <div className="flex items-center gap-3 text-[10px] text-white/40">
+                      <span className="flex items-center gap-1">
+                        <Target className="w-3 h-3" />
+                        {formatPickCount(eloData.pickCount)} picks
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Users className="w-3 h-3" />
+                        {formatCubeCount(eloData.cubeCount)} cubes
+                      </span>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </div>

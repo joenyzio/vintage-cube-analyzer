@@ -3,7 +3,14 @@ import type { CubeCard } from '../types/card';
 import { getCardImage } from '../services/scryfall';
 import { Card } from './ui/Card';
 import { Badge } from './ui/Badge';
-import { Search, X, ArrowUpDown } from 'lucide-react';
+import {
+  calculateDeckElo,
+  getEloData,
+  getPercentile,
+  getTopByElo,
+  getBottomByElo,
+} from '../services/eloHelpers';
+import { Search, X, ArrowUpDown, TrendingUp, TrendingDown } from 'lucide-react';
 
 interface SampleDecksProps {
   cards: CubeCard[];
@@ -148,6 +155,43 @@ export function SampleDecks({ cards }: SampleDecksProps) {
 
   const getCard = (name: string): CubeCard | undefined => cardsByName.get(name);
 
+  // Get featured cards for a deck (first 5 key cards that exist)
+  const getFeaturedCards = (deck: DeckList): CubeCard[] => {
+    return deck.mainboard
+      .map(name => getCard(name))
+      .filter((c): c is CubeCard => c !== undefined)
+      .slice(0, 5);
+  };
+
+  const getDeckStats = (deck: DeckList) => {
+    const mainboard = deck.mainboard.map(name => getCard(name)).filter(Boolean) as CubeCard[];
+    const lands = deck.lands.map(name => getCard(name)).filter(Boolean) as CubeCard[];
+    const nonLands = mainboard.filter(c => !c.type_line?.toLowerCase().includes('land'));
+    const avgCmc = nonLands.length > 0 ? nonLands.reduce((sum, c) => sum + (c.cmc || 0), 0) / nonLands.length : 0;
+
+    return { mainboard, lands, total: mainboard.length + lands.length, avgCmc };
+  };
+
+  // Calculate ELO-based deck stats
+  const deckEloStats = useMemo(() => {
+    const stats: Record<string, ReturnType<typeof calculateDeckElo> & {
+      strongest5: string[];
+      weakest5: string[];
+    }> = {};
+
+    SAMPLE_DECKLISTS.forEach(deck => {
+      const allCards = [...deck.mainboard, ...deck.lands];
+      const eloCalc = calculateDeckElo(allCards);
+      stats[deck.id] = {
+        ...eloCalc,
+        strongest5: getTopByElo(allCards, 5),
+        weakest5: getBottomByElo(allCards, 5),
+      };
+    });
+
+    return stats;
+  }, []);
+
   const filteredDecks = useMemo(() => {
     let result = [...SAMPLE_DECKLISTS];
 
@@ -169,29 +213,17 @@ export function SampleDecks({ cards }: SampleDecksProps) {
     }
 
     result.sort((a, b) => {
-      if (sortBy === 'power') return b.powerRating - a.powerRating;
+      if (sortBy === 'power') {
+        // Use ELO-based power
+        const aElo = deckEloStats[a.id]?.normalized || a.powerRating;
+        const bElo = deckEloStats[b.id]?.normalized || b.powerRating;
+        return bElo - aElo;
+      }
       return a.name.localeCompare(b.name);
     });
 
     return result;
-  }, [search, colorFilter, sortBy]);
-
-  // Get featured cards for a deck (first 5 key cards that exist)
-  const getFeaturedCards = (deck: DeckList): CubeCard[] => {
-    return deck.mainboard
-      .map(name => getCard(name))
-      .filter((c): c is CubeCard => c !== undefined)
-      .slice(0, 5);
-  };
-
-  const getDeckStats = (deck: DeckList) => {
-    const mainboard = deck.mainboard.map(name => getCard(name)).filter(Boolean) as CubeCard[];
-    const lands = deck.lands.map(name => getCard(name)).filter(Boolean) as CubeCard[];
-    const nonLands = mainboard.filter(c => !c.type_line?.toLowerCase().includes('land'));
-    const avgCmc = nonLands.length > 0 ? nonLands.reduce((sum, c) => sum + (c.cmc || 0), 0) / nonLands.length : 0;
-
-    return { mainboard, lands, total: mainboard.length + lands.length, avgCmc };
-  };
+  }, [search, colorFilter, sortBy, deckEloStats]);
 
   return (
     <div className="space-y-6">
@@ -242,6 +274,8 @@ export function SampleDecks({ cards }: SampleDecksProps) {
         {filteredDecks.map((deck) => {
           const featuredCards = getFeaturedCards(deck);
           const stats = getDeckStats(deck);
+          const eloStats = deckEloStats[deck.id];
+          const displayPower = eloStats?.normalized || deck.powerRating;
 
           return (
             <Card
@@ -275,16 +309,24 @@ export function SampleDecks({ cards }: SampleDecksProps) {
                   )}
                 </div>
 
-                {/* Power Badge */}
+                {/* Power Badge - Using ELO-calculated power */}
                 <div className={`
                   absolute top-3 right-3 w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg shadow-lg
-                  ${deck.powerRating >= 10 ? 'bg-gradient-to-br from-amber-400 to-amber-500 text-black' : ''}
-                  ${deck.powerRating === 9 ? 'bg-gradient-to-br from-purple-400 to-purple-500 text-white' : ''}
-                  ${deck.powerRating >= 7 && deck.powerRating < 9 ? 'bg-gradient-to-br from-blue-400 to-blue-500 text-white' : ''}
-                  ${deck.powerRating < 7 ? 'bg-white/10 text-white/70 backdrop-blur-sm' : ''}
+                  ${displayPower >= 10 ? 'bg-gradient-to-br from-amber-400 to-amber-500 text-black' : ''}
+                  ${displayPower >= 9 && displayPower < 10 ? 'bg-gradient-to-br from-purple-400 to-purple-500 text-white' : ''}
+                  ${displayPower >= 7 && displayPower < 9 ? 'bg-gradient-to-br from-blue-400 to-blue-500 text-white' : ''}
+                  ${displayPower < 7 ? 'bg-white/10 text-white/70 backdrop-blur-sm' : ''}
                 `}>
-                  {deck.powerRating}
+                  {displayPower.toFixed(1)}
                 </div>
+
+                {/* ELO indicator */}
+                {eloStats?.rawAverage > 0 && (
+                  <div className="absolute top-3 left-3 flex items-center gap-1 px-2 py-1 rounded-lg bg-black/60 backdrop-blur-sm">
+                    <TrendingUp className="w-3 h-3 text-white/50" />
+                    <span className="text-[10px] font-mono text-white/50">{eloStats.rawAverage}</span>
+                  </div>
+                )}
 
                 {/* Color Pips */}
                 <div className="absolute top-3 left-3 flex gap-1">
@@ -374,13 +416,25 @@ export function SampleDecks({ cards }: SampleDecksProps) {
                     <Badge variant={selectedDeck.difficulty === 'Easy' ? 'success' : selectedDeck.difficulty === 'Expert' ? 'info' : selectedDeck.difficulty === 'Hard' ? 'danger' : 'warning'}>
                       {selectedDeck.difficulty}
                     </Badge>
-                    <span className={`font-bold ${
-                      selectedDeck.powerRating >= 10 ? 'text-amber-400' :
-                      selectedDeck.powerRating >= 9 ? 'text-purple-400' :
-                      'text-blue-400'
-                    }`}>
-                      Power {selectedDeck.powerRating}
-                    </span>
+                    {(() => {
+                      const stats = deckEloStats[selectedDeck.id];
+                      const power = stats?.normalized || selectedDeck.powerRating;
+                      return (
+                        <span className={`font-bold ${
+                          power >= 10 ? 'text-amber-400' :
+                          power >= 9 ? 'text-purple-400' :
+                          power >= 7 ? 'text-blue-400' :
+                          'text-white/60'
+                        }`}>
+                          Power {power.toFixed(1)}
+                        </span>
+                      );
+                    })()}
+                    {deckEloStats[selectedDeck.id]?.rawAverage > 0 && (
+                      <span className="text-xs text-white/40 font-mono">
+                        (Avg ELO: {deckEloStats[selectedDeck.id].rawAverage})
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -399,6 +453,71 @@ export function SampleDecks({ cards }: SampleDecksProps) {
                 <h3 className="text-xs font-medium text-white/40 uppercase tracking-wide mb-2">Gameplan</h3>
                 <p className="text-white/70 leading-relaxed">{selectedDeck.gameplan}</p>
               </div>
+
+              {/* ELO Analysis */}
+              {deckEloStats[selectedDeck.id]?.strongest5.length > 0 && (
+                <div className="grid md:grid-cols-2 gap-4">
+                  {/* Strongest Cards */}
+                  <div className="p-4 bg-gradient-to-br from-amber-500/5 to-transparent border border-amber-500/10 rounded-xl">
+                    <div className="flex items-center gap-2 mb-3">
+                      <TrendingUp className="w-4 h-4 text-amber-400" />
+                      <h3 className="text-xs font-medium text-amber-400 uppercase tracking-wide">Strongest by ELO</h3>
+                    </div>
+                    <div className="space-y-2">
+                      {deckEloStats[selectedDeck.id].strongest5.map((name, i) => {
+                        const eloData = getEloData(name);
+                        const percentile = getPercentile(name);
+                        return (
+                          <div key={name} className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-white/30 w-4">{i + 1}.</span>
+                              <span className="text-sm text-white/80">{name}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] font-mono text-white/40">{eloData ? Math.round(eloData.elo) : '-'}</span>
+                              <span className={`text-[10px] font-semibold ${
+                                percentile >= 75 ? 'text-amber-400' :
+                                percentile >= 50 ? 'text-purple-400' :
+                                'text-blue-400'
+                              }`}>
+                                Top {100 - percentile}%
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Weakest Cards */}
+                  <div className="p-4 bg-gradient-to-br from-white/5 to-transparent border border-white/10 rounded-xl">
+                    <div className="flex items-center gap-2 mb-3">
+                      <TrendingDown className="w-4 h-4 text-white/40" />
+                      <h3 className="text-xs font-medium text-white/40 uppercase tracking-wide">Potential Upgrades</h3>
+                    </div>
+                    <div className="space-y-2">
+                      {deckEloStats[selectedDeck.id].weakest5.map((name, i) => {
+                        const eloData = getEloData(name);
+                        const percentile = getPercentile(name);
+                        return (
+                          <div key={name} className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-white/30 w-4">{i + 1}.</span>
+                              <span className="text-sm text-white/50">{name}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] font-mono text-white/30">{eloData ? Math.round(eloData.elo) : '-'}</span>
+                              <span className="text-[10px] text-white/30">
+                                Top {100 - percentile}%
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Mainboard */}
               <div>

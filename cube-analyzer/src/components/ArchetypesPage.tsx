@@ -3,7 +3,12 @@ import type { Archetype, CubeCard } from '../types/card';
 import { Card } from './ui/Card';
 import { Badge } from './ui/Badge';
 import { getCardImage } from '../services/scryfall';
-import { Search, X, ArrowUpDown } from 'lucide-react';
+import {
+  calculateArchetypeElo,
+  getEloData,
+  getPercentile,
+} from '../services/eloHelpers';
+import { Search, X, ArrowUpDown, TrendingUp, Star } from 'lucide-react';
 
 interface ArchetypesPageProps {
   archetypes: Archetype[];
@@ -32,6 +37,25 @@ export function ArchetypesPage({ archetypes, cards }: ArchetypesPageProps) {
     return map;
   }, [cards]);
 
+  const getCard = (name: string) => cardsByName.get(name);
+
+  // Get featured cards for an archetype (first 4 key cards that exist in cube)
+  const getFeaturedCards = (arch: Archetype): CubeCard[] => {
+    return arch.keyCards
+      .map(name => getCard(name))
+      .filter((c): c is CubeCard => c !== undefined)
+      .slice(0, 4);
+  };
+
+  // Calculate ELO-based archetype stats
+  const archetypeEloStats = useMemo(() => {
+    const stats: Record<string, ReturnType<typeof calculateArchetypeElo>> = {};
+    archetypes.forEach(arch => {
+      stats[arch.id] = calculateArchetypeElo(arch.keyCards);
+    });
+    return stats;
+  }, [archetypes]);
+
   const filteredArchetypes = useMemo(() => {
     let result = [...archetypes];
 
@@ -48,22 +72,17 @@ export function ArchetypesPage({ archetypes, cards }: ArchetypesPageProps) {
     }
 
     result.sort((a, b) => {
-      if (sortBy === 'power') return b.powerRating - a.powerRating;
+      if (sortBy === 'power') {
+        // Use ELO-based power if available
+        const aElo = archetypeEloStats[a.id]?.normalizedPower || a.powerRating;
+        const bElo = archetypeEloStats[b.id]?.normalizedPower || b.powerRating;
+        return bElo - aElo;
+      }
       return a.name.localeCompare(b.name);
     });
 
     return result;
-  }, [archetypes, search, colorFilter, sortBy]);
-
-  const getCard = (name: string) => cardsByName.get(name);
-
-  // Get featured cards for an archetype (first 4 key cards that exist in cube)
-  const getFeaturedCards = (arch: Archetype): CubeCard[] => {
-    return arch.keyCards
-      .map(name => getCard(name))
-      .filter((c): c is CubeCard => c !== undefined)
-      .slice(0, 4);
-  };
+  }, [archetypes, search, colorFilter, sortBy, archetypeEloStats]);
 
   return (
     <div className="space-y-6">
@@ -113,6 +132,8 @@ export function ArchetypesPage({ archetypes, cards }: ArchetypesPageProps) {
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
         {filteredArchetypes.map((arch) => {
           const featuredCards = getFeaturedCards(arch);
+          const eloStats = archetypeEloStats[arch.id];
+          const displayPower = eloStats?.normalizedPower || arch.powerRating;
 
           return (
             <Card
@@ -146,16 +167,24 @@ export function ArchetypesPage({ archetypes, cards }: ArchetypesPageProps) {
                   )}
                 </div>
 
-                {/* Power Badge */}
+                {/* Power Badge - Using ELO-based power */}
                 <div className={`
                   absolute top-3 right-3 w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg shadow-lg
-                  ${arch.powerRating >= 10 ? 'bg-gradient-to-br from-amber-400 to-amber-500 text-black' : ''}
-                  ${arch.powerRating === 9 ? 'bg-gradient-to-br from-purple-400 to-purple-500 text-white' : ''}
-                  ${arch.powerRating >= 7 && arch.powerRating < 9 ? 'bg-gradient-to-br from-blue-400 to-blue-500 text-white' : ''}
-                  ${arch.powerRating < 7 ? 'bg-white/10 text-white/70 backdrop-blur-sm' : ''}
+                  ${displayPower >= 10 ? 'bg-gradient-to-br from-amber-400 to-amber-500 text-black' : ''}
+                  ${displayPower >= 9 && displayPower < 10 ? 'bg-gradient-to-br from-purple-400 to-purple-500 text-white' : ''}
+                  ${displayPower >= 7 && displayPower < 9 ? 'bg-gradient-to-br from-blue-400 to-blue-500 text-white' : ''}
+                  ${displayPower < 7 ? 'bg-white/10 text-white/70 backdrop-blur-sm' : ''}
                 `}>
-                  {arch.powerRating}
+                  {displayPower.toFixed(1)}
                 </div>
+
+                {/* Premium cards indicator */}
+                {eloStats && eloStats.premiumCount > 0 && (
+                  <div className="absolute top-3 left-3 flex items-center gap-1 px-2 py-1 rounded-lg bg-black/60 backdrop-blur-sm">
+                    <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
+                    <span className="text-[10px] font-semibold text-amber-400">{eloStats.premiumCount}</span>
+                  </div>
+                )}
 
                 {/* Color Pips */}
                 <div className="absolute top-3 left-3 flex gap-1">
@@ -235,13 +264,25 @@ export function ArchetypesPage({ archetypes, cards }: ArchetypesPageProps) {
                     <Badge variant={selectedArchetype.difficulty === 'Easy' ? 'success' : selectedArchetype.difficulty === 'Expert' ? 'info' : selectedArchetype.difficulty === 'Hard' ? 'danger' : 'warning'}>
                       {selectedArchetype.difficulty}
                     </Badge>
-                    <span className={`font-bold ${
-                      selectedArchetype.powerRating >= 10 ? 'text-amber-400' :
-                      selectedArchetype.powerRating >= 9 ? 'text-purple-400' :
-                      'text-blue-400'
-                    }`}>
-                      Power {selectedArchetype.powerRating}
-                    </span>
+                    {(() => {
+                      const stats = archetypeEloStats[selectedArchetype.id];
+                      const power = stats?.normalizedPower || selectedArchetype.powerRating;
+                      return (
+                        <span className={`font-bold ${
+                          power >= 10 ? 'text-amber-400' :
+                          power >= 9 ? 'text-purple-400' :
+                          power >= 7 ? 'text-blue-400' :
+                          'text-white/60'
+                        }`}>
+                          Power {power.toFixed(1)}
+                        </span>
+                      );
+                    })()}
+                    {archetypeEloStats[selectedArchetype.id]?.averageElo > 0 && (
+                      <span className="text-xs text-white/40 font-mono">
+                        (Avg ELO: {archetypeEloStats[selectedArchetype.id].averageElo})
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -269,30 +310,85 @@ export function ArchetypesPage({ archetypes, cards }: ArchetypesPageProps) {
 
               {/* Key Cards - Visual Grid */}
               <div>
-                <h3 className="text-xs font-medium text-white/40 uppercase tracking-wide mb-3">Key Cards</h3>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-xs font-medium text-white/40 uppercase tracking-wide">Key Cards</h3>
+                  {archetypeEloStats[selectedArchetype.id]?.dataConfidence && (
+                    <span className={`text-[10px] px-2 py-0.5 rounded ${
+                      archetypeEloStats[selectedArchetype.id].dataConfidence === 'high' ? 'bg-green-500/20 text-green-400' :
+                      archetypeEloStats[selectedArchetype.id].dataConfidence === 'medium' ? 'bg-amber-500/20 text-amber-400' :
+                      'bg-white/10 text-white/40'
+                    }`}>
+                      {archetypeEloStats[selectedArchetype.id].dataConfidence} confidence
+                    </span>
+                  )}
+                </div>
                 <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-3">
                   {selectedArchetype.keyCards.map((name) => {
                     const card = getCard(name);
                     if (!card) return null;
+                    const eloData = getEloData(name);
+                    const percentile = getPercentile(name);
+                    const archStats = archetypeEloStats[selectedArchetype.id];
+                    const isAboveAvg = eloData && archStats && eloData.elo > archStats.averageElo;
+
                     return (
                       <div
                         key={card.id}
-                        className="relative aspect-[488/680] rounded-xl overflow-hidden cursor-pointer hover:scale-105 transition-transform hover:z-10 shadow-lg"
+                        className={`relative aspect-[488/680] rounded-xl overflow-hidden cursor-pointer hover:scale-105 transition-transform hover:z-10 shadow-lg ${
+                          isAboveAvg ? 'ring-2 ring-amber-400/50' : ''
+                        }`}
                         onMouseEnter={() => setHoveredCard(card)}
                         onMouseLeave={() => setHoveredCard(null)}
                       >
                         <img src={getCardImage(card)} alt={card.name} className="w-full h-full object-cover" loading="lazy" />
                         <div className={`
                           absolute top-1 right-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold
-                          ${card.powerLevel >= 9 ? 'bg-amber-400 text-black' : 'bg-black/70 text-white'}
+                          ${percentile >= 75 ? 'bg-amber-400 text-black' :
+                            percentile >= 50 ? 'bg-purple-400 text-white' :
+                            percentile >= 25 ? 'bg-blue-400 text-white' :
+                            'bg-black/70 text-white'}
                         `}>
                           {card.powerLevel}
                         </div>
+                        {/* Carries indicator */}
+                        {isAboveAvg && (
+                          <div className="absolute bottom-1 left-1">
+                            <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
+                          </div>
+                        )}
                       </div>
                     );
                   })}
                 </div>
               </div>
+
+              {/* ELO Breakdown */}
+              {archetypeEloStats[selectedArchetype.id]?.breakdown.length > 0 && (
+                <div>
+                  <h3 className="text-xs font-medium text-white/40 uppercase tracking-wide mb-3 flex items-center gap-2">
+                    <TrendingUp className="w-3.5 h-3.5" />
+                    ELO Breakdown
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                    {archetypeEloStats[selectedArchetype.id].breakdown.slice(0, 8).map(({ name, elo, percentile }) => (
+                      <div key={name} className="flex items-center justify-between p-2 bg-white/[0.02] border border-white/5 rounded-lg">
+                        <span className="text-xs text-white/70 truncate pr-2">{name}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-mono text-white/40">{elo}</span>
+                          <span className={`text-[10px] font-semibold ${
+                            percentile >= 75 ? 'text-amber-400' :
+                            percentile >= 50 ? 'text-purple-400' :
+                            percentile >= 25 ? 'text-blue-400' :
+                            'text-white/40'
+                          }`}>
+                            Top {100 - percentile}%
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Draft Tips */}
               <div>

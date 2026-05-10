@@ -2,13 +2,22 @@ import { useState, useMemo } from 'react';
 import type { CubeCard } from '../types/card';
 import { Badge } from './ui/Badge';
 import { getCardImage } from '../services/scryfall';
-import { Search, ArrowUpDown, X, ExternalLink } from 'lucide-react';
+import {
+  getEloData,
+  getPercentile,
+  getWheelLikelihood,
+  formatPickCount,
+  formatCubeCount,
+  getEloBarWidth,
+  compareByElo,
+} from '../services/eloHelpers';
+import { Search, ArrowUpDown, X, ExternalLink, TrendingUp, Target, Users } from 'lucide-react';
 
 interface CardBrowserProps {
   cards: CubeCard[];
 }
 
-type SortOption = 'name' | 'cmc' | 'power' | 'color';
+type SortOption = 'name' | 'cmc' | 'power' | 'color' | 'elo';
 type FilterColor = 'W' | 'U' | 'B' | 'R' | 'G' | 'Colorless' | 'Multi' | 'all';
 
 const roleLabels: Record<string, string> = {
@@ -123,6 +132,8 @@ export function CardBrowser({ cards }: CardBrowserProps) {
           return (a.color_identity?.join('') || 'Z').localeCompare(
             b.color_identity?.join('') || 'Z'
           );
+        case 'elo':
+          return compareByElo(a.name, b.name);
         default:
           return 0;
       }
@@ -214,11 +225,19 @@ export function CardBrowser({ cards }: CardBrowserProps) {
 
         {/* Sort */}
         <button
-          onClick={() => setSortBy(sortBy === 'power' ? 'name' : sortBy === 'name' ? 'cmc' : sortBy === 'cmc' ? 'color' : 'power')}
+          onClick={() => setSortBy(
+            sortBy === 'power' ? 'elo' :
+            sortBy === 'elo' ? 'name' :
+            sortBy === 'name' ? 'cmc' :
+            sortBy === 'cmc' ? 'color' : 'power'
+          )}
           className="flex items-center gap-2 px-3 py-2 bg-[#111] border border-white/10 rounded-lg text-sm text-white/60 hover:text-white/80 transition-colors"
         >
           <ArrowUpDown className="w-4 h-4" />
-          {sortBy === 'power' ? 'Power' : sortBy === 'name' ? 'Name' : sortBy === 'cmc' ? 'CMC' : 'Color'}
+          {sortBy === 'power' ? 'Power' :
+           sortBy === 'elo' ? 'ELO' :
+           sortBy === 'name' ? 'Name' :
+           sortBy === 'cmc' ? 'CMC' : 'Color'}
         </button>
       </div>
 
@@ -372,6 +391,83 @@ export function CardBrowser({ cards }: CardBrowserProps) {
                     </div>
                   </div>
 
+                  {/* Draft Stats Section */}
+                  {(() => {
+                    const eloData = getEloData(selectedCard.name);
+                    if (!eloData) return null;
+
+                    const percentile = getPercentile(selectedCard.name);
+                    const wheelLikelihood = getWheelLikelihood(selectedCard.name);
+                    const barWidth = getEloBarWidth(selectedCard.name);
+
+                    return (
+                      <div className="p-4 bg-white/5 border border-white/10 rounded-xl space-y-4">
+                        <div className="flex items-center gap-2">
+                          <TrendingUp className="w-4 h-4 text-white/40" />
+                          <h4 className="text-xs font-medium text-white/40 uppercase tracking-wide">Draft Stats</h4>
+                        </div>
+
+                        {/* ELO Rating with bar */}
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm text-white/60">ELO Rating</span>
+                            <span className="text-lg font-mono font-semibold text-white">{Math.round(eloData.elo)}</span>
+                          </div>
+                          <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all ${
+                                percentile >= 75 ? 'bg-gradient-to-r from-amber-400 to-amber-500' :
+                                percentile >= 50 ? 'bg-gradient-to-r from-purple-400 to-purple-500' :
+                                percentile >= 25 ? 'bg-gradient-to-r from-blue-400 to-blue-500' :
+                                'bg-gradient-to-r from-white/30 to-white/40'
+                              }`}
+                              style={{ width: `${barWidth}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Stats Grid */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="bg-white/5 rounded-lg p-3">
+                            <div className="text-[10px] text-white/40 uppercase tracking-wider mb-1">Percentile</div>
+                            <div className={`text-lg font-semibold ${
+                              percentile >= 75 ? 'text-amber-400' :
+                              percentile >= 50 ? 'text-purple-400' :
+                              percentile >= 25 ? 'text-blue-400' :
+                              'text-white/60'
+                            }`}>
+                              Top {100 - percentile}%
+                            </div>
+                          </div>
+                          <div className="bg-white/5 rounded-lg p-3">
+                            <div className="text-[10px] text-white/40 uppercase tracking-wider mb-1">Wheel Likelihood</div>
+                            <div className={`text-lg font-semibold ${
+                              wheelLikelihood === 'likely' ? 'text-green-400' :
+                              wheelLikelihood === 'maybe' ? 'text-amber-400' :
+                              'text-red-400'
+                            }`}>
+                              {wheelLikelihood === 'likely' ? 'Likely' :
+                               wheelLikelihood === 'maybe' ? 'Maybe' :
+                               'Unlikely'}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Pick & Cube Stats */}
+                        <div className="flex items-center justify-between text-sm">
+                          <div className="flex items-center gap-2 text-white/50">
+                            <Target className="w-4 h-4" />
+                            <span>Picked <span className="font-semibold text-white">{formatPickCount(eloData.pickCount)}</span> times</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-white/50">
+                            <Users className="w-4 h-4" />
+                            <span>In <span className="font-semibold text-white">{formatCubeCount(eloData.cubeCount)}</span> cubes</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                   {selectedCard.archetypes.length > 0 && (
                     <div>
                       <h4 className="text-xs font-medium text-white/40 uppercase tracking-wide mb-2">Archetypes</h4>
@@ -413,13 +509,13 @@ export function CardBrowser({ cards }: CardBrowserProps) {
       {/* Floating Hover Preview */}
       {hoveredCard && !selectedCard && (
         <div className="fixed bottom-6 right-6 z-50 hidden lg:block pointer-events-none">
-          <div className="bg-[#111] border border-white/10 p-3 rounded-xl shadow-2xl">
+          <div className="bg-[#111] border border-white/10 p-3 rounded-xl shadow-2xl w-64">
             <img
               src={getCardImage(hoveredCard)}
               alt={hoveredCard.name}
-              className="w-56 rounded-lg"
+              className="w-full rounded-lg"
             />
-            <div className="mt-2 space-y-1">
+            <div className="mt-2 space-y-2">
               <div className="flex items-center justify-between">
                 <h4 className="font-medium text-white text-sm truncate max-w-[140px]">{hoveredCard.name}</h4>
                 <span className={`
@@ -433,9 +529,26 @@ export function CardBrowser({ cards }: CardBrowserProps) {
                 </span>
               </div>
               <p className="text-xs text-white/40">{hoveredCard.type_line}</p>
-              <Badge variant="default" className="text-[10px]">
-                {roleLabels[hoveredCard.role] || hoveredCard.role}
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="default" className="text-[10px]">
+                  {roleLabels[hoveredCard.role] || hoveredCard.role}
+                </Badge>
+                {(() => {
+                  const eloData = getEloData(hoveredCard.name);
+                  if (!eloData) return null;
+                  const percentile = getPercentile(hoveredCard.name);
+                  return (
+                    <span className={`text-[10px] font-medium ${
+                      percentile >= 75 ? 'text-amber-400' :
+                      percentile >= 50 ? 'text-purple-400' :
+                      percentile >= 25 ? 'text-blue-400' :
+                      'text-white/40'
+                    }`}>
+                      ELO {Math.round(eloData.elo)}
+                    </span>
+                  );
+                })()}
+              </div>
             </div>
           </div>
         </div>

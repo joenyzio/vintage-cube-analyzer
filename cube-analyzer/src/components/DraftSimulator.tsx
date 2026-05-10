@@ -1,7 +1,16 @@
 import { useState, useCallback, useMemo } from 'react';
 import type { CubeCard } from '../types/card';
 import { getCardImage } from '../services/scryfall';
-import { Play, RotateCcw, Trophy, Star, ArrowLeft, ArrowRight, Users, Package, Target } from 'lucide-react';
+import {
+  getEloData,
+  getPercentile,
+  getWheelLikelihood,
+  calculateDeckElo,
+  compareByElo,
+} from '../services/eloHelpers';
+import { Play, RotateCcw, Trophy, Star, ArrowLeft, ArrowRight, Users, Package, Target, Clock, TrendingUp, AlertCircle, HelpCircle, CheckCircle, XCircle, Zap } from 'lucide-react';
+
+type SimulatorMode = 'menu' | 'draft' | 'quiz';
 
 interface DraftSimulatorProps {
   cards: CubeCard[];
@@ -14,6 +23,15 @@ interface DraftState {
   pickNumber: number;
   direction: 'left' | 'right';
   isComplete: boolean;
+}
+
+interface QuizState {
+  currentPack: CubeCard[];
+  correctCard: CubeCard;
+  userPick: CubeCard | null;
+  revealed: boolean;
+  history: { correct: boolean; userPick: CubeCard; correctPick: CubeCard }[];
+  totalQuestions: number;
 }
 
 const NUM_PLAYERS = 8;
@@ -29,7 +47,9 @@ function shuffleArray<T>(array: T[]): T[] {
 }
 
 export function DraftSimulator({ cards }: DraftSimulatorProps) {
+  const [mode, setMode] = useState<SimulatorMode>('menu');
   const [draftState, setDraftState] = useState<DraftState | null>(null);
+  const [quizState, setQuizState] = useState<QuizState | null>(null);
   const [hoveredCard, setHoveredCard] = useState<CubeCard | null>(null);
 
   // Get some featured cards for the start screen
@@ -39,6 +59,58 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
       .sort(() => Math.random() - 0.5)
       .slice(0, 7);
   }, [cards]);
+
+  // Quiz functions
+  const generateQuizPack = useCallback((): { pack: CubeCard[]; correct: CubeCard } => {
+    const shuffled = shuffleArray([...cards]);
+    const pack = shuffled.slice(0, CARDS_PER_PACK);
+    // Sort by ELO to find the "correct" pick
+    const sorted = [...pack].sort((a, b) => compareByElo(a.name, b.name));
+    return { pack, correct: sorted[0] };
+  }, [cards]);
+
+  const startQuiz = useCallback(() => {
+    const { pack, correct } = generateQuizPack();
+    setQuizState({
+      currentPack: pack,
+      correctCard: correct,
+      userPick: null,
+      revealed: false,
+      history: [],
+      totalQuestions: 0,
+    });
+    setMode('quiz');
+  }, [generateQuizPack]);
+
+  const makeQuizPick = useCallback((card: CubeCard) => {
+    if (!quizState || quizState.revealed) return;
+    setQuizState(prev => prev ? { ...prev, userPick: card, revealed: true } : null);
+  }, [quizState]);
+
+  const nextQuizQuestion = useCallback(() => {
+    if (!quizState) return;
+    const { pack, correct } = generateQuizPack();
+    const wasCorrect = quizState.userPick?.id === quizState.correctCard.id;
+
+    setQuizState(prev => prev ? {
+      currentPack: pack,
+      correctCard: correct,
+      userPick: null,
+      revealed: false,
+      history: [...prev.history, {
+        correct: wasCorrect,
+        userPick: prev.userPick!,
+        correctPick: prev.correctCard,
+      }],
+      totalQuestions: prev.totalQuestions + 1,
+    } : null);
+  }, [quizState, generateQuizPack]);
+
+  const quizAccuracy = useMemo(() => {
+    if (!quizState || quizState.history.length === 0) return null;
+    const correct = quizState.history.filter(h => h.correct).length;
+    return Math.round((correct / quizState.history.length) * 100);
+  }, [quizState]);
 
   const startDraft = useCallback(() => {
     const shuffled = shuffleArray([...cards]);
@@ -54,7 +126,14 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
       pickNumber: 1,
       isComplete: false,
     });
+    setMode('draft');
   }, [cards]);
+
+  const returnToMenu = useCallback(() => {
+    setMode('menu');
+    setDraftState(null);
+    setQuizState(null);
+  }, []);
 
   const aiPreferences = useMemo(() => [
     null, ['U', 'B'], ['R', 'W'], ['U', 'G'],
@@ -259,8 +338,40 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     return null;
   }, [draftState, colorCounts, archetypeMatches]);
 
+  // Pack ELO statistics
+  const packEloStats = useMemo(() => {
+    if (!draftState) return null;
+    const currentPack = draftState.tablePacks[0];
+    if (!currentPack || currentPack.length === 0) return null;
+
+    const cardNames = currentPack.map(c => c.name);
+    const deckElo = calculateDeckElo(cardNames);
+
+    // Count wheel likelihoods
+    let likelyWheels = 0;
+    let maybeWheels = 0;
+    let premiumCards = 0;
+
+    currentPack.forEach(card => {
+      const wheel = getWheelLikelihood(card.name);
+      if (wheel === 'likely') likelyWheels++;
+      else if (wheel === 'maybe') maybeWheels++;
+
+      const percentile = getPercentile(card.name);
+      if (percentile >= 75) premiumCards++;
+    });
+
+    return {
+      avgElo: deckElo.rawAverage,
+      likelyWheels,
+      maybeWheels,
+      premiumCards,
+      packSize: currentPack.length
+    };
+  }, [draftState]);
+
   // Start screen with visual interest
-  if (!draftState) {
+  if (mode === 'menu') {
     return (
       <div className="space-y-8">
         {/* Hero Section */}
@@ -288,18 +399,27 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
               Practice drafting against 7 AI opponents. Build the best deck from 3 packs of 15 cards each.
             </p>
 
-            <button
-              onClick={startDraft}
-              className="flex items-center justify-center gap-3 w-full sm:w-auto px-8 py-4 bg-white text-black font-semibold rounded-xl hover:bg-white/90 transition-all duration-300 group active:scale-95"
-            >
-              <Play className="w-5 h-5 group-hover:scale-110 transition-transform" />
-              Start Draft
-            </button>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={startDraft}
+                className="flex items-center justify-center gap-3 px-8 py-4 bg-white text-black font-semibold rounded-xl hover:bg-white/90 transition-all duration-300 group active:scale-95"
+              >
+                <Play className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                Start Draft
+              </button>
+              <button
+                onClick={startQuiz}
+                className="flex items-center justify-center gap-3 px-8 py-4 bg-amber-500/20 border border-amber-500/30 text-amber-400 font-semibold rounded-xl hover:bg-amber-500/30 transition-all duration-300 group active:scale-95"
+              >
+                <HelpCircle className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                P1P1 Quiz
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Info Cards */}
-        <div className="grid md:grid-cols-3 gap-4">
+        <div className="grid md:grid-cols-4 gap-4">
           <div className="bg-black border border-white/[0.06] rounded-xl p-5">
             <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center mb-3">
               <Users className="w-5 h-5 text-blue-400" />
@@ -322,6 +442,14 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
             </div>
             <h3 className="font-semibold text-white mb-1">45 Picks</h3>
             <p className="text-sm text-white/40">Build a 40-card deck from your drafted pool</p>
+          </div>
+
+          <div className="bg-black border border-white/[0.06] rounded-xl p-5">
+            <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center mb-3">
+              <Zap className="w-5 h-5 text-emerald-400" />
+            </div>
+            <h3 className="font-semibold text-white mb-1">P1P1 Quiz</h3>
+            <p className="text-sm text-white/40">Test your card evaluation skills against ELO data</p>
           </div>
         </div>
 
@@ -349,8 +477,198 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     );
   }
 
+  // Quiz mode
+  if (mode === 'quiz' && quizState) {
+    const correctElo = getEloData(quizState.correctCard.name);
+    const userElo = quizState.userPick ? getEloData(quizState.userPick.name) : null;
+    const isCorrect = quizState.userPick?.id === quizState.correctCard.id;
+
+    return (
+      <div className="space-y-6">
+        {/* Quiz Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-400/20 to-amber-500/10 flex items-center justify-center">
+              <HelpCircle className="w-6 h-6 text-amber-400" />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-white tracking-tight">P1P1 Quiz</h2>
+              <p className="text-sm text-white/40 mt-0.5">
+                Pick the best card based on ELO rating
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4">
+            {/* Score */}
+            {quizState.history.length > 0 && (
+              <div className="text-right">
+                <div className="text-xs text-white/40">Accuracy</div>
+                <div className={`text-lg font-bold ${
+                  quizAccuracy && quizAccuracy >= 70 ? 'text-green-400' :
+                  quizAccuracy && quizAccuracy >= 50 ? 'text-amber-400' :
+                  'text-red-400'
+                }`}>
+                  {quizAccuracy}%
+                </div>
+              </div>
+            )}
+
+            <button
+              onClick={returnToMenu}
+              className="flex items-center gap-2.5 px-5 py-2.5 bg-white/10 border border-white/10 rounded-xl text-white font-medium hover:bg-white/15 transition-colors"
+            >
+              <RotateCcw className="w-4 h-4" />
+              Exit Quiz
+            </button>
+          </div>
+        </div>
+
+        {/* Pack Grid */}
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 sm:gap-4">
+          {quizState.currentPack.map((card) => {
+            const isThisCorrect = card.id === quizState.correctCard.id;
+            const isUserPick = card.id === quizState.userPick?.id;
+            const cardElo = getEloData(card.name);
+            const percentile = getPercentile(card.name);
+
+            return (
+              <div
+                key={card.id}
+                onClick={() => makeQuizPick(card)}
+                onMouseEnter={() => setHoveredCard(card)}
+                onMouseLeave={() => setHoveredCard(null)}
+                className={`
+                  relative aspect-[488/680] rounded-xl overflow-hidden shadow-lg
+                  transition-all duration-200
+                  ${!quizState.revealed ? 'cursor-pointer hover:scale-[1.04] hover:-translate-y-1 hover:z-10 hover:shadow-xl' : ''}
+                  ${quizState.revealed && isThisCorrect ? 'ring-4 ring-green-400 shadow-green-400/30' : ''}
+                  ${quizState.revealed && isUserPick && !isThisCorrect ? 'ring-4 ring-red-400 shadow-red-400/30' : ''}
+                  ${quizState.revealed && !isThisCorrect && !isUserPick ? 'opacity-50' : ''}
+                `}
+              >
+                <img src={getCardImage(card)} alt={card.name} className="w-full h-full object-cover" loading="lazy" />
+
+                {/* Power badge */}
+                <div className={`
+                  absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold shadow-lg
+                  ${card.powerLevel >= 10 ? 'bg-gradient-to-br from-amber-400 to-amber-500 text-black' : ''}
+                  ${card.powerLevel === 9 ? 'bg-gradient-to-br from-purple-400 to-purple-500 text-white' : ''}
+                  ${card.powerLevel >= 7 && card.powerLevel < 9 ? 'bg-gradient-to-br from-blue-400 to-blue-500 text-white' : ''}
+                  ${card.powerLevel < 7 ? 'bg-black/70 text-white/80' : ''}
+                `}>
+                  {card.powerLevel}
+                </div>
+
+                {/* Revealed indicators */}
+                {quizState.revealed && (
+                  <>
+                    {isThisCorrect && (
+                      <div className="absolute top-1.5 left-1.5">
+                        <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center shadow-lg">
+                          <CheckCircle className="w-4 h-4 text-white" />
+                        </div>
+                      </div>
+                    )}
+                    {isUserPick && !isThisCorrect && (
+                      <div className="absolute top-1.5 left-1.5">
+                        <div className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center shadow-lg">
+                          <XCircle className="w-4 h-4 text-white" />
+                        </div>
+                      </div>
+                    )}
+                    {/* ELO overlay */}
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 to-transparent p-2 pt-6">
+                      <div className="text-center">
+                        <div className="text-xs font-mono text-white/80">ELO {cardElo ? Math.round(cardElo.elo) : '?'}</div>
+                        <div className={`text-[10px] ${
+                          percentile >= 75 ? 'text-amber-400' :
+                          percentile >= 50 ? 'text-purple-400' :
+                          percentile >= 25 ? 'text-blue-400' :
+                          'text-white/40'
+                        }`}>
+                          Top {100 - percentile}%
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Result / Next Button */}
+        {quizState.revealed && (
+          <div className="flex items-center justify-center gap-6">
+            <div className={`
+              flex items-center gap-3 px-6 py-4 rounded-xl
+              ${isCorrect ? 'bg-green-500/10 border border-green-500/20' : 'bg-red-500/10 border border-red-500/20'}
+            `}>
+              {isCorrect ? (
+                <>
+                  <CheckCircle className="w-6 h-6 text-green-400" />
+                  <div>
+                    <div className="font-semibold text-green-400">Correct!</div>
+                    <div className="text-sm text-white/50">
+                      {quizState.correctCard.name} has ELO {correctElo ? Math.round(correctElo.elo) : '?'}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <XCircle className="w-6 h-6 text-red-400" />
+                  <div>
+                    <div className="font-semibold text-red-400">Not quite!</div>
+                    <div className="text-sm text-white/50">
+                      Best pick: {quizState.correctCard.name} (ELO {correctElo ? Math.round(correctElo.elo) : '?'})
+                      {userElo && <span className="text-white/30"> vs your pick: {Math.round(userElo.elo)}</span>}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            <button
+              onClick={nextQuizQuestion}
+              className="flex items-center justify-center gap-3 px-8 py-4 bg-white text-black font-semibold rounded-xl hover:bg-white/90 transition-all duration-300 active:scale-95"
+            >
+              Next Pack
+              <ArrowRight className="w-5 h-5" />
+            </button>
+          </div>
+        )}
+
+        {/* Instructions */}
+        {!quizState.revealed && (
+          <div className="text-center text-white/40 text-sm">
+            Click on the card you would first-pick from this pack
+          </div>
+        )}
+
+        {/* Hover Preview */}
+        {hoveredCard && (
+          <div className="fixed bottom-6 right-6 z-50 hidden lg:block pointer-events-none">
+            <div className="bg-black border border-white/10 p-2 rounded-xl shadow-2xl w-60">
+              <img src={getCardImage(hoveredCard)} alt={hoveredCard.name} className="w-full rounded-lg" />
+              <div className="mt-2 px-1 space-y-1">
+                <div className="text-sm font-medium text-white">{hoveredCard.name}</div>
+                <div className="text-xs text-white/40">{hoveredCard.type_line?.split('—')[0]}</div>
+                {!quizState.revealed && (
+                  <div className="text-[10px] text-amber-400/70 pt-1 border-t border-white/10">
+                    ELO hidden until you pick
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   // Draft complete
-  if (draftState.isComplete) {
+  if (draftState?.isComplete) {
     const picks = draftState.picks;
     const avgPower = picks.reduce((sum, c) => sum + c.powerLevel, 0) / picks.length;
     const nonLands = picks.filter(c => !c.type_line?.toLowerCase().includes('land'));
@@ -377,11 +695,11 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
             </div>
           </div>
           <button
-            onClick={startDraft}
+            onClick={returnToMenu}
             className="flex items-center gap-2.5 px-5 py-2.5 bg-white/10 border border-white/10 rounded-xl text-white font-medium hover:bg-white/15 transition-colors"
           >
             <RotateCcw className="w-4 h-4" />
-            Draft Again
+            New Draft
           </button>
         </div>
 
@@ -409,7 +727,9 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     );
   }
 
-  // Active draft
+  // Active draft - guard against null state
+  if (!draftState) return null;
+
   const currentPack = draftState.tablePacks[0];
   const progress = ((draftState.packNumber - 1) * 15 + draftState.pickNumber - 1) / 45;
   const recommendedCard = getRecommendedPick;
@@ -575,20 +895,52 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
             </div>
 
             <button
-              onClick={startDraft}
+              onClick={returnToMenu}
               className="p-2.5 bg-white/5 border border-white/10 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-colors"
-              title="Restart"
+              title="Exit to Menu"
             >
               <RotateCcw className="w-4 h-4" />
             </button>
           </div>
         </div>
 
+        {/* Pack ELO Summary */}
+        {packEloStats && (
+          <div className="flex items-center gap-4 px-3 py-2 bg-white/[0.02] border border-white/[0.06] rounded-xl text-xs">
+            <div className="flex items-center gap-1.5 text-white/50">
+              <TrendingUp className="w-3.5 h-3.5" />
+              <span>Pack ELO: <span className="font-mono text-white">{packEloStats.avgElo}</span></span>
+            </div>
+            {packEloStats.premiumCards > 0 && (
+              <div className="flex items-center gap-1.5 text-amber-400">
+                <Star className="w-3.5 h-3.5 fill-amber-400" />
+                <span>{packEloStats.premiumCards} premium</span>
+              </div>
+            )}
+            {packEloStats.likelyWheels > 0 && (
+              <div className="flex items-center gap-1.5 text-green-400">
+                <Clock className="w-3.5 h-3.5" />
+                <span>{packEloStats.likelyWheels} likely wheel</span>
+              </div>
+            )}
+            {draftState.pickNumber > CARDS_PER_PACK - 3 && packEloStats.premiumCards > 0 && (
+              <div className="flex items-center gap-1.5 text-red-400 animate-pulse">
+                <AlertCircle className="w-3.5 h-3.5" />
+                <span>Last chance for premium!</span>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Pack Grid */}
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 sm:gap-4">
           {currentPack.map((card) => {
             const isRecommended = recommendedCard?.id === card.id;
             const synergy = getCardSynergy(card);
+            const wheelLikelihood = getWheelLikelihood(card.name);
+            const percentile = getPercentile(card.name);
+            const isPremium = percentile >= 75;
+
             return (
               <div
                 key={card.id}
@@ -604,6 +956,21 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                 `}
               >
                 <img src={getCardImage(card)} alt={card.name} className="w-full h-full object-cover" loading="lazy" />
+
+                {/* Wheel likelihood indicator */}
+                {!isRecommended && (
+                  <div className={`
+                    absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide
+                    ${wheelLikelihood === 'likely' ? 'bg-green-500/80 text-white' : ''}
+                    ${wheelLikelihood === 'maybe' ? 'bg-amber-500/80 text-black' : ''}
+                    ${wheelLikelihood === 'unlikely' && isPremium ? 'bg-red-500/80 text-white' : ''}
+                    ${wheelLikelihood === 'unlikely' && !isPremium ? 'hidden' : ''}
+                  `}>
+                    {wheelLikelihood === 'likely' ? 'Wheels' :
+                     wheelLikelihood === 'maybe' ? 'Maybe' :
+                     isPremium ? 'Take now' : ''}
+                  </div>
+                )}
 
                 {/* Synergy indicator */}
                 {synergy && !isRecommended && (
@@ -663,11 +1030,38 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
       {/* Hover Preview */}
       {hoveredCard && (
         <div className="fixed bottom-6 right-6 z-50 hidden lg:block pointer-events-none">
-          <div className="bg-black border border-white/10 p-2 rounded-xl shadow-2xl">
-            <img src={getCardImage(hoveredCard)} alt={hoveredCard.name} className="w-56 rounded-lg" />
-            <div className="mt-2 px-1">
+          <div className="bg-black border border-white/10 p-2 rounded-xl shadow-2xl w-60">
+            <img src={getCardImage(hoveredCard)} alt={hoveredCard.name} className="w-full rounded-lg" />
+            <div className="mt-2 px-1 space-y-1">
               <div className="text-sm font-medium text-white">{hoveredCard.name}</div>
-              <div className="text-xs text-white/40 mt-0.5">{hoveredCard.type_line?.split('—')[0]}</div>
+              <div className="text-xs text-white/40">{hoveredCard.type_line?.split('—')[0]}</div>
+              {(() => {
+                const eloData = getEloData(hoveredCard.name);
+                if (!eloData) return null;
+                const percentile = getPercentile(hoveredCard.name);
+                const wheelLikelihood = getWheelLikelihood(hoveredCard.name);
+                return (
+                  <div className="flex items-center gap-2 pt-1 border-t border-white/10">
+                    <span className={`text-[10px] font-medium ${
+                      percentile >= 75 ? 'text-amber-400' :
+                      percentile >= 50 ? 'text-purple-400' :
+                      percentile >= 25 ? 'text-blue-400' :
+                      'text-white/40'
+                    }`}>
+                      ELO {Math.round(eloData.elo)}
+                    </span>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                      wheelLikelihood === 'likely' ? 'bg-green-500/20 text-green-400' :
+                      wheelLikelihood === 'maybe' ? 'bg-amber-500/20 text-amber-400' :
+                      'bg-red-500/20 text-red-400'
+                    }`}>
+                      {wheelLikelihood === 'likely' ? 'Will wheel' :
+                       wheelLikelihood === 'maybe' ? 'May wheel' :
+                       'Won\'t wheel'}
+                    </span>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </div>
