@@ -106,7 +106,7 @@ export function OverviewPage({
     };
   }, [cards, typeDistribution]);
 
-  const topPicks = powerRankings.slice(0, 8);
+  const topPicks = powerRankings.slice(0, 16);
   const topArchetypes = archetypes.slice(0, 3);
 
   return (
@@ -176,9 +176,9 @@ export function OverviewPage({
         </div>
 
         {/* Role Breakdown */}
-        <div className="bg-black border border-white/[0.06] rounded-xl p-4">
+        <div className="bg-black border border-white/[0.06] rounded-xl p-4 flex flex-col">
           <h3 className="font-semibold text-white text-sm mb-3">By Role</h3>
-          <div className="space-y-2.5">
+          <div className="space-y-2 flex-1">
             <RoleRow icon={Zap} label="Fast Mana" count={stats.fastMana.length} color="text-amber-400" />
             <RoleRow icon={Shield} label="Removal" count={stats.removal.length} color="text-red-400" />
             <RoleRow icon={Wand2} label="Counterspells" count={stats.counterspells.length} color="text-blue-400" />
@@ -188,7 +188,7 @@ export function OverviewPage({
           </div>
 
           {stats.power9.length > 0 && (
-            <div className="mt-4 pt-3 border-t border-white/[0.06]">
+            <div className="mt-3 pt-3 border-t border-white/[0.06]">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs text-white/40 font-medium">Power 9</span>
                 <span className="text-xs font-mono text-amber-400">{stats.power9.length}/9</span>
@@ -203,6 +203,24 @@ export function OverviewPage({
               </div>
             </div>
           )}
+
+          {/* Quick Type Stats */}
+          <div className="mt-3 pt-3 border-t border-white/[0.06]">
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="bg-white/[0.02] rounded-lg py-2">
+                <div className="text-lg font-bold text-white">{stats.creatures}</div>
+                <div className="text-[10px] text-white/40">Creatures</div>
+              </div>
+              <div className="bg-white/[0.02] rounded-lg py-2">
+                <div className="text-lg font-bold text-white">{stats.spells}</div>
+                <div className="text-[10px] text-white/40">Spells</div>
+              </div>
+              <div className="bg-white/[0.02] rounded-lg py-2">
+                <div className="text-lg font-bold text-white">{stats.lands}</div>
+                <div className="text-[10px] text-white/40">Lands</div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
