@@ -208,17 +208,41 @@ function GameStats({ stats }: { stats: { played: number; correct: number; bestSt
   );
 }
 
+function CardViewer({ card, onClose }: { card: CubeCard; onClose: () => void }) {
+  const elo = getEloData(card.name)?.elo || 0;
+  const percentile = getPercentile(card.name);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/90" />
+      <div className="relative max-w-sm w-full" onClick={e => e.stopPropagation()}>
+        <img src={getCardImage(card)} alt={card.name} className="w-full rounded-xl shadow-2xl" />
+        <div className="mt-3 flex items-center justify-center gap-4 text-sm">
+          <span className="text-white/60">ELO <span className="text-white font-mono">{Math.round(elo)}</span></span>
+          <span className="text-white/60">Power <span className="text-white font-mono">{card.powerLevel.toFixed(1)}</span></span>
+          <span className="text-white/60">Top <span className="text-white font-mono">{100 - percentile}%</span></span>
+        </div>
+        <button onClick={onClose} className="mt-4 w-full py-3 bg-white/10 text-white rounded-xl font-medium">
+          Close
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ============ GAME 1: Higher or Lower ============
 function HigherLowerGame({ cards, stats, onUpdate, onBack }: GameComponentProps) {
   const [pair, setPair] = useState<[CubeCard, CubeCard] | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [picked, setPicked] = useState<0 | 1 | null>(null);
+  const [viewCard, setViewCard] = useState<CubeCard | null>(null);
 
   const newRound = useCallback(() => {
     const [a, b] = getRandomCards(cards, 2);
     setPair([a, b]);
     setRevealed(false);
     setPicked(null);
+    setViewCard(null);
   }, [cards]);
 
   useEffect(() => { newRound(); }, [newRound]);
@@ -236,6 +260,14 @@ function HigherLowerGame({ cards, stats, onUpdate, onBack }: GameComponentProps)
     onUpdate(index === correctIndex);
   };
 
+  const handleCardClick = (card: CubeCard, index: 0 | 1) => {
+    if (!revealed) {
+      handlePick(index);
+    } else {
+      setViewCard(card);
+    }
+  };
+
   return (
     <div className="max-w-3xl mx-auto">
       <GameHeader title="Higher or Lower" subtitle="Which card has higher ELO?" streak={stats.streak} onBack={onBack} />
@@ -249,25 +281,35 @@ function HigherLowerGame({ cards, stats, onUpdate, onBack }: GameComponentProps)
           return (
             <button
               key={card.id}
-              onClick={() => handlePick(idx as 0 | 1)}
-              disabled={revealed}
+              onClick={() => handleCardClick(card, idx as 0 | 1)}
               className={`relative rounded-xl overflow-hidden transition-all ${
                 revealed
-                  ? isCorrect ? 'ring-2 ring-green-500' : isPicked ? 'ring-2 ring-red-500 opacity-70' : 'opacity-50'
+                  ? isCorrect ? 'ring-2 ring-green-500 cursor-zoom-in' : isPicked ? 'ring-2 ring-red-500 opacity-70 cursor-zoom-in' : 'opacity-50 cursor-zoom-in'
                   : 'hover:scale-[1.02] active:scale-[0.98]'
               }`}
             >
               <img src={getCardImage(card)} alt={card.name} className="w-full" />
               {revealed && (
-                <div className={`absolute bottom-0 left-0 right-0 py-2 text-center ${isCorrect ? 'bg-green-500' : 'bg-red-500'}`}>
-                  <div className="text-white font-bold">{Math.round(elo)}</div>
-                  <div className="text-white/80 text-[10px]">ELO</div>
+                <div className={`absolute bottom-0 left-0 right-0 py-2 flex items-center justify-center gap-3 ${isCorrect ? 'bg-green-500' : 'bg-red-500'}`}>
+                  <div className="text-center">
+                    <div className="text-white font-bold">{Math.round(elo)}</div>
+                    <div className="text-white/80 text-[10px]">ELO</div>
+                  </div>
+                  <div className="w-px h-8 bg-white/30" />
+                  <div className="text-center">
+                    <div className="text-white font-bold">{card.powerLevel.toFixed(1)}</div>
+                    <div className="text-white/80 text-[10px]">Power</div>
+                  </div>
                 </div>
               )}
             </button>
           );
         })}
       </div>
+
+      {revealed && (
+        <p className="text-center text-xs text-white/30 mt-2">Tap a card to view it full size</p>
+      )}
 
       {revealed && (
         <div className="text-center mt-4 space-y-3">
@@ -282,6 +324,8 @@ function HigherLowerGame({ cards, stats, onUpdate, onBack }: GameComponentProps)
       )}
 
       <GameStats stats={stats} />
+
+      {viewCard && <CardViewer card={viewCard} onClose={() => setViewCard(null)} />}
     </div>
   );
 }
@@ -305,6 +349,7 @@ function WheelOrNotGame({ cards, stats, onUpdate, onBack }: GameComponentProps) 
 
   const actual = getWheelLikelihood(card.name);
   const percentile = getPercentile(card.name);
+  const elo = getEloData(card.name)?.elo || 0;
 
   const handleGuess = (g: WheelLikelihood) => {
     if (revealed) return;
@@ -355,8 +400,12 @@ function WheelOrNotGame({ cards, stats, onUpdate, onBack }: GameComponentProps) 
       {revealed && (
         <div className="text-center space-y-3">
           <div className={`font-bold ${guess === actual ? 'text-green-400' : 'text-red-400'}`}>
-            {guess === actual ? 'Correct!' : 'Wrong!'}{' '}
-            <span className="text-white/50 text-sm font-normal">Top {100 - percentile}%</span>
+            {guess === actual ? 'Correct!' : 'Wrong!'}
+          </div>
+          <div className="flex items-center justify-center gap-4 text-sm text-white/60">
+            <span>ELO <span className="text-white font-mono">{Math.round(elo)}</span></span>
+            <span>Power <span className="text-white font-mono">{card.powerLevel.toFixed(1)}</span></span>
+            <span>Top <span className="text-white font-mono">{100 - percentile}%</span></span>
           </div>
           <button onClick={newRound} className="px-6 py-2.5 bg-white text-black rounded-lg font-semibold hover:bg-white/90 transition-colors">
             Next
@@ -433,8 +482,12 @@ function FirstPickGame({ cards, stats, onUpdate, onBack }: GameComponentProps) {
       {revealed && (
         <div className="text-center space-y-3">
           <div className={`font-bold ${guess === isFirstPickable ? 'text-green-400' : 'text-red-400'}`}>
-            {guess === isFirstPickable ? 'Correct!' : 'Wrong!'}{' '}
-            <span className="text-white/50 text-sm font-normal">ELO {Math.round(elo)} · Top {100 - percentile}%</span>
+            {guess === isFirstPickable ? 'Correct!' : 'Wrong!'}
+          </div>
+          <div className="flex items-center justify-center gap-4 text-sm text-white/60">
+            <span>ELO <span className="text-white font-mono">{Math.round(elo)}</span></span>
+            <span>Power <span className="text-white font-mono">{card.powerLevel.toFixed(1)}</span></span>
+            <span>Top <span className="text-white font-mono">{100 - percentile}%</span></span>
           </div>
           <button onClick={newRound} className="px-6 py-2.5 bg-white text-black rounded-lg font-semibold hover:bg-white/90 transition-colors">
             Next
