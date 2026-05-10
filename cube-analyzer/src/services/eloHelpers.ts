@@ -63,6 +63,15 @@ export function getEloData(cardName: string): EloCardData | null {
 }
 
 /**
+ * Check if ELO data is high-confidence (10k+ picks)
+ * Cards with fewer picks may have less reliable ELO ratings
+ */
+export function isHighConfidence(cardName: string): boolean {
+  const data = getEloData(cardName);
+  return data ? data.pickCount >= 10000 : false;
+}
+
+/**
  * Get the percentile rank of a card (0-100)
  * Higher percentile = more frequently picked
  */
@@ -76,15 +85,19 @@ export function getPercentile(cardName: string): number {
 
 /**
  * Get wheel likelihood based on ELO percentile
- * - 'likely': Cards in bottom 25% often wheel
- * - 'maybe': Cards in 25-50% sometimes wheel
- * - 'unlikely': Cards above 50% rarely wheel
+ * Based on typical 8-player draft behavior where lower-ELO cards
+ * are more likely to make it around the table.
+ *
+ * Thresholds:
+ * - 'likely': Cards in bottom 30% - often passed by all players
+ * - 'maybe': Cards in 30-55% - contextual picks that sometimes wheel
+ * - 'unlikely': Cards above 55% - strong enough to be taken early
  */
 export function getWheelLikelihood(cardName: string): WheelLikelihood {
   const percentile = getPercentile(cardName);
 
-  if (percentile <= 25) return 'likely';
-  if (percentile <= 50) return 'maybe';
+  if (percentile <= 30) return 'likely';
+  if (percentile <= 55) return 'maybe';
   return 'unlikely';
 }
 
