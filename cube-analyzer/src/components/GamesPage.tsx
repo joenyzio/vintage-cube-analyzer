@@ -293,68 +293,89 @@ function HigherLowerGame({ cards, stats, onUpdate, onBack }: GameComponentProps)
     onUpdate(index === correctIndex);
   };
 
-  const handleCardClick = (card: CubeCard, index: 0 | 1) => {
-    if (!revealed) {
-      handlePick(index);
-    } else {
-      setViewCard(card);
-    }
-  };
-
   return (
-    <div className="max-w-2xl mx-auto">
-      <GameHeader title="Higher or Lower" subtitle="Which card has higher ELO?" streak={stats.streak} onBack={onBack} />
-
-      <div className="grid grid-cols-2 gap-2 sm:gap-3">
-        {pair.map((card, idx) => {
-          const elo = idx === 0 ? eloA : eloB;
-          const isCorrect = idx === correctIndex;
-          const isPicked = picked === idx;
-
-          return (
-            <div key={card.id} className="flex flex-col">
-              <button
-                onClick={() => handleCardClick(card, idx as 0 | 1)}
-                className={`rounded-xl overflow-hidden transition-all ${
-                  revealed
-                    ? isCorrect ? 'ring-2 ring-green-500 cursor-zoom-in' : isPicked ? 'ring-2 ring-red-500 opacity-70 cursor-zoom-in' : 'opacity-50 cursor-zoom-in'
-                    : 'hover:scale-[1.02] active:scale-[0.98]'
-                }`}
-              >
-                <img src={getCardImage(card)} alt={card.name} className="w-full" />
-              </button>
-              {revealed && (
-                <div className={`mt-2 py-2 rounded-lg flex items-center justify-center gap-4 ${isCorrect ? 'bg-green-500' : 'bg-red-500'}`}>
-                  <div className="text-center">
-                    <div className="text-white font-bold text-sm">{Math.round(elo)}</div>
-                    <div className="text-white/80 text-[10px]">ELO</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-white font-bold text-sm">{card.powerLevel.toFixed(1)}</div>
-                    <div className="text-white/80 text-[10px]">Power</div>
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {revealed && (
-        <div className="text-center mt-4 space-y-3">
-          <div className={`text-lg font-bold ${picked === correctIndex ? 'text-green-400' : 'text-red-400'}`}>
-            {picked === correctIndex ? 'Correct!' : 'Wrong!'}{' '}
-            <span className="text-white/50 text-sm font-normal">Diff: {Math.abs(eloA - eloB).toFixed(0)}</span>
-          </div>
-          <button onClick={newRound} className="px-6 py-2.5 bg-white text-black rounded-lg font-semibold hover:bg-white/90 transition-colors">
-            Next
-          </button>
-        </div>
-      )}
-
-      <GameStats stats={stats} />
+    <div className="flex flex-col min-h-[calc(100vh-12rem)]">
+      <GameHeader title="Higher or Lower" subtitle="Tap the card with higher ELO" streak={stats.streak} onBack={onBack} />
 
       {viewCard && <CardViewer card={viewCard} onClose={() => setViewCard(null)} />}
+
+      {/* Mobile: Vertical stack with VS. Desktop: Side by side */}
+      <div className="flex-1 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 py-2">
+        {/* Card A */}
+        <div className="flex-1 w-full sm:w-auto sm:max-w-[240px] flex flex-col items-center">
+          <button
+            onClick={() => revealed ? setViewCard(pair[0]) : handlePick(0)}
+            className={`relative w-full max-w-[200px] sm:max-w-none rounded-xl overflow-hidden transition-all shadow-lg ${
+              revealed
+                ? correctIndex === 0 ? 'ring-4 ring-green-500' : picked === 0 ? 'ring-4 ring-red-500' : 'opacity-40'
+                : 'active:scale-95 hover:ring-2 hover:ring-white/30'
+            }`}
+          >
+            <img src={getCardImage(pair[0])} alt={pair[0].name} className="w-full" />
+            {!revealed && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/20 transition-colors">
+                <span className="sr-only">Pick {pair[0].name}</span>
+              </div>
+            )}
+          </button>
+          {revealed && (
+            <div className={`mt-2 w-full max-w-[200px] sm:max-w-none py-2 px-3 rounded-lg text-center ${correctIndex === 0 ? 'bg-green-500' : 'bg-white/10'}`}>
+              <span className="text-white font-bold">{Math.round(eloA)}</span>
+              <span className="text-white/70 text-sm ml-2">({pair[0].powerLevel.toFixed(1)})</span>
+            </div>
+          )}
+        </div>
+
+        {/* VS Divider */}
+        <div className="flex items-center justify-center">
+          <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/50 font-bold text-sm">
+            VS
+          </div>
+        </div>
+
+        {/* Card B */}
+        <div className="flex-1 w-full sm:w-auto sm:max-w-[240px] flex flex-col items-center">
+          <button
+            onClick={() => revealed ? setViewCard(pair[1]) : handlePick(1)}
+            className={`relative w-full max-w-[200px] sm:max-w-none rounded-xl overflow-hidden transition-all shadow-lg ${
+              revealed
+                ? correctIndex === 1 ? 'ring-4 ring-green-500' : picked === 1 ? 'ring-4 ring-red-500' : 'opacity-40'
+                : 'active:scale-95 hover:ring-2 hover:ring-white/30'
+            }`}
+          >
+            <img src={getCardImage(pair[1])} alt={pair[1].name} className="w-full" />
+            {!revealed && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/20 transition-colors">
+                <span className="sr-only">Pick {pair[1].name}</span>
+              </div>
+            )}
+          </button>
+          {revealed && (
+            <div className={`mt-2 w-full max-w-[200px] sm:max-w-none py-2 px-3 rounded-lg text-center ${correctIndex === 1 ? 'bg-green-500' : 'bg-white/10'}`}>
+              <span className="text-white font-bold">{Math.round(eloB)}</span>
+              <span className="text-white/70 text-sm ml-2">({pair[1].powerLevel.toFixed(1)})</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Bottom action area */}
+      <div className="mt-auto pt-4">
+        {revealed ? (
+          <div className="text-center space-y-3">
+            <div className={`text-lg font-bold ${picked === correctIndex ? 'text-green-400' : 'text-red-400'}`}>
+              {picked === correctIndex ? 'Correct!' : 'Wrong!'}{' '}
+              <span className="text-white/40 text-sm font-normal">Diff: {Math.abs(eloA - eloB).toFixed(0)}</span>
+            </div>
+            <button onClick={newRound} className="w-full sm:w-auto px-8 py-4 bg-white text-black rounded-xl font-bold text-lg hover:bg-white/90 active:scale-95 transition-all">
+              Next
+            </button>
+          </div>
+        ) : (
+          <p className="text-center text-white/30 text-sm">Tap a card to pick it</p>
+        )}
+        <GameStats stats={stats} />
+      </div>
     </div>
   );
 }
@@ -364,6 +385,7 @@ function WheelOrNotGame({ cards, stats, onUpdate, onBack }: GameComponentProps) 
   const [card, setCard] = useState<CubeCard | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [guess, setGuess] = useState<WheelLikelihood | null>(null);
+  const [viewCard, setViewCard] = useState<CubeCard | null>(null);
 
   const newRound = useCallback(() => {
     const [c] = getRandomCards(cards, 1);
@@ -388,61 +410,69 @@ function WheelOrNotGame({ cards, stats, onUpdate, onBack }: GameComponentProps) 
   };
 
   return (
-    <div className="max-w-sm mx-auto">
+    <div className="flex flex-col min-h-[calc(100vh-12rem)]">
       <GameHeader title="Will It Wheel?" subtitle="Will this card come back around?" streak={stats.streak} onBack={onBack} />
 
-      <div className="flex justify-center mb-4">
-        <img src={getCardImage(card)} alt={card.name} className="w-48 sm:w-56 rounded-xl shadow-xl" />
+      {viewCard && <CardViewer card={viewCard} onClose={() => setViewCard(null)} />}
+
+      {/* Card display - centered and tappable */}
+      <div className="flex-1 flex items-center justify-center py-4">
+        <button
+          onClick={() => setViewCard(card)}
+          className="w-full max-w-[220px] rounded-xl overflow-hidden shadow-xl active:scale-95 transition-transform"
+        >
+          <img src={getCardImage(card)} alt={card.name} className="w-full" />
+        </button>
       </div>
 
-      <div className="grid grid-cols-3 gap-2 mb-4">
-        {[
-          { value: 'likely' as WheelLikelihood, label: 'Yes', color: 'green' },
-          { value: 'maybe' as WheelLikelihood, label: 'Maybe', color: 'amber' },
-          { value: 'unlikely' as WheelLikelihood, label: 'No', color: 'red' },
-        ].map(opt => {
-          const isCorrect = opt.value === actual;
-          const isGuessed = opt.value === guess;
-          const baseColor = {
-            green: revealed && isCorrect ? 'bg-green-500 text-white' : 'bg-green-500/20 text-green-400',
-            amber: revealed && isCorrect ? 'bg-amber-500 text-white' : 'bg-amber-500/20 text-amber-400',
-            red: revealed && isCorrect ? 'bg-red-500 text-white' : 'bg-red-500/20 text-red-400',
-          }[opt.color];
+      {/* Bottom action area */}
+      <div className="mt-auto space-y-3">
+        {/* Answer buttons */}
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { value: 'likely' as WheelLikelihood, label: 'Wheels', color: 'green' },
+            { value: 'maybe' as WheelLikelihood, label: 'Maybe', color: 'amber' },
+            { value: 'unlikely' as WheelLikelihood, label: 'Taken', color: 'red' },
+          ].map(opt => {
+            const isCorrect = opt.value === actual;
+            const isGuessed = opt.value === guess;
 
-          return (
-            <button
-              key={opt.value}
-              onClick={() => handleGuess(opt.value)}
-              disabled={revealed}
-              className={`py-3 rounded-xl font-semibold transition-all ${
-                revealed
-                  ? isCorrect ? baseColor : isGuessed ? 'bg-red-500/30 text-red-300' : 'bg-white/5 text-white/30'
-                  : `${baseColor} hover:opacity-80 active:scale-95`
-              }`}
-            >
-              {opt.label}
-            </button>
-          );
-        })}
-      </div>
-
-      {revealed && (
-        <div className="text-center space-y-3">
-          <div className={`font-bold ${guess === actual ? 'text-green-400' : 'text-red-400'}`}>
-            {guess === actual ? 'Correct!' : 'Wrong!'}
-          </div>
-          <div className="flex items-center justify-center gap-4 text-sm text-white/60">
-            <span>ELO <span className="text-white font-mono">{Math.round(elo)}</span></span>
-            <span>Power <span className="text-white font-mono">{card.powerLevel.toFixed(1)}</span></span>
-            <span>Top <span className="text-white font-mono">{100 - percentile}%</span></span>
-          </div>
-          <button onClick={newRound} className="px-6 py-2.5 bg-white text-black rounded-lg font-semibold hover:bg-white/90 transition-colors">
-            Next
-          </button>
+            return (
+              <button
+                key={opt.value}
+                onClick={() => handleGuess(opt.value)}
+                disabled={revealed}
+                className={`py-4 rounded-xl font-bold text-base transition-all active:scale-95 ${
+                  revealed
+                    ? isCorrect
+                      ? opt.color === 'green' ? 'bg-green-500 text-white' : opt.color === 'amber' ? 'bg-amber-500 text-white' : 'bg-red-500 text-white'
+                      : isGuessed ? 'bg-red-500/50 text-white/70' : 'bg-white/5 text-white/30'
+                    : opt.color === 'green' ? 'bg-green-500/20 text-green-400' : opt.color === 'amber' ? 'bg-amber-500/20 text-amber-400' : 'bg-red-500/20 text-red-400'
+                }`}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
         </div>
-      )}
 
-      <GameStats stats={stats} />
+        {/* Result and next */}
+        {revealed && (
+          <div className="text-center space-y-3 pt-2">
+            <div className={`font-bold text-lg ${guess === actual ? 'text-green-400' : 'text-red-400'}`}>
+              {guess === actual ? 'Correct!' : 'Wrong!'}
+              <span className="text-white/40 text-sm font-normal ml-2">
+                Top {100 - percentile}% · ELO {Math.round(elo)}
+              </span>
+            </div>
+            <button onClick={newRound} className="w-full py-4 bg-white text-black rounded-xl font-bold text-lg active:scale-95 transition-all">
+              Next
+            </button>
+          </div>
+        )}
+
+        <GameStats stats={stats} />
+      </div>
     </div>
   );
 }
@@ -452,6 +482,7 @@ function FirstPickGame({ cards, stats, onUpdate, onBack }: GameComponentProps) {
   const [card, setCard] = useState<CubeCard | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [guess, setGuess] = useState<boolean | null>(null);
+  const [viewCard, setViewCard] = useState<CubeCard | null>(null);
 
   const newRound = useCallback(() => {
     const [c] = getRandomCards(cards, 1);
@@ -476,55 +507,64 @@ function FirstPickGame({ cards, stats, onUpdate, onBack }: GameComponentProps) {
   };
 
   return (
-    <div className="max-w-sm mx-auto">
-      <GameHeader title="First Pickable?" subtitle="Is this card P1P1 worthy? (Top 25%)" streak={stats.streak} onBack={onBack} />
+    <div className="flex flex-col min-h-[calc(100vh-12rem)]">
+      <GameHeader title="First Pickable?" subtitle="Would you P1P1 this? (Top 25%)" streak={stats.streak} onBack={onBack} />
 
-      <div className="flex justify-center mb-4">
-        <img src={getCardImage(card)} alt={card.name} className="w-48 sm:w-56 rounded-xl shadow-xl" />
-      </div>
+      {viewCard && <CardViewer card={viewCard} onClose={() => setViewCard(null)} />}
 
-      <div className="grid grid-cols-2 gap-3 mb-4">
+      {/* Card display */}
+      <div className="flex-1 flex items-center justify-center py-4">
         <button
-          onClick={() => handleGuess(true)}
-          disabled={revealed}
-          className={`py-4 rounded-xl font-bold text-lg transition-all ${
-            revealed
-              ? isFirstPickable ? 'bg-green-500 text-white' : guess === true ? 'bg-red-500/50 text-white/70' : 'bg-white/5 text-white/30'
-              : 'bg-green-500/20 text-green-400 hover:bg-green-500/30 active:scale-95'
-          }`}
+          onClick={() => setViewCard(card)}
+          className="w-full max-w-[220px] rounded-xl overflow-hidden shadow-xl active:scale-95 transition-transform"
         >
-          Yes
-        </button>
-        <button
-          onClick={() => handleGuess(false)}
-          disabled={revealed}
-          className={`py-4 rounded-xl font-bold text-lg transition-all ${
-            revealed
-              ? !isFirstPickable ? 'bg-green-500 text-white' : guess === false ? 'bg-red-500/50 text-white/70' : 'bg-white/5 text-white/30'
-              : 'bg-red-500/20 text-red-400 hover:bg-red-500/30 active:scale-95'
-          }`}
-        >
-          No
+          <img src={getCardImage(card)} alt={card.name} className="w-full" />
         </button>
       </div>
 
-      {revealed && (
-        <div className="text-center space-y-3">
-          <div className={`font-bold ${guess === isFirstPickable ? 'text-green-400' : 'text-red-400'}`}>
-            {guess === isFirstPickable ? 'Correct!' : 'Wrong!'}
-          </div>
-          <div className="flex items-center justify-center gap-4 text-sm text-white/60">
-            <span>ELO <span className="text-white font-mono">{Math.round(elo)}</span></span>
-            <span>Power <span className="text-white font-mono">{card.powerLevel.toFixed(1)}</span></span>
-            <span>Top <span className="text-white font-mono">{100 - percentile}%</span></span>
-          </div>
-          <button onClick={newRound} className="px-6 py-2.5 bg-white text-black rounded-lg font-semibold hover:bg-white/90 transition-colors">
-            Next
+      {/* Bottom action area */}
+      <div className="mt-auto space-y-3">
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={() => handleGuess(true)}
+            disabled={revealed}
+            className={`py-4 rounded-xl font-bold text-lg transition-all active:scale-95 ${
+              revealed
+                ? isFirstPickable ? 'bg-green-500 text-white' : guess === true ? 'bg-red-500/50 text-white/70' : 'bg-white/5 text-white/30'
+                : 'bg-green-500/20 text-green-400'
+            }`}
+          >
+            First Pick
+          </button>
+          <button
+            onClick={() => handleGuess(false)}
+            disabled={revealed}
+            className={`py-4 rounded-xl font-bold text-lg transition-all active:scale-95 ${
+              revealed
+                ? !isFirstPickable ? 'bg-green-500 text-white' : guess === false ? 'bg-red-500/50 text-white/70' : 'bg-white/5 text-white/30'
+                : 'bg-red-500/20 text-red-400'
+            }`}
+          >
+            Pass
           </button>
         </div>
-      )}
 
-      <GameStats stats={stats} />
+        {revealed && (
+          <div className="text-center space-y-3 pt-2">
+            <div className={`font-bold text-lg ${guess === isFirstPickable ? 'text-green-400' : 'text-red-400'}`}>
+              {guess === isFirstPickable ? 'Correct!' : 'Wrong!'}
+              <span className="text-white/40 text-sm font-normal ml-2">
+                Top {100 - percentile}% · ELO {Math.round(elo)}
+              </span>
+            </div>
+            <button onClick={newRound} className="w-full py-4 bg-white text-black rounded-xl font-bold text-lg active:scale-95 transition-all">
+              Next
+            </button>
+          </div>
+        )}
+
+        <GameStats stats={stats} />
+      </div>
     </div>
   );
 }
@@ -538,6 +578,7 @@ function ColorCommitGame({ cards, stats, onUpdate, onBack }: GameComponentProps)
   } | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [picked, setPicked] = useState<number | null>(null);
+  const [viewCard, setViewCard] = useState<CubeCard | null>(null);
 
   const newRound = useCallback(() => {
     const allColors = ['W', 'U', 'B', 'R', 'G'];
@@ -590,19 +631,23 @@ function ColorCommitGame({ cards, stats, onUpdate, onBack }: GameComponentProps)
   };
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="flex flex-col min-h-[calc(100vh-12rem)]">
       <GameHeader title="Stay in Lane" subtitle="Pick the card that fits your colors" streak={stats.streak} onBack={onBack} />
 
-      <div className="flex items-center justify-center gap-2 mb-4">
-        <span className="text-sm text-white/50">Your colors:</span>
+      {viewCard && <CardViewer card={viewCard} onClose={() => setViewCard(null)} />}
+
+      {/* Deck colors indicator */}
+      <div className="flex items-center justify-center gap-2 mb-3">
+        <span className="text-sm text-white/50">Your deck:</span>
         {state.deckColors.map(c => (
-          <span key={c} className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold ${colorLabels[c].bg}`}>
+          <span key={c} className={`w-9 h-9 rounded-lg flex items-center justify-center font-bold text-lg ${colorLabels[c].bg}`}>
             {colorLabels[c].name}
           </span>
         ))}
       </div>
 
-      <div className="grid grid-cols-3 gap-2 sm:gap-3">
+      {/* Cards - stacked vertically on mobile, grid on desktop */}
+      <div className="flex-1 flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 py-2">
         {state.options.map((card, idx) => {
           const isCorrect = idx === state.correctIndex;
           const isPicked = picked === idx;
@@ -610,12 +655,11 @@ function ColorCommitGame({ cards, stats, onUpdate, onBack }: GameComponentProps)
           return (
             <button
               key={card.id}
-              onClick={() => handlePick(idx)}
-              disabled={revealed}
-              className={`relative rounded-xl overflow-hidden transition-all ${
+              onClick={() => revealed ? setViewCard(card) : handlePick(idx)}
+              className={`w-full max-w-[160px] sm:max-w-[180px] rounded-xl overflow-hidden transition-all shadow-lg ${
                 revealed
-                  ? isCorrect ? 'ring-2 ring-green-500' : isPicked ? 'ring-2 ring-red-500 opacity-70' : 'opacity-50'
-                  : 'hover:scale-[1.02] active:scale-[0.98]'
+                  ? isCorrect ? 'ring-4 ring-green-500' : isPicked ? 'ring-4 ring-red-500' : 'opacity-40'
+                  : 'active:scale-95 hover:ring-2 hover:ring-white/30'
               }`}
             >
               <img src={getCardImage(card)} alt={card.name} className="w-full" />
@@ -624,18 +668,20 @@ function ColorCommitGame({ cards, stats, onUpdate, onBack }: GameComponentProps)
         })}
       </div>
 
-      {revealed && (
-        <div className="text-center mt-4 space-y-3">
-          <div className={`font-bold ${picked === state.correctIndex ? 'text-green-400' : 'text-red-400'}`}>
-            {picked === state.correctIndex ? 'Correct! You stayed in lane.' : 'Wrong! The highlighted card fits better.'}
+      {/* Bottom action area */}
+      <div className="mt-auto pt-4 space-y-3">
+        {revealed && (
+          <div className="text-center space-y-3">
+            <div className={`font-bold text-lg ${picked === state.correctIndex ? 'text-green-400' : 'text-red-400'}`}>
+              {picked === state.correctIndex ? 'Correct!' : 'Wrong!'}
+            </div>
+            <button onClick={newRound} className="w-full py-4 bg-white text-black rounded-xl font-bold text-lg active:scale-95 transition-all">
+              Next
+            </button>
           </div>
-          <button onClick={newRound} className="px-6 py-2.5 bg-white text-black rounded-lg font-semibold hover:bg-white/90 transition-colors">
-            Next
-          </button>
-        </div>
-      )}
-
-      <GameStats stats={stats} />
+        )}
+        <GameStats stats={stats} />
+      </div>
     </div>
   );
 }
@@ -691,17 +737,17 @@ function SpeedRoundGame({ cards, stats, onUpdate, onBack }: GameComponentProps) 
 
   if (gameState === 'ready') {
     return (
-      <div className="max-w-sm mx-auto text-center">
+      <div className="flex flex-col min-h-[calc(100vh-12rem)] items-center justify-center text-center">
         <GameHeader title="Speed Round" subtitle="30 seconds of Higher/Lower" streak={stats.bestStreak} onBack={onBack} />
-        <div className="my-8">
-          <Timer className="w-16 h-16 text-red-400 mx-auto mb-4" />
-          <p className="text-white/60 mb-6">Pick the higher ELO card as fast as you can!</p>
-          <button onClick={startGame} className="px-8 py-4 bg-red-500 text-white rounded-xl font-bold text-lg hover:bg-red-600 transition-colors">
+        <div className="flex-1 flex flex-col items-center justify-center">
+          <Timer className="w-20 h-20 text-red-400 mb-6" />
+          <p className="text-white/60 mb-8 text-lg">Tap the higher ELO card as fast as you can!</p>
+          <button onClick={startGame} className="w-full max-w-xs py-5 bg-red-500 text-white rounded-xl font-bold text-xl active:scale-95 transition-all">
             Start!
           </button>
         </div>
         {stats.bestStreak > 0 && (
-          <div className="text-white/40 text-sm">Best score: {stats.bestStreak}</div>
+          <div className="text-white/40 text-sm pb-4">Best: {stats.bestStreak}</div>
         )}
       </div>
     );
@@ -709,15 +755,15 @@ function SpeedRoundGame({ cards, stats, onUpdate, onBack }: GameComponentProps) 
 
   if (gameState === 'done') {
     return (
-      <div className="max-w-sm mx-auto text-center">
+      <div className="flex flex-col min-h-[calc(100vh-12rem)] items-center justify-center text-center">
         <GameHeader title="Speed Round" subtitle="Time's up!" streak={stats.bestStreak} onBack={onBack} />
-        <div className="my-8">
-          <div className="text-6xl font-bold text-white mb-2">{score}</div>
-          <div className="text-white/50 mb-6">correct picks</div>
+        <div className="flex-1 flex flex-col items-center justify-center">
+          <div className="text-7xl font-bold text-white mb-2">{score}</div>
+          <div className="text-white/50 text-lg mb-6">correct picks</div>
           {score > stats.bestStreak && (
-            <div className="text-amber-400 font-semibold mb-4">New best score!</div>
+            <div className="text-amber-400 font-bold text-lg mb-4">New best score!</div>
           )}
-          <button onClick={startGame} className="px-8 py-4 bg-red-500 text-white rounded-xl font-bold text-lg hover:bg-red-600 transition-colors">
+          <button onClick={startGame} className="w-full max-w-xs py-5 bg-red-500 text-white rounded-xl font-bold text-xl active:scale-95 transition-all">
             Play Again
           </button>
         </div>
@@ -728,20 +774,29 @@ function SpeedRoundGame({ cards, stats, onUpdate, onBack }: GameComponentProps) 
   if (!pair) return null;
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="flex items-center justify-between mb-4">
-        <div className="text-4xl font-bold text-white">{score}</div>
-        <div className={`text-4xl font-mono font-bold ${timeLeft <= 5 ? 'text-red-400 animate-pulse' : 'text-white'}`}>
+    <div className="flex flex-col min-h-[calc(100vh-12rem)]">
+      {/* Score and timer bar */}
+      <div className="flex items-center justify-between px-2 mb-3">
+        <div className="flex items-center gap-2">
+          <span className="text-white/50 text-sm">Score:</span>
+          <span className="text-3xl font-bold text-white">{score}</span>
+        </div>
+        <div className={`text-4xl font-mono font-bold px-4 py-1 rounded-lg ${
+          timeLeft <= 5 ? 'text-red-400 bg-red-500/20 animate-pulse' : 'text-white bg-white/10'
+        }`}>
           {timeLeft}
         </div>
       </div>
 
-      <div className={`grid grid-cols-2 gap-2 transition-all ${lastResult === 'correct' ? 'scale-[1.01]' : lastResult === 'wrong' ? 'opacity-90' : ''}`}>
+      {/* Cards - side by side, bigger touch targets */}
+      <div className={`flex-1 flex items-center gap-3 px-1 transition-all ${
+        lastResult === 'correct' ? 'scale-[1.01]' : lastResult === 'wrong' ? 'opacity-80' : ''
+      }`}>
         {pair.map((card, idx) => (
           <button
             key={card.id}
             onClick={() => handlePick(idx as 0 | 1)}
-            className="rounded-xl overflow-hidden hover:scale-[1.02] active:scale-[0.98] transition-transform"
+            className="flex-1 rounded-xl overflow-hidden active:scale-95 transition-transform shadow-xl"
           >
             <img src={getCardImage(card)} alt={card.name} className="w-full" />
           </button>
@@ -756,6 +811,7 @@ function GuessCmcGame({ cards, stats, onUpdate, onBack }: GameComponentProps) {
   const [card, setCard] = useState<CubeCard | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [guess, setGuess] = useState<number | null>(null);
+  const [viewCard, setViewCard] = useState<CubeCard | null>(null);
 
   const newRound = useCallback(() => {
     const [c] = getRandomCards(cards, 1);
@@ -778,48 +834,59 @@ function GuessCmcGame({ cards, stats, onUpdate, onBack }: GameComponentProps) {
   };
 
   return (
-    <div className="max-w-sm mx-auto">
+    <div className="flex flex-col min-h-[calc(100vh-12rem)]">
       <GameHeader title="Guess the CMC" subtitle="What's this card's mana value?" streak={stats.streak} onBack={onBack} />
 
-      <div className="flex justify-center mb-4">
-        <img src={getCardImage(card)} alt={card.name} className="w-48 sm:w-56 rounded-xl shadow-xl" />
+      {viewCard && <CardViewer card={viewCard} onClose={() => setViewCard(null)} />}
+
+      {/* Card display */}
+      <div className="flex-1 flex items-center justify-center py-4">
+        <button
+          onClick={() => setViewCard(card)}
+          className="w-full max-w-[220px] rounded-xl overflow-hidden shadow-xl active:scale-95 transition-transform"
+        >
+          <img src={getCardImage(card)} alt={card.name} className="w-full" />
+        </button>
       </div>
 
-      <div className="grid grid-cols-8 gap-1 mb-4">
-        {[0, 1, 2, 3, 4, 5, 6, 7].map(n => {
-          const isCorrect = n === Math.min(actualCmc, 7);
-          const isGuessed = guess === n;
+      {/* Bottom action area */}
+      <div className="mt-auto space-y-3">
+        {/* CMC buttons - 4x2 grid for bigger touch targets */}
+        <div className="grid grid-cols-4 gap-2">
+          {[0, 1, 2, 3, 4, 5, 6, 7].map(n => {
+            const isCorrect = n === Math.min(actualCmc, 7);
+            const isGuessed = guess === n;
 
-          return (
-            <button
-              key={n}
-              onClick={() => handleGuess(n)}
-              disabled={revealed}
-              className={`py-3 rounded-lg font-bold text-sm transition-all ${
-                revealed
-                  ? isCorrect ? 'bg-green-500 text-white' : isGuessed ? 'bg-red-500 text-white' : 'bg-white/5 text-white/30'
-                  : 'bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 active:scale-95'
-              }`}
-            >
-              {n === 7 ? '7+' : n}
-            </button>
-          );
-        })}
-      </div>
-
-      {revealed && (
-        <div className="text-center space-y-3">
-          <div className={`font-bold ${guess === Math.min(actualCmc, 7) ? 'text-green-400' : 'text-red-400'}`}>
-            {guess === Math.min(actualCmc, 7) ? 'Correct!' : `Wrong! It costs ${actualCmc}`}
-          </div>
-          <div className="text-sm text-white/50">{card.name}</div>
-          <button onClick={newRound} className="px-6 py-2.5 bg-white text-black rounded-lg font-semibold hover:bg-white/90 transition-colors">
-            Next
-          </button>
+            return (
+              <button
+                key={n}
+                onClick={() => handleGuess(n)}
+                disabled={revealed}
+                className={`py-4 rounded-xl font-bold text-lg transition-all active:scale-95 ${
+                  revealed
+                    ? isCorrect ? 'bg-green-500 text-white' : isGuessed ? 'bg-red-500 text-white' : 'bg-white/5 text-white/30'
+                    : 'bg-cyan-500/20 text-cyan-400'
+                }`}
+              >
+                {n === 7 ? '7+' : n}
+              </button>
+            );
+          })}
         </div>
-      )}
 
-      <GameStats stats={stats} />
+        {revealed && (
+          <div className="text-center space-y-3 pt-2">
+            <div className={`font-bold text-lg ${guess === Math.min(actualCmc, 7) ? 'text-green-400' : 'text-red-400'}`}>
+              {guess === Math.min(actualCmc, 7) ? 'Correct!' : `Wrong! It costs ${actualCmc}`}
+            </div>
+            <button onClick={newRound} className="w-full py-4 bg-white text-black rounded-xl font-bold text-lg active:scale-95 transition-all">
+              Next
+            </button>
+          </div>
+        )}
+
+        <GameStats stats={stats} />
+      </div>
     </div>
   );
 }
@@ -876,12 +943,14 @@ function SynergySnapGame({ cards, stats, onUpdate, onBack }: GameComponentProps)
 
   useEffect(() => { newRound(); }, [newRound]);
 
+  const [viewCard, setViewCard] = useState<CubeCard | null>(null);
+
   if (!pair || loading) {
     return (
-      <div className="max-w-2xl mx-auto">
+      <div className="flex flex-col min-h-[calc(100vh-12rem)] items-center justify-center">
         <GameHeader title="Synergy Snap" subtitle="Analyzing cards with AI..." streak={stats.streak} onBack={onBack} />
-        <div className="flex justify-center py-12">
-          <div className="animate-spin w-8 h-8 border-2 border-pink-400 border-t-transparent rounded-full" />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="animate-spin w-10 h-10 border-3 border-pink-400 border-t-transparent rounded-full" />
         </div>
       </div>
     );
@@ -895,69 +964,81 @@ function SynergySnapGame({ cards, stats, onUpdate, onBack }: GameComponentProps)
   };
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="flex flex-col min-h-[calc(100vh-12rem)]">
       <GameHeader title="Synergy Snap" subtitle="Do these cards work together?" streak={stats.streak} onBack={onBack} />
 
-      <div className="grid grid-cols-2 gap-2 mb-4">
+      {viewCard && <CardViewer card={viewCard} onClose={() => setViewCard(null)} />}
+
+      {/* Cards side by side */}
+      <div className="flex-1 flex items-center justify-center gap-2 py-2">
         {pair.map((card) => (
-          <div key={card.id} className="rounded-xl overflow-hidden">
+          <button
+            key={card.id}
+            onClick={() => revealed ? setViewCard(card) : null}
+            className={`flex-1 max-w-[180px] rounded-xl overflow-hidden shadow-lg transition-all ${
+              revealed ? 'cursor-zoom-in' : ''
+            }`}
+          >
             <img src={getCardImage(card)} alt={card.name} className="w-full" />
-          </div>
+          </button>
         ))}
       </div>
 
-      <div className="grid grid-cols-2 gap-3 mb-4">
-        <button
-          onClick={() => handleGuess(true)}
-          disabled={revealed}
-          className={`py-4 rounded-xl font-bold text-lg transition-all ${
-            revealed
-              ? hasSynergy ? 'bg-green-500 text-white' : guess === true ? 'bg-red-500/50 text-white/70' : 'bg-white/5 text-white/30'
-              : 'bg-pink-500/20 text-pink-400 hover:bg-pink-500/30 active:scale-95'
-          }`}
-        >
-          Synergy!
-        </button>
-        <button
-          onClick={() => handleGuess(false)}
-          disabled={revealed}
-          className={`py-4 rounded-xl font-bold text-lg transition-all ${
-            revealed
-              ? !hasSynergy ? 'bg-green-500 text-white' : guess === false ? 'bg-red-500/50 text-white/70' : 'bg-white/5 text-white/30'
-              : 'bg-white/10 text-white/60 hover:bg-white/20 active:scale-95'
-          }`}
-        >
-          No synergy
-        </button>
-      </div>
-
-      {revealed && (
-        <div className="text-center space-y-3">
-          <div className={`font-bold ${guess === hasSynergy ? 'text-green-400' : 'text-red-400'}`}>
-            {guess === hasSynergy ? 'Correct!' : 'Wrong!'}
-          </div>
-          <div className="text-sm text-white/50">{explanation}</div>
-          {similarity !== null && (
-            <div className="flex items-center justify-center gap-2">
-              <span className="text-xs text-white/30">AI Similarity:</span>
-              <div className="w-24 h-2 bg-white/10 rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full ${
-                    similarity >= 0.72 ? 'bg-green-500' : similarity >= 0.65 ? 'bg-yellow-500' : 'bg-white/30'
-                  }`}
-                  style={{ width: `${similarity * 100}%` }}
-                />
-              </div>
-              <span className="text-xs font-mono text-white/50">{Math.round(similarity * 100)}%</span>
-            </div>
-          )}
-          <button onClick={newRound} className="px-6 py-2.5 bg-white text-black rounded-lg font-semibold hover:bg-white/90 transition-colors">
-            Next
+      {/* Bottom action area */}
+      <div className="mt-auto space-y-3">
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={() => handleGuess(true)}
+            disabled={revealed}
+            className={`py-4 rounded-xl font-bold text-lg transition-all active:scale-95 ${
+              revealed
+                ? hasSynergy ? 'bg-green-500 text-white' : guess === true ? 'bg-red-500/50 text-white/70' : 'bg-white/5 text-white/30'
+                : 'bg-pink-500/20 text-pink-400'
+            }`}
+          >
+            Synergy!
+          </button>
+          <button
+            onClick={() => handleGuess(false)}
+            disabled={revealed}
+            className={`py-4 rounded-xl font-bold text-lg transition-all active:scale-95 ${
+              revealed
+                ? !hasSynergy ? 'bg-green-500 text-white' : guess === false ? 'bg-red-500/50 text-white/70' : 'bg-white/5 text-white/30'
+                : 'bg-white/10 text-white/60'
+            }`}
+          >
+            No synergy
           </button>
         </div>
-      )}
 
-      <GameStats stats={stats} />
+        {revealed && (
+          <div className="text-center space-y-3 pt-2">
+            <div className={`font-bold text-lg ${guess === hasSynergy ? 'text-green-400' : 'text-red-400'}`}>
+              {guess === hasSynergy ? 'Correct!' : 'Wrong!'}
+              <span className="text-white/40 text-sm font-normal ml-2">{explanation}</span>
+            </div>
+            {similarity !== null && (
+              <div className="flex items-center justify-center gap-2">
+                <span className="text-xs text-white/40">AI:</span>
+                <div className="w-20 h-2 bg-white/10 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full ${
+                      similarity >= 0.72 ? 'bg-green-500' : similarity >= 0.65 ? 'bg-yellow-500' : 'bg-white/30'
+                    }`}
+                    style={{ width: `${similarity * 100}%` }}
+                  />
+                </div>
+                <span className="text-xs font-mono text-white/50">{Math.round(similarity * 100)}%</span>
+              </div>
+            )}
+            <button onClick={newRound} className="w-full py-4 bg-white text-black rounded-xl font-bold text-lg active:scale-95 transition-all">
+              Next
+            </button>
+          </div>
+        )}
+
+        <GameStats stats={stats} />
+      </div>
     </div>
   );
 }
