@@ -2064,8 +2064,8 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
           </div>
         </div>
 
-        {/* Pack ELO Summary */}
-        {packEloStats && (
+        {/* Pack ELO Summary - only in coach mode */}
+        {coachMode && packEloStats && (
           <div className="flex items-center gap-4 px-3 py-2 bg-white/[0.02] border border-white/[0.06] rounded-xl text-xs">
             <div className="flex items-center gap-1.5 text-white/50">
               <TrendingUp className="w-3.5 h-3.5" />
@@ -2128,10 +2128,10 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                 className={`
                   relative aspect-[488/680] rounded-xl overflow-hidden cursor-pointer shadow-lg
                   transition-all duration-200 hover:scale-[1.04] hover:-translate-y-1 hover:z-10 hover:shadow-xl
-                  ${isRecommended ? 'ring-2 ring-amber-400/60 shadow-amber-400/20' : ''}
-                  ${!isRecommended && synergy === 'high' ? 'ring-2 ring-green-400/50' : ''}
-                  ${!isRecommended && synergy === 'low' ? 'ring-2 ring-red-400/30 opacity-75' : ''}
-                  ${wheelPrediction?.mightWheel ? 'ring-2 ring-cyan-400/50' : ''}
+                  ${coachMode && isRecommended ? 'ring-2 ring-amber-400/60 shadow-amber-400/20' : ''}
+                  ${coachMode && !isRecommended && synergy === 'high' ? 'ring-2 ring-green-400/50' : ''}
+                  ${coachMode && !isRecommended && synergy === 'low' ? 'ring-2 ring-red-400/30 opacity-75' : ''}
+                  ${coachMode && wheelPrediction?.mightWheel ? 'ring-2 ring-cyan-400/50' : ''}
                 `}
               >
                 <img src={getCardImage(card)} alt={card.name} className="w-full h-full object-cover" loading="lazy" />
@@ -2143,16 +2143,16 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                   </div>
                 )}
 
-                {/* Wheeled back indicator */}
-                {wheelPrediction?.mightWheel && (
+                {/* Wheeled back indicator - only in coach mode */}
+                {coachMode && wheelPrediction?.mightWheel && (
                   <div className="absolute top-8 left-1.5 px-1.5 py-0.5 rounded bg-cyan-500/90 text-white text-[8px] font-bold flex items-center gap-1">
                     <History className="w-2.5 h-2.5" />
                     Wheeled!
                   </div>
                 )}
 
-                {/* Synergy tags */}
-                {cardSynergies.length > 0 && (
+                {/* Synergy tags - only in coach mode */}
+                {coachMode && cardSynergies.length > 0 && (
                   <div className="absolute bottom-7 left-1.5 right-1.5 flex flex-wrap gap-0.5 justify-start">
                     {cardSynergies.slice(0, 2).map((syn, i) => (
                       <span key={i} className="px-1 py-0.5 rounded bg-purple-500/80 text-white text-[7px] font-medium truncate max-w-[60px]">
@@ -2162,8 +2162,8 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                   </div>
                 )}
 
-                {/* Wheel likelihood indicator */}
-                {!isRecommended && !wheelPrediction?.mightWheel && (
+                {/* Wheel likelihood indicator - only in coach mode */}
+                {coachMode && !isRecommended && !wheelPrediction?.mightWheel && (
                   <div className={`
                     absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide
                     ${wheelLikelihood === 'likely' ? 'bg-green-500/80 text-white' : ''}
@@ -2177,8 +2177,8 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                   </div>
                 )}
 
-                {/* Synergy indicator (simplified) */}
-                {synergy && !isRecommended && cardSynergies.length === 0 && (
+                {/* Synergy indicator (simplified) - only in coach mode */}
+                {coachMode && synergy && !isRecommended && cardSynergies.length === 0 && (
                   <div className={`
                     absolute bottom-7 left-1.5 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide
                     ${synergy === 'high' ? 'bg-green-500/90 text-white' : ''}
@@ -2189,19 +2189,21 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                   </div>
                 )}
 
-                {/* Power badge */}
-                <div className={`
-                  absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold shadow-lg
-                  ${card.powerLevel >= 10 ? 'bg-gradient-to-br from-amber-400 to-amber-500 text-black' : ''}
-                  ${card.powerLevel === 9 ? 'bg-gradient-to-br from-purple-400 to-purple-500 text-white' : ''}
-                  ${card.powerLevel >= 7 && card.powerLevel < 9 ? 'bg-gradient-to-br from-blue-400 to-blue-500 text-white' : ''}
-                  ${card.powerLevel < 7 ? 'bg-black/70 text-white/80' : ''}
-                `}>
-                  {card.powerLevel}
-                </div>
+                {/* Power badge - only in coach mode */}
+                {coachMode && (
+                  <div className={`
+                    absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold shadow-lg
+                    ${card.powerLevel >= 10 ? 'bg-gradient-to-br from-amber-400 to-amber-500 text-black' : ''}
+                    ${card.powerLevel === 9 ? 'bg-gradient-to-br from-purple-400 to-purple-500 text-white' : ''}
+                    ${card.powerLevel >= 7 && card.powerLevel < 9 ? 'bg-gradient-to-br from-blue-400 to-blue-500 text-white' : ''}
+                    ${card.powerLevel < 7 ? 'bg-black/70 text-white/80' : ''}
+                  `}>
+                    {card.powerLevel}
+                  </div>
+                )}
 
-                {/* Recommended indicator */}
-                {isRecommended && (
+                {/* Recommended indicator - only in coach mode */}
+                {coachMode && isRecommended && (
                   <div className="absolute top-1.5 left-1.5">
                     <div className="w-6 h-6 rounded-full bg-amber-400 flex items-center justify-center shadow-lg shadow-amber-400/30">
                       <Star className="w-3.5 h-3.5 text-black fill-black" />
