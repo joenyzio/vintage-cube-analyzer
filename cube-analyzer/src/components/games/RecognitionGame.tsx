@@ -145,7 +145,7 @@ export function RecognitionGame({ cards, onBack }: RecognitionGameProps) {
       const key = e.key.toLowerCase();
 
       if (!revealed && targetCard) {
-        const keyMap: Record<string, number> = { q: 0, w: 1, e: 2, r: 3 };
+        const keyMap: Record<string, number> = { a: 0, s: 1, d: 2, f: 3 };
         if (key in keyMap && options[keyMap[key]]) {
           e.preventDefault();
           handlePick(options[keyMap[key]]);
@@ -266,7 +266,7 @@ export function RecognitionGame({ cards, onBack }: RecognitionGameProps) {
   return (
     <div className="fixed inset-0 bg-black flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 shrink-0">
+      <div className="flex items-center justify-between px-4 py-3">
         <button onClick={onBack} className="p-1 hover:bg-white/5 rounded-lg">
           <ChevronLeft className="w-6 h-6 text-white/60" />
         </button>
@@ -282,13 +282,14 @@ export function RecognitionGame({ cards, onBack }: RecognitionGameProps) {
         </div>
       </div>
 
-      {/* Card display with name blacked out */}
-      <div className="flex-1 flex items-center justify-center p-4">
+      {/* Centered content */}
+      <div className="flex-1 flex flex-col items-center justify-center p-4 gap-4">
+        {/* Card display with name blacked out */}
         <div className="relative">
           <img
             src={getCardImage(targetCard)}
             alt="Identify this card"
-            className="max-h-[55vh] w-auto rounded-xl shadow-2xl"
+            className="max-h-[50vh] w-auto rounded-xl shadow-2xl"
           />
           {/* Black bar over the name - positioned at top left of card */}
           {!revealed && (
@@ -303,19 +304,17 @@ export function RecognitionGame({ cards, onBack }: RecognitionGameProps) {
             />
           )}
         </div>
-      </div>
 
-      {/* Timer display */}
-      <div className="text-center text-white/40 text-sm pb-2">
-        {formatTime(elapsedTime)}
-      </div>
+        {/* Timer display */}
+        <div className="text-center text-white/40 text-sm">
+          {formatTime(elapsedTime)}
+        </div>
 
-      {/* Options */}
-      <div className="px-4 pb-8 shrink-0">
+        {/* Options */}
         {!revealed ? (
-          <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
+          <div className="grid grid-cols-2 gap-3 max-w-md w-full">
             {options.map((name, idx) => {
-              const keys = ['Q', 'W', 'E', 'R'];
+              const keys = ['A', 'S', 'D', 'F'];
               return (
                 <button
                   key={name}
@@ -333,7 +332,7 @@ export function RecognitionGame({ cards, onBack }: RecognitionGameProps) {
             })}
           </div>
         ) : (
-          <div className="max-w-md mx-auto">
+          <div className="max-w-md w-full">
             <div className={`text-center mb-4 ${isCorrect ? 'text-green-400' : 'text-red-400'}`}>
               <div className="text-xl font-bold mb-1">
                 {isCorrect ? 'Correct!' : 'Wrong!'}

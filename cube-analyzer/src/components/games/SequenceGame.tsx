@@ -177,8 +177,8 @@ export function SequenceGame({ cards, onBack }: SequenceGameProps) {
       const key = e.key.toLowerCase();
 
       if (!revealed && packCards.length === 3) {
-        // Q, W, E for left, middle, right card
-        const keyMap: Record<string, number> = { q: 0, w: 1, e: 2 };
+        // A, S, D for left, middle, right card
+        const keyMap: Record<string, number> = { a: 0, s: 1, d: 2 };
         if (key in keyMap) {
           e.preventDefault();
           handlePick(keyMap[key]);
@@ -306,7 +306,7 @@ export function SequenceGame({ cards, onBack }: SequenceGameProps) {
   return (
     <div className="fixed inset-0 bg-black flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 shrink-0">
+      <div className="flex items-center justify-between px-4 py-3">
         <button onClick={onBack} className="p-1 hover:bg-white/5 rounded-lg">
           <ChevronLeft className="w-6 h-6 text-white/60" />
         </button>
@@ -322,32 +322,33 @@ export function SequenceGame({ cards, onBack }: SequenceGameProps) {
         </div>
       </div>
 
-      {/* Instructions */}
-      <div className="text-center py-3 text-white/50 text-sm">
-        {!revealed ? (
-          userOrder.length === 0 ? 'Tap cards in order: Best → Worst' :
-          userOrder.length === 1 ? 'Pick 2nd best' :
-          'Pick 3rd (worst)'
-        ) : 'Review the correct order'}
-      </div>
-
-      {/* User's picks display */}
-      {!revealed && userOrder.length > 0 && (
-        <div className="flex justify-center gap-2 pb-2">
-          {userOrder.map((idx, pos) => (
-            <div key={pos} className="text-center">
-              <div className="text-xs text-white/30 mb-1">{pos + 1}{pos === 0 ? 'st' : pos === 1 ? 'nd' : 'rd'}</div>
-              <div className="text-xs text-white/70 truncate max-w-[80px]">
-                {packCards[idx].name.split(',')[0]}
-              </div>
-            </div>
-          ))}
+      {/* Centered content */}
+      <div className="flex-1 flex flex-col items-center justify-center p-4 gap-4">
+        {/* Instructions */}
+        <div className="text-center text-white/50 text-sm">
+          {!revealed ? (
+            userOrder.length === 0 ? 'Tap cards in order: Best → Worst' :
+            userOrder.length === 1 ? 'Pick 2nd best' :
+            'Pick 3rd (worst)'
+          ) : 'Review the correct order'}
         </div>
-      )}
 
-      {/* Cards */}
-      <div className="flex-1 flex items-center justify-center p-4">
-        <div className="flex gap-4 max-w-3xl">
+        {/* User's picks display */}
+        {!revealed && userOrder.length > 0 && (
+          <div className="flex justify-center gap-4">
+            {userOrder.map((idx, pos) => (
+              <div key={pos} className="text-center">
+                <div className="text-xs text-white/30 mb-1">{pos + 1}{pos === 0 ? 'st' : pos === 1 ? 'nd' : 'rd'}</div>
+                <div className="text-xs text-white/70 truncate max-w-[80px]">
+                  {packCards[idx].name.split(',')[0]}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Cards - 3 larger cards centered */}
+        <div className="flex justify-center gap-5">
           {packCards.map((card, idx) => {
             const elo = getEloData(card.name)?.elo || 0;
             const correctPos = correctOrder.indexOf(idx);
@@ -355,11 +356,11 @@ export function SequenceGame({ cards, onBack }: SequenceGameProps) {
             const isPicked = userOrder.includes(idx);
 
             return (
-              <div key={card.id} className="flex-1 text-center">
+              <div key={card.id} className="text-center w-[180px] flex-shrink-0">
                 <button
                   onClick={() => handlePick(idx)}
                   disabled={revealed || isPicked}
-                  className={`relative rounded-xl overflow-hidden transition-all ${
+                  className={`relative rounded-xl overflow-hidden transition-all w-full ${
                     revealed
                       ? correctPos === 0
                         ? 'ring-4 ring-green-500 shadow-[0_0_20px_rgba(74,222,128,0.3)]'
@@ -372,17 +373,17 @@ export function SequenceGame({ cards, onBack }: SequenceGameProps) {
                   <img
                     src={getCardImage(card)}
                     alt={card.name}
-                    className="w-full"
+                    className="w-full shadow-lg"
                   />
                   {/* Position badge when picked */}
                   {!revealed && isPicked && (
-                    <div className="absolute top-2 left-2 w-8 h-8 bg-white text-black rounded-full flex items-center justify-center font-bold text-lg">
+                    <div className="absolute top-3 left-3 w-10 h-10 bg-white text-black rounded-full flex items-center justify-center font-bold text-xl">
                       {userPos + 1}
                     </div>
                   )}
                   {/* Correct position after reveal */}
                   {revealed && (
-                    <div className={`absolute top-2 left-2 w-8 h-8 rounded-full flex items-center justify-center font-bold text-lg ${
+                    <div className={`absolute top-3 left-3 w-10 h-10 rounded-full flex items-center justify-center font-bold text-xl ${
                       correctPos === 0 ? 'bg-green-500 text-white' :
                       correctPos === 1 ? 'bg-amber-500 text-white' :
                       'bg-white/20 text-white'
@@ -393,15 +394,15 @@ export function SequenceGame({ cards, onBack }: SequenceGameProps) {
                 </button>
 
                 {/* Card info */}
-                <div className="mt-2">
-                  <kbd className="px-2 py-1 bg-white/10 rounded text-xs text-white/40 font-mono">
-                    {['Q', 'W', 'E'][idx]}
+                <div className="mt-3">
+                  <kbd className="px-2.5 py-1.5 bg-white/10 rounded text-sm text-white/50 font-mono">
+                    {['A', 'S', 'D'][idx]}
                   </kbd>
                 </div>
 
                 {/* ELO reveal */}
                 {revealed && (
-                  <div className={`mt-1 text-sm font-bold ${
+                  <div className={`mt-2 text-base font-bold ${
                     correctPos === 0 ? 'text-green-400' : 'text-white/60'
                   }`}>
                     {Math.round(elo)}
@@ -411,12 +412,10 @@ export function SequenceGame({ cards, onBack }: SequenceGameProps) {
             );
           })}
         </div>
-      </div>
 
-      {/* Bottom */}
-      <div className="px-4 pb-8 shrink-0">
+        {/* Bottom */}
         {revealed ? (
-          <div className="max-w-md mx-auto">
+          <div className="max-w-md w-full">
             {/* Result summary */}
             <div className="text-center mb-4">
               {userOrder.every((v, i) => v === correctOrder[i]) ? (

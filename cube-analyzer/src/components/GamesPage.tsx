@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import type { CubeCard } from '../types/card';
 import { getCardImage } from '../services/scryfall';
 import {
@@ -7,8 +7,35 @@ import {
   getWheelLikelihood,
   type WheelLikelihood,
 } from '../services/eloHelpers';
-import { Scale, CircleDot, Layers, Trophy, ChevronLeft, Flame, Timer, Hash, Sparkles, Package, Hand, Radio, GraduationCap, TrendingUp, TrendingDown, Minus, BarChart3, ArrowLeftRight, ListOrdered, Swords, Eye, Target, ListTree, Search, Gauge, Stethoscope, PuzzleIcon } from 'lucide-react';
+import { Scale, CircleDot, Layers, Trophy, ChevronLeft, Flame, Timer, Hash, Sparkles, Package, Hand, Radio, GraduationCap, TrendingUp, TrendingDown, Minus, BarChart3, ArrowLeftRight, ListOrdered, Swords, Eye, Target, ListTree, Search, Gauge, Stethoscope, PuzzleIcon, SlidersHorizontal } from 'lucide-react';
 import { srs, boolToQuality, type SkillCategory, type SkillRating } from '../services/spacedRepetition';
+
+// Global filter types
+type ColorFilter = 'all' | 'W' | 'U' | 'B' | 'R' | 'G' | 'Colorless' | 'Multi';
+type TierFilter = 'all' | 'S' | 'A' | 'B' | 'C';
+
+interface GlobalFilters {
+  color: ColorFilter;
+  tier: TierFilter;
+}
+
+const FILTER_STORAGE_KEY = 'cube-games-filters';
+
+function loadFilters(): GlobalFilters {
+  try {
+    const saved = localStorage.getItem(FILTER_STORAGE_KEY);
+    if (saved) {
+      return JSON.parse(saved);
+    }
+  } catch {}
+  return { color: 'all', tier: 'all' };
+}
+
+function saveFilters(filters: GlobalFilters) {
+  try {
+    localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(filters));
+  } catch {}
+}
 
 // Cognitive loop games (self-contained)
 import { RecognitionGame } from './games/RecognitionGame';
@@ -109,6 +136,40 @@ function getRandomCards(cards: CubeCard[], n: number): CubeCard[] {
 export function GamesPage({ cards }: GamesPageProps) {
   const [game, setGame] = useState<GameType>('menu');
   const [stats, setStats] = useState<GameStats>(loadStats);
+  const [filters, setFilters] = useState<GlobalFilters>(loadFilters);
+  const [showFilterPanel, setShowFilterPanel] = useState(false);
+
+  // Apply filters to cards
+  const filteredCards = cards.filter(card => {
+    // Must have ELO data
+    if (!getEloData(card.name)) return false;
+
+    // Color filter
+    if (filters.color !== 'all') {
+      const colors = card.color_identity || [];
+      if (filters.color === 'Colorless' && colors.length !== 0) return false;
+      if (filters.color === 'Multi' && colors.length <= 1) return false;
+      if (['W', 'U', 'B', 'R', 'G'].includes(filters.color)) {
+        if (!colors.includes(filters.color)) return false;
+      }
+    }
+
+    // Tier filter (based on ELO percentile)
+    if (filters.tier !== 'all') {
+      const percentile = getPercentile(card.name);
+      if (filters.tier === 'S' && percentile < 90) return false;
+      if (filters.tier === 'A' && (percentile < 75 || percentile >= 90)) return false;
+      if (filters.tier === 'B' && (percentile < 50 || percentile >= 75)) return false;
+      if (filters.tier === 'C' && percentile >= 50) return false;
+    }
+
+    return true;
+  });
+
+  const updateFilters = useCallback((newFilters: GlobalFilters) => {
+    setFilters(newFilters);
+    saveFilters(newFilters);
+  }, []);
 
   const updateStats = useCallback((gameKey: keyof GameStats, correct: boolean) => {
     setStats(prev => {
@@ -157,25 +218,25 @@ export function GamesPage({ cards }: GamesPageProps) {
 
   // Cognitive loop games route first (they manage their own state)
   if (game === 'recognition') {
-    return <RecognitionGame cards={cards} onBack={() => setGame('menu')} />;
+    return <RecognitionGame cards={filteredCards} onBack={() => setGame('menu')} />;
   }
   if (game === 'estimation') {
-    return <EstimationGame cards={cards} onBack={() => setGame('menu')} />;
+    return <EstimationGame cards={filteredCards} onBack={() => setGame('menu')} />;
   }
   if (game === 'pick-order') {
-    return <SequenceGame cards={cards} onBack={() => setGame('menu')} />;
+    return <SequenceGame cards={filteredCards} onBack={() => setGame('menu')} />;
   }
   if (game === 'archetype-sort') {
-    return <ClassificationGame cards={cards} onBack={() => setGame('menu')} />;
+    return <ClassificationGame cards={filteredCards} onBack={() => setGame('menu')} />;
   }
   if (game === 'odd-one-out') {
-    return <SpottingGame cards={cards} onBack={() => setGame('menu')} />;
+    return <SpottingGame cards={filteredCards} onBack={() => setGame('menu')} />;
   }
   if (game === 'deck-doctor') {
-    return <ConstraintGame cards={cards} onBack={() => setGame('menu')} />;
+    return <ConstraintGame cards={filteredCards} onBack={() => setGame('menu')} />;
   }
   if (game === 'complete-curve') {
-    return <ReconstructionGame cards={cards} onBack={() => setGame('menu')} />;
+    return <ReconstructionGame cards={filteredCards} onBack={() => setGame('menu')} />;
   }
 
   // Legacy games with shared stats system
@@ -218,7 +279,7 @@ export function GamesPage({ cards }: GamesPageProps) {
 
     return (
       <GameComponent
-        cards={cards}
+        cards={filteredCards}
         stats={stats[gameKey]}
         onUpdate={(c: boolean) => updateStats(gameKey, c)}
         onBack={() => setGame('menu')}
@@ -237,6 +298,16 @@ export function GamesPage({ cards }: GamesPageProps) {
         <h1 className="text-2xl font-bold text-white">Training</h1>
         <p className="text-sm text-white/50 mt-1">Drills to internalize before draft day</p>
       </div>
+
+      {/* Filter Panel */}
+      <FilterPanel
+        filters={filters}
+        onUpdateFilters={updateFilters}
+        filteredCount={filteredCards.length}
+        totalCount={cards.filter(c => getEloData(c.name)).length}
+        expanded={showFilterPanel}
+        onToggle={() => setShowFilterPanel(!showFilterPanel)}
+      />
 
       {/* Progress Dashboard */}
       <ProgressDashboard
@@ -274,6 +345,135 @@ export function GamesPage({ cards }: GamesPageProps) {
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+// ============ FILTER PANEL ============
+function FilterPanel({
+  filters,
+  onUpdateFilters,
+  filteredCount,
+  totalCount,
+  expanded,
+  onToggle,
+}: {
+  filters: GlobalFilters;
+  onUpdateFilters: (filters: GlobalFilters) => void;
+  filteredCount: number;
+  totalCount: number;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  const hasFilters = filters.color !== 'all' || filters.tier !== 'all';
+
+  const colorOptions: { value: ColorFilter; label: string; shortLabel: string; bg: string }[] = [
+    { value: 'all', label: 'All Colors', shortLabel: 'All', bg: 'bg-white/10' },
+    { value: 'W', label: 'White', shortLabel: 'W', bg: 'bg-amber-100' },
+    { value: 'U', label: 'Blue', shortLabel: 'U', bg: 'bg-blue-500' },
+    { value: 'B', label: 'Black', shortLabel: 'B', bg: 'bg-purple-900' },
+    { value: 'R', label: 'Red', shortLabel: 'R', bg: 'bg-red-500' },
+    { value: 'G', label: 'Green', shortLabel: 'G', bg: 'bg-green-600' },
+    { value: 'Colorless', label: 'Colorless', shortLabel: 'C', bg: 'bg-gray-500' },
+    { value: 'Multi', label: 'Multicolor', shortLabel: 'M', bg: 'bg-gradient-to-r from-amber-400 via-green-400 to-blue-400' },
+  ];
+
+  const tierOptions: { value: TierFilter; label: string; color: string }[] = [
+    { value: 'all', label: 'All Tiers', color: 'text-white' },
+    { value: 'S', label: 'S (Top 10%)', color: 'text-amber-400' },
+    { value: 'A', label: 'A (Top 25%)', color: 'text-purple-400' },
+    { value: 'B', label: 'B (Top 50%)', color: 'text-blue-400' },
+    { value: 'C', label: 'C (Bottom)', color: 'text-white/50' },
+  ];
+
+  const currentColor = colorOptions.find(c => c.value === filters.color);
+  const currentTier = tierOptions.find(t => t.value === filters.tier);
+
+  return (
+    <div className="bg-white/[0.04] border border-white/[0.06] rounded-xl overflow-hidden">
+      {/* Collapsed header - always visible */}
+      <button
+        onClick={onToggle}
+        className="w-full px-4 py-3 flex items-center justify-between hover:bg-white/[0.02] transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          <SlidersHorizontal className={`w-4 h-4 ${hasFilters ? 'text-white' : 'text-white/40'}`} />
+          <span className="text-sm text-white/70">Card Filter</span>
+          {hasFilters && (
+            <div className="flex items-center gap-1.5">
+              {filters.color !== 'all' && (
+                <span className={`px-2 py-0.5 rounded text-xs font-medium ${currentColor?.bg} ${filters.color === 'W' ? 'text-amber-900' : 'text-white'}`}>
+                  {currentColor?.shortLabel}
+                </span>
+              )}
+              {filters.tier !== 'all' && (
+                <span className={`px-2 py-0.5 rounded text-xs font-medium bg-white/10 ${currentTier?.color}`}>
+                  {filters.tier}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-white/40">{filteredCount}/{totalCount} cards</span>
+          <ChevronLeft className={`w-4 h-4 text-white/40 transition-transform ${expanded ? '-rotate-90' : 'rotate-180'}`} />
+        </div>
+      </button>
+
+      {/* Expanded filter options */}
+      {expanded && (
+        <div className="px-4 pb-4 space-y-4 border-t border-white/[0.06] pt-4">
+          {/* Color Filter */}
+          <div>
+            <div className="text-xs font-medium text-white/40 uppercase tracking-wide mb-2">Color</div>
+            <div className="flex flex-wrap gap-1.5">
+              {colorOptions.map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => onUpdateFilters({ ...filters, color: opt.value })}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    filters.color === opt.value
+                      ? 'ring-2 ring-white ring-offset-1 ring-offset-black'
+                      : 'opacity-60 hover:opacity-100'
+                  } ${opt.bg} ${opt.value === 'W' ? 'text-amber-900' : 'text-white'}`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Tier Filter */}
+          <div>
+            <div className="text-xs font-medium text-white/40 uppercase tracking-wide mb-2">Power Tier</div>
+            <div className="flex flex-wrap gap-1.5">
+              {tierOptions.map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => onUpdateFilters({ ...filters, tier: opt.value })}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${
+                    filters.tier === opt.value
+                      ? 'border-white bg-white/10'
+                      : 'border-white/10 hover:border-white/30'
+                  } ${opt.color}`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Clear filters */}
+          {hasFilters && (
+            <button
+              onClick={() => onUpdateFilters({ color: 'all', tier: 'all' })}
+              className="text-xs text-white/40 hover:text-white/70 transition-colors"
+            >
+              Clear all filters
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -616,16 +816,10 @@ function CardViewer({
 }
 
 // ============ GAME 1: Higher or Lower ============
-type ColorFilter = 'all' | 'W' | 'U' | 'B' | 'R' | 'G' | 'Colorless' | 'Multi';
-type TierFilter = 'all' | 'S' | 'A' | 'B' | 'C';
-
 function HigherLowerGame({ cards, stats, onUpdate, onBack }: GameComponentProps) {
   const [pair, setPair] = useState<[CubeCard, CubeCard] | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [picked, setPicked] = useState<0 | 1 | null>(null);
-  const [showFilters, setShowFilters] = useState(true);
-  const [colorFilter, setColorFilter] = useState<ColorFilter>('all');
-  const [tierFilter, setTierFilter] = useState<TierFilter>('all');
 
   // Timer state - always available during gameplay
   const [timerRunning, setTimerRunning] = useState(false);
@@ -646,45 +840,21 @@ function HigherLowerGame({ cards, stats, onUpdate, onBack }: GameComponentProps)
   }>>([]);
   const [sessionStartTime, setSessionStartTime] = useState(0);
 
-  // Filter cards based on selections
-  const filteredCards = cards.filter(card => {
-    // Must have ELO data
-    if (!getEloData(card.name)) return false;
-
-    // Color filter
-    if (colorFilter !== 'all') {
-      const colors = card.color_identity || [];
-      if (colorFilter === 'Colorless' && colors.length !== 0) return false;
-      if (colorFilter === 'Multi' && colors.length <= 1) return false;
-      if (['W', 'U', 'B', 'R', 'G'].includes(colorFilter)) {
-        if (!colors.includes(colorFilter)) return false;
-      }
-    }
-
-    // Tier filter (based on ELO percentile, same as Power Rankings)
-    if (tierFilter !== 'all') {
-      const percentile = getPercentile(card.name);
-      if (tierFilter === 'S' && percentile < 90) return false;  // Top 10%
-      if (tierFilter === 'A' && (percentile < 75 || percentile >= 90)) return false;  // Top 10-25%
-      if (tierFilter === 'B' && (percentile < 50 || percentile >= 75)) return false;  // Top 25-50%
-      if (tierFilter === 'C' && percentile >= 50) return false;  // Bottom 50%
-    }
-
-    return true;
-  });
-
+  // Cards are already filtered by global filter
   const newRound = useCallback(() => {
-    if (filteredCards.length < 2) return;
-    const shuffled = shuffleArray(filteredCards);
+    if (cards.length < 2) return;
+    const shuffled = shuffleArray(cards);
     setPair([shuffled[0], shuffled[1]]);
     setRevealed(false);
     setPicked(null);
-  }, [filteredCards]);
+  }, [cards]);
 
-  const startGame = () => {
-    setShowFilters(false);
-    newRound();
-  };
+  // Start first round
+  useEffect(() => {
+    if (cards.length >= 2) {
+      newRound();
+    }
+  }, []);
 
   // Start a timed challenge with countdown
   const startTimer = (duration: number) => {
@@ -730,15 +900,9 @@ function HigherLowerGame({ cards, stats, onUpdate, onBack }: GameComponentProps)
     return () => clearTimeout(timer);
   }, [timerRunning, timeRemaining]);
 
+  // Keyboard shortcuts: A=left, S=right, Enter=next
   useEffect(() => {
-    if (!showFilters && filteredCards.length >= 2) {
-      newRound();
-    }
-  }, [showFilters]);
-
-  // Keyboard shortcuts: Q=left, W=right, Enter=next
-  useEffect(() => {
-    if (showFilters || !pair || showTimerResults) return;
+    if (!pair || showTimerResults) return;
 
     const eloA = getEloData(pair[0].name)?.elo || 0;
     const eloB = getEloData(pair[1].name)?.elo || 0;
@@ -750,9 +914,9 @@ function HigherLowerGame({ cards, stats, onUpdate, onBack }: GameComponentProps)
       const key = e.key.toLowerCase();
 
       if (!revealed) {
-        if (key === 'q' || key === 'w') {
+        if (key === 'a' || key === 's') {
           e.preventDefault();
-          const pickedIdx = key === 'q' ? 0 : 1;
+          const pickedIdx = key === 'a' ? 0 : 1;
           setPicked(pickedIdx);
           setRevealed(true);
           const correct = pickedIdx === correctIndex;
@@ -782,112 +946,7 @@ function HigherLowerGame({ cards, stats, onUpdate, onBack }: GameComponentProps)
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showFilters, revealed, pair, newRound, onUpdate, timerRunning, showTimerResults]);
-
-  // Filter screen
-  if (showFilters) {
-    const colorOptions: { value: ColorFilter; label: string; bg: string }[] = [
-      { value: 'all', label: 'All Colors', bg: 'bg-white/10' },
-      { value: 'W', label: 'White', bg: 'bg-amber-100' },
-      { value: 'U', label: 'Blue', bg: 'bg-blue-500' },
-      { value: 'B', label: 'Black', bg: 'bg-purple-900' },
-      { value: 'R', label: 'Red', bg: 'bg-red-500' },
-      { value: 'G', label: 'Green', bg: 'bg-green-600' },
-      { value: 'Colorless', label: 'Colorless', bg: 'bg-gray-500' },
-      { value: 'Multi', label: 'Multicolor', bg: 'bg-gradient-to-r from-amber-400 via-green-400 to-blue-400' },
-    ];
-
-    const tierOptions: { value: TierFilter; label: string; color: string }[] = [
-      { value: 'all', label: 'All Tiers', color: 'text-white' },
-      { value: 'S', label: 'S (Top 10%)', color: 'text-amber-400' },
-      { value: 'A', label: 'A (Top 25%)', color: 'text-purple-400' },
-      { value: 'B', label: 'B (Top 50%)', color: 'text-blue-400' },
-      { value: 'C', label: 'C (Bottom)', color: 'text-white/50' },
-    ];
-
-    return (
-      <div className="space-y-8">
-        {/* Header */}
-        <div className="flex items-center gap-4">
-          <button onClick={onBack} className="p-2 -ml-2 hover:bg-white/5 rounded-lg">
-            <ChevronLeft className="w-6 h-6 text-white/60" />
-          </button>
-          <div>
-            <h2 className="text-xl font-bold text-white">Higher or Lower</h2>
-            <p className="text-sm text-white/40">Which card has higher ELO?</p>
-          </div>
-        </div>
-
-        {/* Color Filter */}
-        <div>
-          <h3 className="text-sm font-medium text-white/60 uppercase tracking-wide mb-3">Filter by Color</h3>
-          <div className="grid grid-cols-4 gap-2">
-            {colorOptions.map(opt => (
-              <button
-                key={opt.value}
-                onClick={() => setColorFilter(opt.value)}
-                className={`p-3 rounded-xl text-sm font-medium transition-all ${
-                  colorFilter === opt.value
-                    ? 'ring-2 ring-white ring-offset-2 ring-offset-black'
-                    : 'opacity-60 hover:opacity-100'
-                } ${opt.bg} ${opt.value === 'W' ? 'text-amber-900' : 'text-white'}`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Tier Filter */}
-        <div>
-          <h3 className="text-sm font-medium text-white/60 uppercase tracking-wide mb-3">Filter by Power Tier</h3>
-          <div className="grid grid-cols-5 gap-2">
-            {tierOptions.map(opt => (
-              <button
-                key={opt.value}
-                onClick={() => setTierFilter(opt.value)}
-                className={`p-3 rounded-xl text-sm font-medium transition-all border ${
-                  tierFilter === opt.value
-                    ? 'border-white bg-white/10'
-                    : 'border-white/10 hover:border-white/30'
-                } ${opt.color}`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Card count and start */}
-        <div className="pt-4 border-t border-white/10">
-          <div className="text-center mb-4">
-            <span className="text-white/40 text-sm">
-              {filteredCards.length} cards match your filters
-            </span>
-          </div>
-          <button
-            onClick={startGame}
-            disabled={filteredCards.length < 2}
-            className={`w-full py-4 rounded-xl font-bold text-lg transition-all ${
-              filteredCards.length >= 2
-                ? 'bg-white text-black hover:bg-white/90 active:scale-[0.98]'
-                : 'bg-white/10 text-white/30 cursor-not-allowed'
-            }`}
-          >
-            {filteredCards.length >= 2 ? 'Start Game' : 'Need at least 2 cards'}
-          </button>
-        </div>
-
-        {/* Stats */}
-        {stats.played > 0 && (
-          <div className="text-center text-white/30 text-sm">
-            Lifetime: {Math.round((stats.correct / stats.played) * 100)}% · {stats.correct}/{stats.played}
-            {stats.bestStreak > 1 && ` · Best streak: ${stats.bestStreak}`}
-          </div>
-        )}
-      </div>
-    );
-  }
+  }, [revealed, pair, newRound, onUpdate, timerRunning, showTimerResults]);
 
   if (!pair) return null;
 
@@ -1167,16 +1226,12 @@ function HigherLowerGame({ cards, stats, onUpdate, onBack }: GameComponentProps)
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <button onClick={() => setShowFilters(true)} className="p-2 -ml-2 hover:bg-white/5 rounded-lg">
+          <button onClick={onBack} className="p-2 -ml-2 hover:bg-white/5 rounded-lg">
             <ChevronLeft className="w-6 h-6 text-white/60" />
           </button>
           <div>
             <h2 className="text-lg font-semibold text-white">Which has higher ELO?</h2>
-            <p className="text-xs text-white/40">
-              {colorFilter !== 'all' && `${colorFilter} cards · `}
-              {tierFilter !== 'all' && `${tierFilter} tier · `}
-              {filteredCards.length} cards
-            </p>
+            <p className="text-xs text-white/40">{cards.length} cards</p>
           </div>
         </div>
 
@@ -1269,7 +1324,7 @@ function HigherLowerGame({ cards, stats, onUpdate, onBack }: GameComponentProps)
             </div>
           ) : (
             <div className="text-center text-white/30 text-sm">
-              Click the card you think has higher ELO · <kbd className="px-1.5 py-0.5 bg-white/10 rounded text-xs">Q</kbd> / <kbd className="px-1.5 py-0.5 bg-white/10 rounded text-xs">W</kbd>
+              Click the card you think has higher ELO · <kbd className="px-1.5 py-0.5 bg-white/10 rounded text-xs">A</kbd> / <kbd className="px-1.5 py-0.5 bg-white/10 rounded text-xs">S</kbd>
             </div>
           )}
 
@@ -1661,6 +1716,7 @@ function MulliganTrainerGame({ cards, stats, onUpdate, onBack }: GameComponentPr
   const [userChoice, setUserChoice] = useState<'keep' | 'mull' | null>(null);
   const [evaluation, setEvaluation] = useState<{ verdict: 'keep' | 'mull'; score: number; reasons: string[] } | null>(null);
   const [selectedCard, setSelectedCard] = useState<CubeCard | null>(null);
+  const handleChoiceRef = useRef<((choice: 'keep' | 'mull') => void) | null>(null);
 
   const newHand = useCallback(() => {
     // Pick random archetype
@@ -1695,10 +1751,34 @@ function MulliganTrainerGame({ cards, stats, onUpdate, onBack }: GameComponentPr
 
   useEffect(() => { newHand(); }, [newHand]);
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement) return;
+      const key = e.key.toLowerCase();
+
+      if (!revealed) {
+        if (key === 'a') {
+          e.preventDefault();
+          handleChoiceRef.current?.('keep');
+        } else if (key === 's') {
+          e.preventDefault();
+          handleChoiceRef.current?.('mull');
+        }
+      } else if (key === 'enter' || key === ' ') {
+        e.preventDefault();
+        newHand();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [revealed, newHand]);
+
   if (hand.length === 0 || !archetype) return null;
 
-  const handleChoice = (choice: 'keep' | 'mull') => {
-    if (revealed) return;
+  const handleChoice = useCallback((choice: 'keep' | 'mull') => {
+    if (revealed || !archetype) return;
 
     const eval_ = evaluateHand(hand, archetype);
     setEvaluation(eval_);
@@ -1718,7 +1798,10 @@ function MulliganTrainerGame({ cards, stats, onUpdate, onBack }: GameComponentPr
     );
 
     onUpdate(isCorrect);
-  };
+  }, [revealed, archetype, hand, onUpdate]);
+
+  // Keep ref updated for keyboard handler
+  handleChoiceRef.current = handleChoice;
 
   return (
     <div className="fixed inset-0 bg-black flex flex-col z-40">
@@ -1758,40 +1841,77 @@ function MulliganTrainerGame({ cards, stats, onUpdate, onBack }: GameComponentPr
         ) : <div className="w-8" />}
       </div>
 
-      {/* Hand display */}
-      <div className="flex-1 flex items-center justify-center px-2 overflow-hidden">
-        <div className="flex gap-1 sm:gap-2 max-w-4xl">
-          {hand.map((card) => {
-            const isLand = card.type_line?.toLowerCase().includes('land');
-            const role = revealed ? getCardRole(card) : null;
-            const percentile = revealed ? getPercentile(card.name) : null;
-            return (
-              <div key={card.id} className="flex-1 min-w-0 relative" style={{ maxWidth: '14%' }}>
-                <button
-                  onClick={() => setSelectedCard(card)}
-                  className={`w-full rounded-lg overflow-hidden transition-all active:scale-95 ${
-                    revealed && isLand ? 'ring-2 ring-amber-400/50' : ''
-                  }`}
-                >
-                  <img src={getCardImage(card)} alt={card.name} className="w-full" />
-                </button>
-                {revealed && role && (
-                  <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-black/90 text-white/80 text-[8px] px-1 py-0.5 rounded whitespace-nowrap">
-                    {role}
-                  </div>
-                )}
-                {revealed && percentile !== null && (
-                  <div className={`absolute -bottom-2 left-1/2 -translate-x-1/2 text-[9px] font-bold px-1.5 py-0.5 rounded ${
-                    percentile >= 80 ? 'bg-amber-500 text-black' :
-                    percentile >= 60 ? 'bg-purple-500 text-white' :
-                    percentile >= 40 ? 'bg-blue-500 text-white' : 'bg-white/20 text-white/60'
-                  }`}>
-                    {percentile >= 80 ? 'S' : percentile >= 60 ? 'A' : percentile >= 40 ? 'B' : 'C'}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+      {/* Hand display - 4+3 stacked layout for larger cards */}
+      <div className="flex-1 flex items-center justify-center px-4 overflow-hidden">
+        <div className="flex flex-col gap-3">
+          {/* Top row: 4 cards */}
+          <div className="flex justify-center gap-3">
+            {hand.slice(0, 4).map((card) => {
+              const isLand = card.type_line?.toLowerCase().includes('land');
+              const role = revealed ? getCardRole(card) : null;
+              const percentile = revealed ? getPercentile(card.name) : null;
+              return (
+                <div key={card.id} className="relative w-[130px] flex-shrink-0">
+                  <button
+                    onClick={() => setSelectedCard(card)}
+                    className={`w-full rounded-lg overflow-hidden transition-all active:scale-95 ${
+                      revealed && isLand ? 'ring-2 ring-amber-400/50' : ''
+                    }`}
+                  >
+                    <img src={getCardImage(card)} alt={card.name} className="w-full shadow-lg" />
+                  </button>
+                  {revealed && role && (
+                    <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-black/90 text-white/80 text-[9px] px-1.5 py-0.5 rounded whitespace-nowrap">
+                      {role}
+                    </div>
+                  )}
+                  {revealed && percentile !== null && (
+                    <div className={`absolute -bottom-2 left-1/2 -translate-x-1/2 text-[10px] font-bold px-2 py-0.5 rounded ${
+                      percentile >= 80 ? 'bg-amber-500 text-black' :
+                      percentile >= 60 ? 'bg-purple-500 text-white' :
+                      percentile >= 40 ? 'bg-blue-500 text-white' : 'bg-white/20 text-white/60'
+                    }`}>
+                      {percentile >= 80 ? 'S' : percentile >= 60 ? 'A' : percentile >= 40 ? 'B' : 'C'}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          {/* Bottom row: 3 cards */}
+          <div className="flex justify-center gap-3">
+            {hand.slice(4, 7).map((card) => {
+              const isLand = card.type_line?.toLowerCase().includes('land');
+              const role = revealed ? getCardRole(card) : null;
+              const percentile = revealed ? getPercentile(card.name) : null;
+              return (
+                <div key={card.id} className="relative w-[130px] flex-shrink-0">
+                  <button
+                    onClick={() => setSelectedCard(card)}
+                    className={`w-full rounded-lg overflow-hidden transition-all active:scale-95 ${
+                      revealed && isLand ? 'ring-2 ring-amber-400/50' : ''
+                    }`}
+                  >
+                    <img src={getCardImage(card)} alt={card.name} className="w-full shadow-lg" />
+                  </button>
+                  {revealed && role && (
+                    <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-black/90 text-white/80 text-[9px] px-1.5 py-0.5 rounded whitespace-nowrap">
+                      {role}
+                    </div>
+                  )}
+                  {revealed && percentile !== null && (
+                    <div className={`absolute -bottom-2 left-1/2 -translate-x-1/2 text-[10px] font-bold px-2 py-0.5 rounded ${
+                      percentile >= 80 ? 'bg-amber-500 text-black' :
+                      percentile >= 60 ? 'bg-purple-500 text-white' :
+                      percentile >= 40 ? 'bg-blue-500 text-white' : 'bg-white/20 text-white/60'
+                    }`}>
+                      {percentile >= 80 ? 'S' : percentile >= 60 ? 'A' : percentile >= 40 ? 'B' : 'C'}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -1805,15 +1925,17 @@ function MulliganTrainerGame({ cards, stats, onUpdate, onBack }: GameComponentPr
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => handleChoice('keep')}
-                className="py-4 bg-green-500/20 border border-green-500/30 text-green-400 rounded-xl font-bold text-lg active:scale-[0.98]"
+                className="py-4 bg-green-500/20 border border-green-500/30 text-green-400 rounded-xl font-bold text-lg active:scale-[0.98] flex items-center justify-center gap-2"
               >
                 Keep
+                <kbd className="px-2 py-0.5 bg-green-500/20 rounded text-sm text-green-400/60 font-mono">A</kbd>
               </button>
               <button
                 onClick={() => handleChoice('mull')}
-                className="py-4 bg-red-500/20 border border-red-500/30 text-red-400 rounded-xl font-bold text-lg active:scale-[0.98]"
+                className="py-4 bg-red-500/20 border border-red-500/30 text-red-400 rounded-xl font-bold text-lg active:scale-[0.98] flex items-center justify-center gap-2"
               >
                 Mulligan
+                <kbd className="px-2 py-0.5 bg-red-500/20 rounded text-sm text-red-400/60 font-mono">S</kbd>
               </button>
             </div>
           </>

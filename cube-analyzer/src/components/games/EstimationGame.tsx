@@ -146,10 +146,11 @@ export function EstimationGame({ cards, onBack }: EstimationGameProps) {
       const key = e.key.toLowerCase();
 
       if (!revealed && targetCard) {
-        // Number keys 1-4 for zones
-        if (key >= '1' && key <= '4') {
+        // A, S, D, F keys for zones
+        const keyMap: Record<string, number> = { a: 0, s: 1, d: 2, f: 3 };
+        if (key in keyMap) {
           e.preventDefault();
-          const zone = ELO_ZONES[parseInt(key) - 1];
+          const zone = ELO_ZONES[keyMap[key]];
           setSliderValue(zone.center);
         }
         // Arrow keys for fine adjustment
@@ -291,7 +292,7 @@ export function EstimationGame({ cards, onBack }: EstimationGameProps) {
   return (
     <div className="fixed inset-0 bg-black flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 shrink-0">
+      <div className="flex items-center justify-between px-4 py-3">
         <button onClick={onBack} className="p-1 hover:bg-white/5 rounded-lg">
           <ChevronLeft className="w-6 h-6 text-white/60" />
         </button>
@@ -307,19 +308,18 @@ export function EstimationGame({ cards, onBack }: EstimationGameProps) {
         </div>
       </div>
 
-      {/* Card display */}
-      <div className="flex-1 flex items-center justify-center p-4">
+      {/* Centered content */}
+      <div className="flex-1 flex flex-col items-center justify-center p-4 gap-4">
+        {/* Card display */}
         <img
           src={getCardImage(targetCard)}
           alt={targetCard.name}
-          className="max-h-[45vh] w-auto rounded-xl shadow-2xl"
+          className="max-h-[40vh] w-auto rounded-xl shadow-2xl"
         />
-      </div>
 
-      {/* Input area */}
-      <div className="px-4 pb-8 shrink-0">
+        {/* Input area */}
         {!revealed ? (
-          <div className="max-w-md mx-auto">
+          <div className="max-w-md w-full">
             {/* Timer display */}
             <div className="text-center text-white/40 text-sm mb-2">
               {formatTime(elapsedTime)}
@@ -362,7 +362,7 @@ export function EstimationGame({ cards, onBack }: EstimationGameProps) {
                   }`}
                 >
                   <div className="font-medium">{zone.label}</div>
-                  <kbd className="text-[10px] text-white/30">{idx + 1}</kbd>
+                  <kbd className="text-[10px] text-white/30">{['A', 'S', 'D', 'F'][idx]}</kbd>
                 </button>
               ))}
             </div>
@@ -375,13 +375,13 @@ export function EstimationGame({ cards, onBack }: EstimationGameProps) {
               Lock In
             </button>
             <div className="text-center text-white/30 text-xs mt-3">
-              <kbd className="px-1.5 py-0.5 bg-white/10 rounded">1-4</kbd> zones ·
+              <kbd className="px-1.5 py-0.5 bg-white/10 rounded">A S D F</kbd> zones ·
               <kbd className="px-1.5 py-0.5 bg-white/10 rounded ml-1">↑↓</kbd> adjust ·
               <kbd className="px-1.5 py-0.5 bg-white/10 rounded ml-1">Enter</kbd> submit
             </div>
           </div>
         ) : (
-          <div className="max-w-md mx-auto">
+          <div className="max-w-md w-full">
             {/* Result */}
             <div className={`text-center mb-4 ${isClose ? 'text-green-400' : 'text-amber-400'}`}>
               <div className="text-xl font-bold mb-2">

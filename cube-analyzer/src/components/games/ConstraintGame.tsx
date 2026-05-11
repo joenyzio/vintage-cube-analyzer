@@ -249,7 +249,7 @@ export function ConstraintGame({ cards, onBack }: ConstraintGameProps) {
       const key = e.key.toLowerCase();
 
       if (!revealed && hand.length > 0) {
-        const keyMap: Record<string, number> = { q: 0, w: 1, e: 2, r: 3 };
+        const keyMap: Record<string, number> = { a: 0, s: 1, d: 2, f: 3 };
         if (key in keyMap && options[keyMap[key]]) {
           e.preventDefault();
           handlePick(options[keyMap[key]]);
@@ -369,7 +369,7 @@ export function ConstraintGame({ cards, onBack }: ConstraintGameProps) {
   return (
     <div className="fixed inset-0 bg-black flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 shrink-0">
+      <div className="flex items-center justify-between px-4 py-3">
         <button onClick={onBack} className="p-1 hover:bg-white/5 rounded-lg">
           <ChevronLeft className="w-6 h-6 text-white/60" />
         </button>
@@ -385,43 +385,68 @@ export function ConstraintGame({ cards, onBack }: ConstraintGameProps) {
         </div>
       </div>
 
-      {/* Instructions */}
-      <div className="text-center py-3 text-white/60 text-sm">
-        What's wrong with this opening hand? · {formatTime(elapsedTime)}
-      </div>
-
-      {/* Hand display */}
-      <div className="flex-1 flex items-center justify-center p-2 overflow-hidden">
-        <div className="flex gap-1 max-w-4xl">
-          {hand.map((card) => {
-            const isLand = card.type_line?.toLowerCase().includes('land');
-            const cmc = card.cmc || 0;
-
-            return (
-              <div key={card.id} className="flex-1 min-w-0 relative" style={{ maxWidth: '14%' }}>
-                <img
-                  src={getCardImage(card)}
-                  alt={card.name}
-                  className="w-full rounded-lg"
-                />
-                {/* CMC or Land indicator */}
-                <div className={`absolute bottom-1 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                  isLand ? 'bg-amber-500/80 text-black' : 'bg-black/80 text-white'
-                }`}>
-                  {isLand ? '🌍' : cmc}
-                </div>
-              </div>
-            );
-          })}
+      {/* Centered content */}
+      <div className="flex-1 flex flex-col items-center justify-center p-4 gap-4">
+        {/* Instructions */}
+        <div className="text-center text-white/60 text-sm">
+          What's wrong with this opening hand? · {formatTime(elapsedTime)}
         </div>
-      </div>
 
-      {/* Options */}
-      <div className="px-4 pb-8 shrink-0">
+        {/* Hand display - 4+3 stacked layout for larger cards */}
+        <div className="flex flex-col gap-3">
+          {/* Top row: 4 cards */}
+          <div className="flex justify-center gap-3">
+            {hand.slice(0, 4).map((card) => {
+              const isLand = card.type_line?.toLowerCase().includes('land');
+              const cmc = card.cmc || 0;
+
+              return (
+                <div key={card.id} className="relative w-[130px] flex-shrink-0">
+                  <img
+                    src={getCardImage(card)}
+                    alt={card.name}
+                    className="w-full rounded-lg shadow-lg"
+                  />
+                  {/* CMC or Land indicator */}
+                  <div className={`absolute bottom-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded text-xs font-bold ${
+                    isLand ? 'bg-amber-500/80 text-black' : 'bg-black/80 text-white'
+                  }`}>
+                    {isLand ? 'Land' : cmc}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {/* Bottom row: 3 cards */}
+          <div className="flex justify-center gap-3">
+            {hand.slice(4, 7).map((card) => {
+              const isLand = card.type_line?.toLowerCase().includes('land');
+              const cmc = card.cmc || 0;
+
+              return (
+                <div key={card.id} className="relative w-[130px] flex-shrink-0">
+                  <img
+                    src={getCardImage(card)}
+                    alt={card.name}
+                    className="w-full rounded-lg shadow-lg"
+                  />
+                  {/* CMC or Land indicator */}
+                  <div className={`absolute bottom-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded text-xs font-bold ${
+                    isLand ? 'bg-amber-500/80 text-black' : 'bg-black/80 text-white'
+                  }`}>
+                    {isLand ? 'Land' : cmc}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Options */}
         {!revealed ? (
-          <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
+          <div className="grid grid-cols-2 gap-3 max-w-md w-full">
             {options.map((opt, idx) => {
-              const keys = ['Q', 'W', 'E', 'R'];
+              const keys = ['A', 'S', 'D', 'F'];
               return (
                 <button
                   key={opt}
@@ -439,7 +464,7 @@ export function ConstraintGame({ cards, onBack }: ConstraintGameProps) {
             })}
           </div>
         ) : (
-          <div className="max-w-md mx-auto">
+          <div className="max-w-md w-full">
             <div className={`text-center mb-4 ${isCorrect ? 'text-green-400' : 'text-red-400'}`}>
               <div className="text-xl font-bold mb-1">
                 {isCorrect ? 'Correct!' : 'Wrong!'}

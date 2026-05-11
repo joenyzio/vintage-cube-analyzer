@@ -247,9 +247,10 @@ export function SpottingGame({ cards, onBack }: SpottingGameProps) {
       const key = e.key;
 
       if (!revealed && packCards.length === 6) {
-        if (key >= '1' && key <= '6') {
+        const keyMap: Record<string, number> = { a: 0, s: 1, d: 2, f: 3, g: 4, h: 5 };
+        if (key in keyMap) {
           e.preventDefault();
-          handlePick(parseInt(key) - 1);
+          handlePick(keyMap[key]);
         }
       } else if (revealed && (key === 'Enter' || key === ' ')) {
         e.preventDefault();
@@ -365,7 +366,7 @@ export function SpottingGame({ cards, onBack }: SpottingGameProps) {
   return (
     <div className="fixed inset-0 bg-black flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 shrink-0">
+      <div className="flex items-center justify-between px-4 py-3">
         <button onClick={onBack} className="p-1 hover:bg-white/5 rounded-lg">
           <ChevronLeft className="w-6 h-6 text-white/60" />
         </button>
@@ -381,14 +382,15 @@ export function SpottingGame({ cards, onBack }: SpottingGameProps) {
         </div>
       </div>
 
-      {/* Instructions */}
-      <div className="text-center py-3 text-white/60 text-sm">
-        Find the card that doesn't belong in <span className="text-white font-medium">{archetypeName}</span>
-      </div>
+      {/* Centered content */}
+      <div className="flex-1 flex flex-col items-center justify-center p-4 gap-4">
+        {/* Instructions */}
+        <div className="text-center text-white/60 text-sm">
+          Find the card that doesn't belong in <span className="text-white font-medium">{archetypeName}</span>
+        </div>
 
-      {/* Cards grid */}
-      <div className="flex-1 flex items-center justify-center p-4">
-        <div className="grid grid-cols-3 gap-3 max-w-2xl">
+        {/* Cards grid - 3x2 with larger cards */}
+        <div className="grid grid-cols-3 gap-3" style={{ width: 'min(100%, 540px)' }}>
           {packCards.map((card, idx) => {
             const isIntruder = idx === intruderIdx;
             const isPicked = picked === idx;
@@ -411,11 +413,11 @@ export function SpottingGame({ cards, onBack }: SpottingGameProps) {
                 <img
                   src={getCardImage(card)}
                   alt={card.name}
-                  className="w-full"
+                  className="w-full shadow-lg"
                 />
                 {/* Position indicator */}
-                <div className="absolute bottom-2 left-2 w-6 h-6 bg-black/70 rounded-full flex items-center justify-center text-white/60 text-xs font-mono">
-                  {idx + 1}
+                <div className="absolute bottom-2 left-2 w-7 h-7 bg-black/70 rounded-full flex items-center justify-center text-white/70 text-sm font-mono uppercase">
+                  {['A', 'S', 'D', 'F', 'G', 'H'][idx]}
                 </div>
                 {/* Intruder label on reveal */}
                 {revealed && isIntruder && (
@@ -427,12 +429,10 @@ export function SpottingGame({ cards, onBack }: SpottingGameProps) {
             );
           })}
         </div>
-      </div>
 
-      {/* Bottom */}
-      <div className="px-4 pb-8 shrink-0">
+        {/* Bottom */}
         {revealed ? (
-          <div className="max-w-md mx-auto">
+          <div className="max-w-md w-full">
             <div className={`text-center mb-4 ${isCorrect ? 'text-green-400' : 'text-red-400'}`}>
               <div className="text-xl font-bold mb-1">
                 {isCorrect ? 'Found it!' : 'Wrong!'}
@@ -455,7 +455,7 @@ export function SpottingGame({ cards, onBack }: SpottingGameProps) {
           </div>
         ) : (
           <div className="text-center text-white/40 text-sm">
-            Press <kbd className="px-1.5 py-0.5 bg-white/10 rounded">1</kbd>-<kbd className="px-1.5 py-0.5 bg-white/10 rounded">6</kbd> to pick · {formatTime(elapsedTime)}
+            Press <kbd className="px-1.5 py-0.5 bg-white/10 rounded">A</kbd>-<kbd className="px-1.5 py-0.5 bg-white/10 rounded">H</kbd> to pick · {formatTime(elapsedTime)}
           </div>
         )}
       </div>

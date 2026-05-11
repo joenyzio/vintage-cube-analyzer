@@ -277,7 +277,7 @@ export function ReconstructionGame({ cards, onBack }: ReconstructionGameProps) {
       const key = e.key.toLowerCase();
 
       if (!revealed && options.length > 0) {
-        const keyMap: Record<string, number> = { q: 0, w: 1, e: 2, r: 3 };
+        const keyMap: Record<string, number> = { a: 0, s: 1, d: 2, f: 3 };
         if (key in keyMap && options[keyMap[key]]) {
           e.preventDefault();
           handlePick(options[keyMap[key]]);
@@ -396,7 +396,7 @@ export function ReconstructionGame({ cards, onBack }: ReconstructionGameProps) {
   return (
     <div className="fixed inset-0 bg-black flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 shrink-0">
+      <div className="flex items-center justify-between px-4 py-3">
         <button onClick={onBack} className="p-1 hover:bg-white/5 rounded-lg">
           <ChevronLeft className="w-6 h-6 text-white/60" />
         </button>
@@ -412,53 +412,54 @@ export function ReconstructionGame({ cards, onBack }: ReconstructionGameProps) {
         </div>
       </div>
 
-      {/* Instructions */}
-      <div className="text-center py-3 text-white/60 text-sm">
-        Complete this <span className="text-white font-medium">{archetype}</span> curve
-      </div>
+      {/* Centered content */}
+      <div className="flex-1 flex flex-col items-center justify-center p-4 gap-4">
+        {/* Instructions */}
+        <div className="text-center text-white/60 text-sm">
+          Complete this <span className="text-white font-medium">{archetype}</span> curve · {formatTime(elapsedTime)}
+        </div>
 
-      {/* Curve display */}
-      <div className="flex justify-center items-end gap-2 px-4 py-4">
-        {curve.map((card, idx) => {
-          const cmcLabels = ['1-drop', '2-drop', '3-drop', '4-drop', '5-drop'];
-          const isMissing = card === null;
-          const showCorrect = revealed && isMissing;
+        {/* Curve display - 5 cards showing the mana curve */}
+        <div className="flex justify-center items-end gap-3">
+          {curve.map((card, idx) => {
+            const cmcLabels = ['1-drop', '2-drop', '3-drop', '4-drop', '5-drop'];
+            const isMissing = card === null;
+            const showCorrect = revealed && isMissing;
 
-          return (
-            <div key={idx} className="flex flex-col items-center" style={{ width: '18%', maxWidth: '100px' }}>
-              <div className="text-xs text-white/40 mb-1">{cmcLabels[idx]}</div>
-              {isMissing ? (
-                <div className={`w-full aspect-[0.72] rounded-lg border-2 border-dashed flex items-center justify-center ${
-                  showCorrect ? 'border-green-500 bg-green-500/10' : 'border-white/30 bg-white/5'
-                }`}>
-                  {showCorrect ? (
-                    <img
-                      src={getCardImage(correctCard)}
-                      alt={correctCard.name}
-                      className="w-full rounded-lg"
-                    />
-                  ) : (
-                    <span className="text-2xl text-white/30">?</span>
-                  )}
-                </div>
-              ) : (
-                <img
-                  src={getCardImage(card)}
-                  alt={card.name}
-                  className="w-full rounded-lg opacity-80"
-                />
-              )}
-            </div>
-          );
-        })}
-      </div>
+            return (
+              <div key={idx} className="flex flex-col items-center w-[110px] flex-shrink-0">
+                <div className="text-xs text-white/40 mb-1">{cmcLabels[idx]}</div>
+                {isMissing ? (
+                  <div className={`w-full aspect-[0.72] rounded-lg border-2 border-dashed flex items-center justify-center ${
+                    showCorrect ? 'border-green-500 bg-green-500/10' : 'border-white/30 bg-white/5'
+                  }`}>
+                    {showCorrect ? (
+                      <img
+                        src={getCardImage(correctCard)}
+                        alt={correctCard.name}
+                        className="w-full rounded-lg shadow-lg"
+                      />
+                    ) : (
+                      <span className="text-3xl text-white/30">?</span>
+                    )}
+                  </div>
+                ) : (
+                  <img
+                    src={getCardImage(card)}
+                    alt={card.name}
+                    className="w-full rounded-lg opacity-80 shadow-lg"
+                  />
+                )}
+              </div>
+            );
+          })}
+        </div>
 
-      {/* Options */}
-      <div className="flex-1 flex items-center justify-center px-4">
+        {/* Options - 2x2 grid of larger cards */}
         {!revealed ? (
-          <div className="grid grid-cols-2 gap-3 max-w-lg">
+          <div className="grid grid-cols-2 gap-4" style={{ width: 'min(100%, 400px)' }}>
             {options.map((card, idx) => {
-              const keys = ['Q', 'W', 'E', 'R'];
+              const keys = ['A', 'S', 'D', 'F'];
               return (
                 <button
                   key={card.id}
@@ -468,10 +469,10 @@ export function ReconstructionGame({ cards, onBack }: ReconstructionGameProps) {
                   <img
                     src={getCardImage(card)}
                     alt={card.name}
-                    className="w-full"
+                    className="w-full shadow-lg"
                   />
                   <div className="absolute bottom-2 right-2">
-                    <kbd className="px-2 py-1 bg-black/80 rounded text-xs text-white font-mono">
+                    <kbd className="px-2.5 py-1 bg-black/80 rounded text-sm text-white font-mono">
                       {keys[idx]}
                     </kbd>
                   </div>
@@ -491,14 +492,6 @@ export function ReconstructionGame({ cards, onBack }: ReconstructionGameProps) {
                 </div>
               )}
             </div>
-          </div>
-        )}
-      </div>
-
-      {/* Bottom */}
-      <div className="px-4 pb-8 shrink-0">
-        {revealed ? (
-          <div className="max-w-md mx-auto">
             <button
               onClick={nextRound}
               className="w-full py-4 bg-white text-black rounded-xl font-bold hover:bg-white/90 active:scale-[0.98] transition-all"
@@ -508,10 +501,6 @@ export function ReconstructionGame({ cards, onBack }: ReconstructionGameProps) {
             <div className="text-center text-white/30 text-xs mt-3">
               Press <kbd className="px-1.5 py-0.5 bg-white/10 rounded">Enter</kbd> to continue
             </div>
-          </div>
-        ) : (
-          <div className="text-center text-white/40 text-sm">
-            {formatTime(elapsedTime)}
           </div>
         )}
       </div>
