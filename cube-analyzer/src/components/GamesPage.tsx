@@ -7,14 +7,14 @@ import {
   getWheelLikelihood,
   type WheelLikelihood,
 } from '../services/eloHelpers';
-import { Scale, CircleDot, Layers, Trophy, ChevronLeft, Flame, Timer, Hash, Sparkles, Package, Hand, Radio, GraduationCap, TrendingUp, TrendingDown, Minus, BarChart3, ArrowLeftRight, ListOrdered } from 'lucide-react';
+import { Scale, CircleDot, Layers, Trophy, ChevronLeft, Flame, Timer, Hash, Sparkles, Package, Hand, Radio, GraduationCap, TrendingUp, TrendingDown, Minus, BarChart3, ArrowLeftRight, ListOrdered, Swords } from 'lucide-react';
 import { srs, boolToQuality, type SkillCategory, type SkillRating } from '../services/spacedRepetition';
 
 interface GamesPageProps {
   cards: CubeCard[];
 }
 
-type GameType = 'menu' | 'higher-lower' | 'wheel-or-not' | 'first-pick' | 'color-commit' | 'speed-round' | 'guess-cmc' | 'synergy-snap' | 'pack-p1p1' | 'mulligan-trainer' | 'signal-quiz' | 'archetype-flashcards' | 'sideboard-drill' | 'sequencing';
+type GameType = 'menu' | 'higher-lower' | 'wheel-or-not' | 'first-pick' | 'color-commit' | 'speed-round' | 'guess-cmc' | 'synergy-snap' | 'pack-p1p1' | 'mulligan-trainer' | 'signal-quiz' | 'archetype-flashcards' | 'sideboard-drill' | 'sequencing' | 'beatdown';
 
 interface GameStats {
   higherLower: { played: number; correct: number; streak: number; bestStreak: number };
@@ -30,6 +30,7 @@ interface GameStats {
   archetypeFlashcards: { played: number; correct: number; streak: number; bestStreak: number };
   sideboardDrill: { played: number; correct: number; streak: number; bestStreak: number };
   sequencing: { played: number; correct: number; streak: number; bestStreak: number };
+  beatdown: { played: number; correct: number; streak: number; bestStreak: number };
 }
 
 const STORAGE_KEY = 'cube-games-stats';
@@ -54,6 +55,7 @@ function loadStats(): GameStats {
         archetypeFlashcards: parsed.archetypeFlashcards || { played: 0, correct: 0, streak: 0, bestStreak: 0 },
         sideboardDrill: parsed.sideboardDrill || { played: 0, correct: 0, streak: 0, bestStreak: 0 },
         sequencing: parsed.sequencing || { played: 0, correct: 0, streak: 0, bestStreak: 0 },
+        beatdown: parsed.beatdown || { played: 0, correct: 0, streak: 0, bestStreak: 0 },
       };
     }
   } catch {}
@@ -71,6 +73,7 @@ function loadStats(): GameStats {
     archetypeFlashcards: { played: 0, correct: 0, streak: 0, bestStreak: 0 },
     sideboardDrill: { played: 0, correct: 0, streak: 0, bestStreak: 0 },
     sequencing: { played: 0, correct: 0, streak: 0, bestStreak: 0 },
+    beatdown: { played: 0, correct: 0, streak: 0, bestStreak: 0 },
   };
 }
 
@@ -123,6 +126,7 @@ export function GamesPage({ cards }: GamesPageProps) {
     { id: 'archetype-flashcards' as GameType, name: 'Archetype Drills', desc: 'Name the key cards', icon: GraduationCap, color: 'emerald', stats: stats.archetypeFlashcards, featured: true },
     { id: 'sideboard-drill' as GameType, name: 'Sideboard Guide', desc: 'What comes in/out?', icon: ArrowLeftRight, color: 'rose', stats: stats.sideboardDrill, featured: true },
     { id: 'sequencing' as GameType, name: 'Sequencing', desc: 'Order your plays correctly', icon: ListOrdered, color: 'violet', stats: stats.sequencing, featured: true },
+    { id: 'beatdown' as GameType, name: 'Who\'s the Beatdown?', desc: 'Identify your role', icon: Swords, color: 'sky', stats: stats.beatdown, featured: true },
     { id: 'higher-lower' as GameType, name: 'Higher or Lower', desc: 'Which has higher ELO?', icon: Scale, color: 'blue', stats: stats.higherLower },
     { id: 'speed-round' as GameType, name: 'Speed Round', desc: '30 seconds, how many right?', icon: Timer, color: 'red', stats: stats.speedRound },
     { id: 'wheel-or-not' as GameType, name: 'Will It Wheel?', desc: 'Will it come back around?', icon: CircleDot, color: 'green', stats: stats.wheelOrNot },
@@ -140,6 +144,7 @@ export function GamesPage({ cards }: GamesPageProps) {
       'archetype-flashcards': ArchetypeFlashcardsGame,
       'sideboard-drill': SideboardDrillGame,
       'sequencing': SequencingGame,
+      'beatdown': BeatdownGame,
       'higher-lower': HigherLowerGame,
       'wheel-or-not': WheelOrNotGame,
       'first-pick': FirstPickGame,
@@ -156,6 +161,7 @@ export function GamesPage({ cards }: GamesPageProps) {
       'archetype-flashcards': 'archetypeFlashcards',
       'sideboard-drill': 'sideboardDrill',
       'sequencing': 'sequencing',
+      'beatdown': 'beatdown',
       'higher-lower': 'higherLower',
       'wheel-or-not': 'wheelOrNot',
       'first-pick': 'firstPick',
@@ -355,6 +361,7 @@ function GameMenuButton({ game, onSelect }: { game: GameMenuItem; onSelect: (id:
     emerald: 'bg-emerald-500/10 border-emerald-500/20 hover:bg-emerald-500/20',
     rose: 'bg-rose-500/10 border-rose-500/20 hover:bg-rose-500/20',
     violet: 'bg-violet-500/10 border-violet-500/20 hover:bg-violet-500/20',
+    sky: 'bg-sky-500/10 border-sky-500/20 hover:bg-sky-500/20',
   };
 
   const iconColors: Record<string, string> = {
@@ -370,6 +377,7 @@ function GameMenuButton({ game, onSelect }: { game: GameMenuItem; onSelect: (id:
     emerald: 'text-emerald-400',
     rose: 'text-rose-400',
     violet: 'text-violet-400',
+    sky: 'text-sky-400',
   };
 
   return (
@@ -2154,6 +2162,219 @@ function SequencingGame({ stats, onUpdate, onBack }: GameComponentProps) {
             className="w-full py-4 bg-white text-black rounded-xl font-bold text-lg active:scale-[0.98]"
           >
             Next Puzzle
+          </button>
+        </>
+      )}
+
+      {stats.played > 0 && (
+        <div className="text-center text-white/20 text-xs mt-3">
+          {Math.round((stats.correct / stats.played) * 100)}% · {stats.correct}/{stats.played}
+          {stats.bestStreak > 1 && ` · Best: ${stats.bestStreak}`}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============ WHO'S THE BEATDOWN ============
+// Classic Mike Flores concept - identify who's the aggressor
+interface BeatdownScenario {
+  yourDeck: string;
+  yourStrategy: string;
+  opponentDeck: string;
+  opponentStrategy: string;
+  beatdown: 'you' | 'opponent';
+  explanation: string;
+  keyInsight: string;
+}
+
+const BEATDOWN_SCENARIOS: BeatdownScenario[] = [
+  {
+    yourDeck: 'UB Reanimator',
+    yourStrategy: 'Fast combo that wins turn 1-3',
+    opponentDeck: 'Mono White Aggro',
+    opponentStrategy: 'Efficient creatures and disruption',
+    beatdown: 'you',
+    explanation: 'You\'re faster. Reanimator goldfish is turn 1-2, White Aggro is turn 4-5. You\'re racing to combo before they can kill you.',
+    keyInsight: 'Combo decks vs fair decks: combo is the beatdown because their clock is faster.'
+  },
+  {
+    yourDeck: 'Mono White Aggro',
+    yourStrategy: 'Efficient creatures with disruption',
+    opponentDeck: 'UW Control',
+    opponentStrategy: 'Counters, removal, and card advantage',
+    beatdown: 'you',
+    explanation: 'Control wants to go long. Every turn the game goes on, their card advantage compounds. You must pressure their life total aggressively.',
+    keyInsight: 'Aggro vs Control: aggro must be the beatdown or lose to inevitability.'
+  },
+  {
+    yourDeck: 'UW Control',
+    yourStrategy: 'Counters, removal, planeswalkers',
+    opponentDeck: 'UR Storm',
+    opponentStrategy: 'Combo off with spell chains',
+    beatdown: 'opponent',
+    explanation: 'Storm is trying to assemble and execute their combo. You are the control deck - your role is disruption, not damage. Counter their key spells.',
+    keyInsight: 'Control vs Combo: you\'re not the beatdown, you\'re the police. Disruption > damage.'
+  },
+  {
+    yourDeck: 'BR Rakdos Aggro',
+    yourStrategy: 'Disruptive aggro with hand attack',
+    opponentDeck: 'BG Midrange',
+    opponentStrategy: 'Grind with value creatures',
+    beatdown: 'you',
+    explanation: 'Midrange out-values you in the long game. Their recursive threats and removal will bury you. Kill them before they stabilize.',
+    keyInsight: 'Aggro vs Midrange: you\'re favored early, they\'re favored late. Be the beatdown.'
+  },
+  {
+    yourDeck: 'BG Midrange',
+    yourStrategy: 'Value creatures and removal',
+    opponentDeck: 'UW Control',
+    opponentStrategy: 'Counters and card draw',
+    beatdown: 'you',
+    explanation: 'Control has more raw card advantage than you. Your recursive threats are your clock. You need to pressure them, not grind with them.',
+    keyInsight: 'Midrange vs Control: surprisingly, midrange must beatdown or get out-carded.'
+  },
+  {
+    yourDeck: 'UR Storm',
+    yourStrategy: 'Combo kill with spell chains',
+    opponentDeck: 'Mono White Aggro',
+    opponentStrategy: 'Fast creatures with hate bears',
+    beatdown: 'opponent',
+    explanation: 'White Aggro has Thalia and fast creatures. They\'re attacking your life total AND your ability to combo. Survive first, combo second.',
+    keyInsight: 'Combo vs Hatebear Aggro: they\'re pressuring you on two axes. You\'re the control role.'
+  },
+  {
+    yourDeck: 'Show and Tell',
+    yourStrategy: 'Cheat Emrakul into play',
+    opponentDeck: 'UB Reanimator',
+    opponentStrategy: 'Cheat Griselbrand into play',
+    beatdown: 'opponent',
+    explanation: 'Reanimator is faster - they can combo turn 1. Show and Tell needs turn 2-3. You need interaction to slow them down.',
+    keyInsight: 'Combo vs faster Combo: the slower combo is "control" and must interact first.'
+  },
+  {
+    yourDeck: 'Artifact Combo',
+    yourStrategy: 'Fast mana into Tinker for Blightsteel',
+    opponentDeck: 'UG Ramp',
+    opponentStrategy: 'Mana dorks into big haymakers',
+    beatdown: 'you',
+    explanation: 'Your turn 2 Tinker beats their turn 3-4 Natural Order. You\'re the faster unfair deck. Execute your plan, don\'t interact with theirs.',
+    keyInsight: 'Fast combo vs slow combo: be the beatdown through speed, not damage.'
+  },
+  {
+    yourDeck: 'UW Blink',
+    yourStrategy: 'ETB value and recursion',
+    opponentDeck: 'BR Rakdos Aggro',
+    opponentStrategy: 'Burn and efficient threats',
+    beatdown: 'opponent',
+    explanation: 'Aggro is pressuring your life total. Your ETB value is too slow if you\'re dead. Trade aggressively, stabilize first.',
+    keyInsight: 'Value deck vs Aggro: accept the control role, don\'t try to race.'
+  },
+  {
+    yourDeck: 'RW Boros Aggro',
+    yourStrategy: 'Maximum speed, Armageddon',
+    opponentDeck: 'Mono White Aggro',
+    opponentStrategy: 'Efficient creatures, hatebears',
+    beatdown: 'you',
+    explanation: 'Both are aggro, but Boros is faster with burn reach. Mono White has more disruption. Race them - they can\'t Armageddon like you can.',
+    keyInsight: 'Aggro mirror: whoever\'s faster is the beatdown. Boros burn gives reach.'
+  },
+];
+
+function BeatdownGame({ stats, onUpdate, onBack }: GameComponentProps) {
+  const [scenario, setScenario] = useState<BeatdownScenario | null>(null);
+  const [guess, setGuess] = useState<'you' | 'opponent' | null>(null);
+  const [revealed, setRevealed] = useState(false);
+
+  const newScenario = useCallback(() => {
+    const s = BEATDOWN_SCENARIOS[Math.floor(Math.random() * BEATDOWN_SCENARIOS.length)];
+    setScenario(s);
+    setGuess(null);
+    setRevealed(false);
+  }, []);
+
+  useEffect(() => { newScenario(); }, [newScenario]);
+
+  if (!scenario) return null;
+
+  const handleGuess = (g: 'you' | 'opponent') => {
+    if (revealed) return;
+    setGuess(g);
+    setRevealed(true);
+
+    const isCorrect = g === scenario.beatdown;
+    onUpdate(isCorrect);
+    srs.recordReview(
+      `beatdown-${scenario.yourDeck}-${scenario.opponentDeck}`,
+      'matchups',
+      boolToQuality(isCorrect, true)
+    );
+  };
+
+  const isCorrect = guess === scenario.beatdown;
+
+  return (
+    <div>
+      <GameHeader
+        title="Who's the Beatdown?"
+        subtitle="Identify who's the aggressor"
+        streak={stats.streak}
+        onBack={onBack}
+      />
+
+      {/* Matchup Cards */}
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <div className="bg-sky-500/10 border border-sky-500/20 rounded-xl p-3">
+          <div className="text-xs text-sky-400 uppercase tracking-wider mb-1">You</div>
+          <div className="font-bold text-white mb-1">{scenario.yourDeck}</div>
+          <div className="text-xs text-white/50">{scenario.yourStrategy}</div>
+        </div>
+        <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3">
+          <div className="text-xs text-amber-400 uppercase tracking-wider mb-1">Opponent</div>
+          <div className="font-bold text-white mb-1">{scenario.opponentDeck}</div>
+          <div className="text-xs text-white/50">{scenario.opponentStrategy}</div>
+        </div>
+      </div>
+
+      {/* Question */}
+      {!revealed && (
+        <div className="text-center text-white/70 mb-4">
+          Who should be the aggressor in this matchup?
+        </div>
+      )}
+
+      {/* Answer Buttons */}
+      {!revealed ? (
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={() => handleGuess('you')}
+            className="py-4 bg-sky-500/20 hover:bg-sky-500/30 border border-sky-500/30 rounded-xl font-bold text-sky-300 transition-all active:scale-[0.98]"
+          >
+            I'm the Beatdown
+          </button>
+          <button
+            onClick={() => handleGuess('opponent')}
+            className="py-4 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/30 rounded-xl font-bold text-amber-300 transition-all active:scale-[0.98]"
+          >
+            They're the Beatdown
+          </button>
+        </div>
+      ) : (
+        <>
+          <div className={`text-center text-xl font-bold mb-3 ${isCorrect ? 'text-green-400' : 'text-red-400'}`}>
+            {isCorrect ? 'Correct!' : 'Wrong!'}
+          </div>
+
+          <div className="bg-white/5 rounded-lg p-3 mb-3">
+            <div className="text-sm text-white/70 mb-2">{scenario.explanation}</div>
+            <div className="text-xs text-sky-400 italic">💡 {scenario.keyInsight}</div>
+          </div>
+
+          <button
+            onClick={newScenario}
+            className="w-full py-4 bg-white text-black rounded-xl font-bold text-lg active:scale-[0.98]"
+          >
+            Next Matchup
           </button>
         </>
       )}
