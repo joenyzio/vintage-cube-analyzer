@@ -1353,8 +1353,8 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     );
   }
 
-  // Draft complete
-  if (draftState?.isComplete) {
+  // Draft complete (but not if viewing results)
+  if (draftState?.isComplete && mode !== 'results') {
     const picks = draftState.picks;
     const avgPower = picks.reduce((sum, c) => sum + c.powerLevel, 0) / picks.length;
     const nonLands = picks.filter(c => !c.type_line?.toLowerCase().includes('land'));
