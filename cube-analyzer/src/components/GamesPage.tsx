@@ -587,13 +587,13 @@ function HigherLowerGame({ cards, stats, onUpdate, onBack }: GameComponentProps)
       }
     }
 
-    // Tier filter
+    // Tier filter (based on ELO percentile, same as Power Rankings)
     if (tierFilter !== 'all') {
-      const power = card.powerLevel;
-      if (tierFilter === 'S' && power < 10) return false;
-      if (tierFilter === 'A' && (power < 9 || power >= 10)) return false;
-      if (tierFilter === 'B' && (power < 7 || power >= 9)) return false;
-      if (tierFilter === 'C' && power >= 7) return false;
+      const percentile = getPercentile(card.name);
+      if (tierFilter === 'S' && percentile < 90) return false;  // Top 10%
+      if (tierFilter === 'A' && (percentile < 75 || percentile >= 90)) return false;  // Top 10-25%
+      if (tierFilter === 'B' && (percentile < 50 || percentile >= 75)) return false;  // Top 25-50%
+      if (tierFilter === 'C' && percentile >= 50) return false;  // Bottom 50%
     }
 
     return true;
@@ -633,10 +633,10 @@ function HigherLowerGame({ cards, stats, onUpdate, onBack }: GameComponentProps)
 
     const tierOptions: { value: TierFilter; label: string; color: string }[] = [
       { value: 'all', label: 'All Tiers', color: 'text-white' },
-      { value: 'S', label: 'S Tier (10)', color: 'text-amber-400' },
-      { value: 'A', label: 'A Tier (9)', color: 'text-purple-400' },
-      { value: 'B', label: 'B Tier (7-8)', color: 'text-blue-400' },
-      { value: 'C', label: 'C Tier (<7)', color: 'text-white/50' },
+      { value: 'S', label: 'S (Top 10%)', color: 'text-amber-400' },
+      { value: 'A', label: 'A (Top 25%)', color: 'text-purple-400' },
+      { value: 'B', label: 'B (Top 50%)', color: 'text-blue-400' },
+      { value: 'C', label: 'C (Bottom)', color: 'text-white/50' },
     ];
 
     return (
