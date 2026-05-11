@@ -7,14 +7,23 @@ import {
   getWheelLikelihood,
   type WheelLikelihood,
 } from '../services/eloHelpers';
-import { Scale, CircleDot, Layers, Trophy, ChevronLeft, Flame, Timer, Hash, Sparkles, Package, Hand, Radio, GraduationCap, TrendingUp, TrendingDown, Minus, BarChart3, ArrowLeftRight, ListOrdered, Swords } from 'lucide-react';
+import { Scale, CircleDot, Layers, Trophy, ChevronLeft, Flame, Timer, Hash, Sparkles, Package, Hand, Radio, GraduationCap, TrendingUp, TrendingDown, Minus, BarChart3, ArrowLeftRight, ListOrdered, Swords, Eye, Target, ListTree, Search, Gauge, Stethoscope, PuzzleIcon } from 'lucide-react';
 import { srs, boolToQuality, type SkillCategory, type SkillRating } from '../services/spacedRepetition';
+
+// Cognitive loop games (self-contained)
+import { RecognitionGame } from './games/RecognitionGame';
+import { EstimationGame } from './games/EstimationGame';
+import { SequenceGame } from './games/SequenceGame';
+import { ClassificationGame } from './games/ClassificationGame';
+import { SpottingGame } from './games/SpottingGame';
+import { ConstraintGame } from './games/ConstraintGame';
+import { ReconstructionGame } from './games/ReconstructionGame';
 
 interface GamesPageProps {
   cards: CubeCard[];
 }
 
-type GameType = 'menu' | 'higher-lower' | 'wheel-or-not' | 'first-pick' | 'color-commit' | 'guess-cmc' | 'synergy-snap' | 'pack-p1p1' | 'mulligan-trainer' | 'signal-quiz' | 'archetype-flashcards' | 'sideboard-drill' | 'sequencing' | 'beatdown';
+type GameType = 'menu' | 'higher-lower' | 'wheel-or-not' | 'first-pick' | 'color-commit' | 'guess-cmc' | 'synergy-snap' | 'pack-p1p1' | 'mulligan-trainer' | 'signal-quiz' | 'archetype-flashcards' | 'sideboard-drill' | 'sequencing' | 'beatdown' | 'recognition' | 'estimation' | 'pick-order' | 'archetype-sort' | 'odd-one-out' | 'deck-doctor' | 'complete-curve';
 
 interface GameStats {
   higherLower: { played: number; correct: number; streak: number; bestStreak: number };
@@ -119,6 +128,17 @@ export function GamesPage({ cards }: GamesPageProps) {
     });
   }, []);
 
+  // Cognitive loop games (new - self-contained)
+  const cognitiveLoopGames = [
+    { id: 'recognition' as GameType, name: 'Name That Card', desc: 'Identify from art only', icon: Eye, cognitive: true },
+    { id: 'estimation' as GameType, name: 'Guess the ELO', desc: 'How strong is this card?', icon: Gauge, cognitive: true },
+    { id: 'pick-order' as GameType, name: 'Pick Order', desc: 'Rank 3 cards best to worst', icon: ListTree, cognitive: true },
+    { id: 'archetype-sort' as GameType, name: 'Archetype Sort', desc: 'Which deck wants this?', icon: Target, cognitive: true },
+    { id: 'odd-one-out' as GameType, name: 'Odd One Out', desc: 'Find the misfit', icon: Search, cognitive: true },
+    { id: 'deck-doctor' as GameType, name: 'Deck Doctor', desc: 'What\'s wrong here?', icon: Stethoscope, cognitive: true },
+    { id: 'complete-curve' as GameType, name: 'Complete the Curve', desc: 'Fill the missing slot', icon: PuzzleIcon, cognitive: true },
+  ];
+
   const games = [
     { id: 'pack-p1p1' as GameType, name: 'Pack P1P1', desc: 'Pick the best card from a pack', icon: Package, color: 'orange', stats: stats.packP1P1, featured: true },
     { id: 'mulligan-trainer' as GameType, name: 'Mulligan Trainer', desc: 'Keep or mull this hand?', icon: Hand, color: 'indigo', stats: stats.mulliganTrainer, featured: true },
@@ -135,7 +155,35 @@ export function GamesPage({ cards }: GamesPageProps) {
     { id: 'color-commit' as GameType, name: 'Stay in Lane', desc: 'Pick the on-color card', icon: Layers, color: 'purple', stats: stats.colorCommit },
   ];
 
-  if (game !== 'menu') {
+  // Cognitive loop games route first (they manage their own state)
+  if (game === 'recognition') {
+    return <RecognitionGame cards={cards} onBack={() => setGame('menu')} />;
+  }
+  if (game === 'estimation') {
+    return <EstimationGame cards={cards} onBack={() => setGame('menu')} />;
+  }
+  if (game === 'pick-order') {
+    return <SequenceGame cards={cards} onBack={() => setGame('menu')} />;
+  }
+  if (game === 'archetype-sort') {
+    return <ClassificationGame cards={cards} onBack={() => setGame('menu')} />;
+  }
+  if (game === 'odd-one-out') {
+    return <SpottingGame cards={cards} onBack={() => setGame('menu')} />;
+  }
+  if (game === 'deck-doctor') {
+    return <ConstraintGame cards={cards} onBack={() => setGame('menu')} />;
+  }
+  if (game === 'complete-curve') {
+    return <ReconstructionGame cards={cards} onBack={() => setGame('menu')} />;
+  }
+
+  // Legacy games with shared stats system
+  const legacyGameTypes = ['pack-p1p1', 'mulligan-trainer', 'signal-quiz', 'archetype-flashcards',
+    'sideboard-drill', 'sequencing', 'beatdown', 'higher-lower', 'wheel-or-not',
+    'first-pick', 'color-commit', 'guess-cmc', 'synergy-snap'] as const;
+
+  if (game !== 'menu' && legacyGameTypes.includes(game as typeof legacyGameTypes[number])) {
     const GameComponent = {
       'pack-p1p1': PackP1P1Game,
       'mulligan-trainer': MulliganTrainerGame,
@@ -150,7 +198,7 @@ export function GamesPage({ cards }: GamesPageProps) {
       'color-commit': ColorCommitGame,
       'guess-cmc': GuessCmcGame,
       'synergy-snap': SynergySnapGame,
-    }[game];
+    }[game as typeof legacyGameTypes[number]];
 
     const gameKey = {
       'pack-p1p1': 'packP1P1',
@@ -166,13 +214,13 @@ export function GamesPage({ cards }: GamesPageProps) {
       'color-commit': 'colorCommit',
       'guess-cmc': 'guessCmc',
       'synergy-snap': 'synergySnap',
-    }[game] as keyof GameStats;
+    }[game as typeof legacyGameTypes[number]] as keyof GameStats;
 
     return (
       <GameComponent
         cards={cards}
         stats={stats[gameKey]}
-        onUpdate={(c) => updateStats(gameKey, c)}
+        onUpdate={(c: boolean) => updateStats(gameKey, c)}
         onBack={() => setGame('menu')}
       />
     );
@@ -203,6 +251,16 @@ export function GamesPage({ cards }: GamesPageProps) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {games.filter(g => g.featured).map(g => (
             <GameMenuButton key={g.id} game={g} onSelect={setGame} />
+          ))}
+        </div>
+      </div>
+
+      {/* Cognitive Loop Games */}
+      <div>
+        <div className="text-xs font-medium text-white/40 uppercase tracking-wider mb-2">Cognitive Training</div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {cognitiveLoopGames.map(g => (
+            <CognitiveGameButton key={g.id} game={g} onSelect={setGame} />
           ))}
         </div>
       </div>
@@ -373,6 +431,34 @@ function GameMenuButton({ game, onSelect }: { game: GameMenuItem; onSelect: (id:
           Best streak: {game.stats.bestStreak}
         </div>
       )}
+    </button>
+  );
+}
+
+// ============ COGNITIVE GAME BUTTON ============
+interface CognitiveGameItem {
+  id: GameType;
+  name: string;
+  desc: string;
+  icon: React.ElementType;
+  cognitive: boolean;
+}
+
+function CognitiveGameButton({ game, onSelect }: { game: CognitiveGameItem; onSelect: (id: GameType) => void }) {
+  return (
+    <button
+      onClick={() => onSelect(game.id)}
+      className="bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] hover:border-white/[0.12] rounded-xl p-4 text-left transition-all active:scale-[0.98]"
+    >
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-xl bg-white/[0.06] flex items-center justify-center flex-shrink-0">
+          <game.icon className="w-5 h-5 text-white/70" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="font-semibold text-white text-sm">{game.name}</div>
+          <div className="text-xs text-white/40">{game.desc}</div>
+        </div>
+      </div>
     </button>
   );
 }

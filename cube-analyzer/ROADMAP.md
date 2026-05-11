@@ -1,3 +1,13 @@
+---
+kind: doc
+doc-type: note
+status: draft
+audience: contributor
+domain: manabase
+authority: low
+last-verified: 2026-05-11
+---
+
 # Vintage Cube Mastery Platform
 
 **Product Thesis:** A coaching platform that makes you measurably better, not a reference tool you look at during games. Internalize everything before you show up. Pure instinct and knowledge.
