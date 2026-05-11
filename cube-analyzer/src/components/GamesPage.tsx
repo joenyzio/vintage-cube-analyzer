@@ -7,14 +7,14 @@ import {
   getWheelLikelihood,
   type WheelLikelihood,
 } from '../services/eloHelpers';
-import { Scale, CircleDot, Layers, Trophy, ChevronLeft, Flame, Timer, Hash, Sparkles, Package, Hand } from 'lucide-react';
+import { Scale, CircleDot, Layers, Trophy, ChevronLeft, Flame, Timer, Hash, Sparkles, Package, Hand, Radio } from 'lucide-react';
 import { srs, boolToQuality } from '../services/spacedRepetition';
 
 interface GamesPageProps {
   cards: CubeCard[];
 }
 
-type GameType = 'menu' | 'higher-lower' | 'wheel-or-not' | 'first-pick' | 'color-commit' | 'speed-round' | 'guess-cmc' | 'synergy-snap' | 'pack-p1p1' | 'mulligan-trainer';
+type GameType = 'menu' | 'higher-lower' | 'wheel-or-not' | 'first-pick' | 'color-commit' | 'speed-round' | 'guess-cmc' | 'synergy-snap' | 'pack-p1p1' | 'mulligan-trainer' | 'signal-quiz';
 
 interface GameStats {
   higherLower: { played: number; correct: number; streak: number; bestStreak: number };
@@ -26,6 +26,7 @@ interface GameStats {
   synergySnap: { played: number; correct: number; streak: number; bestStreak: number };
   packP1P1: { played: number; correct: number; streak: number; bestStreak: number };
   mulliganTrainer: { played: number; correct: number; streak: number; bestStreak: number };
+  signalQuiz: { played: number; correct: number; streak: number; bestStreak: number };
 }
 
 const STORAGE_KEY = 'cube-games-stats';
@@ -46,6 +47,7 @@ function loadStats(): GameStats {
         synergySnap: parsed.synergySnap || { played: 0, correct: 0, streak: 0, bestStreak: 0 },
         packP1P1: parsed.packP1P1 || { played: 0, correct: 0, streak: 0, bestStreak: 0 },
         mulliganTrainer: parsed.mulliganTrainer || { played: 0, correct: 0, streak: 0, bestStreak: 0 },
+        signalQuiz: parsed.signalQuiz || { played: 0, correct: 0, streak: 0, bestStreak: 0 },
       };
     }
   } catch {}
@@ -59,6 +61,7 @@ function loadStats(): GameStats {
     synergySnap: { played: 0, correct: 0, streak: 0, bestStreak: 0 },
     packP1P1: { played: 0, correct: 0, streak: 0, bestStreak: 0 },
     mulliganTrainer: { played: 0, correct: 0, streak: 0, bestStreak: 0 },
+    signalQuiz: { played: 0, correct: 0, streak: 0, bestStreak: 0 },
   };
 }
 
@@ -107,6 +110,7 @@ export function GamesPage({ cards }: GamesPageProps) {
   const games = [
     { id: 'pack-p1p1' as GameType, name: 'Pack P1P1', desc: 'Pick the best card from a pack', icon: Package, color: 'orange', stats: stats.packP1P1, featured: true },
     { id: 'mulligan-trainer' as GameType, name: 'Mulligan Trainer', desc: 'Keep or mull this hand?', icon: Hand, color: 'indigo', stats: stats.mulliganTrainer, featured: true },
+    { id: 'signal-quiz' as GameType, name: 'Signal Quiz', desc: 'What does this late pick mean?', icon: Radio, color: 'cyan', stats: stats.signalQuiz, featured: true },
     { id: 'higher-lower' as GameType, name: 'Higher or Lower', desc: 'Which has higher ELO?', icon: Scale, color: 'blue', stats: stats.higherLower },
     { id: 'speed-round' as GameType, name: 'Speed Round', desc: '30 seconds, how many right?', icon: Timer, color: 'red', stats: stats.speedRound },
     { id: 'wheel-or-not' as GameType, name: 'Will It Wheel?', desc: 'Will it come back around?', icon: CircleDot, color: 'green', stats: stats.wheelOrNot },
@@ -120,6 +124,7 @@ export function GamesPage({ cards }: GamesPageProps) {
     const GameComponent = {
       'pack-p1p1': PackP1P1Game,
       'mulligan-trainer': MulliganTrainerGame,
+      'signal-quiz': SignalQuizGame,
       'higher-lower': HigherLowerGame,
       'wheel-or-not': WheelOrNotGame,
       'first-pick': FirstPickGame,
@@ -132,6 +137,7 @@ export function GamesPage({ cards }: GamesPageProps) {
     const gameKey = {
       'pack-p1p1': 'packP1P1',
       'mulligan-trainer': 'mulliganTrainer',
+      'signal-quiz': 'signalQuiz',
       'higher-lower': 'higherLower',
       'wheel-or-not': 'wheelOrNot',
       'first-pick': 'firstPick',
@@ -986,6 +992,229 @@ function MulliganTrainerGame({ cards, stats, onUpdate, onBack }: GameComponentPr
               className="w-full py-4 bg-white text-black rounded-xl font-bold text-lg active:scale-[0.98]"
             >
               Next Hand
+            </button>
+          </>
+        )}
+
+        {stats.played > 0 && (
+          <div className="text-center text-white/20 text-xs mt-3">
+            {Math.round((stats.correct / stats.played) * 100)}% · {stats.correct}/{stats.played}
+            {stats.bestStreak > 1 && ` · Best: ${stats.bestStreak}`}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ============ SIGNAL QUIZ ============
+// Cards that signal specific archetypes when seen late
+const SIGNAL_CARDS: Record<string, { signals: string; explanation: string }> = {
+  // Reanimator signals
+  'Reanimate': { signals: 'Reanimator', explanation: 'Premium reanimation spell - if this wheels, UB Reanimator is wide open' },
+  'Animate Dead': { signals: 'Reanimator', explanation: 'Key reanimation piece going late means the archetype is underdrafted' },
+  'Entomb': { signals: 'Reanimator', explanation: 'The best enabler for Reanimator - late Entomb is a huge signal' },
+  'Exhume': { signals: 'Reanimator', explanation: 'Cheap reanimation going late means no one is in the archetype' },
+  'Griselbrand': { signals: 'Reanimator', explanation: 'The best reanimation target - if late, Reanimator is open' },
+
+  // Storm signals
+  'Brain Freeze': { signals: 'Storm', explanation: 'Storm win condition going late means no Storm drafters' },
+  'Underworld Breach': { signals: 'Storm', explanation: 'Premium combo piece - late means Storm/combo is open' },
+  'Yawgmoth\'s Will': { signals: 'Storm', explanation: 'One of the best Storm cards - late = no competition' },
+  'Time Spiral': { signals: 'Storm', explanation: 'Key Storm card that untaps lands - signals Storm is open' },
+  'Lion\'s Eye Diamond': { signals: 'Storm', explanation: 'Combo-only card - late means combo decks are open' },
+
+  // Aggro signals
+  'Ragavan, Nimble Pilferer': { signals: 'Red Aggro', explanation: 'Best red one-drop - late means aggro is open' },
+  'Goblin Guide': { signals: 'Red Aggro', explanation: 'Premium aggro creature going late - red aggro open' },
+  'Monastery Swiftspear': { signals: 'Red Aggro', explanation: 'Efficient beater going late signals red is open' },
+  'Thalia, Guardian of Thraben': { signals: 'White Aggro', explanation: 'Premium hatebear - late means white aggro open' },
+  'Mother of Runes': { signals: 'White Aggro', explanation: 'Elite white creature - late means white is underdrafted' },
+
+  // Control signals
+  'Counterspell': { signals: 'Blue Control', explanation: 'Premium counter going late means control is open' },
+  'Mana Drain': { signals: 'Blue Control', explanation: 'Best counterspell - late = blue control wide open' },
+  'Force of Will': { signals: 'Blue', explanation: 'Best free counter - late means blue is seriously open' },
+  'Jace, the Mind Sculptor': { signals: 'Blue Control', explanation: 'Best planeswalker going late - blue control open' },
+  'The Wandering Emperor': { signals: 'White Control', explanation: 'Premium white card - late means white is open' },
+
+  // Artifact signals
+  'Tinker': { signals: 'Artifacts', explanation: 'Broken artifact tutor - late means artifact combo open' },
+  'Tolarian Academy': { signals: 'Artifacts', explanation: 'Best artifact land - late signals artifacts underdrafted' },
+  'Memory Jar': { signals: 'Artifacts', explanation: 'Powerful artifact - late means artifact strategies open' },
+
+  // Ramp signals
+  'Channel': { signals: 'Green Ramp', explanation: 'Broken ramp spell - late means green combo/ramp open' },
+  'Natural Order': { signals: 'Green Ramp', explanation: 'Premium green card - late means green is open' },
+  'Craterhoof Behemoth': { signals: 'Green Ramp', explanation: 'Green finisher going late - ramp is open' },
+
+  // Combo signals
+  'Show and Tell': { signals: 'Sneak/Show', explanation: 'Combo enabler going late means combo is open' },
+  'Sneak Attack': { signals: 'Sneak/Show', explanation: 'Cheat card going late - combo decks open' },
+  'Oath of Druids': { signals: 'Oath', explanation: 'Build-around going late means Oath is free' },
+};
+
+function SignalQuizGame({ cards, stats, onUpdate, onBack }: GameComponentProps) {
+  const [scenario, setScenario] = useState<{ card: CubeCard; pick: number; signal: string; explanation: string } | null>(null);
+  const [options, setOptions] = useState<string[]>([]);
+  const [revealed, setRevealed] = useState(false);
+  const [userAnswer, setUserAnswer] = useState<string | null>(null);
+  const [selectedCard, setSelectedCard] = useState<CubeCard | null>(null);
+
+  const allSignals = ['Reanimator', 'Storm', 'Red Aggro', 'White Aggro', 'Blue Control', 'White Control', 'Artifacts', 'Green Ramp', 'Sneak/Show', 'Oath', 'Blue'];
+
+  const newScenario = useCallback(() => {
+    // Find a card that has signal data
+    const signalCardNames = Object.keys(SIGNAL_CARDS);
+    const availableCards = cards.filter(c => signalCardNames.includes(c.name));
+
+    if (availableCards.length === 0) {
+      // Fallback: use any card and generate based on colors
+      const randomCard = getRandomCards(cards, 1)[0];
+      const colors = randomCard.color_identity || [];
+      const colorSignal = colors.includes('U') ? 'Blue' :
+                          colors.includes('R') ? 'Red Aggro' :
+                          colors.includes('W') ? 'White Aggro' :
+                          colors.includes('G') ? 'Green Ramp' :
+                          colors.includes('B') ? 'Black' : 'Colorless';
+
+      setScenario({
+        card: randomCard,
+        pick: Math.floor(Math.random() * 4) + 5, // Pick 5-8
+        signal: colorSignal,
+        explanation: `Late ${randomCard.name} suggests ${colorSignal} is underdrafted`,
+      });
+    } else {
+      const card = shuffleArray(availableCards)[0];
+      const signalData = SIGNAL_CARDS[card.name];
+      setScenario({
+        card,
+        pick: Math.floor(Math.random() * 4) + 5, // Pick 5-8
+        signal: signalData.signals,
+        explanation: signalData.explanation,
+      });
+    }
+
+    // Generate wrong options
+    setRevealed(false);
+    setUserAnswer(null);
+  }, [cards]);
+
+  // Generate options when scenario changes
+  useEffect(() => {
+    if (scenario) {
+      const wrongOptions = allSignals
+        .filter(s => s !== scenario.signal)
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 3);
+      setOptions(shuffleArray([scenario.signal, ...wrongOptions]));
+    }
+  }, [scenario]);
+
+  useEffect(() => { newScenario(); }, [newScenario]);
+
+  if (!scenario) return null;
+
+  const handleAnswer = (answer: string) => {
+    if (revealed) return;
+    setUserAnswer(answer);
+    setRevealed(true);
+
+    const isCorrect = answer === scenario.signal;
+
+    // Record in SRS
+    srs.recordReview(
+      `signal-${scenario.card.name}`,
+      'signals',
+      boolToQuality(isCorrect),
+      isCorrect ? undefined : 'wrong-signal-read',
+      isCorrect ? undefined : `Thought ${scenario.card.name} signals ${answer}, actually ${scenario.signal}`
+    );
+
+    onUpdate(isCorrect);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black flex flex-col z-40">
+      {/* Card viewer */}
+      {selectedCard && (
+        <CardViewer card={selectedCard} onClose={() => setSelectedCard(null)} />
+      )}
+
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 shrink-0">
+        <button onClick={onBack} className="p-1">
+          <ChevronLeft className="w-6 h-6 text-white/60" />
+        </button>
+        <div className="text-center">
+          <div className="text-white font-medium">Signal Quiz</div>
+          <div className="text-white/40 text-xs">What does this late pick tell you?</div>
+        </div>
+        {stats.streak > 0 ? (
+          <div className="flex items-center gap-1 text-amber-400 font-bold">
+            <Flame className="w-5 h-5" />{stats.streak}
+          </div>
+        ) : <div className="w-8" />}
+      </div>
+
+      {/* Scenario */}
+      <div className="flex-1 flex flex-col items-center justify-center px-4 gap-4">
+        {/* Context */}
+        <div className="text-center">
+          <div className="text-white/50 text-sm mb-1">You see this card at</div>
+          <div className="text-2xl font-bold text-amber-400">Pick {scenario.pick}</div>
+        </div>
+
+        {/* Card */}
+        <button
+          onClick={() => setSelectedCard(scenario.card)}
+          className="w-48 rounded-xl overflow-hidden active:scale-95 shadow-xl"
+        >
+          <img src={getCardImage(scenario.card)} alt={scenario.card.name} className="w-full" />
+        </button>
+
+        {/* Question */}
+        <div className="text-center text-white/70 text-sm">
+          What archetype is likely open?
+        </div>
+      </div>
+
+      {/* Options / Results */}
+      <div className="px-4 pb-8 pt-4 shrink-0 max-w-lg mx-auto w-full">
+        {!revealed ? (
+          <div className="grid grid-cols-2 gap-2">
+            {options.map(opt => (
+              <button
+                key={opt}
+                onClick={() => handleAnswer(opt)}
+                className="py-3 bg-white/10 border border-white/20 text-white rounded-xl font-medium active:scale-[0.98] text-sm"
+              >
+                {opt}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <>
+            <div className={`text-center mb-3 ${userAnswer === scenario.signal ? 'text-green-400' : 'text-red-400'}`}>
+              <div className="text-xl font-bold mb-1">
+                {userAnswer === scenario.signal ? 'Correct!' : 'Wrong!'}
+              </div>
+              {userAnswer !== scenario.signal && (
+                <div className="text-sm text-white/60">
+                  Answer: <span className="text-cyan-400 font-medium">{scenario.signal}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="bg-white/5 rounded-lg p-3 mb-4 text-sm text-white/70">
+              {scenario.explanation}
+            </div>
+
+            <button
+              onClick={newScenario}
+              className="w-full py-4 bg-white text-black rounded-xl font-bold text-lg active:scale-[0.98]"
+            >
+              Next Signal
             </button>
           </>
         )}
