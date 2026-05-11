@@ -7,13 +7,14 @@ import {
   getWheelLikelihood,
   type WheelLikelihood,
 } from '../services/eloHelpers';
-import { Scale, CircleDot, Layers, Trophy, ChevronLeft, Flame, Timer, Hash, Sparkles } from 'lucide-react';
+import { Scale, CircleDot, Layers, Trophy, ChevronLeft, Flame, Timer, Hash, Sparkles, Package } from 'lucide-react';
+import { srs, boolToQuality } from '../services/spacedRepetition';
 
 interface GamesPageProps {
   cards: CubeCard[];
 }
 
-type GameType = 'menu' | 'higher-lower' | 'wheel-or-not' | 'first-pick' | 'color-commit' | 'speed-round' | 'guess-cmc' | 'synergy-snap';
+type GameType = 'menu' | 'higher-lower' | 'wheel-or-not' | 'first-pick' | 'color-commit' | 'speed-round' | 'guess-cmc' | 'synergy-snap' | 'pack-p1p1';
 
 interface GameStats {
   higherLower: { played: number; correct: number; streak: number; bestStreak: number };
@@ -23,6 +24,7 @@ interface GameStats {
   speedRound: { played: number; correct: number; streak: number; bestStreak: number };
   guessCmc: { played: number; correct: number; streak: number; bestStreak: number };
   synergySnap: { played: number; correct: number; streak: number; bestStreak: number };
+  packP1P1: { played: number; correct: number; streak: number; bestStreak: number };
 }
 
 const STORAGE_KEY = 'cube-games-stats';
@@ -41,6 +43,7 @@ function loadStats(): GameStats {
         speedRound: parsed.speedRound || { played: 0, correct: 0, streak: 0, bestStreak: 0 },
         guessCmc: parsed.guessCmc || { played: 0, correct: 0, streak: 0, bestStreak: 0 },
         synergySnap: parsed.synergySnap || { played: 0, correct: 0, streak: 0, bestStreak: 0 },
+        packP1P1: parsed.packP1P1 || { played: 0, correct: 0, streak: 0, bestStreak: 0 },
       };
     }
   } catch {}
@@ -52,6 +55,7 @@ function loadStats(): GameStats {
     speedRound: { played: 0, correct: 0, streak: 0, bestStreak: 0 },
     guessCmc: { played: 0, correct: 0, streak: 0, bestStreak: 0 },
     synergySnap: { played: 0, correct: 0, streak: 0, bestStreak: 0 },
+    packP1P1: { played: 0, correct: 0, streak: 0, bestStreak: 0 },
   };
 }
 
@@ -98,6 +102,7 @@ export function GamesPage({ cards }: GamesPageProps) {
   }, []);
 
   const games = [
+    { id: 'pack-p1p1' as GameType, name: 'Pack P1P1', desc: 'Pick the best card from a pack', icon: Package, color: 'orange', stats: stats.packP1P1, featured: true },
     { id: 'higher-lower' as GameType, name: 'Higher or Lower', desc: 'Which has higher ELO?', icon: Scale, color: 'blue', stats: stats.higherLower },
     { id: 'speed-round' as GameType, name: 'Speed Round', desc: '30 seconds, how many right?', icon: Timer, color: 'red', stats: stats.speedRound },
     { id: 'wheel-or-not' as GameType, name: 'Will It Wheel?', desc: 'Will it come back around?', icon: CircleDot, color: 'green', stats: stats.wheelOrNot },
@@ -109,6 +114,7 @@ export function GamesPage({ cards }: GamesPageProps) {
 
   if (game !== 'menu') {
     const GameComponent = {
+      'pack-p1p1': PackP1P1Game,
       'higher-lower': HigherLowerGame,
       'wheel-or-not': WheelOrNotGame,
       'first-pick': FirstPickGame,
@@ -119,6 +125,7 @@ export function GamesPage({ cards }: GamesPageProps) {
     }[game];
 
     const gameKey = {
+      'pack-p1p1': 'packP1P1',
       'higher-lower': 'higherLower',
       'wheel-or-not': 'wheelOrNot',
       'first-pick': 'firstPick',
@@ -443,6 +450,190 @@ function HigherLowerGame({ cards, stats, onUpdate, onBack }: GameComponentProps)
             </button>
           </>
         ) : null}
+        {stats.played > 0 && (
+          <div className="text-center text-white/20 text-xs mt-3">
+            {Math.round((stats.correct / stats.played) * 100)}% · {stats.correct}/{stats.played}
+            {stats.bestStreak > 1 && ` · Best: ${stats.bestStreak}`}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ============ PACK P1P1 TRAINING ============
+function PackP1P1Game({ cards, stats, onUpdate, onBack }: GameComponentProps) {
+  const [pack, setPack] = useState<CubeCard[]>([]);
+  const [picked, setPicked] = useState<CubeCard | null>(null);
+  const [revealed, setRevealed] = useState(false);
+  const [selectedForView, setSelectedForView] = useState<CubeCard | null>(null);
+
+  // Generate a new pack
+  const newPack = useCallback(() => {
+    // Get 15 random cards with ELO data for a realistic pack
+    const packCards = getRandomCards(cards, 15);
+    setPack(packCards);
+    setPicked(null);
+    setRevealed(false);
+    setSelectedForView(null);
+  }, [cards]);
+
+  useEffect(() => { newPack(); }, [newPack]);
+
+  if (pack.length === 0) return null;
+
+  // Find the "correct" pick (highest ELO)
+  const sortedByElo = [...pack].sort((a, b) => {
+    const eloA = getEloData(a.name)?.elo || 0;
+    const eloB = getEloData(b.name)?.elo || 0;
+    return eloB - eloA;
+  });
+  const bestPick = sortedByElo[0];
+  const bestElo = getEloData(bestPick.name)?.elo || 0;
+
+  // Top 3 picks for "acceptable" range
+  const top3 = sortedByElo.slice(0, 3);
+  const isAcceptable = picked ? top3.some(c => c.id === picked.id) : false;
+
+  const handlePick = (card: CubeCard) => {
+    if (revealed) return;
+    setPicked(card);
+    setRevealed(true);
+
+    const isCorrect = card.id === bestPick.id;
+    const pickedElo = getEloData(card.name)?.elo || 0;
+
+    // Record in SRS
+    const packId = `pack-${pack.map(c => c.id).sort().join('-').slice(0, 50)}`;
+    srs.recordReview(
+      packId,
+      'pack-picks',
+      boolToQuality(isCorrect || isAcceptable),
+      isCorrect ? undefined : 'missed-best-pick',
+      isCorrect ? undefined : `Picked ${card.name} (${Math.round(pickedElo)}) over ${bestPick.name} (${Math.round(bestElo)})`
+    );
+
+    onUpdate(isCorrect || isAcceptable);
+  };
+
+  const pickedElo = picked ? (getEloData(picked.name)?.elo || 0) : 0;
+  const eloDiff = picked ? Math.round(bestElo - pickedElo) : 0;
+
+  return (
+    <div className="fixed inset-0 bg-black flex flex-col z-40">
+      {/* Card viewer overlay */}
+      {selectedForView && (
+        <CardViewer
+          card={selectedForView}
+          onClose={() => setSelectedForView(null)}
+          onPick={revealed ? undefined : () => {
+            handlePick(selectedForView);
+            setSelectedForView(null);
+          }}
+          pickLabel="Pick This Card"
+        />
+      )}
+
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 shrink-0">
+        <button onClick={onBack} className="p-1">
+          <ChevronLeft className="w-6 h-6 text-white/60" />
+        </button>
+        <div className="text-center">
+          <div className="text-white font-medium">Pack 1, Pick 1</div>
+          <div className="text-white/40 text-xs">Tap to view, pick the best card</div>
+        </div>
+        {stats.streak > 0 ? (
+          <div className="flex items-center gap-1 text-amber-400 font-bold">
+            <Flame className="w-5 h-5" />{stats.streak}
+          </div>
+        ) : <div className="w-8" />}
+      </div>
+
+      {/* Pack grid */}
+      <div className="flex-1 overflow-auto px-2 py-2">
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5 max-w-3xl mx-auto">
+          {pack.map((card) => {
+            const cardElo = getEloData(card.name)?.elo || 0;
+            const isBest = card.id === bestPick.id;
+            const isPicked = picked?.id === card.id;
+            const isTop3 = top3.some(c => c.id === card.id);
+            const rank = sortedByElo.findIndex(c => c.id === card.id) + 1;
+
+            return (
+              <button
+                key={card.id}
+                onClick={() => revealed ? setSelectedForView(card) : setSelectedForView(card)}
+                className={`relative rounded-lg overflow-hidden transition-all ${
+                  revealed
+                    ? isBest
+                      ? 'ring-2 ring-green-400 shadow-[0_0_20px_rgba(74,222,128,0.3)]'
+                      : isPicked && !isTop3
+                        ? 'ring-2 ring-red-500 opacity-70'
+                        : isTop3
+                          ? 'ring-1 ring-green-400/50'
+                          : 'opacity-40 grayscale'
+                    : 'active:scale-95'
+                }`}
+              >
+                <img
+                  src={getCardImage(card)}
+                  alt={card.name}
+                  className="w-full"
+                />
+                {/* Rank badge after reveal */}
+                {revealed && (
+                  <div className={`absolute top-1 right-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                    isBest ? 'bg-green-500 text-white' :
+                    isTop3 ? 'bg-green-500/50 text-white' :
+                    'bg-black/70 text-white/50'
+                  }`}>
+                    {rank}
+                  </div>
+                )}
+                {/* ELO badge after reveal */}
+                {revealed && (
+                  <div className={`absolute bottom-0 inset-x-0 py-1 text-center text-[10px] font-mono ${
+                    isBest ? 'bg-green-500 text-white' :
+                    isTop3 ? 'bg-green-500/30 text-green-300' :
+                    'bg-black/80 text-white/50'
+                  }`}>
+                    {Math.round(cardElo)}
+                  </div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Bottom - Results */}
+      <div className="px-4 pb-8 pt-4 shrink-0 max-w-lg mx-auto w-full">
+        {revealed && picked ? (
+          <>
+            <div className={`text-center mb-4 ${picked.id === bestPick.id ? 'text-green-400' : isAcceptable ? 'text-amber-400' : 'text-red-400'}`}>
+              <div className="text-xl font-bold mb-1">
+                {picked.id === bestPick.id ? 'Perfect!' : isAcceptable ? 'Good pick!' : 'Not optimal'}
+              </div>
+              {picked.id !== bestPick.id && (
+                <div className="text-sm text-white/60">
+                  Best: <span className="text-white font-medium">{bestPick.name}</span>
+                  <span className="text-white/40 ml-1">({Math.round(bestElo)} ELO, +{eloDiff})</span>
+                </div>
+              )}
+            </div>
+            <button
+              onClick={newPack}
+              className="w-full py-4 bg-white text-black rounded-xl font-bold text-lg active:scale-[0.98]"
+            >
+              Next Pack
+            </button>
+          </>
+        ) : (
+          <div className="text-center text-white/30 text-sm py-4">
+            Tap a card to view it, then pick
+          </div>
+        )}
         {stats.played > 0 && (
           <div className="text-center text-white/20 text-xs mt-3">
             {Math.round((stats.correct / stats.played) * 100)}% · {stats.correct}/{stats.played}
