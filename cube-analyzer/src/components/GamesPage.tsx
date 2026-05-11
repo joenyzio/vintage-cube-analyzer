@@ -561,21 +561,167 @@ function CardViewer({
 }
 
 // ============ GAME 1: Higher or Lower ============
+type ColorFilter = 'all' | 'W' | 'U' | 'B' | 'R' | 'G' | 'Colorless' | 'Multi';
+type TierFilter = 'all' | 'S' | 'A' | 'B' | 'C';
+
 function HigherLowerGame({ cards, stats, onUpdate, onBack }: GameComponentProps) {
   const [pair, setPair] = useState<[CubeCard, CubeCard] | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [picked, setPicked] = useState<0 | 1 | null>(null);
-  const [viewingCard, setViewingCard] = useState<{ card: CubeCard; index: 0 | 1 } | null>(null);
+  const [showFilters, setShowFilters] = useState(true); // Start with filter screen
+  const [colorFilter, setColorFilter] = useState<ColorFilter>('all');
+  const [tierFilter, setTierFilter] = useState<TierFilter>('all');
+
+  // Filter cards based on selections
+  const filteredCards = cards.filter(card => {
+    // Must have ELO data
+    if (!getEloData(card.name)) return false;
+
+    // Color filter
+    if (colorFilter !== 'all') {
+      const colors = card.color_identity || [];
+      if (colorFilter === 'Colorless' && colors.length !== 0) return false;
+      if (colorFilter === 'Multi' && colors.length <= 1) return false;
+      if (['W', 'U', 'B', 'R', 'G'].includes(colorFilter)) {
+        if (!colors.includes(colorFilter)) return false;
+      }
+    }
+
+    // Tier filter
+    if (tierFilter !== 'all') {
+      const power = card.powerLevel;
+      if (tierFilter === 'S' && power < 10) return false;
+      if (tierFilter === 'A' && (power < 9 || power >= 10)) return false;
+      if (tierFilter === 'B' && (power < 7 || power >= 9)) return false;
+      if (tierFilter === 'C' && power >= 7) return false;
+    }
+
+    return true;
+  });
 
   const newRound = useCallback(() => {
-    const [a, b] = getRandomCards(cards, 2);
-    setPair([a, b]);
+    if (filteredCards.length < 2) return;
+    const shuffled = shuffleArray(filteredCards);
+    setPair([shuffled[0], shuffled[1]]);
     setRevealed(false);
     setPicked(null);
-    setViewingCard(null);
-  }, [cards]);
+  }, [filteredCards]);
 
-  useEffect(() => { newRound(); }, [newRound]);
+  const startGame = () => {
+    setShowFilters(false);
+    newRound();
+  };
+
+  useEffect(() => {
+    if (!showFilters && filteredCards.length >= 2) {
+      newRound();
+    }
+  }, [showFilters]);
+
+  // Filter screen
+  if (showFilters) {
+    const colorOptions: { value: ColorFilter; label: string; bg: string }[] = [
+      { value: 'all', label: 'All Colors', bg: 'bg-white/10' },
+      { value: 'W', label: 'White', bg: 'bg-amber-100' },
+      { value: 'U', label: 'Blue', bg: 'bg-blue-500' },
+      { value: 'B', label: 'Black', bg: 'bg-purple-900' },
+      { value: 'R', label: 'Red', bg: 'bg-red-500' },
+      { value: 'G', label: 'Green', bg: 'bg-green-600' },
+      { value: 'Colorless', label: 'Colorless', bg: 'bg-gray-500' },
+      { value: 'Multi', label: 'Multicolor', bg: 'bg-gradient-to-r from-amber-400 via-green-400 to-blue-400' },
+    ];
+
+    const tierOptions: { value: TierFilter; label: string; color: string }[] = [
+      { value: 'all', label: 'All Tiers', color: 'text-white' },
+      { value: 'S', label: 'S Tier (10)', color: 'text-amber-400' },
+      { value: 'A', label: 'A Tier (9)', color: 'text-purple-400' },
+      { value: 'B', label: 'B Tier (7-8)', color: 'text-blue-400' },
+      { value: 'C', label: 'C Tier (<7)', color: 'text-white/50' },
+    ];
+
+    return (
+      <div className="space-y-8">
+        {/* Header */}
+        <div className="flex items-center gap-4">
+          <button onClick={onBack} className="p-2 -ml-2 hover:bg-white/5 rounded-lg">
+            <ChevronLeft className="w-6 h-6 text-white/60" />
+          </button>
+          <div>
+            <h2 className="text-xl font-bold text-white">Higher or Lower</h2>
+            <p className="text-sm text-white/40">Which card has higher ELO?</p>
+          </div>
+        </div>
+
+        {/* Color Filter */}
+        <div>
+          <h3 className="text-sm font-medium text-white/60 uppercase tracking-wide mb-3">Filter by Color</h3>
+          <div className="grid grid-cols-4 gap-2">
+            {colorOptions.map(opt => (
+              <button
+                key={opt.value}
+                onClick={() => setColorFilter(opt.value)}
+                className={`p-3 rounded-xl text-sm font-medium transition-all ${
+                  colorFilter === opt.value
+                    ? 'ring-2 ring-white ring-offset-2 ring-offset-black'
+                    : 'opacity-60 hover:opacity-100'
+                } ${opt.bg} ${opt.value === 'W' ? 'text-amber-900' : 'text-white'}`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Tier Filter */}
+        <div>
+          <h3 className="text-sm font-medium text-white/60 uppercase tracking-wide mb-3">Filter by Power Tier</h3>
+          <div className="grid grid-cols-5 gap-2">
+            {tierOptions.map(opt => (
+              <button
+                key={opt.value}
+                onClick={() => setTierFilter(opt.value)}
+                className={`p-3 rounded-xl text-sm font-medium transition-all border ${
+                  tierFilter === opt.value
+                    ? 'border-white bg-white/10'
+                    : 'border-white/10 hover:border-white/30'
+                } ${opt.color}`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Card count and start */}
+        <div className="pt-4 border-t border-white/10">
+          <div className="text-center mb-4">
+            <span className="text-white/40 text-sm">
+              {filteredCards.length} cards match your filters
+            </span>
+          </div>
+          <button
+            onClick={startGame}
+            disabled={filteredCards.length < 2}
+            className={`w-full py-4 rounded-xl font-bold text-lg transition-all ${
+              filteredCards.length >= 2
+                ? 'bg-white text-black hover:bg-white/90 active:scale-[0.98]'
+                : 'bg-white/10 text-white/30 cursor-not-allowed'
+            }`}
+          >
+            {filteredCards.length >= 2 ? 'Start Game' : 'Need at least 2 cards'}
+          </button>
+        </div>
+
+        {/* Stats */}
+        {stats.played > 0 && (
+          <div className="text-center text-white/30 text-sm">
+            Lifetime: {Math.round((stats.correct / stats.played) * 100)}% · {stats.correct}/{stats.played}
+            {stats.bestStreak > 1 && ` · Best streak: ${stats.bestStreak}`}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   if (!pair) return null;
 
@@ -587,114 +733,98 @@ function HigherLowerGame({ cards, stats, onUpdate, onBack }: GameComponentProps)
     if (revealed) return;
     setPicked(index);
     setRevealed(true);
-    setViewingCard(null);
     onUpdate(index === correctIndex);
   };
 
   return (
-    <div className="fixed inset-0 bg-black flex flex-col z-40">
-      {/* Card Preview - Full screen */}
-      {viewingCard && !revealed && (
-        <div className="fixed inset-0 z-50 bg-black flex flex-col safe-top safe-bottom">
-          {/* Back button */}
-          <div className="shrink-0 px-4 pt-4">
-            <button onClick={() => setViewingCard(null)} className="p-2 -ml-2 hover:bg-white/5 rounded-lg">
-              <ChevronLeft className="w-6 h-6 text-white/60" />
-            </button>
-          </div>
-
-          {/* Card centered */}
-          <div className="flex-1 flex items-center justify-center p-6 min-h-0">
-            <img
-              src={getCardImage(viewingCard.card)}
-              alt={viewingCard.card.name}
-              className="max-h-full w-auto rounded-2xl"
-              style={{ maxWidth: '300px' }}
-            />
-          </div>
-
-          {/* Buttons */}
-          <div className="shrink-0 px-6 pb-6 pt-4 space-y-3">
-            <button
-              onClick={() => handlePick(viewingCard.index)}
-              className="w-full py-4 bg-white text-black rounded-xl font-bold text-lg active:scale-[0.98]"
-            >
-              Pick This Card
-            </button>
-            <button
-              onClick={() => setViewingCard(null)}
-              className="w-full py-3 bg-white/5 border border-white/10 text-white/50 rounded-xl font-medium active:scale-[0.98]"
-            >
-              Go Back
-            </button>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <button onClick={() => setShowFilters(true)} className="p-2 -ml-2 hover:bg-white/5 rounded-lg">
+            <ChevronLeft className="w-6 h-6 text-white/60" />
+          </button>
+          <div>
+            <h2 className="text-lg font-semibold text-white">Which has higher ELO?</h2>
+            <p className="text-xs text-white/40">
+              {colorFilter !== 'all' && `${colorFilter} cards · `}
+              {tierFilter !== 'all' && `${tierFilter} tier · `}
+              {filteredCards.length} cards
+            </p>
           </div>
         </div>
-      )}
-
-      {/* Header with safe area */}
-      <div className="flex items-center justify-between px-4 py-3 safe-top">
-        <button onClick={onBack} className="p-2 -ml-1 hover:bg-white/5 rounded-lg">
-          <ChevronLeft className="w-6 h-6 text-white/60" />
-        </button>
-        <span className="text-white/50 text-sm">Tap the higher ELO</span>
-        {stats.streak > 0 ? (
-          <div className="flex items-center gap-1 text-amber-400 font-bold">
-            <Flame className="w-5 h-5" />{stats.streak}
+        {stats.streak > 0 && (
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/20 rounded-full">
+            <Flame className="w-4 h-4 text-amber-400" />
+            <span className="text-amber-400 font-bold">{stats.streak}</span>
           </div>
-        ) : <div className="w-8" />}
+        )}
       </div>
 
-      {/* Two cards side by side */}
-      <div className="flex-1 flex items-center justify-center gap-4 px-4">
+      {/* Two cards - responsive layout */}
+      <div className="flex flex-col lg:flex-row items-center justify-center gap-6 lg:gap-12">
         {pair.map((card, idx) => {
           const elo = idx === 0 ? eloA : eloB;
+          const percentile = getPercentile(card.name);
           const isCorrect = idx === correctIndex;
           const isPicked = picked === idx;
 
           return (
-            <div key={card.id} className="flex flex-col items-center w-[46%] max-w-[280px]">
+            <div key={card.id} className="flex flex-col items-center">
               <button
-                onClick={() => revealed ? null : setViewingCard({ card, index: idx as 0 | 1 })}
+                onClick={() => handlePick(idx as 0 | 1)}
                 disabled={revealed}
-                className={`w-full rounded-xl overflow-hidden transition-all ${
+                className={`rounded-2xl overflow-hidden transition-all shadow-xl ${
                   revealed
                     ? isCorrect
-                      ? 'ring-4 ring-green-500'
+                      ? 'ring-4 ring-green-500 shadow-green-500/30'
                       : isPicked
                         ? 'ring-4 ring-red-500 opacity-60'
                         : 'opacity-30'
-                    : 'active:scale-[0.97]'
+                    : 'hover:scale-[1.02] hover:shadow-2xl active:scale-[0.98] cursor-pointer'
                 }`}
+                style={{ maxWidth: '320px' }}
               >
                 <img src={getCardImage(card)} alt={card.name} className="w-full" />
               </button>
-              {revealed && (
-                <div className={`mt-2 text-center ${isCorrect ? 'text-green-400' : 'text-white/40'}`}>
-                  <div className="text-xl font-bold">{Math.round(elo)}</div>
-                  <div className="text-sm opacity-60">{card.powerLevel.toFixed(1)}</div>
-                </div>
-              )}
+
+              {/* Card info - always show name, show ELO after reveal */}
+              <div className="mt-4 text-center">
+                <div className="text-white font-medium">{card.name}</div>
+                {revealed && (
+                  <div className={`mt-1 ${isCorrect ? 'text-green-400' : 'text-white/50'}`}>
+                    <span className="text-2xl font-bold">{Math.round(elo)}</span>
+                    <span className="text-sm ml-2 opacity-60">Top {100 - percentile}%</span>
+                  </div>
+                )}
+              </div>
             </div>
           );
         })}
       </div>
 
-      {/* Bottom */}
-      <div className="px-4 pb-8 pt-4 max-w-lg mx-auto w-full safe-bottom">
+      {/* Result and Next button */}
+      <div className="max-w-md mx-auto">
         {revealed ? (
-          <>
-            <div className={`text-center text-xl font-bold mb-4 ${picked === correctIndex ? 'text-green-400' : 'text-red-400'}`}>
-              {picked === correctIndex ? 'Correct!' : 'Wrong!'}
+          <div className="space-y-4">
+            <div className={`text-center text-xl font-bold ${picked === correctIndex ? 'text-green-400' : 'text-red-400'}`}>
+              {picked === correctIndex ? 'Correct!' : `Wrong! ${pair[correctIndex].name} wins by ${Math.abs(Math.round(eloA - eloB))} ELO`}
             </div>
-            <button onClick={newRound} className="w-full py-4 bg-white text-black rounded-xl font-bold text-lg active:scale-[0.98]">
-              Next
+            <button
+              onClick={newRound}
+              className="w-full py-4 bg-white text-black rounded-xl font-bold text-lg hover:bg-white/90 active:scale-[0.98] transition-all"
+            >
+              Next Round
             </button>
-          </>
+          </div>
         ) : (
-          <div className="text-center text-white/30 text-sm">Tap a card to view it larger</div>
+          <div className="text-center text-white/30 text-sm">
+            Click the card you think has higher ELO
+          </div>
         )}
+
         {stats.played > 0 && (
-          <div className="text-center text-white/20 text-xs mt-3">
+          <div className="text-center text-white/20 text-xs mt-4">
             {Math.round((stats.correct / stats.played) * 100)}% · {stats.correct}/{stats.played}
             {stats.bestStreak > 1 && ` · Best: ${stats.bestStreak}`}
           </div>
