@@ -427,7 +427,7 @@ export function ReconstructionGame({ cards, onBack }: ReconstructionGameProps) {
             const showCorrect = revealed && isMissing;
 
             return (
-              <div key={idx} className="flex flex-col items-center w-[110px] flex-shrink-0">
+              <div key={idx} className="flex flex-col items-center w-[125px] flex-shrink-0">
                 <div className="text-xs text-white/40 mb-1">{cmcLabels[idx]}</div>
                 {isMissing ? (
                   <div className={`w-full aspect-[0.72] rounded-lg border-2 border-dashed flex items-center justify-center ${
@@ -457,7 +457,7 @@ export function ReconstructionGame({ cards, onBack }: ReconstructionGameProps) {
 
         {/* Options - 2x2 grid of larger cards */}
         {!revealed ? (
-          <div className="grid grid-cols-2 gap-4" style={{ width: 'min(100%, 400px)' }}>
+          <div className="grid grid-cols-2 gap-4" style={{ width: 'min(100%, 440px)' }}>
             {options.map((card, idx) => {
               const keys = ['A', 'S', 'D', 'F'];
               return (

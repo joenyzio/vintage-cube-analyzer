@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import type { CubeCard } from '../types/card';
 import { getCardImage } from '../services/scryfall';
 import {
@@ -1716,7 +1716,6 @@ function MulliganTrainerGame({ cards, stats, onUpdate, onBack }: GameComponentPr
   const [userChoice, setUserChoice] = useState<'keep' | 'mull' | null>(null);
   const [evaluation, setEvaluation] = useState<{ verdict: 'keep' | 'mull'; score: number; reasons: string[] } | null>(null);
   const [selectedCard, setSelectedCard] = useState<CubeCard | null>(null);
-  const handleChoiceRef = useRef<((choice: 'keep' | 'mull') => void) | null>(null);
 
   const newHand = useCallback(() => {
     // Pick random archetype
@@ -1749,33 +1748,8 @@ function MulliganTrainerGame({ cards, stats, onUpdate, onBack }: GameComponentPr
     setSelectedCard(null);
   }, [cards]);
 
-  useEffect(() => { newHand(); }, [newHand]);
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement) return;
-      const key = e.key.toLowerCase();
-
-      if (!revealed) {
-        if (key === 'a') {
-          e.preventDefault();
-          handleChoiceRef.current?.('keep');
-        } else if (key === 's') {
-          e.preventDefault();
-          handleChoiceRef.current?.('mull');
-        }
-      } else if (key === 'enter' || key === ' ') {
-        e.preventDefault();
-        newHand();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [revealed, newHand]);
-
-  if (hand.length === 0 || !archetype) return null;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { newHand(); }, []);
 
   const handleChoice = useCallback((choice: 'keep' | 'mull') => {
     if (revealed || !archetype) return;
@@ -1800,8 +1774,31 @@ function MulliganTrainerGame({ cards, stats, onUpdate, onBack }: GameComponentPr
     onUpdate(isCorrect);
   }, [revealed, archetype, hand, onUpdate]);
 
-  // Keep ref updated for keyboard handler
-  handleChoiceRef.current = handleChoice;
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement) return;
+      const key = e.key.toLowerCase();
+
+      if (!revealed) {
+        if (key === 'a') {
+          e.preventDefault();
+          handleChoice('keep');
+        } else if (key === 's') {
+          e.preventDefault();
+          handleChoice('mull');
+        }
+      } else if (key === 'enter' || key === ' ') {
+        e.preventDefault();
+        newHand();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [revealed, newHand, handleChoice]);
+
+  if (hand.length === 0 || !archetype) return null;
 
   return (
     <div className="fixed inset-0 bg-black flex flex-col z-40">
@@ -1810,18 +1807,27 @@ function MulliganTrainerGame({ cards, stats, onUpdate, onBack }: GameComponentPr
         <CardViewer card={selectedCard} onClose={() => setSelectedCard(null)} />
       )}
 
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 shrink-0">
-        <button onClick={onBack} className="p-1">
+      {/* Minimal header - just back button and streak */}
+      <div className="flex items-center justify-between px-4 py-2 shrink-0">
+        <button onClick={onBack} className="p-2 hover:bg-white/5 rounded-lg">
           <ChevronLeft className="w-6 h-6 text-white/60" />
         </button>
+        <div className="w-8" />
+        {stats.streak > 0 ? (
+          <div className="flex items-center gap-1 text-amber-400 font-bold">
+            <Flame className="w-5 h-5" />{stats.streak}
+          </div>
+        ) : <div className="w-8" />}
+      </div>
+
+      {/* Main content - all centered together */}
+      <div className="flex-1 flex flex-col items-center justify-center px-4 gap-6">
+        {/* Archetype info - integrated with hand */}
         <div className="text-center">
-          <div className="text-white font-medium">Mulligan Trainer</div>
-          <div className="flex items-center justify-center gap-1 mt-1">
-            <span className="text-white/40 text-xs">Playing:</span>
+          <div className="flex items-center justify-center gap-2 mb-1">
             <div className="flex -space-x-0.5">
               {archetype.colors.map(c => (
-                <div key={c} className={`w-3 h-3 rounded-full
+                <div key={c} className={`w-4 h-4 rounded-full
                   ${c === 'W' ? 'bg-amber-100' : ''}
                   ${c === 'U' ? 'bg-blue-500' : ''}
                   ${c === 'B' ? 'bg-neutral-500' : ''}
@@ -1830,19 +1836,12 @@ function MulliganTrainerGame({ cards, stats, onUpdate, onBack }: GameComponentPr
                 `} />
               ))}
             </div>
-            <span className="text-white/60 text-xs font-medium">{archetype.name}</span>
+            <span className="text-white font-medium">{archetype.name}</span>
           </div>
-          <div className="text-white/30 text-xs mt-1 max-w-[200px]">{archetype.playstyle}</div>
+          <div className="text-white/40 text-sm">{archetype.playstyle}</div>
         </div>
-        {stats.streak > 0 ? (
-          <div className="flex items-center gap-1 text-amber-400 font-bold">
-            <Flame className="w-5 h-5" />{stats.streak}
-          </div>
-        ) : <div className="w-8" />}
-      </div>
 
-      {/* Hand display - 4+3 stacked layout for larger cards */}
-      <div className="flex-1 flex items-center justify-center px-4 overflow-hidden">
+        {/* Hand display - 4+3 stacked layout with larger cards */}
         <div className="flex flex-col gap-3">
           {/* Top row: 4 cards */}
           <div className="flex justify-center gap-3">
@@ -1851,22 +1850,22 @@ function MulliganTrainerGame({ cards, stats, onUpdate, onBack }: GameComponentPr
               const role = revealed ? getCardRole(card) : null;
               const percentile = revealed ? getPercentile(card.name) : null;
               return (
-                <div key={card.id} className="relative w-[130px] flex-shrink-0">
+                <div key={card.id} className="relative w-[150px] flex-shrink-0">
                   <button
                     onClick={() => setSelectedCard(card)}
-                    className={`w-full rounded-lg overflow-hidden transition-all active:scale-95 ${
+                    className={`w-full rounded-xl overflow-hidden transition-all active:scale-95 ${
                       revealed && isLand ? 'ring-2 ring-amber-400/50' : ''
                     }`}
                   >
                     <img src={getCardImage(card)} alt={card.name} className="w-full shadow-lg" />
                   </button>
                   {revealed && role && (
-                    <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-black/90 text-white/80 text-[9px] px-1.5 py-0.5 rounded whitespace-nowrap">
+                    <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-black/90 text-white/80 text-[10px] px-2 py-0.5 rounded whitespace-nowrap">
                       {role}
                     </div>
                   )}
                   {revealed && percentile !== null && (
-                    <div className={`absolute -bottom-2 left-1/2 -translate-x-1/2 text-[10px] font-bold px-2 py-0.5 rounded ${
+                    <div className={`absolute -bottom-2 left-1/2 -translate-x-1/2 text-xs font-bold px-2 py-0.5 rounded ${
                       percentile >= 80 ? 'bg-amber-500 text-black' :
                       percentile >= 60 ? 'bg-purple-500 text-white' :
                       percentile >= 40 ? 'bg-blue-500 text-white' : 'bg-white/20 text-white/60'
@@ -1885,22 +1884,22 @@ function MulliganTrainerGame({ cards, stats, onUpdate, onBack }: GameComponentPr
               const role = revealed ? getCardRole(card) : null;
               const percentile = revealed ? getPercentile(card.name) : null;
               return (
-                <div key={card.id} className="relative w-[130px] flex-shrink-0">
+                <div key={card.id} className="relative w-[150px] flex-shrink-0">
                   <button
                     onClick={() => setSelectedCard(card)}
-                    className={`w-full rounded-lg overflow-hidden transition-all active:scale-95 ${
+                    className={`w-full rounded-xl overflow-hidden transition-all active:scale-95 ${
                       revealed && isLand ? 'ring-2 ring-amber-400/50' : ''
                     }`}
                   >
                     <img src={getCardImage(card)} alt={card.name} className="w-full shadow-lg" />
                   </button>
                   {revealed && role && (
-                    <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-black/90 text-white/80 text-[9px] px-1.5 py-0.5 rounded whitespace-nowrap">
+                    <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-black/90 text-white/80 text-[10px] px-2 py-0.5 rounded whitespace-nowrap">
                       {role}
                     </div>
                   )}
                   {revealed && percentile !== null && (
-                    <div className={`absolute -bottom-2 left-1/2 -translate-x-1/2 text-[10px] font-bold px-2 py-0.5 rounded ${
+                    <div className={`absolute -bottom-2 left-1/2 -translate-x-1/2 text-xs font-bold px-2 py-0.5 rounded ${
                       percentile >= 80 ? 'bg-amber-500 text-black' :
                       percentile >= 60 ? 'bg-purple-500 text-white' :
                       percentile >= 40 ? 'bg-blue-500 text-white' : 'bg-white/20 text-white/60'
@@ -1913,66 +1912,70 @@ function MulliganTrainerGame({ cards, stats, onUpdate, onBack }: GameComponentPr
             })}
           </div>
         </div>
-      </div>
 
-      {/* Decision / Results */}
-      <div className="px-4 pb-8 pt-4 shrink-0 max-w-lg mx-auto w-full">
-        {!revealed ? (
-          <>
-            <div className="text-center text-white/40 text-sm mb-3">
-              Look for: <span className="text-white/60">{archetype.keepPriority.join(', ')}</span>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => handleChoice('keep')}
-                className="py-4 bg-green-500/20 border border-green-500/30 text-green-400 rounded-xl font-bold text-lg active:scale-[0.98] flex items-center justify-center gap-2"
-              >
-                Keep
-                <kbd className="px-2 py-0.5 bg-green-500/20 rounded text-sm text-green-400/60 font-mono">A</kbd>
-              </button>
-              <button
-                onClick={() => handleChoice('mull')}
-                className="py-4 bg-red-500/20 border border-red-500/30 text-red-400 rounded-xl font-bold text-lg active:scale-[0.98] flex items-center justify-center gap-2"
-              >
-                Mulligan
-                <kbd className="px-2 py-0.5 bg-red-500/20 rounded text-sm text-red-400/60 font-mono">S</kbd>
-              </button>
-            </div>
-          </>
-        ) : evaluation && (
-          <>
-            <div className={`text-center mb-3 ${userChoice === evaluation.verdict ? 'text-green-400' : 'text-red-400'}`}>
-              <div className="text-xl font-bold mb-1">
-                {userChoice === evaluation.verdict ? 'Correct!' : 'Wrong!'}
+        {/* Decision / Results - part of the same flow */}
+        <div className="w-full max-w-xl">
+          {!revealed ? (
+            <>
+              <div className="text-center text-white/40 text-sm mb-4">
+                Look for: <span className="text-white/60">{archetype.keepPriority.join(', ')}</span>
               </div>
-              <div className="text-sm text-white/60">
-                This hand is a <span className={evaluation.verdict === 'keep' ? 'text-green-400' : 'text-red-400'} >{evaluation.verdict.toUpperCase()}</span>
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  onClick={() => handleChoice('keep')}
+                  className="py-5 bg-green-500/20 border border-green-500/30 text-green-400 rounded-xl font-bold text-lg active:scale-[0.98] flex items-center justify-center gap-3"
+                >
+                  Keep
+                  <kbd className="px-2.5 py-1 bg-green-500/20 rounded text-sm text-green-400/60 font-mono">A</kbd>
+                </button>
+                <button
+                  onClick={() => handleChoice('mull')}
+                  className="py-5 bg-red-500/20 border border-red-500/30 text-red-400 rounded-xl font-bold text-lg active:scale-[0.98] flex items-center justify-center gap-3"
+                >
+                  Mulligan
+                  <kbd className="px-2.5 py-1 bg-red-500/20 rounded text-sm text-red-400/60 font-mono">S</kbd>
+                </button>
               </div>
-            </div>
-
-            {/* Reasons */}
-            <div className="bg-white/5 rounded-lg p-3 mb-4 text-sm">
-              {evaluation.reasons.map((reason, i) => (
-                <div key={i} className="flex items-start gap-2 text-white/70">
-                  <span className={reason.includes('No ') || reason.includes('Only') || reason.includes('too many') ? 'text-red-400' : 'text-green-400'}>
-                    {reason.includes('No ') || reason.includes('Only') || reason.includes('too many') ? '−' : '+'}
-                  </span>
-                  {reason}
+            </>
+          ) : evaluation && (
+            <>
+              <div className={`text-center mb-4 ${userChoice === evaluation.verdict ? 'text-green-400' : 'text-red-400'}`}>
+                <div className="text-2xl font-bold mb-1">
+                  {userChoice === evaluation.verdict ? 'Correct!' : 'Wrong!'}
                 </div>
-              ))}
-            </div>
+                <div className="text-sm text-white/60">
+                  This hand is a <span className={evaluation.verdict === 'keep' ? 'text-green-400' : 'text-red-400'} >{evaluation.verdict.toUpperCase()}</span>
+                </div>
+              </div>
 
-            <button
-              onClick={newHand}
-              className="w-full py-4 bg-white text-black rounded-xl font-bold text-lg active:scale-[0.98]"
-            >
-              Next Hand
-            </button>
-          </>
-        )}
+              {/* Reasons */}
+              <div className="bg-white/5 rounded-xl p-4 mb-4 text-sm">
+                {evaluation.reasons.map((reason, i) => (
+                  <div key={i} className="flex items-start gap-2 text-white/70">
+                    <span className={reason.includes('No ') || reason.includes('Only') || reason.includes('too many') ? 'text-red-400' : 'text-green-400'}>
+                      {reason.includes('No ') || reason.includes('Only') || reason.includes('too many') ? '−' : '+'}
+                    </span>
+                    {reason}
+                  </div>
+                ))}
+              </div>
 
+              <button
+                onClick={newHand}
+                className="w-full py-5 bg-white text-black rounded-xl font-bold text-lg active:scale-[0.98]"
+              >
+                Next Hand
+              </button>
+              <div className="text-center text-white/30 text-xs mt-3">
+                Press <kbd className="px-1.5 py-0.5 bg-white/10 rounded">Enter</kbd> to continue
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Stats - subtle at bottom of main content */}
         {stats.played > 0 && (
-          <div className="text-center text-white/20 text-xs mt-3">
+          <div className="text-center text-white/20 text-xs">
             {Math.round((stats.correct / stats.played) * 100)}% · {stats.correct}/{stats.played}
             {stats.bestStreak > 1 && ` · Best: ${stats.bestStreak}`}
           </div>

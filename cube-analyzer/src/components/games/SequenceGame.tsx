@@ -348,7 +348,7 @@ export function SequenceGame({ cards, onBack }: SequenceGameProps) {
         )}
 
         {/* Cards - 3 larger cards centered */}
-        <div className="flex justify-center gap-5">
+        <div className="flex justify-center gap-6">
           {packCards.map((card, idx) => {
             const elo = getEloData(card.name)?.elo || 0;
             const correctPos = correctOrder.indexOf(idx);
@@ -356,7 +356,7 @@ export function SequenceGame({ cards, onBack }: SequenceGameProps) {
             const isPicked = userOrder.includes(idx);
 
             return (
-              <div key={card.id} className="text-center w-[180px] flex-shrink-0">
+              <div key={card.id} className="text-center w-[200px] flex-shrink-0">
                 <button
                   onClick={() => handlePick(idx)}
                   disabled={revealed || isPicked}

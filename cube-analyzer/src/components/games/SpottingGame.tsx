@@ -390,7 +390,7 @@ export function SpottingGame({ cards, onBack }: SpottingGameProps) {
         </div>
 
         {/* Cards grid - 3x2 with larger cards */}
-        <div className="grid grid-cols-3 gap-3" style={{ width: 'min(100%, 540px)' }}>
+        <div className="grid grid-cols-3 gap-4" style={{ width: 'min(100%, 600px)' }}>
           {packCards.map((card, idx) => {
             const isIntruder = idx === intruderIdx;
             const isPicked = picked === idx;

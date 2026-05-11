@@ -392,7 +392,7 @@ export function ConstraintGame({ cards, onBack }: ConstraintGameProps) {
           What's wrong with this opening hand? · {formatTime(elapsedTime)}
         </div>
 
-        {/* Hand display - 4+3 stacked layout for larger cards */}
+        {/* Hand display - 4+3 stacked layout with larger cards */}
         <div className="flex flex-col gap-3">
           {/* Top row: 4 cards */}
           <div className="flex justify-center gap-3">
@@ -401,14 +401,14 @@ export function ConstraintGame({ cards, onBack }: ConstraintGameProps) {
               const cmc = card.cmc || 0;
 
               return (
-                <div key={card.id} className="relative w-[130px] flex-shrink-0">
+                <div key={card.id} className="relative w-[150px] flex-shrink-0">
                   <img
                     src={getCardImage(card)}
                     alt={card.name}
-                    className="w-full rounded-lg shadow-lg"
+                    className="w-full rounded-xl shadow-lg"
                   />
                   {/* CMC or Land indicator */}
-                  <div className={`absolute bottom-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded text-xs font-bold ${
+                  <div className={`absolute bottom-2 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded text-xs font-bold ${
                     isLand ? 'bg-amber-500/80 text-black' : 'bg-black/80 text-white'
                   }`}>
                     {isLand ? 'Land' : cmc}
@@ -424,14 +424,14 @@ export function ConstraintGame({ cards, onBack }: ConstraintGameProps) {
               const cmc = card.cmc || 0;
 
               return (
-                <div key={card.id} className="relative w-[130px] flex-shrink-0">
+                <div key={card.id} className="relative w-[150px] flex-shrink-0">
                   <img
                     src={getCardImage(card)}
                     alt={card.name}
-                    className="w-full rounded-lg shadow-lg"
+                    className="w-full rounded-xl shadow-lg"
                   />
                   {/* CMC or Land indicator */}
-                  <div className={`absolute bottom-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded text-xs font-bold ${
+                  <div className={`absolute bottom-2 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded text-xs font-bold ${
                     isLand ? 'bg-amber-500/80 text-black' : 'bg-black/80 text-white'
                   }`}>
                     {isLand ? 'Land' : cmc}
