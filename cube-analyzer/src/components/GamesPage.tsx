@@ -7,14 +7,14 @@ import {
   getWheelLikelihood,
   type WheelLikelihood,
 } from '../services/eloHelpers';
-import { Scale, CircleDot, Layers, Trophy, ChevronLeft, Flame, Timer, Hash, Sparkles, Package, Hand, Radio, GraduationCap, TrendingUp, TrendingDown, Minus, BarChart3 } from 'lucide-react';
+import { Scale, CircleDot, Layers, Trophy, ChevronLeft, Flame, Timer, Hash, Sparkles, Package, Hand, Radio, GraduationCap, TrendingUp, TrendingDown, Minus, BarChart3, ArrowLeftRight } from 'lucide-react';
 import { srs, boolToQuality, type SkillCategory, type SkillRating } from '../services/spacedRepetition';
 
 interface GamesPageProps {
   cards: CubeCard[];
 }
 
-type GameType = 'menu' | 'higher-lower' | 'wheel-or-not' | 'first-pick' | 'color-commit' | 'speed-round' | 'guess-cmc' | 'synergy-snap' | 'pack-p1p1' | 'mulligan-trainer' | 'signal-quiz' | 'archetype-flashcards';
+type GameType = 'menu' | 'higher-lower' | 'wheel-or-not' | 'first-pick' | 'color-commit' | 'speed-round' | 'guess-cmc' | 'synergy-snap' | 'pack-p1p1' | 'mulligan-trainer' | 'signal-quiz' | 'archetype-flashcards' | 'sideboard-drill';
 
 interface GameStats {
   higherLower: { played: number; correct: number; streak: number; bestStreak: number };
@@ -28,6 +28,7 @@ interface GameStats {
   mulliganTrainer: { played: number; correct: number; streak: number; bestStreak: number };
   signalQuiz: { played: number; correct: number; streak: number; bestStreak: number };
   archetypeFlashcards: { played: number; correct: number; streak: number; bestStreak: number };
+  sideboardDrill: { played: number; correct: number; streak: number; bestStreak: number };
 }
 
 const STORAGE_KEY = 'cube-games-stats';
@@ -50,6 +51,7 @@ function loadStats(): GameStats {
         mulliganTrainer: parsed.mulliganTrainer || { played: 0, correct: 0, streak: 0, bestStreak: 0 },
         signalQuiz: parsed.signalQuiz || { played: 0, correct: 0, streak: 0, bestStreak: 0 },
         archetypeFlashcards: parsed.archetypeFlashcards || { played: 0, correct: 0, streak: 0, bestStreak: 0 },
+        sideboardDrill: parsed.sideboardDrill || { played: 0, correct: 0, streak: 0, bestStreak: 0 },
       };
     }
   } catch {}
@@ -65,6 +67,7 @@ function loadStats(): GameStats {
     mulliganTrainer: { played: 0, correct: 0, streak: 0, bestStreak: 0 },
     signalQuiz: { played: 0, correct: 0, streak: 0, bestStreak: 0 },
     archetypeFlashcards: { played: 0, correct: 0, streak: 0, bestStreak: 0 },
+    sideboardDrill: { played: 0, correct: 0, streak: 0, bestStreak: 0 },
   };
 }
 
@@ -115,6 +118,7 @@ export function GamesPage({ cards }: GamesPageProps) {
     { id: 'mulligan-trainer' as GameType, name: 'Mulligan Trainer', desc: 'Keep or mull this hand?', icon: Hand, color: 'indigo', stats: stats.mulliganTrainer, featured: true },
     { id: 'signal-quiz' as GameType, name: 'Signal Quiz', desc: 'What does this late pick mean?', icon: Radio, color: 'cyan', stats: stats.signalQuiz, featured: true },
     { id: 'archetype-flashcards' as GameType, name: 'Archetype Drills', desc: 'Name the key cards', icon: GraduationCap, color: 'emerald', stats: stats.archetypeFlashcards, featured: true },
+    { id: 'sideboard-drill' as GameType, name: 'Sideboard Guide', desc: 'What comes in/out?', icon: ArrowLeftRight, color: 'rose', stats: stats.sideboardDrill, featured: true },
     { id: 'higher-lower' as GameType, name: 'Higher or Lower', desc: 'Which has higher ELO?', icon: Scale, color: 'blue', stats: stats.higherLower },
     { id: 'speed-round' as GameType, name: 'Speed Round', desc: '30 seconds, how many right?', icon: Timer, color: 'red', stats: stats.speedRound },
     { id: 'wheel-or-not' as GameType, name: 'Will It Wheel?', desc: 'Will it come back around?', icon: CircleDot, color: 'green', stats: stats.wheelOrNot },
@@ -130,6 +134,7 @@ export function GamesPage({ cards }: GamesPageProps) {
       'mulligan-trainer': MulliganTrainerGame,
       'signal-quiz': SignalQuizGame,
       'archetype-flashcards': ArchetypeFlashcardsGame,
+      'sideboard-drill': SideboardDrillGame,
       'higher-lower': HigherLowerGame,
       'wheel-or-not': WheelOrNotGame,
       'first-pick': FirstPickGame,
@@ -144,6 +149,7 @@ export function GamesPage({ cards }: GamesPageProps) {
       'mulligan-trainer': 'mulliganTrainer',
       'signal-quiz': 'signalQuiz',
       'archetype-flashcards': 'archetypeFlashcards',
+      'sideboard-drill': 'sideboardDrill',
       'higher-lower': 'higherLower',
       'wheel-or-not': 'wheelOrNot',
       'first-pick': 'firstPick',
@@ -341,6 +347,7 @@ function GameMenuButton({ game, onSelect }: { game: GameMenuItem; onSelect: (id:
     orange: 'bg-orange-500/10 border-orange-500/20 hover:bg-orange-500/20',
     indigo: 'bg-indigo-500/10 border-indigo-500/20 hover:bg-indigo-500/20',
     emerald: 'bg-emerald-500/10 border-emerald-500/20 hover:bg-emerald-500/20',
+    rose: 'bg-rose-500/10 border-rose-500/20 hover:bg-rose-500/20',
   };
 
   const iconColors: Record<string, string> = {
@@ -354,6 +361,7 @@ function GameMenuButton({ game, onSelect }: { game: GameMenuItem; onSelect: (id:
     orange: 'text-orange-400',
     indigo: 'text-indigo-400',
     emerald: 'text-emerald-400',
+    rose: 'text-rose-400',
   };
 
   return (
@@ -1609,6 +1617,275 @@ function ArchetypeFlashcardsGame({ stats, onUpdate, onBack }: GameComponentProps
             className="w-full py-4 bg-white text-black rounded-xl font-bold text-lg active:scale-[0.98]"
           >
             Next Archetype
+          </button>
+        </>
+      )}
+
+      {stats.played > 0 && (
+        <div className="text-center text-white/20 text-xs mt-3">
+          {Math.round((stats.correct / stats.played) * 100)}% · {stats.correct}/{stats.played}
+          {stats.bestStreak > 1 && ` · Best: ${stats.bestStreak}`}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============ SIDEBOARD DRILL ============
+// Sideboard scenarios for common matchups
+interface SideboardScenario {
+  yourDeck: string;
+  opponent: string;
+  cardsIn: string[];
+  cardsOut: string[];
+  explanation: string;
+}
+
+const SIDEBOARD_SCENARIOS: SideboardScenario[] = [
+  {
+    yourDeck: 'UR Storm',
+    opponent: 'Mono White Aggro',
+    cardsIn: ['Pyroclasm', 'Chain Lightning', 'Fire // Ice'],
+    cardsOut: ['Brain Freeze', 'Echo of Eons', 'Time Spiral'],
+    explanation: 'Board out slow combo pieces for interaction. You need to survive long enough to combo, so cheap removal is essential. Storm count win cons are too slow.'
+  },
+  {
+    yourDeck: 'UR Storm',
+    opponent: 'UW Control',
+    cardsIn: ['Defense Grid', 'Xantid Swarm', 'Red Elemental Blast'],
+    cardsOut: ['Chain Lightning', 'Pyroclasm', 'Fire // Ice'],
+    explanation: 'Board out creature removal for anti-counter tech. Control has no creatures you need to kill, but lots of counters you need to beat.'
+  },
+  {
+    yourDeck: 'UB Reanimator',
+    opponent: 'UW Control',
+    cardsIn: ['Duress', 'Defense Grid', 'Thoughtseize'],
+    cardsOut: ['Fatal Push', 'Doom Blade', 'Go for the Throat'],
+    explanation: 'UW Control has very few creatures. Bring in discard to strip their counters and Containment Priest before you combo.'
+  },
+  {
+    yourDeck: 'UB Reanimator',
+    opponent: 'Mono White Aggro',
+    cardsIn: ['Toxic Deluge', 'Fatal Push', 'Massacre'],
+    cardsOut: ['Duress', 'Careful Study', 'Thought Scour'],
+    explanation: 'Need removal to survive their fast clock. Discard is weak vs aggro - they dump their hand quickly anyway.'
+  },
+  {
+    yourDeck: 'Mono White Aggro',
+    opponent: 'UR Storm',
+    cardsIn: ['Thalia, Guardian of Thraben', 'Ethersworn Canonist', 'Deafening Silence'],
+    cardsOut: ['Armageddon', 'Balance', 'Wrath effects'],
+    explanation: 'Hate bears are devastating vs Storm. Symmetrical effects hurt you too - you want to be attacking, not resetting.'
+  },
+  {
+    yourDeck: 'Mono White Aggro',
+    opponent: 'UB Reanimator',
+    cardsIn: ['Containment Priest', 'Rest in Peace', 'Grafdigger\'s Cage'],
+    cardsOut: ['Armageddon', 'Honor of the Pure', 'Anthem effects'],
+    explanation: 'Graveyard hate is essential. Your anthems are too slow vs turn 1-2 Griselbrand. You need to disrupt first.'
+  },
+  {
+    yourDeck: 'UW Control',
+    opponent: 'UR Storm',
+    cardsIn: ['Flusterstorm', 'Mindbreak Trap', 'Rule of Law'],
+    cardsOut: ['Wrath of God', 'Day of Judgment', 'Terminus'],
+    explanation: 'Wrath effects are useless vs Storm. Bring in stack interaction and lock pieces to stop the combo.'
+  },
+  {
+    yourDeck: 'UW Control',
+    opponent: 'UB Reanimator',
+    cardsIn: ['Containment Priest', 'Rest in Peace', 'Surgical Extraction'],
+    cardsOut: ['Wrath of God', 'Day of Judgment', 'Supreme Verdict'],
+    explanation: 'Wraths are too slow vs turn 1-2 reanimation. You need graveyard hate to stop them before they start.'
+  },
+  {
+    yourDeck: 'BG Midrange',
+    opponent: 'UR Storm',
+    cardsIn: ['Thoughtseize', 'Collector Ouphe', 'Endurance'],
+    cardsOut: ['Fatal Push', 'Abrupt Decay', 'Assassin\'s Trophy'],
+    explanation: 'Creature removal is useless vs Storm. Discard their key pieces and Endurance stops Breach lines.'
+  },
+  {
+    yourDeck: 'BG Midrange',
+    opponent: 'Mono White Aggro',
+    cardsIn: ['Toxic Deluge', 'Fatal Push', 'Massacre Wurm'],
+    cardsOut: ['Thoughtseize', 'Duress', 'Hand disruption'],
+    explanation: 'Aggro dumps their hand fast - discard is weak. You need cheap removal to survive the early game.'
+  },
+];
+
+function SideboardDrillGame({ stats, onUpdate, onBack }: GameComponentProps) {
+  const [scenario, setScenario] = useState<SideboardScenario | null>(null);
+  const [selectedIn, setSelectedIn] = useState<Set<string>>(new Set());
+  const [selectedOut, setSelectedOut] = useState<Set<string>>(new Set());
+  const [revealed, setRevealed] = useState(false);
+  const [allOptions, setAllOptions] = useState<{ inOptions: string[]; outOptions: string[] }>({ inOptions: [], outOptions: [] });
+
+  const newScenario = useCallback(() => {
+    const s = SIDEBOARD_SCENARIOS[Math.floor(Math.random() * SIDEBOARD_SCENARIOS.length)];
+
+    // Create options with wrong answers
+    const wrongInCards = [
+      'Wrath of God', 'Counterspell', 'Lightning Bolt', 'Dark Ritual',
+      'Mana Drain', 'Force of Will', 'Swords to Plowshares', 'Path to Exile',
+      'Ancestral Recall', 'Time Walk', 'Birds of Paradise', 'Llanowar Elves'
+    ].filter(c => !s.cardsIn.includes(c));
+
+    const wrongOutCards = [
+      'Black Lotus', 'Mox Sapphire', 'Sol Ring', 'Mana Crypt',
+      'Island', 'Swamp', 'Mountain', 'Forest', 'Plains',
+      'Flooded Strand', 'Polluted Delta', 'Bloodstained Mire'
+    ].filter(c => !s.cardsOut.includes(c));
+
+    const inOptions = shuffleArray([...s.cardsIn, ...shuffleArray(wrongInCards).slice(0, 3)]);
+    const outOptions = shuffleArray([...s.cardsOut, ...shuffleArray(wrongOutCards).slice(0, 3)]);
+
+    setScenario(s);
+    setAllOptions({ inOptions, outOptions });
+    setSelectedIn(new Set());
+    setSelectedOut(new Set());
+    setRevealed(false);
+  }, []);
+
+  useEffect(() => { newScenario(); }, [newScenario]);
+
+  if (!scenario) return null;
+
+  const toggleIn = (card: string) => {
+    if (revealed) return;
+    setSelectedIn(prev => {
+      const next = new Set(prev);
+      if (next.has(card)) next.delete(card);
+      else if (next.size < scenario.cardsIn.length) next.add(card);
+      return next;
+    });
+  };
+
+  const toggleOut = (card: string) => {
+    if (revealed) return;
+    setSelectedOut(prev => {
+      const next = new Set(prev);
+      if (next.has(card)) next.delete(card);
+      else if (next.size < scenario.cardsOut.length) next.add(card);
+      return next;
+    });
+  };
+
+  const handleSubmit = () => {
+    if (revealed) return;
+    setRevealed(true);
+
+    const correctIn = [...selectedIn].filter(c => scenario.cardsIn.includes(c)).length;
+    const correctOut = [...selectedOut].filter(c => scenario.cardsOut.includes(c)).length;
+    const totalCorrect = correctIn + correctOut;
+    const totalNeeded = scenario.cardsIn.length + scenario.cardsOut.length;
+    const isCorrect = totalCorrect === totalNeeded;
+
+    onUpdate(isCorrect);
+    srs.recordReview(
+      `sideboard-${scenario.yourDeck}-${scenario.opponent}`,
+      'sideboard',
+      boolToQuality(isCorrect, true)
+    );
+  };
+
+  const canSubmit = selectedIn.size === scenario.cardsIn.length && selectedOut.size === scenario.cardsOut.length;
+
+  return (
+    <div>
+      <GameHeader
+        title="Sideboard Guide"
+        subtitle={`${scenario.yourDeck} vs ${scenario.opponent}`}
+        streak={stats.streak}
+        onBack={onBack}
+      />
+
+      {/* Matchup Description */}
+      <div className="text-center mb-4">
+        <div className="text-lg font-bold text-white">You are: <span className="text-rose-400">{scenario.yourDeck}</span></div>
+        <div className="text-sm text-white/50">vs <span className="text-amber-400">{scenario.opponent}</span></div>
+      </div>
+
+      {/* Cards In */}
+      <div className="mb-4">
+        <div className="text-xs font-medium text-green-400 uppercase tracking-wider mb-2">
+          Bring In ({selectedIn.size}/{scenario.cardsIn.length})
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {allOptions.inOptions.map(card => {
+            const isSelected = selectedIn.has(card);
+            const isCorrect = scenario.cardsIn.includes(card);
+
+            let className = 'p-2 rounded-lg text-sm transition-all active:scale-[0.98] text-left ';
+            if (revealed) {
+              if (isCorrect) className += 'bg-green-500/30 text-green-300 border border-green-500/50';
+              else if (isSelected) className += 'bg-red-500/30 text-red-300 border border-red-500/50';
+              else className += 'bg-white/5 text-white/30';
+            } else {
+              if (isSelected) className += 'bg-green-500/20 text-green-400 border border-green-500/40';
+              else className += 'bg-white/5 text-white/70 hover:bg-white/10';
+            }
+
+            return (
+              <button key={card} onClick={() => toggleIn(card)} disabled={revealed} className={className}>
+                {card}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Cards Out */}
+      <div className="mb-4">
+        <div className="text-xs font-medium text-red-400 uppercase tracking-wider mb-2">
+          Take Out ({selectedOut.size}/{scenario.cardsOut.length})
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {allOptions.outOptions.map(card => {
+            const isSelected = selectedOut.has(card);
+            const isCorrect = scenario.cardsOut.includes(card);
+
+            let className = 'p-2 rounded-lg text-sm transition-all active:scale-[0.98] text-left ';
+            if (revealed) {
+              if (isCorrect) className += 'bg-red-500/30 text-red-300 border border-red-500/50';
+              else if (isSelected) className += 'bg-amber-500/30 text-amber-300 border border-amber-500/50';
+              else className += 'bg-white/5 text-white/30';
+            } else {
+              if (isSelected) className += 'bg-red-500/20 text-red-400 border border-red-500/40';
+              else className += 'bg-white/5 text-white/70 hover:bg-white/10';
+            }
+
+            return (
+              <button key={card} onClick={() => toggleOut(card)} disabled={revealed} className={className}>
+                {card}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Submit or Result */}
+      {!revealed ? (
+        <button
+          onClick={handleSubmit}
+          disabled={!canSubmit}
+          className={`w-full py-4 rounded-xl font-bold text-lg transition-all active:scale-[0.98] ${
+            canSubmit ? 'bg-rose-500 text-white' : 'bg-white/10 text-white/30'
+          }`}
+        >
+          {canSubmit ? 'Check Answer' : `Select cards`}
+        </button>
+      ) : (
+        <>
+          <div className="bg-white/5 rounded-lg p-3 mb-4 text-sm text-white/70">
+            {scenario.explanation}
+          </div>
+
+          <button
+            onClick={newScenario}
+            className="w-full py-4 bg-white text-black rounded-xl font-bold text-lg active:scale-[0.98]"
+          >
+            Next Matchup
           </button>
         </>
       )}
