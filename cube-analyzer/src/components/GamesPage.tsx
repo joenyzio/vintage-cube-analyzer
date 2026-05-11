@@ -11,15 +11,15 @@ import { Scale, CircleDot, Layers, Trophy, ChevronLeft, Flame, Timer, Hash, Spar
 import { srs, boolToQuality, type SkillCategory, type SkillRating } from '../services/spacedRepetition';
 
 // Global filter types
-type ColorFilter = 'all' | 'W' | 'U' | 'B' | 'R' | 'G' | 'Colorless' | 'Multi';
-type TierFilter = 'all' | 'S' | 'A' | 'B' | 'C';
+type Color = 'W' | 'U' | 'B' | 'R' | 'G' | 'Colorless' | 'Multi';
+type Tier = 'S' | 'A' | 'B' | 'C';
 
 interface GlobalFilters {
-  color: ColorFilter;
-  tier: TierFilter;
+  colors: Color[];  // Empty = all colors
+  tiers: Tier[];    // Empty = all tiers
 }
 
-const FILTER_STORAGE_KEY = 'cube-games-filters';
+const FILTER_STORAGE_KEY = 'cube-games-filters-v2';
 
 function loadFilters(): GlobalFilters {
   try {
@@ -28,7 +28,7 @@ function loadFilters(): GlobalFilters {
       return JSON.parse(saved);
     }
   } catch {}
-  return { color: 'all', tier: 'all' };
+  return { colors: [], tiers: [] };
 }
 
 function saveFilters(filters: GlobalFilters) {
@@ -144,23 +144,32 @@ export function GamesPage({ cards }: GamesPageProps) {
     // Must have ELO data
     if (!getEloData(card.name)) return false;
 
-    // Color filter
-    if (filters.color !== 'all') {
-      const colors = card.color_identity || [];
-      if (filters.color === 'Colorless' && colors.length !== 0) return false;
-      if (filters.color === 'Multi' && colors.length <= 1) return false;
-      if (['W', 'U', 'B', 'R', 'G'].includes(filters.color)) {
-        if (!colors.includes(filters.color)) return false;
+    // Color filter (if any selected, card must match at least one)
+    if (filters.colors.length > 0) {
+      const cardColors = card.color_identity || [];
+      const isColorless = cardColors.length === 0;
+      const isMulti = cardColors.length > 1;
+
+      let matchesColor = false;
+      for (const filterColor of filters.colors) {
+        if (filterColor === 'Colorless' && isColorless) matchesColor = true;
+        else if (filterColor === 'Multi' && isMulti) matchesColor = true;
+        else if (['W', 'U', 'B', 'R', 'G'].includes(filterColor) && cardColors.includes(filterColor)) matchesColor = true;
       }
+      if (!matchesColor) return false;
     }
 
-    // Tier filter (based on ELO percentile)
-    if (filters.tier !== 'all') {
+    // Tier filter (if any selected, card must match at least one)
+    if (filters.tiers.length > 0) {
       const percentile = getPercentile(card.name);
-      if (filters.tier === 'S' && percentile < 90) return false;
-      if (filters.tier === 'A' && (percentile < 75 || percentile >= 90)) return false;
-      if (filters.tier === 'B' && (percentile < 50 || percentile >= 75)) return false;
-      if (filters.tier === 'C' && percentile >= 50) return false;
+      let matchesTier = false;
+      for (const tier of filters.tiers) {
+        if (tier === 'S' && percentile >= 90) matchesTier = true;
+        else if (tier === 'A' && percentile >= 75 && percentile < 90) matchesTier = true;
+        else if (tier === 'B' && percentile >= 50 && percentile < 75) matchesTier = true;
+        else if (tier === 'C' && percentile < 50) matchesTier = true;
+      }
+      if (!matchesTier) return false;
     }
 
     return true;
@@ -365,29 +374,38 @@ function FilterPanel({
   expanded: boolean;
   onToggle: () => void;
 }) {
-  const hasFilters = filters.color !== 'all' || filters.tier !== 'all';
+  const hasFilters = filters.colors.length > 0 || filters.tiers.length > 0;
 
-  const colorOptions: { value: ColorFilter; label: string; shortLabel: string; bg: string }[] = [
-    { value: 'all', label: 'All Colors', shortLabel: 'All', bg: 'bg-white/10' },
-    { value: 'W', label: 'White', shortLabel: 'W', bg: 'bg-amber-100' },
-    { value: 'U', label: 'Blue', shortLabel: 'U', bg: 'bg-blue-500' },
-    { value: 'B', label: 'Black', shortLabel: 'B', bg: 'bg-purple-900' },
-    { value: 'R', label: 'Red', shortLabel: 'R', bg: 'bg-red-500' },
-    { value: 'G', label: 'Green', shortLabel: 'G', bg: 'bg-green-600' },
-    { value: 'Colorless', label: 'Colorless', shortLabel: 'C', bg: 'bg-gray-500' },
-    { value: 'Multi', label: 'Multicolor', shortLabel: 'M', bg: 'bg-gradient-to-r from-amber-400 via-green-400 to-blue-400' },
+  const colorOptions: { value: Color; label: string; shortLabel: string; bg: string; textClass: string }[] = [
+    { value: 'W', label: 'White', shortLabel: 'W', bg: 'bg-amber-100', textClass: 'text-amber-900' },
+    { value: 'U', label: 'Blue', shortLabel: 'U', bg: 'bg-blue-500', textClass: 'text-white' },
+    { value: 'B', label: 'Black', shortLabel: 'B', bg: 'bg-purple-900', textClass: 'text-white' },
+    { value: 'R', label: 'Red', shortLabel: 'R', bg: 'bg-red-500', textClass: 'text-white' },
+    { value: 'G', label: 'Green', shortLabel: 'G', bg: 'bg-green-600', textClass: 'text-white' },
+    { value: 'Colorless', label: 'Colorless', shortLabel: 'C', bg: 'bg-gray-500', textClass: 'text-white' },
+    { value: 'Multi', label: 'Multi', shortLabel: 'M', bg: 'bg-gradient-to-r from-amber-400 via-green-400 to-blue-400', textClass: 'text-white' },
   ];
 
-  const tierOptions: { value: TierFilter; label: string; color: string }[] = [
-    { value: 'all', label: 'All Tiers', color: 'text-white' },
-    { value: 'S', label: 'S (Top 10%)', color: 'text-amber-400' },
-    { value: 'A', label: 'A (Top 25%)', color: 'text-purple-400' },
-    { value: 'B', label: 'B (Top 50%)', color: 'text-blue-400' },
-    { value: 'C', label: 'C (Bottom)', color: 'text-white/50' },
+  const tierOptions: { value: Tier; label: string; shortLabel: string; color: string }[] = [
+    { value: 'S', label: 'S-Tier', shortLabel: 'S', color: 'text-amber-400 border-amber-400/50' },
+    { value: 'A', label: 'A-Tier', shortLabel: 'A', color: 'text-purple-400 border-purple-400/50' },
+    { value: 'B', label: 'B-Tier', shortLabel: 'B', color: 'text-blue-400 border-blue-400/50' },
+    { value: 'C', label: 'C-Tier', shortLabel: 'C', color: 'text-white/50 border-white/20' },
   ];
 
-  const currentColor = colorOptions.find(c => c.value === filters.color);
-  const currentTier = tierOptions.find(t => t.value === filters.tier);
+  const toggleColor = (color: Color) => {
+    const newColors = filters.colors.includes(color)
+      ? filters.colors.filter(c => c !== color)
+      : [...filters.colors, color];
+    onUpdateFilters({ ...filters, colors: newColors });
+  };
+
+  const toggleTier = (tier: Tier) => {
+    const newTiers = filters.tiers.includes(tier)
+      ? filters.tiers.filter(t => t !== tier)
+      : [...filters.tiers, tier];
+    onUpdateFilters({ ...filters, tiers: newTiers });
+  };
 
   return (
     <div className="bg-white/[0.04] border border-white/[0.06] rounded-xl overflow-hidden">
@@ -400,17 +418,23 @@ function FilterPanel({
           <SlidersHorizontal className={`w-4 h-4 ${hasFilters ? 'text-white' : 'text-white/40'}`} />
           <span className="text-sm text-white/70">Card Filter</span>
           {hasFilters && (
-            <div className="flex items-center gap-1.5">
-              {filters.color !== 'all' && (
-                <span className={`px-2 py-0.5 rounded text-xs font-medium ${currentColor?.bg} ${filters.color === 'W' ? 'text-amber-900' : 'text-white'}`}>
-                  {currentColor?.shortLabel}
-                </span>
-              )}
-              {filters.tier !== 'all' && (
-                <span className={`px-2 py-0.5 rounded text-xs font-medium bg-white/10 ${currentTier?.color}`}>
-                  {filters.tier}
-                </span>
-              )}
+            <div className="flex items-center gap-1">
+              {filters.colors.map(c => {
+                const opt = colorOptions.find(o => o.value === c);
+                return (
+                  <span key={c} className={`w-5 h-5 rounded-full ${opt?.bg} flex items-center justify-center text-[10px] font-bold ${opt?.textClass}`}>
+                    {opt?.shortLabel}
+                  </span>
+                );
+              })}
+              {filters.tiers.map(t => {
+                const opt = tierOptions.find(o => o.value === t);
+                return (
+                  <span key={t} className={`px-1.5 py-0.5 rounded text-[10px] font-bold bg-white/10 ${opt?.color.split(' ')[0]}`}>
+                    {t}
+                  </span>
+                );
+              })}
             </div>
           )}
         </div>
@@ -423,50 +447,69 @@ function FilterPanel({
       {/* Expanded filter options */}
       {expanded && (
         <div className="px-4 pb-4 space-y-4 border-t border-white/[0.06] pt-4">
-          {/* Color Filter */}
+          {/* Color Filter - Multi-select */}
           <div>
-            <div className="text-xs font-medium text-white/40 uppercase tracking-wide mb-2">Color</div>
-            <div className="flex flex-wrap gap-1.5">
-              {colorOptions.map(opt => (
-                <button
-                  key={opt.value}
-                  onClick={() => onUpdateFilters({ ...filters, color: opt.value })}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                    filters.color === opt.value
-                      ? 'ring-2 ring-white ring-offset-1 ring-offset-black'
-                      : 'opacity-60 hover:opacity-100'
-                  } ${opt.bg} ${opt.value === 'W' ? 'text-amber-900' : 'text-white'}`}
-                >
-                  {opt.label}
-                </button>
-              ))}
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-xs font-medium text-white/40 uppercase tracking-wide">Colors</div>
+              <div className="text-[10px] text-white/30">
+                {filters.colors.length === 0 ? 'All colors' : `${filters.colors.length} selected`}
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {colorOptions.map(opt => {
+                const isSelected = filters.colors.includes(opt.value);
+                return (
+                  <button
+                    key={opt.value}
+                    onClick={() => toggleColor(opt.value)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${opt.bg} ${opt.textClass} ${
+                      isSelected
+                        ? 'ring-2 ring-white ring-offset-1 ring-offset-black scale-105'
+                        : 'opacity-40 hover:opacity-70'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* Tier Filter */}
+          {/* Tier Filter - Multi-select */}
           <div>
-            <div className="text-xs font-medium text-white/40 uppercase tracking-wide mb-2">Power Tier</div>
-            <div className="flex flex-wrap gap-1.5">
-              {tierOptions.map(opt => (
-                <button
-                  key={opt.value}
-                  onClick={() => onUpdateFilters({ ...filters, tier: opt.value })}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${
-                    filters.tier === opt.value
-                      ? 'border-white bg-white/10'
-                      : 'border-white/10 hover:border-white/30'
-                  } ${opt.color}`}
-                >
-                  {opt.label}
-                </button>
-              ))}
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-xs font-medium text-white/40 uppercase tracking-wide">Power Tier</div>
+              <div className="text-[10px] text-white/30">
+                {filters.tiers.length === 0 ? 'All tiers' : `${filters.tiers.length} selected`}
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {tierOptions.map(opt => {
+                const isSelected = filters.tiers.includes(opt.value);
+                return (
+                  <button
+                    key={opt.value}
+                    onClick={() => toggleTier(opt.value)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${opt.color} ${
+                      isSelected
+                        ? 'bg-white/20 ring-1 ring-white/50'
+                        : 'bg-transparent opacity-50 hover:opacity-80'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="mt-2 text-[10px] text-white/30">
+              S = Top 10% • A = Top 25% • B = Top 50% • C = Bottom 50%
             </div>
           </div>
 
           {/* Clear filters */}
           {hasFilters && (
             <button
-              onClick={() => onUpdateFilters({ color: 'all', tier: 'all' })}
+              onClick={() => onUpdateFilters({ colors: [], tiers: [] })}
               className="text-xs text-white/40 hover:text-white/70 transition-colors"
             >
               Clear all filters
