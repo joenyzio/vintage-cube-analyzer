@@ -14,7 +14,7 @@ interface GamesPageProps {
   cards: CubeCard[];
 }
 
-type GameType = 'menu' | 'higher-lower' | 'wheel-or-not' | 'first-pick' | 'color-commit' | 'speed-round' | 'guess-cmc' | 'synergy-snap' | 'pack-p1p1' | 'mulligan-trainer' | 'signal-quiz' | 'archetype-flashcards' | 'sideboard-drill' | 'sequencing' | 'beatdown';
+type GameType = 'menu' | 'higher-lower' | 'wheel-or-not' | 'first-pick' | 'color-commit' | 'guess-cmc' | 'synergy-snap' | 'pack-p1p1' | 'mulligan-trainer' | 'signal-quiz' | 'archetype-flashcards' | 'sideboard-drill' | 'sequencing' | 'beatdown';
 
 interface GameStats {
   higherLower: { played: number; correct: number; streak: number; bestStreak: number };
@@ -128,7 +128,6 @@ export function GamesPage({ cards }: GamesPageProps) {
     { id: 'sequencing' as GameType, name: 'Sequencing', desc: 'Order your plays correctly', icon: ListOrdered, color: 'violet', stats: stats.sequencing, featured: true },
     { id: 'beatdown' as GameType, name: 'Who\'s the Beatdown?', desc: 'Identify your role', icon: Swords, color: 'sky', stats: stats.beatdown, featured: true },
     { id: 'higher-lower' as GameType, name: 'Higher or Lower', desc: 'Which has higher ELO?', icon: Scale, color: 'blue', stats: stats.higherLower },
-    { id: 'speed-round' as GameType, name: 'Speed Round', desc: '30 seconds, how many right?', icon: Timer, color: 'red', stats: stats.speedRound },
     { id: 'wheel-or-not' as GameType, name: 'Will It Wheel?', desc: 'Will it come back around?', icon: CircleDot, color: 'green', stats: stats.wheelOrNot },
     { id: 'first-pick' as GameType, name: 'First Pickable?', desc: 'Is this P1P1 worthy?', icon: Trophy, color: 'amber', stats: stats.firstPick },
     { id: 'guess-cmc' as GameType, name: 'Guess the CMC', desc: 'What does this card cost?', icon: Hash, color: 'cyan', stats: stats.guessCmc },
@@ -149,7 +148,6 @@ export function GamesPage({ cards }: GamesPageProps) {
       'wheel-or-not': WheelOrNotGame,
       'first-pick': FirstPickGame,
       'color-commit': ColorCommitGame,
-      'speed-round': SpeedRoundGame,
       'guess-cmc': GuessCmcGame,
       'synergy-snap': SynergySnapGame,
     }[game];
@@ -166,7 +164,6 @@ export function GamesPage({ cards }: GamesPageProps) {
       'wheel-or-not': 'wheelOrNot',
       'first-pick': 'firstPick',
       'color-commit': 'colorCommit',
-      'speed-round': 'speedRound',
       'guess-cmc': 'guessCmc',
       'synergy-snap': 'synergySnap',
     }[game] as keyof GameStats;
@@ -568,9 +565,28 @@ function HigherLowerGame({ cards, stats, onUpdate, onBack }: GameComponentProps)
   const [pair, setPair] = useState<[CubeCard, CubeCard] | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [picked, setPicked] = useState<0 | 1 | null>(null);
-  const [showFilters, setShowFilters] = useState(true); // Start with filter screen
+  const [showFilters, setShowFilters] = useState(true);
   const [colorFilter, setColorFilter] = useState<ColorFilter>('all');
   const [tierFilter, setTierFilter] = useState<TierFilter>('all');
+
+  // Timer state - always available during gameplay
+  const [timerRunning, setTimerRunning] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState(0);
+  const [timedScore, setTimedScore] = useState(0);
+  const [showTimerPicker, setShowTimerPicker] = useState(false);
+  const [showTimerResults, setShowTimerResults] = useState(false);
+  const [timerInputValue, setTimerInputValue] = useState(30);
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const [sessionHistory, setSessionHistory] = useState<Array<{
+    leftCard: string;
+    rightCard: string;
+    leftElo: number;
+    rightElo: number;
+    pickedLeft: boolean;
+    correct: boolean;
+    timestamp: number;
+  }>>([]);
+  const [sessionStartTime, setSessionStartTime] = useState(0);
 
   // Filter cards based on selections
   const filteredCards = cards.filter(card => {
@@ -612,11 +628,103 @@ function HigherLowerGame({ cards, stats, onUpdate, onBack }: GameComponentProps)
     newRound();
   };
 
+  // Start a timed challenge with countdown
+  const startTimer = (duration: number) => {
+    setShowTimerPicker(false);
+    setTimedScore(0);
+    setShowTimerResults(false);
+    setTimeRemaining(duration);
+    setSessionHistory([]);
+    setSessionStartTime(Date.now());
+    setCountdown(3); // Start 3-2-1 countdown
+    // Reset to fresh round
+    newRound();
+  };
+
+  // Countdown effect (3, 2, 1, GO!)
+  useEffect(() => {
+    if (countdown === null) return;
+
+    if (countdown === 0) {
+      setCountdown(null);
+      setTimerRunning(true);
+      setSessionStartTime(Date.now()); // Start tracking time when timer begins
+      return;
+    }
+
+    const timer = setTimeout(() => setCountdown(c => (c !== null ? c - 1 : null)), 1000);
+    return () => clearTimeout(timer);
+  }, [countdown]);
+
+  // Timer countdown
+  useEffect(() => {
+    if (!timerRunning || timeRemaining <= 0) return;
+
+    const timer = setTimeout(() => {
+      const newTime = timeRemaining - 1;
+      setTimeRemaining(newTime);
+
+      if (newTime === 0) {
+        setTimerRunning(false);
+        setShowTimerResults(true);
+      }
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [timerRunning, timeRemaining]);
+
   useEffect(() => {
     if (!showFilters && filteredCards.length >= 2) {
       newRound();
     }
   }, [showFilters]);
+
+  // Keyboard shortcuts: Q=left, W=right, Enter=next
+  useEffect(() => {
+    if (showFilters || !pair || showTimerResults) return;
+
+    const eloA = getEloData(pair[0].name)?.elo || 0;
+    const eloB = getEloData(pair[1].name)?.elo || 0;
+    const correctIndex = eloA >= eloB ? 0 : 1;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+      const key = e.key.toLowerCase();
+
+      if (!revealed) {
+        if (key === 'q' || key === 'w') {
+          e.preventDefault();
+          const pickedIdx = key === 'q' ? 0 : 1;
+          setPicked(pickedIdx);
+          setRevealed(true);
+          const correct = pickedIdx === correctIndex;
+          onUpdate(correct);
+
+          // Track session if timer running
+          if (timerRunning) {
+            if (correct) setTimedScore(s => s + 1);
+            const eloLeft = getEloData(pair[0].name)?.elo || 0;
+            const eloRight = getEloData(pair[1].name)?.elo || 0;
+            setSessionHistory(prev => [...prev, {
+              leftCard: pair[0].name,
+              rightCard: pair[1].name,
+              leftElo: eloLeft,
+              rightElo: eloRight,
+              pickedLeft: pickedIdx === 0,
+              correct,
+              timestamp: Date.now(),
+            }]);
+          }
+        }
+      } else if (key === 'enter') {
+        e.preventDefault();
+        newRound();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showFilters, revealed, pair, newRound, onUpdate, timerRunning, showTimerResults]);
 
   // Filter screen
   if (showFilters) {
@@ -733,11 +841,271 @@ function HigherLowerGame({ cards, stats, onUpdate, onBack }: GameComponentProps)
     if (revealed) return;
     setPicked(index);
     setRevealed(true);
-    onUpdate(index === correctIndex);
+    const correct = index === correctIndex;
+    onUpdate(correct);
+
+    // Track session if timer running
+    if (timerRunning) {
+      if (correct) setTimedScore(s => s + 1);
+      setSessionHistory(prev => [...prev, {
+        leftCard: pair[0].name,
+        rightCard: pair[1].name,
+        leftElo: eloA,
+        rightElo: eloB,
+        pickedLeft: index === 0,
+        correct,
+        timestamp: Date.now(),
+      }]);
+    }
   };
 
   return (
     <div className="space-y-6">
+      {/* Timer Results Modal - Rich Stats */}
+      {showTimerResults && (() => {
+        const totalPicks = sessionHistory.length;
+        const correctPicks = sessionHistory.filter(h => h.correct).length;
+        const incorrectPicks = totalPicks - correctPicks;
+        const accuracy = totalPicks > 0 ? Math.round((correctPicks / totalPicks) * 100) : 0;
+
+        // Calculate average time per pick
+        const avgTimePerPick = totalPicks > 1
+          ? Math.round((sessionHistory[sessionHistory.length - 1]?.timestamp - sessionStartTime) / totalPicks / 100) / 10
+          : 0;
+
+        // Get cards you got wrong for learning
+        const mistakes = sessionHistory.filter(h => !h.correct).map(h => ({
+          picked: h.pickedLeft ? h.leftCard : h.rightCard,
+          pickedElo: h.pickedLeft ? h.leftElo : h.rightElo,
+          correct: h.pickedLeft ? h.rightCard : h.leftCard,
+          correctElo: h.pickedLeft ? h.rightElo : h.leftElo,
+          eloDiff: Math.abs(h.leftElo - h.rightElo),
+        }));
+
+        // Find close calls (correct but within 50 ELO)
+        const closeCalls = sessionHistory.filter(h => h.correct && Math.abs(h.leftElo - h.rightElo) < 50).length;
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop animate-in fade-in overflow-y-auto">
+            <div className="bg-black border border-white/[0.08] rounded-2xl max-w-md w-full animate-in scale-up my-8 shadow-2xl">
+              {/* Header */}
+              <div className="p-6 border-b border-white/[0.06] text-center">
+                <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-white/[0.06] flex items-center justify-center">
+                  <Sparkles className="w-7 h-7 text-white/70" />
+                </div>
+                <h2 className="text-xl font-semibold text-white tracking-tight">Session Complete</h2>
+                <p className="text-white/40 text-sm mt-1">{timerInputValue} second challenge</p>
+              </div>
+
+              {/* Main Score */}
+              <div className="p-6 text-center">
+                <div className="text-6xl font-bold text-white tracking-tight">{correctPicks}</div>
+                <div className="text-white/40 text-sm mt-1">correct out of {totalPicks}</div>
+
+                {/* Accuracy bar */}
+                <div className="mt-4 max-w-[200px] mx-auto">
+                  <div className="h-2 bg-white/[0.06] rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-white/40 to-white/60 rounded-full transition-all duration-500"
+                      style={{ width: `${accuracy}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between mt-2 text-xs">
+                    <span className="text-white/30">0%</span>
+                    <span className="text-white font-medium">{accuracy}% accuracy</span>
+                    <span className="text-white/30">100%</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Stats Grid */}
+              <div className="grid grid-cols-3 border-y border-white/[0.06]">
+                <div className="p-4 text-center border-r border-white/[0.06]">
+                  <div className="text-2xl font-bold text-white">{correctPicks}</div>
+                  <div className="text-[11px] text-white/40 uppercase tracking-wide mt-0.5">Correct</div>
+                </div>
+                <div className="p-4 text-center border-r border-white/[0.06]">
+                  <div className="text-2xl font-bold text-white/50">{incorrectPicks}</div>
+                  <div className="text-[11px] text-white/40 uppercase tracking-wide mt-0.5">Missed</div>
+                </div>
+                <div className="p-4 text-center">
+                  <div className="text-2xl font-bold text-white">{avgTimePerPick}s</div>
+                  <div className="text-[11px] text-white/40 uppercase tracking-wide mt-0.5">Per Pick</div>
+                </div>
+              </div>
+
+              {/* Visual Chart - Pick History */}
+              {totalPicks > 0 && (
+                <div className="p-4">
+                  <div className="text-[11px] text-white/40 mb-2 uppercase tracking-wide">Pick History</div>
+                  <div className="flex gap-1 flex-wrap">
+                    {sessionHistory.map((h, i) => (
+                      <div
+                        key={i}
+                        className={`w-2.5 h-2.5 rounded-sm transition-all ${
+                          h.correct ? 'bg-white/70' : 'bg-white/20'
+                        }`}
+                        title={`${i + 1}: ${h.correct ? '✓' : '✗'} ${h.leftCard} vs ${h.rightCard}`}
+                      />
+                    ))}
+                  </div>
+                  {closeCalls > 0 && (
+                    <div className="text-xs text-white/30 mt-2">
+                      {closeCalls} close call{closeCalls > 1 ? 's' : ''} within 50 ELO
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Cards to Review */}
+              {mistakes.length > 0 && (
+                <div className="p-4 border-t border-white/[0.06]">
+                  <div className="text-[11px] text-white/40 mb-3 uppercase tracking-wide">Cards to Review</div>
+                  <div className="space-y-2 max-h-32 overflow-y-auto">
+                    {mistakes.slice(0, 5).map((m, i) => (
+                      <div key={i} className="flex items-center justify-between text-sm bg-white/[0.04] rounded-lg px-3 py-2 border border-white/[0.06]">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-white/30 flex-shrink-0">✗</span>
+                          <span className="text-white/50 truncate">{m.picked}</span>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className="text-white/20">→</span>
+                          <span className="text-white font-medium">{m.correct}</span>
+                        </div>
+                      </div>
+                    ))}
+                    {mistakes.length > 5 && (
+                      <div className="text-xs text-white/30 text-center pt-1">+{mistakes.length - 5} more</div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Insight */}
+              <div className="p-4 border-t border-white/[0.06]">
+                <div className="text-sm text-white/50 leading-relaxed">
+                  {accuracy >= 90 ? (
+                    <span>Excellent session. You have strong card evaluation instincts.</span>
+                  ) : accuracy >= 75 ? (
+                    <span>Solid performance. Review the close matchups to sharpen your edge.</span>
+                  ) : accuracy >= 60 ? (
+                    <span>Good foundation. Focus on the cards above to improve recall.</span>
+                  ) : mistakes.some(m => m.eloDiff > 300) ? (
+                    <span>Review high-power staples like {mistakes.find(m => m.eloDiff > 300)?.correct}.</span>
+                  ) : (
+                    <span>Card evaluation improves with reps. Keep practicing.</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="p-4 border-t border-white/[0.06] flex gap-3">
+                <button
+                  onClick={() => setShowTimerResults(false)}
+                  className="flex-1 py-3 bg-white/[0.06] border border-white/[0.08] text-white/70 rounded-xl font-medium text-sm hover:bg-white/[0.1] hover:text-white active:scale-[0.98] transition-all"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={() => { setShowTimerResults(false); startTimer(timerInputValue); }}
+                  className="flex-1 py-3 bg-white text-black rounded-xl font-semibold text-sm hover:bg-white/90 active:scale-[0.98] transition-all"
+                >
+                  Go Again
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Timer Picker Modal */}
+      {showTimerPicker && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop animate-in fade-in" onClick={() => setShowTimerPicker(false)}>
+          <div className="bg-black border border-white/[0.08] rounded-2xl p-6 max-w-xs w-full space-y-6 animate-in scale-up shadow-2xl" onClick={e => e.stopPropagation()}>
+            {/* Header with icon */}
+            <div className="text-center">
+              <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-white/[0.06] flex items-center justify-center">
+                <Timer className="w-6 h-6 text-white/70" />
+              </div>
+              <h3 className="text-lg font-semibold text-white tracking-tight">Timed Challenge</h3>
+              <p className="text-white/40 text-sm mt-1">Set your duration</p>
+            </div>
+
+            {/* Time input */}
+            <div className="flex items-center justify-center gap-4">
+              <button
+                onClick={() => setTimerInputValue(v => Math.max(10, v - 10))}
+                className="w-11 h-11 rounded-xl bg-white/[0.06] border border-white/[0.08] text-white/70 text-xl font-medium hover:bg-white/[0.1] hover:text-white active:scale-95 transition-all"
+              >
+                −
+              </button>
+              <div className="flex items-baseline gap-1.5">
+                <input
+                  type="number"
+                  value={timerInputValue}
+                  onChange={e => setTimerInputValue(Math.max(5, Math.min(300, parseInt(e.target.value) || 30)))}
+                  className="w-16 text-center text-4xl font-bold text-white bg-transparent outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
+                <span className="text-white/30 text-sm font-medium">sec</span>
+              </div>
+              <button
+                onClick={() => setTimerInputValue(v => Math.min(300, v + 10))}
+                className="w-11 h-11 rounded-xl bg-white/[0.06] border border-white/[0.08] text-white/70 text-xl font-medium hover:bg-white/[0.1] hover:text-white active:scale-95 transition-all"
+              >
+                +
+              </button>
+            </div>
+
+            {/* Quick presets */}
+            <div className="flex justify-center gap-2">
+              {[30, 60, 90].map(t => (
+                <button
+                  key={t}
+                  onClick={() => setTimerInputValue(t)}
+                  className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                    timerInputValue === t
+                      ? 'bg-white/[0.12] text-white border border-white/[0.15]'
+                      : 'text-white/40 hover:text-white/60 hover:bg-white/[0.04]'
+                  }`}
+                >
+                  {t}s
+                </button>
+              ))}
+            </div>
+
+            {/* Start button */}
+            <button
+              onClick={() => startTimer(timerInputValue)}
+              className="w-full py-3.5 bg-white text-black rounded-xl font-semibold text-sm hover:bg-white/90 active:scale-[0.98] transition-all"
+            >
+              Start Challenge
+            </button>
+
+            {/* Cancel link */}
+            <button
+              onClick={() => setShowTimerPicker(false)}
+              className="w-full text-center text-white/30 text-sm hover:text-white/50 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Countdown Overlay */}
+      {countdown !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black animate-in fade-in">
+          <div className="text-center">
+            <div className={`text-[10rem] font-bold text-white tracking-tighter leading-none ${countdown === 0 ? '' : 'animate-pulse'}`}>
+              {countdown === 0 ? 'GO' : countdown}
+            </div>
+            {countdown > 0 && (
+              <div className="text-white/30 text-sm mt-4 uppercase tracking-widest">Get ready</div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -753,12 +1121,36 @@ function HigherLowerGame({ cards, stats, onUpdate, onBack }: GameComponentProps)
             </p>
           </div>
         </div>
-        {stats.streak > 0 && (
-          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/20 rounded-full">
-            <Flame className="w-4 h-4 text-amber-400" />
-            <span className="text-amber-400 font-bold">{stats.streak}</span>
-          </div>
-        )}
+
+        {/* Right side: Timer or Streak */}
+        <div className="flex items-center gap-2">
+          {timerRunning ? (
+            <>
+              <div className="text-white font-bold text-lg">{timedScore}</div>
+              <div className={`text-2xl font-mono font-bold px-3 py-1 rounded-lg ${
+                timeRemaining <= 5 ? 'text-red-400 bg-red-500/20 animate-pulse' : 'text-white bg-white/10'
+              }`}>
+                {timeRemaining}
+              </div>
+            </>
+          ) : (
+            <>
+              {stats.streak > 0 && (
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/20 rounded-full mr-2">
+                  <Flame className="w-4 h-4 text-amber-400" />
+                  <span className="text-amber-400 font-bold">{stats.streak}</span>
+                </div>
+              )}
+              <button
+                onClick={() => setShowTimerPicker(true)}
+                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                title="Start timed challenge"
+              >
+                <Timer className="w-5 h-5 text-white/40 hover:text-white/70" />
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Two cards - responsive layout */}
@@ -788,7 +1180,7 @@ function HigherLowerGame({ cards, stats, onUpdate, onBack }: GameComponentProps)
                 <img src={getCardImage(card)} alt={card.name} className="w-full" />
               </button>
 
-              {/* Card info - always show name, show ELO after reveal */}
+              {/* Card info - always show name, show ELO after reveal (only in non-timed mode) */}
               <div className="mt-4 text-center">
                 <div className="text-white font-medium">{card.name}</div>
                 {revealed && (
@@ -805,30 +1197,30 @@ function HigherLowerGame({ cards, stats, onUpdate, onBack }: GameComponentProps)
 
       {/* Result and Next button */}
       <div className="max-w-md mx-auto">
-        {revealed ? (
-          <div className="space-y-4">
-            <div className={`text-center text-xl font-bold ${picked === correctIndex ? 'text-green-400' : 'text-red-400'}`}>
-              {picked === correctIndex ? 'Correct!' : `Wrong! ${pair[correctIndex].name} wins by ${Math.abs(Math.round(eloA - eloB))} ELO`}
+          {revealed ? (
+            <div className="space-y-4">
+              <div className={`text-center text-xl font-bold ${picked === correctIndex ? 'text-green-400' : 'text-red-400'}`}>
+                {picked === correctIndex ? 'Correct!' : `Wrong! ${pair[correctIndex].name} wins by ${Math.abs(Math.round(eloA - eloB))} ELO`}
+              </div>
+              <button
+                onClick={newRound}
+                className="w-full py-4 bg-white text-black rounded-xl font-bold text-lg hover:bg-white/90 active:scale-[0.98] transition-all"
+              >
+                Next Round
+              </button>
             </div>
-            <button
-              onClick={newRound}
-              className="w-full py-4 bg-white text-black rounded-xl font-bold text-lg hover:bg-white/90 active:scale-[0.98] transition-all"
-            >
-              Next Round
-            </button>
-          </div>
-        ) : (
-          <div className="text-center text-white/30 text-sm">
-            Click the card you think has higher ELO
-          </div>
-        )}
+          ) : (
+            <div className="text-center text-white/30 text-sm">
+              Click the card you think has higher ELO · <kbd className="px-1.5 py-0.5 bg-white/10 rounded text-xs">Q</kbd> / <kbd className="px-1.5 py-0.5 bg-white/10 rounded text-xs">W</kbd>
+            </div>
+          )}
 
-        {stats.played > 0 && (
-          <div className="text-center text-white/20 text-xs mt-4">
-            {Math.round((stats.correct / stats.played) * 100)}% · {stats.correct}/{stats.played}
-            {stats.bestStreak > 1 && ` · Best: ${stats.bestStreak}`}
-          </div>
-        )}
+          {stats.played > 0 && (
+            <div className="text-center text-white/20 text-xs mt-4">
+              {Math.round((stats.correct / stats.played) * 100)}% · {stats.correct}/{stats.played}
+              {stats.bestStreak > 1 && ` · Best: ${stats.bestStreak}`}
+            </div>
+          )}
       </div>
     </div>
   );
@@ -2896,118 +3288,7 @@ function ColorCommitGame({ cards, stats, onUpdate, onBack }: GameComponentProps)
   );
 }
 
-// ============ GAME 5: Speed Round ============
-function SpeedRoundGame({ cards, stats, onUpdate, onBack }: GameComponentProps) {
-  const [gameState, setGameState] = useState<'ready' | 'playing' | 'done'>('ready');
-  const [pair, setPair] = useState<[CubeCard, CubeCard] | null>(null);
-  const [score, setScore] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(30);
-  const [lastResult, setLastResult] = useState<'correct' | 'wrong' | null>(null);
-
-  const newPair = useCallback(() => {
-    const [a, b] = getRandomCards(cards, 2);
-    setPair([a, b]);
-    setLastResult(null);
-  }, [cards]);
-
-  const startGame = useCallback(() => {
-    setGameState('playing');
-    setScore(0);
-    setTimeLeft(30);
-    newPair();
-  }, [newPair]);
-
-  useEffect(() => {
-    if (gameState !== 'playing') return;
-    if (timeLeft <= 0) {
-      setGameState('done');
-      return;
-    }
-    const timer = setTimeout(() => setTimeLeft(t => t - 1), 1000);
-    return () => clearTimeout(timer);
-  }, [gameState, timeLeft]);
-
-  const handlePick = (index: 0 | 1) => {
-    if (!pair || gameState !== 'playing') return;
-    const eloA = getEloData(pair[0].name)?.elo || 0;
-    const eloB = getEloData(pair[1].name)?.elo || 0;
-    const correct = (index === 0 && eloA >= eloB) || (index === 1 && eloB > eloA);
-
-    if (correct) {
-      setScore(s => s + 1);
-      setLastResult('correct');
-      onUpdate(true);
-    } else {
-      setLastResult('wrong');
-      onUpdate(false);
-    }
-
-    setTimeout(newPair, 150);
-  };
-
-  if (gameState === 'ready') {
-    return (
-      <div className="text-center">
-        <GameHeader title="Speed Round" subtitle="30 seconds of Higher/Lower" streak={stats.bestStreak} onBack={onBack} />
-        <Timer className="w-16 h-16 text-red-400 mx-auto my-4" />
-        <p className="text-white/60 mb-4">Tap the higher ELO card as fast as you can!</p>
-        <button onClick={startGame} className="w-full py-4 bg-red-500 text-white rounded-lg font-bold text-lg active:scale-[0.98]">
-          Start!
-        </button>
-        {stats.bestStreak > 0 && (
-          <div className="text-white/40 text-sm mt-3">Best: {stats.bestStreak}</div>
-        )}
-      </div>
-    );
-  }
-
-  if (gameState === 'done') {
-    return (
-      <div className="text-center">
-        <GameHeader title="Speed Round" subtitle="Time's up!" streak={stats.bestStreak} onBack={onBack} />
-        <div className="text-6xl font-bold text-white my-4">{score}</div>
-        <div className="text-white/50 mb-4">correct picks</div>
-        {score > stats.bestStreak && (
-          <div className="text-amber-400 font-bold mb-3">New best!</div>
-        )}
-        <button onClick={startGame} className="w-full py-4 bg-red-500 text-white rounded-lg font-bold text-lg active:scale-[0.98]">
-          Play Again
-        </button>
-      </div>
-    );
-  }
-
-  if (!pair) return null;
-
-  return (
-    <div>
-      {/* Score + timer */}
-      <div className="flex items-center justify-between mb-2">
-        <div className="text-2xl font-bold text-white">{score}</div>
-        <div className={`text-3xl font-mono font-bold px-3 py-1 rounded-lg ${
-          timeLeft <= 5 ? 'text-red-400 bg-red-500/20 animate-pulse' : 'text-white bg-white/10'
-        }`}>
-          {timeLeft}
-        </div>
-      </div>
-
-      {/* Cards side by side */}
-      <div className={`flex gap-2 transition-all ${lastResult === 'correct' ? 'scale-[1.01]' : lastResult === 'wrong' ? 'opacity-80' : ''}`}>
-        {pair.map((card, idx) => (
-          <button
-            key={card.id}
-            onClick={() => handlePick(idx as 0 | 1)}
-            className="flex-1 rounded-lg overflow-hidden active:scale-[0.98]"
-          >
-            <img src={getCardImage(card)} alt={card.name} className="w-full" />
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ============ GAME 6: Guess the CMC ============
+// ============ GAME 5: Guess the CMC ============
 function GuessCmcGame({ cards, stats, onUpdate, onBack }: GameComponentProps) {
   const [card, setCard] = useState<CubeCard | null>(null);
   const [revealed, setRevealed] = useState(false);
