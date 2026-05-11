@@ -7,7 +7,7 @@ import {
   getWheelLikelihood,
   type WheelLikelihood,
 } from '../services/eloHelpers';
-import { Scale, CircleDot, Layers, Trophy, ChevronLeft, Flame, Timer, Hash, Sparkles, Package, Hand, Radio, GraduationCap, TrendingUp, TrendingDown, Minus, BarChart3, ArrowLeftRight, ListOrdered, Swords, Eye, Target, ListTree, Search, Gauge, Stethoscope, PuzzleIcon, SlidersHorizontal } from 'lucide-react';
+import { Scale, CircleDot, Layers, Trophy, ChevronLeft, Flame, Timer, Hash, Sparkles, Package, Hand, Radio, GraduationCap, TrendingUp, TrendingDown, Minus, ArrowLeftRight, ListOrdered, Swords, Eye, Target, ListTree, Search, Gauge, Stethoscope, PuzzleIcon, SlidersHorizontal, Shuffle } from 'lucide-react';
 import { srs, boolToQuality, type SkillCategory, type SkillRating } from '../services/spacedRepetition';
 
 // Global filter types
@@ -133,11 +133,40 @@ function getRandomCards(cards: CubeCard[], n: number): CubeCard[] {
   return shuffleArray(withElo).slice(0, n);
 }
 
+// All playable games for quick match
+const ALL_GAME_IDS: GameType[] = [
+  'recognition', 'estimation', 'pick-order', 'archetype-sort', 'odd-one-out', 'deck-doctor', 'complete-curve',
+  'pack-p1p1', 'mulligan-trainer', 'signal-quiz', 'archetype-flashcards', 'higher-lower', 'wheel-or-not',
+  'first-pick', 'color-commit', 'guess-cmc', 'synergy-snap', 'sequencing', 'beatdown',
+];
+
 export function GamesPage({ cards }: GamesPageProps) {
   const [game, setGame] = useState<GameType>('menu');
   const [stats, setStats] = useState<GameStats>(loadStats);
   const [filters, setFilters] = useState<GlobalFilters>(loadFilters);
   const [showFilterPanel, setShowFilterPanel] = useState(false);
+
+  // Play a random game (excluding current game)
+  const playRandomGame = useCallback((excludeCurrent = true) => {
+    const available = excludeCurrent && game !== 'menu'
+      ? ALL_GAME_IDS.filter(g => g !== game)
+      : ALL_GAME_IDS;
+    const randomGame = available[Math.floor(Math.random() * available.length)];
+    setGame(randomGame);
+  }, [game]);
+
+  // Global P hotkey for quick match
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (e.key.toLowerCase() === 'p' && !e.metaKey && !e.ctrlKey) {
+        e.preventDefault();
+        playRandomGame();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [playRandomGame]);
 
   // Apply filters to cards
   const filteredCards = cards.filter(card => {
@@ -227,25 +256,25 @@ export function GamesPage({ cards }: GamesPageProps) {
 
   // Cognitive loop games route first (they manage their own state)
   if (game === 'recognition') {
-    return <RecognitionGame cards={filteredCards} onBack={() => setGame('menu')} />;
+    return <RecognitionGame cards={filteredCards} onBack={() => setGame('menu')} onShuffle={playRandomGame} />;
   }
   if (game === 'estimation') {
-    return <EstimationGame cards={filteredCards} onBack={() => setGame('menu')} />;
+    return <EstimationGame cards={filteredCards} onBack={() => setGame('menu')} onShuffle={playRandomGame} />;
   }
   if (game === 'pick-order') {
-    return <SequenceGame cards={filteredCards} onBack={() => setGame('menu')} />;
+    return <SequenceGame cards={filteredCards} onBack={() => setGame('menu')} onShuffle={playRandomGame} />;
   }
   if (game === 'archetype-sort') {
-    return <ClassificationGame cards={filteredCards} onBack={() => setGame('menu')} />;
+    return <ClassificationGame cards={filteredCards} onBack={() => setGame('menu')} onShuffle={playRandomGame} />;
   }
   if (game === 'odd-one-out') {
-    return <SpottingGame cards={filteredCards} onBack={() => setGame('menu')} />;
+    return <SpottingGame cards={filteredCards} onBack={() => setGame('menu')} onShuffle={playRandomGame} />;
   }
   if (game === 'deck-doctor') {
-    return <ConstraintGame cards={filteredCards} onBack={() => setGame('menu')} />;
+    return <ConstraintGame cards={filteredCards} onBack={() => setGame('menu')} onShuffle={playRandomGame} />;
   }
   if (game === 'complete-curve') {
-    return <ReconstructionGame cards={filteredCards} onBack={() => setGame('menu')} />;
+    return <ReconstructionGame cards={filteredCards} onBack={() => setGame('menu')} onShuffle={playRandomGame} />;
   }
 
   // Legacy games with shared stats system
@@ -292,6 +321,7 @@ export function GamesPage({ cards }: GamesPageProps) {
         stats={stats[gameKey]}
         onUpdate={(c: boolean) => updateStats(gameKey, c)}
         onBack={() => setGame('menu')}
+        onShuffle={playRandomGame}
       />
     );
   }
@@ -307,6 +337,16 @@ export function GamesPage({ cards }: GamesPageProps) {
         <h1 className="text-2xl font-bold text-white">Training</h1>
         <p className="text-sm text-white/50 mt-1">Drills to internalize before draft day</p>
       </div>
+
+      {/* Quick Match Button */}
+      <button
+        onClick={() => playRandomGame(false)}
+        className="w-full py-4 bg-white/[0.06] border border-white/[0.08] rounded-xl flex items-center justify-center gap-3 hover:bg-white/[0.1] active:scale-[0.99] transition-all group"
+      >
+        <Shuffle className="w-5 h-5 text-white/60 group-hover:scale-110 transition-transform" />
+        <span className="text-lg font-medium text-white/80">Quick Match</span>
+        <kbd className="px-2 py-0.5 bg-white/10 rounded text-xs text-white/40 font-mono">P</kbd>
+      </button>
 
       {/* Filter Panel */}
       <FilterPanel
@@ -533,6 +573,35 @@ const SKILL_NAMES: Record<SkillCategory, string> = {
   'matchups': 'Matchups',
 };
 
+// Mastery level definitions
+const MASTERY_LEVELS = [
+  { name: 'Bronze', minElo: 0, color: 'text-amber-600', bg: 'bg-amber-600', border: 'border-amber-600' },
+  { name: 'Silver', minElo: 1150, color: 'text-gray-300', bg: 'bg-gray-300', border: 'border-gray-300' },
+  { name: 'Gold', minElo: 1250, color: 'text-yellow-400', bg: 'bg-yellow-400', border: 'border-yellow-400' },
+  { name: 'Diamond', minElo: 1350, color: 'text-cyan-300', bg: 'bg-cyan-300', border: 'border-cyan-300' },
+  { name: 'Master', minElo: 1450, color: 'text-purple-400', bg: 'bg-purple-400', border: 'border-purple-400' },
+];
+
+function getMasteryLevel(elo: number) {
+  for (let i = MASTERY_LEVELS.length - 1; i >= 0; i--) {
+    if (elo >= MASTERY_LEVELS[i].minElo) return { level: MASTERY_LEVELS[i], index: i };
+  }
+  return { level: MASTERY_LEVELS[0], index: 0 };
+}
+
+function getProgressToNextLevel(elo: number) {
+  const { level, index } = getMasteryLevel(elo);
+  const nextLevel = MASTERY_LEVELS[index + 1];
+  if (!nextLevel) return { progress: 100, pointsNeeded: 0, nextLevel: null };
+
+  const rangeStart = level.minElo;
+  const rangeEnd = nextLevel.minElo;
+  const progress = ((elo - rangeStart) / (rangeEnd - rangeStart)) * 100;
+  const pointsNeeded = rangeEnd - elo;
+
+  return { progress: Math.min(100, Math.max(0, progress)), pointsNeeded, nextLevel };
+}
+
 function ProgressDashboard({
   mastery,
   skillRatings,
@@ -542,94 +611,150 @@ function ProgressDashboard({
   skillRatings: SkillRating[];
   totalReviews: number;
 }) {
-  // Only show if there's some training data
   const hasData = totalReviews > 0 || skillRatings.some(r => r.totalAttempts > 0);
 
   if (!hasData) {
     return (
-      <div className="bg-white/[0.04] border border-white/[0.06] rounded-xl p-5 text-center">
-        <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-white/[0.06] flex items-center justify-center">
-          <BarChart3 className="w-6 h-6 text-white/40" />
+      <div className="bg-white/[0.04] border border-white/[0.06] rounded-xl p-6 text-center">
+        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-white/10 to-white/5 flex items-center justify-center">
+          <Target className="w-8 h-8 text-white/30" />
         </div>
-        <div className="text-sm text-white/50">Complete drills to track your progress</div>
+        <div className="text-white/70 font-medium mb-1">Start Your Training</div>
+        <div className="text-sm text-white/40">Complete drills to build your Draft Readiness score</div>
       </div>
     );
   }
 
-  // Filter to skills with data
   const activeSkills = skillRatings.filter(r => r.totalAttempts > 0);
+  const { level: overallLevel } = getMasteryLevel(mastery.elo);
+  const { progress, pointsNeeded, nextLevel } = getProgressToNextLevel(mastery.elo);
+
+  // Calculate "Draft Readiness" as a 0-1000 score
+  // Based on: overall ELO normalized + skill breadth bonus
+  const baseScore = Math.min(800, Math.max(0, ((mastery.elo - 1000) / 500) * 800));
+  const breadthBonus = Math.min(200, activeSkills.length * 25); // Up to 200 for training 8 skills
+  const draftReadiness = Math.round(baseScore + breadthBonus);
+
+  const getReadinessLabel = (score: number) => {
+    if (score >= 900) return { label: 'Expert', desc: 'You\'re ready for high-stakes drafts' };
+    if (score >= 750) return { label: 'Advanced', desc: 'Strong fundamentals, refining edges' };
+    if (score >= 550) return { label: 'Intermediate', desc: 'Building solid foundations' };
+    if (score >= 300) return { label: 'Developing', desc: 'Learning the core concepts' };
+    return { label: 'Beginner', desc: 'Just getting started' };
+  };
+
+  const readiness = getReadinessLabel(draftReadiness);
 
   return (
-    <div className="bg-white/[0.04] border border-white/[0.06] rounded-xl p-5">
-      {/* Overall Stats */}
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <div className="text-2xl font-bold text-white">{mastery.elo}</div>
-          <div className="text-xs text-white/40">Overall ELO</div>
+    <div className="bg-white/[0.04] border border-white/[0.06] rounded-xl overflow-hidden">
+      {/* Draft Readiness Header */}
+      <div className="p-5 bg-gradient-to-br from-white/[0.04] to-transparent">
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <div className="text-xs text-white/40 uppercase tracking-wider mb-1">Draft Readiness</div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-4xl font-bold text-white">{draftReadiness}</span>
+              <span className="text-white/30 text-sm">/ 1000</span>
+            </div>
+            <div className="text-sm text-white/50 mt-1">{readiness.label}</div>
+          </div>
+          <div className="text-right">
+            <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border ${overallLevel.border} bg-black/20`}>
+              <div className={`w-2 h-2 rounded-full ${overallLevel.bg}`} />
+              <span className={`text-sm font-medium ${overallLevel.color}`}>{overallLevel.name}</span>
+            </div>
+            {nextLevel && (
+              <div className="text-[10px] text-white/30 mt-1.5">
+                {pointsNeeded} pts to {nextLevel.name}
+              </div>
+            )}
+          </div>
         </div>
-        <div className="text-right">
-          <div className="text-lg font-semibold text-white">Top {100 - mastery.percentile}%</div>
-          <div className="text-xs text-white/40">{totalReviews} reviews</div>
-        </div>
+
+        {/* Progress to next level */}
+        {nextLevel && (
+          <div className="mb-3">
+            <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${overallLevel.bg}`}
+                style={{ width: `${progress}%`, opacity: 0.8 }}
+              />
+            </div>
+          </div>
+        )}
+
+        <div className="text-xs text-white/40">{readiness.desc}</div>
       </div>
 
-      {/* Skill Ratings */}
+      {/* Skills Grid */}
       {activeSkills.length > 0 && (
-        <div className="space-y-2">
-          {activeSkills.map(skill => (
-            <SkillBar key={skill.category} skill={skill} />
-          ))}
+        <div className="px-5 pb-5">
+          <div className="text-[10px] text-white/30 uppercase tracking-wider mb-3">Skill Mastery</div>
+          <div className="grid grid-cols-2 gap-2">
+            {activeSkills.slice(0, 6).map(skill => (
+              <SkillMasteryCard key={skill.category} skill={skill} />
+            ))}
+          </div>
         </div>
       )}
 
-      {/* Insights */}
-      {mastery.strengths.length > 0 && activeSkills.length >= 2 && (
-        <div className="mt-4 pt-3 border-t border-white/10 flex gap-4 text-xs">
-          <div className="flex-1">
-            <div className="text-white/40 mb-1">Strengths</div>
-            <div className="text-green-400">
-              {mastery.strengths.map(s => SKILL_NAMES[s]).join(', ')}
-            </div>
-          </div>
-          <div className="flex-1">
-            <div className="text-white/40 mb-1">Focus on</div>
-            <div className="text-amber-400">
-              {mastery.weaknesses.map(s => SKILL_NAMES[s]).join(', ')}
+      {/* Focus Recommendation */}
+      {mastery.weaknesses.length > 0 && activeSkills.length >= 2 && (
+        <div className="px-5 pb-5 pt-0">
+          <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 flex items-start gap-3">
+            <Target className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
+            <div>
+              <div className="text-xs font-medium text-amber-400">Recommended Focus</div>
+              <div className="text-xs text-white/60 mt-0.5">
+                Train <span className="text-white">{mastery.weaknesses.map(s => SKILL_NAMES[s]).join(' or ')}</span> to level up faster
+              </div>
             </div>
           </div>
         </div>
       )}
+
+      {/* Stats Footer */}
+      <div className="px-5 py-3 bg-white/[0.02] border-t border-white/[0.06] flex items-center justify-between text-xs text-white/40">
+        <span>{totalReviews} total reviews</span>
+        <span>{activeSkills.length}/8 skills trained</span>
+      </div>
     </div>
   );
 }
 
-function SkillBar({ skill }: { skill: SkillRating }) {
+function SkillMasteryCard({ skill }: { skill: SkillRating }) {
+  const { level } = getMasteryLevel(skill.elo);
+  const { progress, nextLevel } = getProgressToNextLevel(skill.elo);
+
   const TrendIcon = skill.trend === 'improving' ? TrendingUp
     : skill.trend === 'declining' ? TrendingDown
     : Minus;
 
   const trendColor = skill.trend === 'improving' ? 'text-green-400'
     : skill.trend === 'declining' ? 'text-red-400'
-    : 'text-white/30';
-
-  // Normalize ELO to 0-100 for bar (1000 = 0%, 1400 = 100%)
-  const barWidth = Math.min(100, Math.max(0, ((skill.elo - 1000) / 400) * 100));
+    : 'text-white/20';
 
   return (
-    <div>
-      <div className="flex items-center justify-between text-xs mb-1">
-        <span className="text-white/70">{SKILL_NAMES[skill.category]}</span>
-        <div className="flex items-center gap-2">
-          <span className="text-white/50">{skill.elo}</span>
-          <TrendIcon className={`w-3 h-3 ${trendColor}`} />
+    <div className="bg-white/[0.03] rounded-lg p-3">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs text-white/70 truncate">{SKILL_NAMES[skill.category]}</span>
+        <TrendIcon className={`w-3 h-3 ${trendColor} flex-shrink-0`} />
+      </div>
+
+      <div className="flex items-center gap-2 mb-2">
+        <div className={`w-2 h-2 rounded-full ${level.bg}`} />
+        <span className={`text-xs font-medium ${level.color}`}>{level.name}</span>
+        <span className="text-[10px] text-white/30 ml-auto">{skill.elo}</span>
+      </div>
+
+      {nextLevel && (
+        <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+          <div
+            className={`h-full rounded-full ${level.bg}`}
+            style={{ width: `${progress}%`, opacity: 0.6 }}
+          />
         </div>
-      </div>
-      <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
-        <div
-          className="h-full bg-gradient-to-r from-white/40 to-white/60 rounded-full transition-all duration-500"
-          style={{ width: `${barWidth}%` }}
-        />
-      </div>
+      )}
     </div>
   );
 }
@@ -712,9 +837,10 @@ interface GameComponentProps {
   stats: { played: number; correct: number; streak: number; bestStreak: number };
   onUpdate: (correct: boolean) => void;
   onBack: () => void;
+  onShuffle?: () => void;
 }
 
-function GameHeader({ title, subtitle, streak, onBack }: { title: string; subtitle: string; streak: number; onBack: () => void }) {
+function GameHeader({ title, subtitle, streak, onBack, onShuffle }: { title: string; subtitle: string; streak: number; onBack: () => void; onShuffle?: () => void }) {
   return (
     <div className="flex items-center justify-between mb-4">
       <button onClick={onBack} className="flex items-center gap-1 text-sm text-white/50 hover:text-white transition-colors">
@@ -725,12 +851,21 @@ function GameHeader({ title, subtitle, streak, onBack }: { title: string; subtit
         <h2 className="text-lg font-bold text-white">{title}</h2>
         <p className="text-xs text-white/40">{subtitle}</p>
       </div>
-      <div className="text-right min-w-[40px]">
+      <div className="flex items-center gap-3">
         {streak > 0 && (
           <div className="flex items-center gap-1 text-amber-400">
             <Flame className="w-4 h-4" />
             <span className="font-bold">{streak}</span>
           </div>
+        )}
+        {onShuffle && (
+          <button
+            onClick={onShuffle}
+            className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/50 hover:text-white transition-all"
+            title="Random game (P)"
+          >
+            <Shuffle className="w-4 h-4" />
+          </button>
         )}
       </div>
     </div>
@@ -2075,7 +2210,7 @@ const SIGNAL_CARDS: Record<string, { signals: string; explanation: string }> = {
   'Oath of Druids': { signals: 'Oath', explanation: 'Build-around going late means Oath is free' },
 };
 
-function SignalQuizGame({ cards, stats, onUpdate, onBack }: GameComponentProps) {
+function SignalQuizGame({ cards, stats, onUpdate, onBack, onShuffle }: GameComponentProps) {
   const [scenario, setScenario] = useState<{ card: CubeCard; pick: number; signal: string; explanation: string } | null>(null);
   const [options, setOptions] = useState<string[]>([]);
   const [revealed, setRevealed] = useState(false);
@@ -2134,10 +2269,8 @@ function SignalQuizGame({ cards, stats, onUpdate, onBack }: GameComponentProps) 
 
   useEffect(() => { newScenario(); }, [newScenario]);
 
-  if (!scenario) return null;
-
-  const handleAnswer = (answer: string) => {
-    if (revealed) return;
+  const handleAnswer = useCallback((answer: string) => {
+    if (revealed || !scenario) return;
     setUserAnswer(answer);
     setRevealed(true);
 
@@ -2153,99 +2286,134 @@ function SignalQuizGame({ cards, stats, onUpdate, onBack }: GameComponentProps) 
     );
 
     onUpdate(isCorrect);
-  };
+  }, [revealed, scenario, onUpdate]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement) return;
+      const key = e.key.toLowerCase();
+
+      if (!revealed && options.length === 4) {
+        const keyMap: Record<string, number> = { a: 0, s: 1, d: 2, f: 3 };
+        if (key in keyMap && options[keyMap[key]]) {
+          e.preventDefault();
+          handleAnswer(options[keyMap[key]]);
+        }
+      } else if (revealed && (key === 'enter' || key === ' ')) {
+        e.preventDefault();
+        newScenario();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [revealed, options, handleAnswer, newScenario]);
+
+  if (!scenario) return null;
 
   return (
-    <div className="fixed inset-0 bg-black flex flex-col z-40">
+    <div className="fixed inset-0 bg-black flex flex-col">
       {/* Card viewer */}
       {selectedCard && (
         <CardViewer card={selectedCard} onClose={() => setSelectedCard(null)} />
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 shrink-0">
-        <button onClick={onBack} className="p-1">
+      <div className="flex items-center justify-between px-4 py-3">
+        <button onClick={onBack} className="p-1 hover:bg-white/5 rounded-lg">
           <ChevronLeft className="w-6 h-6 text-white/60" />
         </button>
         <div className="text-center">
           <div className="text-white font-medium">Signal Quiz</div>
           <div className="text-white/40 text-xs">What does this late pick tell you?</div>
         </div>
-        {stats.streak > 0 ? (
-          <div className="flex items-center gap-1 text-amber-400 font-bold">
-            <Flame className="w-5 h-5" />{stats.streak}
-          </div>
-        ) : <div className="w-8" />}
+        <div className="flex items-center gap-3">
+          {stats.streak > 0 && (
+            <div className="text-amber-400 text-sm">🔥 {stats.streak}</div>
+          )}
+          {onShuffle && (
+            <button onClick={onShuffle} className="p-2 hover:bg-white/10 rounded-lg" title="Random game (P)">
+              <Shuffle className="w-4 h-4 text-white/50" />
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Scenario */}
-      <div className="flex-1 flex flex-col items-center justify-center px-4 gap-4">
+      {/* Centered content */}
+      <div className="flex-1 flex flex-col items-center justify-center p-4 gap-4">
         {/* Context */}
         <div className="text-center">
           <div className="text-white/50 text-sm mb-1">You see this card at</div>
-          <div className="text-2xl font-bold text-amber-400">Pick {scenario.pick}</div>
+          <div className="text-2xl font-bold text-white">Pick {scenario.pick}</div>
         </div>
 
         {/* Card */}
         <button
           onClick={() => setSelectedCard(scenario.card)}
-          className="w-48 rounded-xl overflow-hidden active:scale-95 shadow-xl"
+          className="max-h-[45vh] rounded-xl overflow-hidden active:scale-[0.98] shadow-2xl"
         >
-          <img src={getCardImage(scenario.card)} alt={scenario.card.name} className="w-full" />
+          <img src={getCardImage(scenario.card)} alt={scenario.card.name} className="max-h-[45vh] w-auto" />
         </button>
 
         {/* Question */}
-        <div className="text-center text-white/70 text-sm">
+        <div className="text-center text-white/60 text-sm">
           What archetype is likely open?
         </div>
-      </div>
 
-      {/* Options / Results */}
-      <div className="px-4 pb-8 pt-4 shrink-0 max-w-lg mx-auto w-full">
+        {/* Options / Results */}
         {!revealed ? (
-          <div className="grid grid-cols-2 gap-2">
-            {options.map(opt => (
-              <button
-                key={opt}
-                onClick={() => handleAnswer(opt)}
-                className="py-3 bg-white/10 border border-white/20 text-white rounded-xl font-medium active:scale-[0.98] text-sm"
-              >
-                {opt}
-              </button>
-            ))}
+          <div className="grid grid-cols-2 gap-3 max-w-md w-full">
+            {options.map((opt, idx) => {
+              const keys = ['A', 'S', 'D', 'F'];
+              return (
+                <button
+                  key={opt}
+                  onClick={() => handleAnswer(opt)}
+                  className="py-4 px-4 bg-white/[0.06] border border-white/[0.08] rounded-xl hover:bg-white/[0.1] active:scale-[0.98] transition-all"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-white font-medium text-sm">{opt}</span>
+                    <kbd className="px-2 py-1 bg-white/10 rounded text-xs text-white/40 font-mono">
+                      {keys[idx]}
+                    </kbd>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         ) : (
-          <>
-            <div className={`text-center mb-3 ${userAnswer === scenario.signal ? 'text-green-400' : 'text-red-400'}`}>
+          <div className="max-w-md w-full">
+            <div className={`text-center mb-4 ${userAnswer === scenario.signal ? 'text-green-400' : 'text-red-400'}`}>
               <div className="text-xl font-bold mb-1">
                 {userAnswer === scenario.signal ? 'Correct!' : 'Wrong!'}
               </div>
               {userAnswer !== scenario.signal && (
                 <div className="text-sm text-white/60">
-                  Answer: <span className="text-cyan-400 font-medium">{scenario.signal}</span>
+                  Answer: <span className="text-white font-medium">{scenario.signal}</span>
                 </div>
               )}
             </div>
 
-            <div className="bg-white/5 rounded-lg p-3 mb-4 text-sm text-white/70">
+            <div className="bg-white/[0.04] rounded-xl p-4 mb-4 text-sm text-white/70">
               {scenario.explanation}
             </div>
 
             <button
               onClick={newScenario}
-              className="w-full py-4 bg-white text-black rounded-xl font-bold text-lg active:scale-[0.98]"
+              className="w-full py-4 bg-white text-black rounded-xl font-bold hover:bg-white/90 active:scale-[0.98] transition-all"
             >
               Next Signal
             </button>
-          </>
-        )}
-
-        {stats.played > 0 && (
-          <div className="text-center text-white/20 text-xs mt-3">
-            {Math.round((stats.correct / stats.played) * 100)}% · {stats.correct}/{stats.played}
-            {stats.bestStreak > 1 && ` · Best: ${stats.bestStreak}`}
+            <div className="text-center text-white/30 text-xs mt-3">
+              Press <kbd className="px-1.5 py-0.5 bg-white/10 rounded">Enter</kbd> to continue
+            </div>
           </div>
         )}
+
+        {/* Stats */}
+        <div className="text-center text-white/40 text-sm">
+          {stats.correct}/{stats.played} correct · Best: {stats.bestStreak}
+        </div>
       </div>
     </div>
   );
@@ -3314,7 +3482,7 @@ function WheelOrNotGame({ cards, stats, onUpdate, onBack }: GameComponentProps) 
 }
 
 // ============ GAME 3: First Pickable? ============
-function FirstPickGame({ cards, stats, onUpdate, onBack }: GameComponentProps) {
+function FirstPickGame({ cards, stats, onUpdate, onBack, onShuffle }: GameComponentProps) {
   const [card, setCard] = useState<CubeCard | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [guess, setGuess] = useState<boolean | null>(null);
@@ -3341,59 +3509,105 @@ function FirstPickGame({ cards, stats, onUpdate, onBack }: GameComponentProps) {
     onUpdate(g === isFirstPickable);
   };
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement) return;
+      const key = e.key.toLowerCase();
+
+      if (!revealed) {
+        if (key === 'a') { e.preventDefault(); handleGuess(true); }
+        if (key === 's') { e.preventDefault(); handleGuess(false); }
+      } else if (key === 'enter' || key === ' ') {
+        e.preventDefault();
+        newRound();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [revealed, handleGuess, newRound]);
+
   return (
-    <div>
-      <GameHeader title="First Pickable?" subtitle="Would you P1P1 this? (Top 25%)" streak={stats.streak} onBack={onBack} />
+    <div className="fixed inset-0 bg-black flex flex-col">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3">
+        <button onClick={onBack} className="p-1 hover:bg-white/5 rounded-lg">
+          <ChevronLeft className="w-6 h-6 text-white/60" />
+        </button>
+        <div className="text-center">
+          <div className="text-white font-medium">First Pickable?</div>
+          <div className="text-white/40 text-xs">Would you P1P1 this? (Top 25%)</div>
+        </div>
+        <div className="flex items-center gap-3">
+          {stats.streak > 0 && (
+            <div className="text-amber-400 text-sm">🔥 {stats.streak}</div>
+          )}
+          {onShuffle && (
+            <button onClick={onShuffle} className="p-2 hover:bg-white/10 rounded-lg" title="Random game (P)">
+              <Shuffle className="w-4 h-4 text-white/50" />
+            </button>
+          )}
+        </div>
+      </div>
 
       {viewCard && <CardViewer card={viewCard} onClose={() => setViewCard(null)} />}
 
-      {/* Card */}
-      <div className="flex justify-center mb-3">
-        <button onClick={() => setViewCard(card)} className="w-44 rounded-lg overflow-hidden active:scale-[0.98]">
-          <img src={getCardImage(card)} alt={card.name} className="w-full" />
+      {/* Centered content */}
+      <div className="flex-1 flex flex-col items-center justify-center p-4 gap-6">
+        {/* Card */}
+        <button onClick={() => setViewCard(card)} className="max-h-[50vh] rounded-xl overflow-hidden active:scale-[0.98] shadow-2xl">
+          <img src={getCardImage(card)} alt={card.name} className="max-h-[50vh] w-auto" />
         </button>
-      </div>
 
-      {/* Answer buttons */}
-      <div className="grid grid-cols-2 gap-2 mb-3">
-        <button
-          onClick={() => handleGuess(true)}
-          disabled={revealed}
-          className={`py-3 rounded-lg font-bold transition-all active:scale-[0.98] ${
-            revealed
-              ? isFirstPickable ? 'bg-green-500 text-white' : guess === true ? 'bg-red-500/50 text-white/70' : 'bg-white/5 text-white/30'
-              : 'bg-green-500/20 text-green-400'
-          }`}
-        >
-          First Pick
-        </button>
-        <button
-          onClick={() => handleGuess(false)}
-          disabled={revealed}
-          className={`py-3 rounded-lg font-bold transition-all active:scale-[0.98] ${
-            revealed
-              ? !isFirstPickable ? 'bg-green-500 text-white' : guess === false ? 'bg-red-500/50 text-white/70' : 'bg-white/5 text-white/30'
-              : 'bg-red-500/20 text-red-400'
-          }`}
-        >
-          Pass
-        </button>
-      </div>
-
-      {/* Result + Next */}
-      {revealed && (
-        <div className="space-y-2">
-          <div className={`text-center font-bold ${guess === isFirstPickable ? 'text-green-400' : 'text-red-400'}`}>
-            {guess === isFirstPickable ? 'Correct!' : 'Wrong!'}
-            <span className="text-white/40 text-sm font-normal ml-2">Top {100 - percentile}%</span>
+        {/* Answer buttons */}
+        {!revealed ? (
+          <div className="grid grid-cols-2 gap-4 max-w-md w-full">
+            <button
+              onClick={() => handleGuess(true)}
+              className="py-4 px-6 bg-white/[0.06] border border-white/[0.08] rounded-xl hover:bg-white/[0.1] active:scale-[0.98] transition-all"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-white font-medium">First Pick</span>
+                <kbd className="px-2 py-1 bg-white/10 rounded text-xs text-white/40 font-mono">A</kbd>
+              </div>
+            </button>
+            <button
+              onClick={() => handleGuess(false)}
+              className="py-4 px-6 bg-white/[0.06] border border-white/[0.08] rounded-xl hover:bg-white/[0.1] active:scale-[0.98] transition-all"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-white font-medium">Pass</span>
+                <kbd className="px-2 py-1 bg-white/10 rounded text-xs text-white/40 font-mono">S</kbd>
+              </div>
+            </button>
           </div>
-          <button onClick={newRound} className="w-full py-3 bg-white text-black rounded-lg font-bold active:scale-[0.98]">
-            Next
-          </button>
-        </div>
-      )}
+        ) : (
+          <div className="max-w-md w-full">
+            <div className={`text-center mb-4 ${guess === isFirstPickable ? 'text-green-400' : 'text-red-400'}`}>
+              <div className="text-xl font-bold mb-1">
+                {guess === isFirstPickable ? 'Correct!' : 'Wrong!'}
+              </div>
+              <div className="text-white/50 text-sm">
+                {isFirstPickable ? 'This is a first pick!' : 'Not first pickable'} · Top {100 - percentile}%
+              </div>
+            </div>
+            <button
+              onClick={newRound}
+              className="w-full py-4 bg-white text-black rounded-xl font-bold hover:bg-white/90 active:scale-[0.98] transition-all"
+            >
+              Next
+            </button>
+            <div className="text-center text-white/30 text-xs mt-3">
+              Press <kbd className="px-1.5 py-0.5 bg-white/10 rounded">Enter</kbd> to continue
+            </div>
+          </div>
+        )}
 
-      <GameStats stats={stats} />
+        {/* Stats */}
+        <div className="text-center text-white/40 text-sm">
+          {stats.correct}/{stats.played} correct · Best: {stats.bestStreak}
+        </div>
+      </div>
     </div>
   );
 }

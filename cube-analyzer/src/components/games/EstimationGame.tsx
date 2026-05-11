@@ -7,7 +7,7 @@
  */
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { ChevronLeft, Gauge } from 'lucide-react';
+import { ChevronLeft, Gauge, Shuffle } from 'lucide-react';
 import type { CubeCard } from '../../types/card';
 import { getCardImage } from '../../services/scryfall';
 import { getEloData, getPercentile } from '../../services/eloHelpers';
@@ -16,6 +16,7 @@ import { shuffleArray } from './gameUtils';
 interface EstimationGameProps {
   cards: CubeCard[];
   onBack: () => void;
+  onShuffle?: () => void;
 }
 
 interface RoundResult {
@@ -36,7 +37,7 @@ const ELO_ZONES = [
   { label: 'Elite', range: [1800, 2400], center: 2000, desc: 'Premium' },
 ];
 
-export function EstimationGame({ cards, onBack }: EstimationGameProps) {
+export function EstimationGame({ cards, onBack, onShuffle }: EstimationGameProps) {
   // Game state
   const [round, setRound] = useState(1);
   const [targetCard, setTargetCard] = useState<CubeCard | null>(null);
@@ -300,10 +301,17 @@ export function EstimationGame({ cards, onBack }: EstimationGameProps) {
           <div className="text-white font-medium">Guess the ELO</div>
           <div className="text-white/40 text-xs">Round {round}/{TOTAL_ROUNDS}</div>
         </div>
-        <div className="text-right min-w-[60px]">
-          <div className="text-white font-bold">{totalScore}</div>
-          {streak > 1 && (
-            <div className="text-amber-400 text-xs">🔥 {streak}</div>
+        <div className="flex items-center gap-3">
+          <div className="text-right">
+            <div className="text-white font-bold">{totalScore}</div>
+            {streak > 1 && (
+              <div className="text-amber-400 text-xs">🔥 {streak}</div>
+            )}
+          </div>
+          {onShuffle && (
+            <button onClick={onShuffle} className="p-2 hover:bg-white/10 rounded-lg" title="Random game (P)">
+              <Shuffle className="w-4 h-4 text-white/50" />
+            </button>
           )}
         </div>
       </div>

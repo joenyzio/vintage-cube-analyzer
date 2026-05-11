@@ -7,7 +7,7 @@
  */
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { ChevronLeft, Stethoscope } from 'lucide-react';
+import { ChevronLeft, Stethoscope, Shuffle } from 'lucide-react';
 import type { CubeCard } from '../../types/card';
 import { getCardImage } from '../../services/scryfall';
 import { getEloData } from '../../services/eloHelpers';
@@ -16,6 +16,7 @@ import { shuffleArray } from './gameUtils';
 interface ConstraintGameProps {
   cards: CubeCard[];
   onBack: () => void;
+  onShuffle?: () => void;
 }
 
 interface RoundResult {
@@ -40,7 +41,7 @@ const PROBLEMS: { id: Problem; label: string; desc: string }[] = [
 
 const TOTAL_ROUNDS = 10;
 
-export function ConstraintGame({ cards, onBack }: ConstraintGameProps) {
+export function ConstraintGame({ cards, onBack, onShuffle }: ConstraintGameProps) {
   // Game state
   const [round, setRound] = useState(1);
   const [hand, setHand] = useState<CubeCard[]>([]);
@@ -377,10 +378,17 @@ export function ConstraintGame({ cards, onBack }: ConstraintGameProps) {
           <div className="text-white font-medium">Deck Doctor</div>
           <div className="text-white/40 text-xs">Round {round}/{TOTAL_ROUNDS}</div>
         </div>
-        <div className="text-right min-w-[60px]">
-          <div className="text-white font-bold">{totalScore}</div>
-          {streak > 1 && (
-            <div className="text-amber-400 text-xs">🔥 {streak}</div>
+        <div className="flex items-center gap-3">
+          <div className="text-right">
+            <div className="text-white font-bold">{totalScore}</div>
+            {streak > 1 && (
+              <div className="text-amber-400 text-xs">🔥 {streak}</div>
+            )}
+          </div>
+          {onShuffle && (
+            <button onClick={onShuffle} className="p-2 hover:bg-white/10 rounded-lg" title="Random game (P)">
+              <Shuffle className="w-4 h-4 text-white/50" />
+            </button>
           )}
         </div>
       </div>
