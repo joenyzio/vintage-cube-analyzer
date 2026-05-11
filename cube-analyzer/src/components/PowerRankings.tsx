@@ -15,13 +15,14 @@ interface PowerRankingsProps {
   cards: CubeCard[];
 }
 
-// Define tiers with more realistic thresholds
+// Define tiers based on ELO percentile for even distribution
+// S: Top 10%, A: Next 15%, B: Next 25%, C: Next 25%, D: Bottom 25%
 const TIERS = [
-  { id: 'S', label: 'S Tier - First Picks', min: 10, max: 10, color: 'text-amber-400', bg: 'bg-amber-400/10', border: 'border-amber-400/20', description: 'Always take these P1P1' },
-  { id: 'A', label: 'A Tier - Premium', min: 8, max: 9, color: 'text-purple-400', bg: 'bg-purple-400/10', border: 'border-purple-400/20', description: 'Top-tier playables' },
-  { id: 'B', label: 'B Tier - Strong', min: 6, max: 7, color: 'text-blue-400', bg: 'bg-blue-400/10', border: 'border-blue-400/20', description: 'Solid picks for any deck' },
-  { id: 'C', label: 'C Tier - Playable', min: 4, max: 5, color: 'text-green-400', bg: 'bg-green-400/10', border: 'border-green-400/20', description: 'Role players and fillers' },
-  { id: 'D', label: 'D Tier - Situational', min: 0, max: 3, color: 'text-white/40', bg: 'bg-white/5', border: 'border-white/10', description: 'Only in specific archetypes' },
+  { id: 'S', label: 'S Tier - First Picks', minPercentile: 90, color: 'text-amber-400', bg: 'bg-amber-400/10', border: 'border-amber-400/20', description: 'Always take these P1P1 - top 10%' },
+  { id: 'A', label: 'A Tier - Premium', minPercentile: 75, color: 'text-purple-400', bg: 'bg-purple-400/10', border: 'border-purple-400/20', description: 'Top-tier playables - top 25%' },
+  { id: 'B', label: 'B Tier - Strong', minPercentile: 50, color: 'text-blue-400', bg: 'bg-blue-400/10', border: 'border-blue-400/20', description: 'Solid picks for any deck - top 50%' },
+  { id: 'C', label: 'C Tier - Playable', minPercentile: 25, color: 'text-green-400', bg: 'bg-green-400/10', border: 'border-green-400/20', description: 'Role players - top 75%' },
+  { id: 'D', label: 'D Tier - Situational', minPercentile: 0, color: 'text-white/40', bg: 'bg-white/5', border: 'border-white/10', description: 'Niche cards - bottom 25%' },
 ];
 
 const COLOR_FILTERS = [
@@ -34,8 +35,11 @@ const COLOR_FILTERS = [
   { id: 'C', label: 'C', className: 'bg-neutral-400 text-black' },
 ];
 
-function getTier(power: number): typeof TIERS[number] {
-  return TIERS.find(t => power >= t.min && power <= t.max) || TIERS[TIERS.length - 1];
+function getTierByPercentile(percentile: number): typeof TIERS[number] {
+  for (const tier of TIERS) {
+    if (percentile >= tier.minPercentile) return tier;
+  }
+  return TIERS[TIERS.length - 1];
 }
 
 export function PowerRankings({ cards }: PowerRankingsProps) {
@@ -69,19 +73,24 @@ export function PowerRankings({ cards }: PowerRankingsProps) {
       result = result.filter(c => c.type_line?.toLowerCase().includes(typeFilter));
     }
 
-    // Sort by power level descending
-    result.sort((a, b) => b.powerLevel - a.powerLevel);
+    // Sort by ELO descending (highest ELO first)
+    result.sort((a, b) => {
+      const eloA = getEloData(a.name)?.elo || 0;
+      const eloB = getEloData(b.name)?.elo || 0;
+      return eloB - eloA;
+    });
 
     return result;
   }, [cards, search, colorFilter, typeFilter]);
 
-  // Group by tier
+  // Group by tier based on ELO percentile
   const cardsByTier = useMemo(() => {
     const groups: Record<string, CubeCard[]> = {};
     TIERS.forEach(t => groups[t.id] = []);
 
     filteredCards.forEach(card => {
-      const tier = getTier(card.powerLevel);
+      const percentile = getPercentile(card.name);
+      const tier = getTierByPercentile(percentile);
       groups[tier.id].push(card);
     });
 
@@ -244,15 +253,22 @@ export function PowerRankings({ cards }: PowerRankingsProps) {
                           className="w-full h-full object-cover"
                           loading="lazy"
                         />
-                        <div className={`
-                          absolute top-1 right-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold
-                          ${card.powerLevel >= 10 ? 'bg-amber-400 text-black' : ''}
-                          ${card.powerLevel >= 8 && card.powerLevel < 10 ? 'bg-purple-400 text-white' : ''}
-                          ${card.powerLevel >= 6 && card.powerLevel < 8 ? 'bg-blue-400 text-white' : ''}
-                          ${card.powerLevel < 6 ? 'bg-black/70 text-white' : ''}
-                        `}>
-                          {card.powerLevel}
-                        </div>
+                        {(() => {
+                          const percentile = getPercentile(card.name);
+                          const cardTier = getTierByPercentile(percentile);
+                          return (
+                            <div className={`
+                              absolute top-1 right-1 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold
+                              ${cardTier.id === 'S' ? 'bg-amber-400 text-black' : ''}
+                              ${cardTier.id === 'A' ? 'bg-purple-400 text-white' : ''}
+                              ${cardTier.id === 'B' ? 'bg-blue-400 text-white' : ''}
+                              ${cardTier.id === 'C' ? 'bg-green-500 text-white' : ''}
+                              ${cardTier.id === 'D' ? 'bg-black/70 text-white' : ''}
+                            `}>
+                              {cardTier.id}
+                            </div>
+                          );
+                        })()}
                       </div>
                     ))}
                   </div>
@@ -284,8 +300,8 @@ export function PowerRankings({ cards }: PowerRankingsProps) {
             <div className="mt-2 px-1 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-white truncate">{hoveredCard.name}</span>
-                <span className={`text-sm font-bold ${getTier(hoveredCard.powerLevel).color}`}>
-                  {hoveredCard.powerLevel}
+                <span className={`text-sm font-bold ${getTierByPercentile(getPercentile(hoveredCard.name)).color}`}>
+                  {getTierByPercentile(getPercentile(hoveredCard.name)).id}
                 </span>
               </div>
               <div className="text-xs text-white/40">{hoveredCard.type_line}</div>
