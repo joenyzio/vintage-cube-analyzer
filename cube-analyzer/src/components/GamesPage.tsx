@@ -7,14 +7,14 @@ import {
   getWheelLikelihood,
   type WheelLikelihood,
 } from '../services/eloHelpers';
-import { Scale, CircleDot, Layers, Trophy, ChevronLeft, Flame, Timer, Hash, Sparkles, Package, Hand, Radio } from 'lucide-react';
+import { Scale, CircleDot, Layers, Trophy, ChevronLeft, Flame, Timer, Hash, Sparkles, Package, Hand, Radio, GraduationCap } from 'lucide-react';
 import { srs, boolToQuality } from '../services/spacedRepetition';
 
 interface GamesPageProps {
   cards: CubeCard[];
 }
 
-type GameType = 'menu' | 'higher-lower' | 'wheel-or-not' | 'first-pick' | 'color-commit' | 'speed-round' | 'guess-cmc' | 'synergy-snap' | 'pack-p1p1' | 'mulligan-trainer' | 'signal-quiz';
+type GameType = 'menu' | 'higher-lower' | 'wheel-or-not' | 'first-pick' | 'color-commit' | 'speed-round' | 'guess-cmc' | 'synergy-snap' | 'pack-p1p1' | 'mulligan-trainer' | 'signal-quiz' | 'archetype-flashcards';
 
 interface GameStats {
   higherLower: { played: number; correct: number; streak: number; bestStreak: number };
@@ -27,6 +27,7 @@ interface GameStats {
   packP1P1: { played: number; correct: number; streak: number; bestStreak: number };
   mulliganTrainer: { played: number; correct: number; streak: number; bestStreak: number };
   signalQuiz: { played: number; correct: number; streak: number; bestStreak: number };
+  archetypeFlashcards: { played: number; correct: number; streak: number; bestStreak: number };
 }
 
 const STORAGE_KEY = 'cube-games-stats';
@@ -48,6 +49,7 @@ function loadStats(): GameStats {
         packP1P1: parsed.packP1P1 || { played: 0, correct: 0, streak: 0, bestStreak: 0 },
         mulliganTrainer: parsed.mulliganTrainer || { played: 0, correct: 0, streak: 0, bestStreak: 0 },
         signalQuiz: parsed.signalQuiz || { played: 0, correct: 0, streak: 0, bestStreak: 0 },
+        archetypeFlashcards: parsed.archetypeFlashcards || { played: 0, correct: 0, streak: 0, bestStreak: 0 },
       };
     }
   } catch {}
@@ -62,6 +64,7 @@ function loadStats(): GameStats {
     packP1P1: { played: 0, correct: 0, streak: 0, bestStreak: 0 },
     mulliganTrainer: { played: 0, correct: 0, streak: 0, bestStreak: 0 },
     signalQuiz: { played: 0, correct: 0, streak: 0, bestStreak: 0 },
+    archetypeFlashcards: { played: 0, correct: 0, streak: 0, bestStreak: 0 },
   };
 }
 
@@ -111,6 +114,7 @@ export function GamesPage({ cards }: GamesPageProps) {
     { id: 'pack-p1p1' as GameType, name: 'Pack P1P1', desc: 'Pick the best card from a pack', icon: Package, color: 'orange', stats: stats.packP1P1, featured: true },
     { id: 'mulligan-trainer' as GameType, name: 'Mulligan Trainer', desc: 'Keep or mull this hand?', icon: Hand, color: 'indigo', stats: stats.mulliganTrainer, featured: true },
     { id: 'signal-quiz' as GameType, name: 'Signal Quiz', desc: 'What does this late pick mean?', icon: Radio, color: 'cyan', stats: stats.signalQuiz, featured: true },
+    { id: 'archetype-flashcards' as GameType, name: 'Archetype Drills', desc: 'Name the key cards', icon: GraduationCap, color: 'emerald', stats: stats.archetypeFlashcards, featured: true },
     { id: 'higher-lower' as GameType, name: 'Higher or Lower', desc: 'Which has higher ELO?', icon: Scale, color: 'blue', stats: stats.higherLower },
     { id: 'speed-round' as GameType, name: 'Speed Round', desc: '30 seconds, how many right?', icon: Timer, color: 'red', stats: stats.speedRound },
     { id: 'wheel-or-not' as GameType, name: 'Will It Wheel?', desc: 'Will it come back around?', icon: CircleDot, color: 'green', stats: stats.wheelOrNot },
@@ -125,6 +129,7 @@ export function GamesPage({ cards }: GamesPageProps) {
       'pack-p1p1': PackP1P1Game,
       'mulligan-trainer': MulliganTrainerGame,
       'signal-quiz': SignalQuizGame,
+      'archetype-flashcards': ArchetypeFlashcardsGame,
       'higher-lower': HigherLowerGame,
       'wheel-or-not': WheelOrNotGame,
       'first-pick': FirstPickGame,
@@ -138,6 +143,7 @@ export function GamesPage({ cards }: GamesPageProps) {
       'pack-p1p1': 'packP1P1',
       'mulligan-trainer': 'mulliganTrainer',
       'signal-quiz': 'signalQuiz',
+      'archetype-flashcards': 'archetypeFlashcards',
       'higher-lower': 'higherLower',
       'wheel-or-not': 'wheelOrNot',
       'first-pick': 'firstPick',
@@ -1226,6 +1232,238 @@ function SignalQuizGame({ cards, stats, onUpdate, onBack }: GameComponentProps) 
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// ============ ARCHETYPE FLASHCARDS ============
+// Archetype definitions with key cards for drilling
+const ARCHETYPES_DATA = [
+  {
+    id: 'ub-reanimator',
+    name: 'UB Reanimator',
+    keyCards: ['Entomb', 'Reanimate', 'Animate Dead', 'Griselbrand', 'Archon of Cruelty', 'Shallow Grave', 'Exhume'],
+    description: 'Cheat massive creatures into play from the graveyard as early as turn 1-2',
+  },
+  {
+    id: 'ur-storm',
+    name: 'UR Storm',
+    keyCards: ['Brain Freeze', 'Underworld Breach', 'Time Spiral', 'Yawgmoth\'s Will', 'Wheel of Fortune', 'Lion\'s Eye Diamond', 'Echo of Eons'],
+    description: 'Chain spells together for massive storm counts',
+  },
+  {
+    id: 'artifact-combo',
+    name: 'Artifact Combo',
+    keyCards: ['Tinker', 'Tolarian Academy', 'Mishra\'s Workshop', 'Blightsteel Colossus', 'Mana Vault', 'Grim Monolith', 'Memory Jar'],
+    description: 'Abuse fast mana and artifact synergies',
+  },
+  {
+    id: 'mono-white',
+    name: 'Mono White Aggro',
+    keyCards: ['Mother of Runes', 'Thalia, Guardian of Thraben', 'Adeline, Resplendent Cathar', 'Armageddon', 'Monastery Mentor', 'Solitude'],
+    description: 'Efficient white creatures with disruption',
+  },
+  {
+    id: 'uw-control',
+    name: 'UW Control',
+    keyCards: ['Jace, the Mind Sculptor', 'The Wandering Emperor', 'Counterspell', 'Swords to Plowshares', 'Force of Will', 'Balance', 'Teferi, Time Raveler'],
+    description: 'Draw-go control with efficient answers',
+  },
+  {
+    id: 'ug-ramp',
+    name: 'UG Ramp',
+    keyCards: ['Channel', 'Primeval Titan', 'Craterhoof Behemoth', 'Natural Order', 'Fastbond', 'Oracle of Mul Daya', 'Uro, Titan of Nature\'s Wrath'],
+    description: 'Accelerate into massive threats',
+  },
+  {
+    id: 'br-aggro',
+    name: 'BR Rakdos',
+    keyCards: ['Ragavan, Nimble Pilferer', 'Thoughtseize', 'Lightning Bolt', 'Orcish Bowmasters', 'Grief', 'Dark Confidant'],
+    description: 'Fast aggro with hand disruption',
+  },
+  {
+    id: 'show-tell',
+    name: 'Show and Tell',
+    keyCards: ['Show and Tell', 'Sneak Attack', 'Through the Breach', 'Emrakul, the Aeons Torn', 'Griselbrand', 'Atraxa, Grand Unifier'],
+    description: 'Cheat giant creatures without paying costs',
+  },
+  {
+    id: 'bg-midrange',
+    name: 'BG Rock',
+    keyCards: ['Deathrite Shaman', 'Grist, the Hunger Tide', 'Liliana of the Veil', 'Endurance', 'Scavenging Ooze', 'Recurring Nightmare'],
+    description: 'Grind with 2-for-1s and recursive threats',
+  },
+  {
+    id: 'rw-aggro',
+    name: 'RW Boros',
+    keyCards: ['Ragavan, Nimble Pilferer', 'Goblin Rabblemaster', 'Adeline, Resplendent Cathar', 'Lightning Bolt', 'Forth Eorlingas!', 'Armageddon'],
+    description: 'The fastest deck in the cube',
+  },
+];
+
+// Get all unique key cards for wrong answers
+const ALL_KEY_CARDS = [...new Set(ARCHETYPES_DATA.flatMap(a => a.keyCards))];
+
+function ArchetypeFlashcardsGame({ stats, onUpdate, onBack }: GameComponentProps) {
+  const [archetype, setArchetype] = useState<typeof ARCHETYPES_DATA[0] | null>(null);
+  const [options, setOptions] = useState<string[]>([]);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [revealed, setRevealed] = useState(false);
+
+  const newRound = useCallback(() => {
+    // Pick random archetype
+    const arch = ARCHETYPES_DATA[Math.floor(Math.random() * ARCHETYPES_DATA.length)];
+
+    // Get 3 correct key cards
+    const correctCards = shuffleArray(arch.keyCards).slice(0, 3);
+
+    // Get 3 wrong cards (from other archetypes)
+    const wrongCards = shuffleArray(
+      ALL_KEY_CARDS.filter(c => !arch.keyCards.includes(c))
+    ).slice(0, 3);
+
+    // Shuffle all options
+    const allOptions = shuffleArray([...correctCards, ...wrongCards]);
+
+    setArchetype(arch);
+    setOptions(allOptions);
+    setSelected(new Set());
+    setRevealed(false);
+  }, []);
+
+  useEffect(() => { newRound(); }, [newRound]);
+
+  if (!archetype) return null;
+
+  const toggleCard = (card: string) => {
+    if (revealed) return;
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(card)) {
+        next.delete(card);
+      } else if (next.size < 3) {
+        next.add(card);
+      }
+      return next;
+    });
+  };
+
+  const handleSubmit = () => {
+    if (selected.size !== 3 || revealed) return;
+    setRevealed(true);
+
+    // Count correct selections
+    const correctCount = [...selected].filter(c => archetype.keyCards.includes(c)).length;
+    const isCorrect = correctCount === 3;
+    onUpdate(isCorrect);
+
+    // Track in SRS
+    srs.recordReview(
+      `archetype-${archetype.id}`,
+      'archetypes',
+      boolToQuality(isCorrect, true)
+    );
+  };
+
+  const correctCards = options.filter(c => archetype.keyCards.includes(c));
+
+  return (
+    <div>
+      <GameHeader
+        title="Archetype Drills"
+        subtitle="Select 3 key cards"
+        streak={stats.streak}
+        onBack={onBack}
+      />
+
+      {/* Archetype Name */}
+      <div className="text-center mb-4">
+        <div className="text-2xl font-bold text-emerald-400 mb-1">{archetype.name}</div>
+        <div className="text-sm text-white/50">{archetype.description}</div>
+      </div>
+
+      {/* Card Options */}
+      <div className="grid grid-cols-2 gap-2 mb-4">
+        {options.map(card => {
+          const isSelected = selected.has(card);
+          const isCorrect = archetype.keyCards.includes(card);
+
+          let className = 'p-3 rounded-lg text-sm font-medium transition-all active:scale-[0.98] text-left ';
+
+          if (revealed) {
+            if (isCorrect) {
+              className += 'bg-emerald-500/30 text-emerald-300 border border-emerald-500/50';
+            } else if (isSelected) {
+              className += 'bg-red-500/30 text-red-300 border border-red-500/50';
+            } else {
+              className += 'bg-white/5 text-white/30';
+            }
+          } else {
+            if (isSelected) {
+              className += 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40';
+            } else {
+              className += 'bg-white/5 text-white/70 hover:bg-white/10';
+            }
+          }
+
+          return (
+            <button
+              key={card}
+              onClick={() => toggleCard(card)}
+              disabled={revealed}
+              className={className}
+            >
+              {card}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Submit or Result */}
+      {!revealed ? (
+        <button
+          onClick={handleSubmit}
+          disabled={selected.size !== 3}
+          className={`w-full py-4 rounded-xl font-bold text-lg transition-all active:scale-[0.98] ${
+            selected.size === 3
+              ? 'bg-emerald-500 text-white'
+              : 'bg-white/10 text-white/30'
+          }`}
+        >
+          {selected.size === 3 ? 'Check Answer' : `Select ${3 - selected.size} more`}
+        </button>
+      ) : (
+        <>
+          <div className="text-center mb-3">
+            <div className={`text-xl font-bold ${
+              [...selected].filter(c => archetype.keyCards.includes(c)).length === 3
+                ? 'text-emerald-400'
+                : 'text-red-400'
+            }`}>
+              {[...selected].filter(c => archetype.keyCards.includes(c)).length}/3 Correct
+            </div>
+            {[...selected].filter(c => archetype.keyCards.includes(c)).length < 3 && (
+              <div className="text-sm text-white/50 mt-1">
+                Correct: {correctCards.join(', ')}
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={newRound}
+            className="w-full py-4 bg-white text-black rounded-xl font-bold text-lg active:scale-[0.98]"
+          >
+            Next Archetype
+          </button>
+        </>
+      )}
+
+      {stats.played > 0 && (
+        <div className="text-center text-white/20 text-xs mt-3">
+          {Math.round((stats.correct / stats.played) * 100)}% · {stats.correct}/{stats.played}
+          {stats.bestStreak > 1 && ` · Best: ${stats.bestStreak}`}
+        </div>
+      )}
     </div>
   );
 }
