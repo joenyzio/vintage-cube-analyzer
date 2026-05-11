@@ -7,14 +7,14 @@ import {
   getWheelLikelihood,
   type WheelLikelihood,
 } from '../services/eloHelpers';
-import { Scale, CircleDot, Layers, Trophy, ChevronLeft, Flame, Timer, Hash, Sparkles, Package, Hand, Radio, GraduationCap, TrendingUp, TrendingDown, Minus, BarChart3, ArrowLeftRight } from 'lucide-react';
+import { Scale, CircleDot, Layers, Trophy, ChevronLeft, Flame, Timer, Hash, Sparkles, Package, Hand, Radio, GraduationCap, TrendingUp, TrendingDown, Minus, BarChart3, ArrowLeftRight, ListOrdered } from 'lucide-react';
 import { srs, boolToQuality, type SkillCategory, type SkillRating } from '../services/spacedRepetition';
 
 interface GamesPageProps {
   cards: CubeCard[];
 }
 
-type GameType = 'menu' | 'higher-lower' | 'wheel-or-not' | 'first-pick' | 'color-commit' | 'speed-round' | 'guess-cmc' | 'synergy-snap' | 'pack-p1p1' | 'mulligan-trainer' | 'signal-quiz' | 'archetype-flashcards' | 'sideboard-drill';
+type GameType = 'menu' | 'higher-lower' | 'wheel-or-not' | 'first-pick' | 'color-commit' | 'speed-round' | 'guess-cmc' | 'synergy-snap' | 'pack-p1p1' | 'mulligan-trainer' | 'signal-quiz' | 'archetype-flashcards' | 'sideboard-drill' | 'sequencing';
 
 interface GameStats {
   higherLower: { played: number; correct: number; streak: number; bestStreak: number };
@@ -29,6 +29,7 @@ interface GameStats {
   signalQuiz: { played: number; correct: number; streak: number; bestStreak: number };
   archetypeFlashcards: { played: number; correct: number; streak: number; bestStreak: number };
   sideboardDrill: { played: number; correct: number; streak: number; bestStreak: number };
+  sequencing: { played: number; correct: number; streak: number; bestStreak: number };
 }
 
 const STORAGE_KEY = 'cube-games-stats';
@@ -52,6 +53,7 @@ function loadStats(): GameStats {
         signalQuiz: parsed.signalQuiz || { played: 0, correct: 0, streak: 0, bestStreak: 0 },
         archetypeFlashcards: parsed.archetypeFlashcards || { played: 0, correct: 0, streak: 0, bestStreak: 0 },
         sideboardDrill: parsed.sideboardDrill || { played: 0, correct: 0, streak: 0, bestStreak: 0 },
+        sequencing: parsed.sequencing || { played: 0, correct: 0, streak: 0, bestStreak: 0 },
       };
     }
   } catch {}
@@ -68,6 +70,7 @@ function loadStats(): GameStats {
     signalQuiz: { played: 0, correct: 0, streak: 0, bestStreak: 0 },
     archetypeFlashcards: { played: 0, correct: 0, streak: 0, bestStreak: 0 },
     sideboardDrill: { played: 0, correct: 0, streak: 0, bestStreak: 0 },
+    sequencing: { played: 0, correct: 0, streak: 0, bestStreak: 0 },
   };
 }
 
@@ -119,6 +122,7 @@ export function GamesPage({ cards }: GamesPageProps) {
     { id: 'signal-quiz' as GameType, name: 'Signal Quiz', desc: 'What does this late pick mean?', icon: Radio, color: 'cyan', stats: stats.signalQuiz, featured: true },
     { id: 'archetype-flashcards' as GameType, name: 'Archetype Drills', desc: 'Name the key cards', icon: GraduationCap, color: 'emerald', stats: stats.archetypeFlashcards, featured: true },
     { id: 'sideboard-drill' as GameType, name: 'Sideboard Guide', desc: 'What comes in/out?', icon: ArrowLeftRight, color: 'rose', stats: stats.sideboardDrill, featured: true },
+    { id: 'sequencing' as GameType, name: 'Sequencing', desc: 'Order your plays correctly', icon: ListOrdered, color: 'violet', stats: stats.sequencing, featured: true },
     { id: 'higher-lower' as GameType, name: 'Higher or Lower', desc: 'Which has higher ELO?', icon: Scale, color: 'blue', stats: stats.higherLower },
     { id: 'speed-round' as GameType, name: 'Speed Round', desc: '30 seconds, how many right?', icon: Timer, color: 'red', stats: stats.speedRound },
     { id: 'wheel-or-not' as GameType, name: 'Will It Wheel?', desc: 'Will it come back around?', icon: CircleDot, color: 'green', stats: stats.wheelOrNot },
@@ -135,6 +139,7 @@ export function GamesPage({ cards }: GamesPageProps) {
       'signal-quiz': SignalQuizGame,
       'archetype-flashcards': ArchetypeFlashcardsGame,
       'sideboard-drill': SideboardDrillGame,
+      'sequencing': SequencingGame,
       'higher-lower': HigherLowerGame,
       'wheel-or-not': WheelOrNotGame,
       'first-pick': FirstPickGame,
@@ -150,6 +155,7 @@ export function GamesPage({ cards }: GamesPageProps) {
       'signal-quiz': 'signalQuiz',
       'archetype-flashcards': 'archetypeFlashcards',
       'sideboard-drill': 'sideboardDrill',
+      'sequencing': 'sequencing',
       'higher-lower': 'higherLower',
       'wheel-or-not': 'wheelOrNot',
       'first-pick': 'firstPick',
@@ -348,6 +354,7 @@ function GameMenuButton({ game, onSelect }: { game: GameMenuItem; onSelect: (id:
     indigo: 'bg-indigo-500/10 border-indigo-500/20 hover:bg-indigo-500/20',
     emerald: 'bg-emerald-500/10 border-emerald-500/20 hover:bg-emerald-500/20',
     rose: 'bg-rose-500/10 border-rose-500/20 hover:bg-rose-500/20',
+    violet: 'bg-violet-500/10 border-violet-500/20 hover:bg-violet-500/20',
   };
 
   const iconColors: Record<string, string> = {
@@ -362,6 +369,7 @@ function GameMenuButton({ game, onSelect }: { game: GameMenuItem; onSelect: (id:
     indigo: 'text-indigo-400',
     emerald: 'text-emerald-400',
     rose: 'text-rose-400',
+    violet: 'text-violet-400',
   };
 
   return (
@@ -1886,6 +1894,266 @@ function SideboardDrillGame({ stats, onUpdate, onBack }: GameComponentProps) {
             className="w-full py-4 bg-white text-black rounded-xl font-bold text-lg active:scale-[0.98]"
           >
             Next Matchup
+          </button>
+        </>
+      )}
+
+      {stats.played > 0 && (
+        <div className="text-center text-white/20 text-xs mt-3">
+          {Math.round((stats.correct / stats.played) * 100)}% · {stats.correct}/{stats.played}
+          {stats.bestStreak > 1 && ` · Best: ${stats.bestStreak}`}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============ SEQUENCING PUZZLES ============
+interface SequencePuzzle {
+  name: string;
+  scenario: string;
+  hand: string[];
+  board: string[];
+  mana: string;
+  correctOrder: string[];
+  explanation: string;
+}
+
+const SEQUENCE_PUZZLES: SequencePuzzle[] = [
+  {
+    name: 'Storm Setup',
+    scenario: 'You need to storm off this turn for lethal.',
+    hand: ['Lion\'s Eye Diamond', 'Underworld Breach', 'Brain Freeze', 'Dark Ritual'],
+    board: ['Island', 'Swamp', 'Mox Sapphire'],
+    mana: 'UBB available',
+    correctOrder: ['Dark Ritual', 'Lion\'s Eye Diamond', 'Underworld Breach', 'Brain Freeze'],
+    explanation: 'Cast Ritual first for mana, LED second (hold priority), Breach third (crack LED for RRR in response), then escape Brain Freeze repeatedly from graveyard.'
+  },
+  {
+    name: 'Reanimator Line',
+    scenario: 'Turn 1 with the nuts. Get Griselbrand into play.',
+    hand: ['Entomb', 'Reanimate', 'Dark Ritual', 'Swamp'],
+    board: [],
+    mana: 'None yet',
+    correctOrder: ['Swamp', 'Dark Ritual', 'Entomb', 'Reanimate'],
+    explanation: 'Land first, Ritual for BBB, Entomb to put Griselbrand in yard, Reanimate paying 8 life. Draw 7 immediately.'
+  },
+  {
+    name: 'Tinker Setup',
+    scenario: 'Maximize your Tinker. What order?',
+    hand: ['Tinker', 'Mana Crypt', 'Time Walk', 'Blightsteel Colossus'],
+    board: ['Island', 'Island', 'Mox Sapphire'],
+    mana: 'UUU available',
+    correctOrder: ['Time Walk', 'Mana Crypt', 'Tinker'],
+    explanation: 'Time Walk first gives you an extra turn. Play Crypt second as Tinker fodder. Tinker third for Blightsteel. Attack next turn for 11 infect, attack again for lethal.'
+  },
+  {
+    name: 'Aggro Pressure',
+    scenario: 'Maximize damage this turn against a tapped-out opponent.',
+    hand: ['Lightning Bolt', 'Goblin Guide', 'Monastery Swiftspear'],
+    board: ['Mountain', 'Mountain', 'Ragavan, Nimble Pilferer'],
+    mana: 'RR available',
+    correctOrder: ['Monastery Swiftspear', 'Goblin Guide', 'Lightning Bolt'],
+    explanation: 'Swiftspear first, Guide second (triggers prowess +1/+1), Bolt third (triggers prowess again). Swiftspear attacks as 3/4, Guide as 2/2, Ragavan as 2/1. Maximum damage.'
+  },
+  {
+    name: 'Control Setup',
+    scenario: 'Set up for the long game while holding up interaction.',
+    hand: ['Jace, the Mind Sculptor', 'Force of Will', 'Brainstorm', 'Counterspell'],
+    board: ['Island', 'Island', 'Tundra', 'Flooded Strand'],
+    mana: 'UUUW available',
+    correctOrder: ['Flooded Strand', 'Jace, the Mind Sculptor', 'Brainstorm'],
+    explanation: 'Crack fetch first (shuffle away bad cards with Jace). Play Jace and Brainstorm immediately. Keep Force + blue card and Counterspell for protection. Fetch lets you shuffle away Brainstorm\'s bad cards later.'
+  },
+  {
+    name: 'Natural Order Line',
+    scenario: 'You have the combo. Execute it correctly.',
+    hand: ['Natural Order', 'Craterhoof Behemoth', 'Birds of Paradise'],
+    board: ['Forest', 'Forest', 'Llanowar Elves', 'Elvish Mystic'],
+    mana: 'GGGG available (2 lands + 2 dorks)',
+    correctOrder: ['Birds of Paradise', 'Natural Order'],
+    explanation: 'Play Birds first for another body. Then Natural Order sacrificing the Birds (not a mana dork you need). Get Craterhoof. Each creature gets +4/+4 and trample. Attack for 16.'
+  },
+  {
+    name: 'Wheel Setup',
+    scenario: 'Maximize your Wheel of Fortune.',
+    hand: ['Wheel of Fortune', 'Mox Ruby', 'Lightning Bolt', 'Chrome Mox'],
+    board: ['Mountain', 'Mountain'],
+    mana: 'RR available',
+    correctOrder: ['Mox Ruby', 'Chrome Mox', 'Lightning Bolt', 'Wheel of Fortune'],
+    explanation: 'Deploy all mana artifacts first. Use Bolt on opponent (or creature). Empty your hand, then Wheel. You keep mana advantage and draw 7 fresh cards.'
+  },
+  {
+    name: 'Show and Tell',
+    scenario: 'Resolve Show and Tell safely.',
+    hand: ['Show and Tell', 'Emrakul, the Aeons Torn', 'Force of Will', 'Brainstorm'],
+    board: ['Island', 'Island', 'Ancient Tomb'],
+    mana: 'UU + 2 colorless',
+    correctOrder: ['Brainstorm', 'Show and Tell'],
+    explanation: 'Brainstorm first to put Emrakul on top if needed (in case of discard), but mainly to look for more protection. Then Show and Tell. Keep Force backup for their response. Put Emrakul in, attack for 15 + Annihilator 6.'
+  },
+];
+
+function SequencingGame({ stats, onUpdate, onBack }: GameComponentProps) {
+  const [puzzle, setPuzzle] = useState<SequencePuzzle | null>(null);
+  const [userOrder, setUserOrder] = useState<string[]>([]);
+  const [remaining, setRemaining] = useState<string[]>([]);
+  const [revealed, setRevealed] = useState(false);
+
+  const newPuzzle = useCallback(() => {
+    const p = SEQUENCE_PUZZLES[Math.floor(Math.random() * SEQUENCE_PUZZLES.length)];
+    setPuzzle(p);
+    setUserOrder([]);
+    setRemaining(shuffleArray([...p.correctOrder]));
+    setRevealed(false);
+  }, []);
+
+  useEffect(() => { newPuzzle(); }, [newPuzzle]);
+
+  if (!puzzle) return null;
+
+  const selectCard = (card: string) => {
+    if (revealed) return;
+    setUserOrder(prev => [...prev, card]);
+    setRemaining(prev => prev.filter(c => c !== card));
+  };
+
+  const undoLast = () => {
+    if (revealed || userOrder.length === 0) return;
+    const last = userOrder[userOrder.length - 1];
+    setUserOrder(prev => prev.slice(0, -1));
+    setRemaining(prev => [...prev, last]);
+  };
+
+  const handleSubmit = () => {
+    if (revealed || userOrder.length !== puzzle.correctOrder.length) return;
+    setRevealed(true);
+
+    const isCorrect = userOrder.every((card, i) => card === puzzle.correctOrder[i]);
+    onUpdate(isCorrect);
+    srs.recordReview(
+      `sequence-${puzzle.name}`,
+      'sequencing',
+      boolToQuality(isCorrect, true)
+    );
+  };
+
+  const isCorrect = revealed && userOrder.every((card, i) => card === puzzle.correctOrder[i]);
+
+  return (
+    <div>
+      <GameHeader
+        title="Sequencing"
+        subtitle={puzzle.name}
+        streak={stats.streak}
+        onBack={onBack}
+      />
+
+      {/* Scenario */}
+      <div className="bg-white/5 rounded-lg p-3 mb-4">
+        <div className="text-sm text-white/70 mb-2">{puzzle.scenario}</div>
+        <div className="text-xs text-white/40">
+          <span className="text-violet-400">Board:</span> {puzzle.board.length > 0 ? puzzle.board.join(', ') : 'Empty'}
+        </div>
+        <div className="text-xs text-white/40">
+          <span className="text-violet-400">Mana:</span> {puzzle.mana}
+        </div>
+      </div>
+
+      {/* Your Sequence */}
+      <div className="mb-4">
+        <div className="flex items-center justify-between mb-2">
+          <div className="text-xs font-medium text-violet-400 uppercase tracking-wider">
+            Your Sequence
+          </div>
+          {userOrder.length > 0 && !revealed && (
+            <button onClick={undoLast} className="text-xs text-white/40 hover:text-white/60">
+              Undo
+            </button>
+          )}
+        </div>
+        <div className="min-h-[48px] bg-white/5 rounded-lg p-2 flex flex-wrap gap-2">
+          {userOrder.map((card, i) => {
+            const isCardCorrect = revealed && card === puzzle.correctOrder[i];
+            const isCardWrong = revealed && card !== puzzle.correctOrder[i];
+
+            return (
+              <div
+                key={`${card}-${i}`}
+                className={`px-3 py-1.5 rounded text-sm font-medium ${
+                  isCardCorrect ? 'bg-green-500/30 text-green-300' :
+                  isCardWrong ? 'bg-red-500/30 text-red-300' :
+                  'bg-violet-500/20 text-violet-300'
+                }`}
+              >
+                <span className="text-white/40 mr-1">{i + 1}.</span>
+                {card}
+              </div>
+            );
+          })}
+          {userOrder.length === 0 && (
+            <div className="text-sm text-white/30">Tap cards below in order...</div>
+          )}
+        </div>
+      </div>
+
+      {/* Available Cards */}
+      {remaining.length > 0 && !revealed && (
+        <div className="mb-4">
+          <div className="text-xs font-medium text-white/40 uppercase tracking-wider mb-2">
+            Hand
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {remaining.map(card => (
+              <button
+                key={card}
+                onClick={() => selectCard(card)}
+                className="px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm text-white font-medium transition-all active:scale-[0.98]"
+              >
+                {card}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Submit or Result */}
+      {!revealed ? (
+        <button
+          onClick={handleSubmit}
+          disabled={userOrder.length !== puzzle.correctOrder.length}
+          className={`w-full py-4 rounded-xl font-bold text-lg transition-all active:scale-[0.98] ${
+            userOrder.length === puzzle.correctOrder.length
+              ? 'bg-violet-500 text-white'
+              : 'bg-white/10 text-white/30'
+          }`}
+        >
+          {userOrder.length === puzzle.correctOrder.length ? 'Check Sequence' : `Select ${puzzle.correctOrder.length - userOrder.length} more`}
+        </button>
+      ) : (
+        <>
+          <div className={`text-center text-xl font-bold mb-3 ${isCorrect ? 'text-green-400' : 'text-red-400'}`}>
+            {isCorrect ? 'Perfect!' : 'Not Quite'}
+          </div>
+
+          {!isCorrect && (
+            <div className="bg-white/5 rounded-lg p-3 mb-3">
+              <div className="text-xs text-white/40 mb-1">Correct Order:</div>
+              <div className="text-sm text-violet-300">
+                {puzzle.correctOrder.map((c, i) => `${i + 1}. ${c}`).join(' → ')}
+              </div>
+            </div>
+          )}
+
+          <div className="bg-white/5 rounded-lg p-3 mb-4 text-sm text-white/70">
+            {puzzle.explanation}
+          </div>
+
+          <button
+            onClick={newPuzzle}
+            className="w-full py-4 bg-white text-black rounded-xl font-bold text-lg active:scale-[0.98]"
+          >
+            Next Puzzle
           </button>
         </>
       )}
