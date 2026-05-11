@@ -219,7 +219,7 @@ export function MatchupMatrix({ archetypes, cards: _cards }: MatchupMatrixProps)
   return (
     <div className="space-y-6">
       {/* Power Rankings - Data Driven */}
-      <Card className="bg-[#111] border-white/8 p-4">
+      <Card className="bg-black border-white/[0.06] p-4">
         <h3 className="text-sm font-semibold text-white/60 mb-3 flex items-center gap-2">
           <TrendingUp className="w-4 h-4" />
           Archetype Power Rankings
@@ -287,7 +287,7 @@ export function MatchupMatrix({ archetypes, cards: _cards }: MatchupMatrixProps)
 
       {/* Selected Archetype Detail */}
       {selectedAnalysis && (
-        <Card className="bg-[#111] border-white/8 p-4">
+        <Card className="bg-black border-white/[0.06] p-4">
           <div className="flex items-center gap-3 mb-4">
             <div className="flex -space-x-0.5">
               {selectedAnalysis.archetype.colors.length === 0 ? (
@@ -416,7 +416,7 @@ export function MatchupMatrix({ archetypes, cards: _cards }: MatchupMatrixProps)
       )}
 
       {/* Strategy Type Legend */}
-      <Card className="bg-[#111] border-white/8 p-4">
+      <Card className="bg-black border-white/[0.06] p-4">
         <h3 className="text-sm font-semibold text-white/60 mb-3">Strategy Type Guide</h3>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {Object.entries(STRATEGY_MATCHUPS).map(([type, data]) => {
@@ -441,7 +441,7 @@ export function MatchupMatrix({ archetypes, cards: _cards }: MatchupMatrixProps)
       </Card>
 
       {/* Hate Cards Reference */}
-      <Card className="bg-[#111] border-white/8 p-4">
+      <Card className="bg-black border-white/[0.06] p-4">
         <h3 className="text-sm font-semibold text-white/60 mb-3">Key Hate Cards</h3>
         <div className="grid sm:grid-cols-2 gap-2">
           {Object.entries(HATE_CARDS).map(([card, data]) => (

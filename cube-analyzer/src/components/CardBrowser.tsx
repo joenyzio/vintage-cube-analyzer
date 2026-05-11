@@ -154,7 +154,7 @@ export function CardBrowser({ cards }: CardBrowserProps) {
             placeholder="Search cards..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 bg-[#111] border border-white/10 rounded-lg text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white/20"
+            className="w-full pl-9 pr-3 py-2 bg-black border border-white/10 rounded-lg text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white/20"
           />
         </div>
 
@@ -200,7 +200,7 @@ export function CardBrowser({ cards }: CardBrowserProps) {
         <select
           value={filterType}
           onChange={(e) => setFilterType(e.target.value)}
-          className="px-3 py-2 bg-[#111] border border-white/10 rounded-lg text-sm text-white/60 focus:outline-none"
+          className="px-3 py-2 bg-black border border-white/10 rounded-lg text-sm text-white/60 focus:outline-none"
         >
           <option value="all">All Types</option>
           <option value="creature">Creature</option>
@@ -216,7 +216,7 @@ export function CardBrowser({ cards }: CardBrowserProps) {
         <select
           value={filterRole}
           onChange={(e) => setFilterRole(e.target.value)}
-          className="px-3 py-2 bg-[#111] border border-white/10 rounded-lg text-sm text-white/60 focus:outline-none"
+          className="px-3 py-2 bg-black border border-white/10 rounded-lg text-sm text-white/60 focus:outline-none"
         >
           {ROLE_OPTIONS.map((r) => (
             <option key={r} value={r}>{r}</option>
@@ -231,7 +231,7 @@ export function CardBrowser({ cards }: CardBrowserProps) {
             sortBy === 'name' ? 'cmc' :
             sortBy === 'cmc' ? 'color' : 'power'
           )}
-          className="flex items-center gap-2 px-3 py-2 bg-[#111] border border-white/10 rounded-lg text-sm text-white/60 hover:text-white/80 transition-colors"
+          className="flex items-center gap-2 px-3 py-2 bg-black border border-white/10 rounded-lg text-sm text-white/60 hover:text-white/80 transition-colors"
         >
           <ArrowUpDown className="w-4 h-4" />
           {sortBy === 'power' ? 'Power' :
@@ -310,7 +310,7 @@ export function CardBrowser({ cards }: CardBrowserProps) {
           onClick={() => setSelectedCard(null)}
         >
           <div
-            className="bg-[#111] border border-white/10 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-auto"
+            className="bg-black border border-white/10 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-6">
@@ -509,7 +509,7 @@ export function CardBrowser({ cards }: CardBrowserProps) {
       {/* Floating Hover Preview */}
       {hoveredCard && !selectedCard && (
         <div className="fixed bottom-6 right-6 z-50 hidden lg:block pointer-events-none">
-          <div className="bg-[#111] border border-white/10 p-3 rounded-xl shadow-2xl w-64">
+          <div className="bg-black border border-white/10 p-3 rounded-xl shadow-2xl w-64">
             <img
               src={getCardImage(hoveredCard)}
               alt={hoveredCard.name}

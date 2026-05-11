@@ -246,8 +246,10 @@ function ProgressDashboard({
 
   if (!hasData) {
     return (
-      <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
-        <BarChart3 className="w-8 h-8 text-white/20 mx-auto mb-2" />
+      <div className="bg-white/[0.04] border border-white/[0.06] rounded-xl p-5 text-center">
+        <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-white/[0.06] flex items-center justify-center">
+          <BarChart3 className="w-6 h-6 text-white/40" />
+        </div>
         <div className="text-sm text-white/50">Complete drills to track your progress</div>
       </div>
     );
@@ -257,7 +259,7 @@ function ProgressDashboard({
   const activeSkills = skillRatings.filter(r => r.totalAttempts > 0);
 
   return (
-    <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+    <div className="bg-white/[0.04] border border-white/[0.06] rounded-xl p-5">
       {/* Overall Stats */}
       <div className="flex items-center justify-between mb-4">
         <div>
@@ -321,9 +323,9 @@ function SkillBar({ skill }: { skill: SkillRating }) {
           <TrendIcon className={`w-3 h-3 ${trendColor}`} />
         </div>
       </div>
-      <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+      <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
         <div
-          className="h-full bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full transition-all duration-500"
+          className="h-full bg-gradient-to-r from-white/40 to-white/60 rounded-full transition-all duration-500"
           style={{ width: `${barWidth}%` }}
         />
       </div>
@@ -345,53 +347,23 @@ interface GameMenuItem {
 function GameMenuButton({ game, onSelect }: { game: GameMenuItem; onSelect: (id: GameType) => void }) {
   const accuracy = game.stats.played > 0 ? Math.round((game.stats.correct / game.stats.played) * 100) : null;
 
-  const colorClasses: Record<string, string> = {
-    blue: 'bg-blue-500/10 border-blue-500/20 hover:bg-blue-500/20',
-    green: 'bg-green-500/10 border-green-500/20 hover:bg-green-500/20',
-    amber: 'bg-amber-500/10 border-amber-500/20 hover:bg-amber-500/20',
-    purple: 'bg-purple-500/10 border-purple-500/20 hover:bg-purple-500/20',
-    red: 'bg-red-500/10 border-red-500/20 hover:bg-red-500/20',
-    cyan: 'bg-cyan-500/10 border-cyan-500/20 hover:bg-cyan-500/20',
-    pink: 'bg-pink-500/10 border-pink-500/20 hover:bg-pink-500/20',
-    orange: 'bg-orange-500/10 border-orange-500/20 hover:bg-orange-500/20',
-    indigo: 'bg-indigo-500/10 border-indigo-500/20 hover:bg-indigo-500/20',
-    emerald: 'bg-emerald-500/10 border-emerald-500/20 hover:bg-emerald-500/20',
-    rose: 'bg-rose-500/10 border-rose-500/20 hover:bg-rose-500/20',
-    violet: 'bg-violet-500/10 border-violet-500/20 hover:bg-violet-500/20',
-    sky: 'bg-sky-500/10 border-sky-500/20 hover:bg-sky-500/20',
-  };
-
-  const iconColors: Record<string, string> = {
-    blue: 'text-blue-400',
-    green: 'text-green-400',
-    amber: 'text-amber-400',
-    purple: 'text-purple-400',
-    red: 'text-red-400',
-    cyan: 'text-cyan-400',
-    pink: 'text-pink-400',
-    orange: 'text-orange-400',
-    indigo: 'text-indigo-400',
-    emerald: 'text-emerald-400',
-    rose: 'text-rose-400',
-    violet: 'text-violet-400',
-    sky: 'text-sky-400',
-  };
-
   return (
     <button
       onClick={() => onSelect(game.id)}
-      className={`${colorClasses[game.color] || colorClasses.blue} border rounded-xl p-4 text-left transition-all active:scale-[0.98]`}
+      className="bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] hover:border-white/[0.12] rounded-xl p-4 text-left transition-all active:scale-[0.98]"
     >
       <div className="flex items-center gap-3">
-        <game.icon className={`w-8 h-8 ${iconColors[game.color] || iconColors.blue}`} />
+        <div className="w-10 h-10 rounded-xl bg-white/[0.06] flex items-center justify-center flex-shrink-0">
+          <game.icon className="w-5 h-5 text-white/70" />
+        </div>
         <div className="flex-1 min-w-0">
-          <div className="font-semibold text-white">{game.name}</div>
-          <div className="text-xs text-white/50">{game.desc}</div>
+          <div className="font-semibold text-white text-sm">{game.name}</div>
+          <div className="text-xs text-white/40">{game.desc}</div>
         </div>
         {accuracy !== null && (
           <div className="text-right">
             <div className="text-lg font-bold text-white">{accuracy}%</div>
-            <div className="text-[10px] text-white/40">{game.stats.played} played</div>
+            <div className="text-[10px] text-white/30">{game.stats.played} played</div>
           </div>
         )}
       </div>

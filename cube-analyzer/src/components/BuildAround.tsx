@@ -217,7 +217,7 @@ export function BuildAround({ cards }: BuildAroundProps) {
                 flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all
                 ${isSelected
                   ? 'bg-white/10 text-white ring-1 ring-white/20'
-                  : 'bg-[#111] text-white/60 hover:bg-white/5 hover:text-white/80'
+                  : 'bg-black text-white/60 hover:bg-white/5 hover:text-white/80'
                 }
               `}
             >
@@ -246,7 +246,7 @@ export function BuildAround({ cards }: BuildAroundProps) {
           )}
 
           {/* Why It's Broken */}
-          <Card className="p-4 bg-[#111] border-white/8">
+          <Card className="p-4 bg-black border-white/[0.06]">
             <h3 className="text-sm font-semibold text-red-400 mb-2 flex items-center gap-2">
               <AlertTriangle className="w-4 h-4" />
               Why It's Broken
@@ -255,7 +255,7 @@ export function BuildAround({ cards }: BuildAroundProps) {
           </Card>
 
           {/* Key Strategy */}
-          <Card className="p-4 bg-[#111] border-white/8">
+          <Card className="p-4 bg-black border-white/[0.06]">
             <h3 className="text-sm font-semibold text-white/80 mb-2 flex items-center gap-2">
               <Target className="w-4 h-4 text-white/40" />
               Key Strategy
@@ -272,7 +272,7 @@ export function BuildAround({ cards }: BuildAroundProps) {
           </h3>
 
           {selectedGuide.synergies.map((synergy, idx) => (
-            <Card key={idx} className="p-4 bg-[#111] border-white/8">
+            <Card key={idx} className="p-4 bg-black border-white/[0.06]">
               <h4 className="font-medium text-white text-sm mb-1">{synergy.category}</h4>
               <p className="text-xs text-white/40 mb-3">{synergy.explanation}</p>
               <div className="flex flex-wrap gap-2">
@@ -305,7 +305,7 @@ export function BuildAround({ cards }: BuildAroundProps) {
           ))}
 
           {/* Anti-Synergies */}
-          <Card className="p-4 bg-[#111] border-white/8">
+          <Card className="p-4 bg-black border-white/[0.06]">
             <h4 className="font-medium text-red-400/80 text-sm mb-2 flex items-center gap-2">
               <X className="w-4 h-4" />
               Avoid
@@ -324,7 +324,7 @@ export function BuildAround({ cards }: BuildAroundProps) {
         {/* Right Column - Tips & Sample */}
         <div className="space-y-4">
           {/* Draft Tips */}
-          <Card className="p-4 bg-[#111] border-white/8">
+          <Card className="p-4 bg-black border-white/[0.06]">
             <h3 className="text-sm font-semibold text-white/80 mb-3 flex items-center gap-2">
               <Lightbulb className="w-4 h-4 text-white/40" />
               Draft Tips
@@ -340,7 +340,7 @@ export function BuildAround({ cards }: BuildAroundProps) {
           </Card>
 
           {/* Dream Opening Hands */}
-          <Card className="p-4 bg-[#111] border-white/8">
+          <Card className="p-4 bg-black border-white/[0.06]">
             <h3 className="text-sm font-semibold text-amber-400/80 mb-3 flex items-center gap-2">
               <Sparkles className="w-4 h-4" />
               Dream Opening Hands
@@ -355,7 +355,7 @@ export function BuildAround({ cards }: BuildAroundProps) {
           </Card>
 
           {/* Sample Decklist */}
-          <Card className="p-4 bg-[#111] border-white/8">
+          <Card className="p-4 bg-black border-white/[0.06]">
             <h3 className="text-sm font-semibold text-white/80 mb-3">
               Sample Decklist
             </h3>
@@ -389,7 +389,7 @@ export function BuildAround({ cards }: BuildAroundProps) {
       {/* Hover Preview */}
       {hoveredCard && (
         <div className="fixed bottom-4 right-4 z-50 hidden lg:block pointer-events-none">
-          <div className="bg-[#111] border border-white/10 p-2 rounded-xl shadow-2xl">
+          <div className="bg-black border border-white/10 p-2 rounded-xl shadow-2xl">
             <img
               src={getCardImage(hoveredCard)}
               alt={hoveredCard.name}

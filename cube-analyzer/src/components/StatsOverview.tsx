@@ -57,7 +57,7 @@ export function StatsOverview({ cards, colorDistribution, typeDistribution }: St
     <div className="space-y-6">
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {stats.map((stat) => (
-          <Card key={stat.label} className="text-center bg-[#111] border-white/8">
+          <Card key={stat.label} className="text-center bg-black border-white/[0.06]">
             <div className="w-10 h-10 mx-auto mb-3 rounded-lg bg-white/5 flex items-center justify-center">
               <stat.icon className="w-5 h-5 text-white/60" />
             </div>
@@ -79,7 +79,7 @@ export function StatsOverview({ cards, colorDistribution, typeDistribution }: St
       )}
 
       {/* Color Balance Indicator */}
-      <Card className="bg-[#111] border-white/8">
+      <Card className="bg-black border-white/[0.06]">
         <h3 className="text-sm font-medium text-white/60 mb-4">Color Balance</h3>
         <div className="flex gap-1 h-6">
           {Object.entries(colorDistribution)

@@ -13,7 +13,7 @@ export function DraftGuide({ strategies }: DraftGuideProps) {
       {/* Strategies Grid - All visible */}
       <div className="grid gap-6 md:grid-cols-2">
         {strategies.map((strategy, idx) => (
-          <Card key={idx} className="p-5 bg-[#111] border-white/8">
+          <Card key={idx} className="p-5 bg-black border-white/[0.06]">
             {/* Header */}
             <div className="mb-4">
               <h3 className="text-lg font-semibold text-white mb-1">{strategy.name}</h3>
@@ -93,7 +93,7 @@ export function DraftGuide({ strategies }: DraftGuideProps) {
       </div>
 
       {/* General Tips */}
-      <Card className="p-5 bg-[#111] border-white/8">
+      <Card className="p-5 bg-black border-white/[0.06]">
         <h3 className="text-lg font-semibold text-white mb-4">General Draft Wisdom</h3>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <div className="p-4 bg-white/3 border border-white/5 rounded-xl">

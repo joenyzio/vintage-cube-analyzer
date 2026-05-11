@@ -236,7 +236,7 @@ export function SampleDecks({ cards }: SampleDecksProps) {
             placeholder="Search decks..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 bg-[#111] border border-white/10 rounded-lg text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white/20"
+            className="w-full pl-9 pr-3 py-2 bg-black border border-white/10 rounded-lg text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white/20"
           />
         </div>
 
@@ -260,7 +260,7 @@ export function SampleDecks({ cards }: SampleDecksProps) {
 
         <button
           onClick={() => setSortBy(sortBy === 'power' ? 'name' : 'power')}
-          className="flex items-center gap-2 px-3 py-2 bg-[#111] border border-white/10 rounded-lg text-sm text-white/60 hover:text-white/80 transition-colors"
+          className="flex items-center gap-2 px-3 py-2 bg-black border border-white/10 rounded-lg text-sm text-white/60 hover:text-white/80 transition-colors"
         >
           <ArrowUpDown className="w-4 h-4" />
           {sortBy === 'power' ? 'Power' : 'Name'}
@@ -280,7 +280,7 @@ export function SampleDecks({ cards }: SampleDecksProps) {
           return (
             <Card
               key={deck.id}
-              className="group bg-[#0a0a0a] border-white/8 overflow-hidden cursor-pointer hover:border-white/20 transition-all duration-300"
+              className="group bg-black border-white/[0.06] overflow-hidden cursor-pointer hover:border-white/20 transition-all duration-300"
               onClick={() => setSelectedDeck(deck)}
             >
               {/* Card Fan Preview */}
@@ -388,7 +388,7 @@ export function SampleDecks({ cards }: SampleDecksProps) {
           onClick={() => setSelectedDeck(null)}
         >
           <div
-            className="bg-[#0a0a0a] border border-white/10 rounded-2xl max-w-5xl w-full max-h-[90vh] overflow-auto"
+            className="bg-black border border-white/10 rounded-2xl max-w-5xl w-full max-h-[90vh] overflow-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
@@ -578,7 +578,7 @@ export function SampleDecks({ cards }: SampleDecksProps) {
       {/* Hover Preview */}
       {hoveredCard && (
         <div className="fixed bottom-4 right-4 z-[60] hidden lg:block pointer-events-none">
-          <div className="bg-[#111] border border-white/10 p-2 rounded-xl shadow-2xl">
+          <div className="bg-black border border-white/10 p-2 rounded-xl shadow-2xl">
             <img src={getCardImage(hoveredCard)} alt={hoveredCard.name} className="w-56 rounded-lg" />
             <div className="mt-2 px-1">
               <div className="text-sm font-medium text-white">{hoveredCard.name}</div>

@@ -16,11 +16,11 @@
 :root {
   /* Premium dark mode palette */
   --color-background: #000000;
-  --color-background-subtle: #050505;
-  --color-surface: rgba(17, 17, 17, 0.8);
-  --color-surface-solid: #111111;
-  --color-surface-raised: rgba(22, 22, 22, 0.9);
-  --color-surface-elevated: rgba(28, 28, 28, 0.95);
+  --color-background-subtle: #000000;
+  --color-surface: rgba(255, 255, 255, 0.04);
+  --color-surface-solid: #000000;
+  --color-surface-raised: rgba(255, 255, 255, 0.06);
+  --color-surface-elevated: rgba(255, 255, 255, 0.08);
   --color-foreground: #ffffff;
   --color-muted: rgba(255, 255, 255, 0.6);
   --color-subtle: rgba(255, 255, 255, 0.4);
@@ -30,9 +30,9 @@
   --color-border-strong: rgba(255, 255, 255, 0.15);
 
   /* Glassmorphism */
-  --glass-bg: rgba(17, 17, 17, 0.7);
+  --glass-bg: rgba(0, 0, 0, 0.8);
   --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   --glass-blur: blur(20px);
 
   /* MTG colors - refined */
@@ -120,7 +120,7 @@ body {
 }
 
 .glass-subtle {
-  background: rgba(17, 17, 17, 0.5);
+  background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.05);

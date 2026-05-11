@@ -61,7 +61,7 @@ export function CardPreview({ card, children }: CardPreviewProps) {
         >
           <div className="relative animate-in fade-in zoom-in-95 duration-150">
             {/* Card container */}
-            <div className="bg-[#111] p-2 rounded-xl border border-white/10 shadow-2xl">
+            <div className="bg-black p-2 rounded-xl border border-white/10 shadow-2xl">
               <img
                 src={imageUrl}
                 alt={card.name}

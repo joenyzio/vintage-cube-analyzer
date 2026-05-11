@@ -33,7 +33,7 @@ const colorClasses: Record<string, string> = {
 
 export function ArchetypeCard({ archetype, onSelect }: ArchetypeCardProps) {
   return (
-    <Card hover className="cursor-pointer bg-[#111] border-white/8" onClick={() => onSelect?.(archetype)}>
+    <Card hover className="cursor-pointer bg-black border-white/[0.06]" onClick={() => onSelect?.(archetype)}>
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -88,7 +88,7 @@ export function ArchetypeCard({ archetype, onSelect }: ArchetypeCardProps) {
             {archetype.keyCards.slice(0, 7).map((card) => (
               <span
                 key={card}
-                className="text-xs px-2 py-1 bg-white/5 border border-white/8 rounded text-white/70 hover:bg-white/10 hover:text-white transition-colors"
+                className="text-xs px-2 py-1 bg-white/5 border border-white/[0.06] rounded text-white/70 hover:bg-white/10 hover:text-white transition-colors"
               >
                 {card}
               </span>
