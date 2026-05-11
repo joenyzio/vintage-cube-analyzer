@@ -851,11 +851,17 @@ interface ArchetypeProfile {
   id: string;
   name: string;
   colors: string[];
-  keyTypes: string[];        // Card types we want
-  keyKeywords: string[];     // Keywords to look for in oracle text
-  idealLandCount: [number, number]; // min, max lands
+  keyTypes: string[];
+  keyKeywords: string[];
+  idealLandCount: [number, number];
   needsFastMana: boolean;
-  needsEarlyPlay: boolean;   // Needs something to do T1-2
+  needsEarlyPlay: boolean;
+  // NEW: Enhanced coaching info
+  goldfishTurn: string;
+  playstyle: string;
+  keepPriority: string[];
+  mullAggressive: boolean;
+  winCondition: string;
 }
 
 const ARCHETYPE_PROFILES: ArchetypeProfile[] = [
@@ -868,6 +874,11 @@ const ARCHETYPE_PROFILES: ArchetypeProfile[] = [
     idealLandCount: [2, 4],
     needsFastMana: true,
     needsEarlyPlay: true,
+    goldfishTurn: 'Turn 1-2',
+    playstyle: 'All-in combo. Get a fatty in the yard and reanimate it ASAP. Speed is everything.',
+    keepPriority: ['Reanimation spell', 'Discard outlet/Entomb', 'Big creature', 'Fast mana'],
+    mullAggressive: true,
+    winCondition: 'Griselbrand/Archon in play by turn 2. Draw 7-14 cards, win from there.',
   },
   {
     id: 'storm',
@@ -878,6 +889,11 @@ const ARCHETYPE_PROFILES: ArchetypeProfile[] = [
     idealLandCount: [2, 4],
     needsFastMana: true,
     needsEarlyPlay: false,
+    goldfishTurn: 'Turn 2-3',
+    playstyle: 'Sculpt hand, generate mana, chain spells, storm off. Patience until you can go off.',
+    keepPriority: ['Mana source', 'Card draw', 'Win condition (Brain Freeze/Tendrils)', 'Rituals'],
+    mullAggressive: true,
+    winCondition: 'LED + Breach + Brain Freeze loop, or Yawg Will into lethal storm count.',
   },
   {
     id: 'aggro',
@@ -888,6 +904,11 @@ const ARCHETYPE_PROFILES: ArchetypeProfile[] = [
     idealLandCount: [2, 3],
     needsFastMana: false,
     needsEarlyPlay: true,
+    goldfishTurn: 'Turn 4-5',
+    playstyle: 'Curve out with threats. Every turn without pressure is a turn closer to losing.',
+    keepPriority: ['1-drop creature', '2-drop creature', 'Burn spell', 'On-color land'],
+    mullAggressive: false,
+    winCondition: 'Reduce opponent to 0 before they stabilize. Burn for reach.',
   },
   {
     id: 'control',
@@ -898,6 +919,11 @@ const ARCHETYPE_PROFILES: ArchetypeProfile[] = [
     idealLandCount: [3, 5],
     needsFastMana: false,
     needsEarlyPlay: false,
+    goldfishTurn: 'Turn 8+',
+    playstyle: 'Answer threats, hit land drops, grind card advantage. Never tap out unnecessarily.',
+    keepPriority: ['Land', 'Counterspell', 'Removal', 'Card draw'],
+    mullAggressive: false,
+    winCondition: 'Exhaust their threats, win with Jace or whatever creature survives.',
   },
   {
     id: 'ramp',
@@ -908,6 +934,11 @@ const ARCHETYPE_PROFILES: ArchetypeProfile[] = [
     idealLandCount: [2, 4],
     needsFastMana: true,
     needsEarlyPlay: true,
+    goldfishTurn: 'Turn 3-4',
+    playstyle: 'Mana dork → ramp spell → haymaker. Accelerate into game-ending threats.',
+    keepPriority: ['Mana dork', 'Land', 'Haymaker', 'Ramp spell'],
+    mullAggressive: true,
+    winCondition: 'Channel Emrakul, Natural Order for Craterhoof, or just hardcast fatties.',
   },
   {
     id: 'midrange',
@@ -918,90 +949,218 @@ const ARCHETYPE_PROFILES: ArchetypeProfile[] = [
     idealLandCount: [3, 4],
     needsFastMana: false,
     needsEarlyPlay: true,
+    goldfishTurn: 'Turn 5-6',
+    playstyle: 'Disruption + efficient threats. Trade resources, grind value, win attrition.',
+    keepPriority: ['Land', 'Discard spell', '2-3 mana threat', 'Removal'],
+    mullAggressive: false,
+    winCondition: 'Out-value opponent with recursive threats and efficient removal.',
   },
 ];
 
-function evaluateHand(hand: CubeCard[], archetype: ArchetypeProfile): {
+interface HandEvaluation {
   verdict: 'keep' | 'mull';
   score: number;
-  reasons: string[];
-} {
-  const reasons: string[] = [];
-  let score = 50; // Start neutral
+  reasons: { text: string; positive: boolean }[];
+  cardAnalysis: { card: CubeCard; role: string; elo: number; percentile: number }[];
+  playPlan: string;
+  turnByTurn: string[];
+  warnings: string[];
+}
+
+function evaluateHand(hand: CubeCard[], archetype: ArchetypeProfile): HandEvaluation {
+  const reasons: { text: string; positive: boolean }[] = [];
+  const warnings: string[] = [];
+  let score = 50;
+
+  // Analyze each card
+  const cardAnalysis = hand.map(card => {
+    const eloData = getEloData(card.name);
+    const percentile = getPercentile(card.name);
+    const role = identifyCardRole(card, archetype);
+    return { card, role, elo: eloData?.elo || 1200, percentile };
+  });
 
   // Count lands
   const lands = hand.filter(c => c.type_line?.toLowerCase().includes('land'));
   const landCount = lands.length;
+  const spells = hand.filter(c => !c.type_line?.toLowerCase().includes('land'));
 
-  // Check land count
+  // Evaluate land count
   if (landCount < archetype.idealLandCount[0]) {
-    score -= 30;
-    reasons.push(`Only ${landCount} land${landCount !== 1 ? 's' : ''} (need ${archetype.idealLandCount[0]}+)`);
+    score -= 35;
+    reasons.push({ text: `Only ${landCount} land${landCount !== 1 ? 's' : ''} - need ${archetype.idealLandCount[0]}+ to function`, positive: false });
   } else if (landCount > archetype.idealLandCount[1]) {
-    score -= 20;
-    reasons.push(`${landCount} lands is too many (flooding risk)`);
+    score -= 25;
+    reasons.push({ text: `${landCount} lands risks flooding - few action spells`, positive: false });
   } else {
     score += 15;
-    reasons.push(`Good land count (${landCount})`);
+    reasons.push({ text: `${landCount} lands - good mana base`, positive: true });
   }
 
-  // Check for fast mana
+  // Check mana colors
+  const manaColors = new Set<string>();
+  lands.forEach(l => {
+    archetype.colors.forEach(c => {
+      const oracle = l.oracle_text?.toLowerCase() || '';
+      const name = l.name.toLowerCase();
+      const colorMap: Record<string, string[]> = {
+        'W': ['white', 'plains', '{w}'],
+        'U': ['blue', 'island', '{u}'],
+        'B': ['black', 'swamp', '{b}'],
+        'R': ['red', 'mountain', '{r}'],
+        'G': ['green', 'forest', '{g}'],
+      };
+      if (colorMap[c]?.some(kw => oracle.includes(kw) || name.includes(kw))) {
+        manaColors.add(c);
+      }
+    });
+  });
+
+  const missingColors = archetype.colors.filter(c => !manaColors.has(c));
+  if (missingColors.length > 0 && landCount >= 2) {
+    score -= 15;
+    reasons.push({ text: `Missing ${missingColors.join('/')} mana in lands`, positive: false });
+  }
+
+  // Fast mana check
   const fastMana = hand.filter(c => {
     const name = c.name.toLowerCase();
     const oracle = c.oracle_text?.toLowerCase() || '';
     return name.includes('mox') || name.includes('lotus') ||
            name.includes('crypt') || name.includes('vault') ||
-           name.includes('sol ring') || name.includes('chrome mox') ||
-           oracle.includes('add') && (c.cmc || 0) <= 1;
+           name.includes('sol ring') || name.includes('monolith') ||
+           name.includes('signet') || name.includes('petal') ||
+           (oracle.includes('add') && (c.cmc || 0) <= 1 && !c.type_line?.toLowerCase().includes('land'));
   });
 
   if (archetype.needsFastMana) {
     if (fastMana.length > 0) {
-      score += 25;
-      reasons.push(`Has fast mana (${fastMana[0].name})`);
+      score += 30;
+      reasons.push({ text: `Fast mana: ${fastMana.map(c => c.name).join(', ')}`, positive: true });
     } else {
-      score -= 15;
-      reasons.push('No fast mana');
+      score -= 20;
+      reasons.push({ text: `No fast mana - ${archetype.name} wants acceleration`, positive: false });
+      if (archetype.mullAggressive) {
+        warnings.push('This archetype mulligans aggressively for fast starts');
+      }
     }
   }
 
-  // Check for early plays
-  const earlyPlays = hand.filter(c => {
-    const cmc = c.cmc || 0;
-    const isLand = c.type_line?.toLowerCase().includes('land');
-    return !isLand && cmc <= 2;
-  });
-
+  // Early plays check
+  const earlyPlays = spells.filter(c => (c.cmc || 0) <= 2);
   if (archetype.needsEarlyPlay) {
     if (earlyPlays.length > 0) {
       score += 20;
-      reasons.push(`Early play available (${earlyPlays[0].name})`);
+      reasons.push({ text: `Turn 1-2 plays: ${earlyPlays.map(c => c.name).slice(0, 2).join(', ')}`, positive: true });
     } else {
-      score -= 20;
-      reasons.push('No early plays');
+      score -= 25;
+      reasons.push({ text: `No early plays - dead until turn 3+`, positive: false });
     }
   }
 
-  // Check for archetype-relevant cards
-  const relevantCards = hand.filter(c => {
-    const oracle = c.oracle_text?.toLowerCase() || '';
-    const typeLine = c.type_line?.toLowerCase() || '';
-    return archetype.keyKeywords.some(kw => oracle.includes(kw)) ||
-           archetype.keyTypes.some(t => typeLine.includes(t));
+  // Key card check based on archetype priorities
+  const hasKeyPieces = archetype.keepPriority.slice(0, 2).some(priority => {
+    return hand.some(c => {
+      const name = c.name.toLowerCase();
+      const oracle = c.oracle_text?.toLowerCase() || '';
+      const typeLine = c.type_line?.toLowerCase() || '';
+      return priority.toLowerCase().split('/').some(kw =>
+        name.includes(kw.toLowerCase()) || oracle.includes(kw.toLowerCase()) || typeLine.includes(kw.toLowerCase())
+      );
+    });
   });
 
-  if (relevantCards.length >= 2) {
+  if (hasKeyPieces) {
     score += 20;
-    reasons.push('Multiple on-plan cards');
-  } else if (relevantCards.length === 0) {
-    score -= 25;
-    reasons.push('No cards that fit the archetype');
+    reasons.push({ text: `Has key archetype pieces`, positive: true });
+  } else {
+    score -= 15;
+    reasons.push({ text: `Missing key pieces: ${archetype.keepPriority.slice(0, 2).join(', ')}`, positive: false });
   }
 
-  // Determine verdict
+  // Average hand power
+  const avgPercentile = cardAnalysis.reduce((sum, c) => sum + c.percentile, 0) / cardAnalysis.length;
+
+  if (avgPercentile >= 60) {
+    score += 10;
+    reasons.push({ text: `High power cards (avg ${Math.round(avgPercentile)}th percentile)`, positive: true });
+  } else if (avgPercentile < 40) {
+    score -= 10;
+    reasons.push({ text: `Low power cards (avg ${Math.round(avgPercentile)}th percentile)`, positive: false });
+  }
+
+  // Generate play plan
+  const playPlan = generatePlayPlan(hand, archetype, cardAnalysis);
+  const turnByTurn = generateTurnByTurn(hand, archetype, fastMana, earlyPlays, lands);
+
   const verdict: 'keep' | 'mull' = score >= 50 ? 'keep' : 'mull';
 
-  return { verdict, score, reasons };
+  return { verdict, score, reasons, cardAnalysis, playPlan, turnByTurn, warnings };
+}
+
+function identifyCardRole(card: CubeCard, archetype: ArchetypeProfile): string {
+  const name = card.name.toLowerCase();
+  const oracle = card.oracle_text?.toLowerCase() || '';
+  const typeLine = card.type_line?.toLowerCase() || '';
+
+  if (typeLine.includes('land')) return 'Mana';
+  if (name.includes('mox') || name.includes('lotus') || name.includes('crypt') || name.includes('sol ring')) return 'Fast Mana';
+  if (oracle.includes('counter target')) return 'Interaction';
+  if (oracle.includes('destroy') || oracle.includes('exile')) return 'Removal';
+  if (oracle.includes('draw') && oracle.includes('card')) return 'Card Draw';
+  if (archetype.keyKeywords.some(kw => oracle.includes(kw))) return 'Key Piece';
+  if (typeLine.includes('creature')) return 'Threat';
+  if (typeLine.includes('planeswalker')) return 'Threat';
+  return 'Support';
+}
+
+function generatePlayPlan(_hand: CubeCard[], archetype: ArchetypeProfile, cardAnalysis: { card: CubeCard; role: string }[]): string {
+  const fastMana = cardAnalysis.filter(c => c.role === 'Fast Mana');
+  const keyPieces = cardAnalysis.filter(c => c.role === 'Key Piece');
+
+  switch (archetype.id) {
+    case 'reanimator':
+      if (keyPieces.length >= 2) return 'Execute combo ASAP. Discard target, reanimate, ride to victory.';
+      if (keyPieces.length === 1) return 'Set up with what you have. May need to find missing piece.';
+      return 'Play fair Magic until you find combo pieces. Use interaction to survive.';
+    case 'storm':
+      if (fastMana.length > 0) return 'Sculpt hand, count to combo turn. Don\'t go off prematurely.';
+      return 'Cantrip aggressively to find mana and combo pieces.';
+    case 'aggro':
+      return `Deploy threats on curve. Save burn for reach or must-kill blockers. Clock is ${archetype.goldfishTurn}.`;
+    case 'control':
+      return 'Hit land drops, hold up mana, answer threats efficiently. Win condition will come.';
+    case 'ramp':
+      if (fastMana.length > 0) return 'Accelerate into haymaker. Natural Order or hardcast threats.';
+      return 'Curve: dork → ramp → payoff. Protect your mana sources.';
+    case 'midrange':
+      return 'Disrupt early, deploy efficient threats, grind value. Out-resource them.';
+    default:
+      return 'Execute your gameplan efficiently.';
+  }
+}
+
+function generateTurnByTurn(hand: CubeCard[], _archetype: ArchetypeProfile, fastMana: CubeCard[], earlyPlays: CubeCard[], lands: CubeCard[]): string[] {
+  const turns: string[] = [];
+  const sortedSpells = hand.filter(c => !c.type_line?.toLowerCase().includes('land')).sort((a, b) => (a.cmc || 0) - (b.cmc || 0));
+
+  if (lands.length > 0) {
+    turns.push(`T1: ${lands[0]?.name || 'Land'}${fastMana.length > 0 ? ` + ${fastMana[0].name}` : ''}`);
+  }
+  if (earlyPlays.length > 0 && lands.length >= 1) {
+    const t2play = earlyPlays.find(c => (c.cmc || 0) <= 2);
+    if (t2play) turns.push(`T2: ${lands[1]?.name || 'Land'} → ${t2play.name}`);
+  }
+  if (sortedSpells.length > 2) {
+    const t3play = sortedSpells.find(c => (c.cmc || 0) === 3);
+    if (t3play) turns.push(`T3: ${t3play.name}`);
+  }
+
+  if (turns.length === 0) {
+    turns.push('Sequencing depends on draws');
+  }
+
+  return turns;
 }
 
 function MulliganTrainerGame({ cards, stats, onUpdate, onBack }: GameComponentProps) {
@@ -1009,15 +1168,14 @@ function MulliganTrainerGame({ cards, stats, onUpdate, onBack }: GameComponentPr
   const [archetype, setArchetype] = useState<ArchetypeProfile | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [userChoice, setUserChoice] = useState<'keep' | 'mull' | null>(null);
-  const [evaluation, setEvaluation] = useState<{ verdict: 'keep' | 'mull'; score: number; reasons: string[] } | null>(null);
+  const [evaluation, setEvaluation] = useState<HandEvaluation | null>(null);
   const [selectedCard, setSelectedCard] = useState<CubeCard | null>(null);
+  const [showPlayGuide, setShowPlayGuide] = useState(false);
 
   const newHand = useCallback(() => {
-    // Pick random archetype
     const arch = ARCHETYPE_PROFILES[Math.floor(Math.random() * ARCHETYPE_PROFILES.length)];
     setArchetype(arch);
 
-    // Get cards that could be in this archetype's deck
     const deckCards = cards.filter(c => {
       const colors = c.color_identity || [];
       const isColorless = colors.length === 0;
@@ -1026,11 +1184,9 @@ function MulliganTrainerGame({ cards, stats, onUpdate, onBack }: GameComponentPr
       return isOnColor || isLand || isColorless;
     });
 
-    // Generate a hand with some lands and some spells
     const landPool = deckCards.filter(c => c.type_line?.toLowerCase().includes('land'));
     const spellPool = deckCards.filter(c => !c.type_line?.toLowerCase().includes('land'));
 
-    // Random land count between 1-5
     const targetLands = Math.floor(Math.random() * 5) + 1;
     const handLands = shuffleArray(landPool).slice(0, Math.min(targetLands, landPool.length));
     const handSpells = shuffleArray(spellPool).slice(0, 7 - handLands.length);
@@ -1041,6 +1197,7 @@ function MulliganTrainerGame({ cards, stats, onUpdate, onBack }: GameComponentPr
     setUserChoice(null);
     setEvaluation(null);
     setSelectedCard(null);
+    setShowPlayGuide(false);
   }, [cards]);
 
   useEffect(() => { newHand(); }, [newHand]);
@@ -1056,8 +1213,6 @@ function MulliganTrainerGame({ cards, stats, onUpdate, onBack }: GameComponentPr
     setRevealed(true);
 
     const isCorrect = choice === eval_.verdict;
-
-    // Record in SRS
     const handId = `mull-${hand.map(c => c.id).sort().join('-').slice(0, 50)}`;
     srs.recordReview(
       handId,
@@ -1071,7 +1226,7 @@ function MulliganTrainerGame({ cards, stats, onUpdate, onBack }: GameComponentPr
   };
 
   return (
-    <div className="fixed inset-0 bg-black flex flex-col z-40">
+    <div className="fixed inset-0 bg-black flex flex-col z-40 overflow-auto">
       {/* Card viewer */}
       {selectedCard && (
         <CardViewer card={selectedCard} onClose={() => setSelectedCard(null)} />
@@ -1107,69 +1262,156 @@ function MulliganTrainerGame({ cards, stats, onUpdate, onBack }: GameComponentPr
         ) : <div className="w-8" />}
       </div>
 
-      {/* Hand display */}
-      <div className="flex-1 flex items-center justify-center px-2 overflow-hidden">
+      {/* Archetype Info (before decision) */}
+      {!revealed && (
+        <div className="px-4 mb-2 shrink-0">
+          <div className="bg-white/5 rounded-lg p-3 text-xs">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-white/40">Goldfish:</span>
+              <span className="text-amber-400 font-medium">{archetype.goldfishTurn}</span>
+              <span className="text-white/20">|</span>
+              <span className="text-white/40">Style:</span>
+              <span className="text-white/70">{archetype.mullAggressive ? 'Mull aggressively' : 'Keep reasonable hands'}</span>
+            </div>
+            <div className="text-white/50 text-xs">{archetype.playstyle}</div>
+          </div>
+        </div>
+      )}
+
+      {/* Hand display - with ELO badges after reveal */}
+      <div className="flex-1 flex items-center justify-center px-2 overflow-hidden min-h-[200px]">
         <div className="flex gap-1 sm:gap-2 max-w-4xl">
           {hand.map((card) => {
             const isLand = card.type_line?.toLowerCase().includes('land');
+            const cardAnalysis = evaluation?.cardAnalysis.find(c => c.card.id === card.id);
+
             return (
-              <button
-                key={card.id}
-                onClick={() => setSelectedCard(card)}
-                className={`flex-1 min-w-0 rounded-lg overflow-hidden transition-all active:scale-95 ${
-                  revealed && isLand ? 'ring-2 ring-amber-400/50' : ''
-                }`}
-                style={{ maxWidth: '14%' }}
-              >
-                <img
-                  src={getCardImage(card)}
-                  alt={card.name}
-                  className="w-full"
-                />
-              </button>
+              <div key={card.id} className="flex-1 min-w-0 relative" style={{ maxWidth: '14%' }}>
+                <button
+                  onClick={() => setSelectedCard(card)}
+                  className={`w-full rounded-lg overflow-hidden transition-all active:scale-95 ${
+                    revealed && isLand ? 'ring-2 ring-amber-400/50' : ''
+                  }`}
+                >
+                  <img src={getCardImage(card)} alt={card.name} className="w-full" />
+                </button>
+                {/* Power badge - shown after reveal */}
+                {revealed && cardAnalysis && (
+                  <div className={`absolute -bottom-1 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                    cardAnalysis.percentile >= 70 ? 'bg-amber-500 text-black' :
+                    cardAnalysis.percentile >= 50 ? 'bg-white/80 text-black' :
+                    'bg-white/40 text-black'
+                  }`}>
+                    {Math.round(cardAnalysis.elo)}
+                  </div>
+                )}
+                {/* Role badge */}
+                {revealed && cardAnalysis && (
+                  <div className="absolute -top-1 left-1/2 -translate-x-1/2 px-1 py-0.5 rounded text-[8px] bg-black/80 text-white/70 whitespace-nowrap">
+                    {cardAnalysis.role}
+                  </div>
+                )}
+              </div>
             );
           })}
         </div>
       </div>
 
       {/* Decision / Results */}
-      <div className="px-4 pb-8 pt-4 shrink-0 max-w-lg mx-auto w-full">
+      <div className="px-4 pb-6 pt-4 shrink-0 max-w-lg mx-auto w-full">
         {!revealed ? (
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              onClick={() => handleChoice('keep')}
-              className="py-4 bg-green-500/20 border border-green-500/30 text-green-400 rounded-xl font-bold text-lg active:scale-[0.98]"
-            >
-              Keep
-            </button>
-            <button
-              onClick={() => handleChoice('mull')}
-              className="py-4 bg-red-500/20 border border-red-500/30 text-red-400 rounded-xl font-bold text-lg active:scale-[0.98]"
-            >
-              Mulligan
-            </button>
-          </div>
+          <>
+            <div className="text-center text-white/40 text-xs mb-3">
+              Need: {archetype.keepPriority.slice(0, 3).join(' • ')}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => handleChoice('keep')}
+                className="py-4 bg-green-500/20 border border-green-500/30 text-green-400 rounded-xl font-bold text-lg active:scale-[0.98]"
+              >
+                Keep
+              </button>
+              <button
+                onClick={() => handleChoice('mull')}
+                className="py-4 bg-red-500/20 border border-red-500/30 text-red-400 rounded-xl font-bold text-lg active:scale-[0.98]"
+              >
+                Mulligan
+              </button>
+            </div>
+          </>
         ) : evaluation && (
           <>
+            {/* Result Header */}
             <div className={`text-center mb-3 ${userChoice === evaluation.verdict ? 'text-green-400' : 'text-red-400'}`}>
               <div className="text-xl font-bold mb-1">
                 {userChoice === evaluation.verdict ? 'Correct!' : 'Wrong!'}
               </div>
               <div className="text-sm text-white/60">
-                This hand is a <span className={evaluation.verdict === 'keep' ? 'text-green-400' : 'text-red-400'} >{evaluation.verdict.toUpperCase()}</span>
+                This hand is a <span className={evaluation.verdict === 'keep' ? 'text-green-400' : 'text-red-400'}>{evaluation.verdict.toUpperCase()}</span>
+                <span className="text-white/30 ml-2">(Score: {evaluation.score})</span>
               </div>
             </div>
 
+            {/* Warnings */}
+            {evaluation.warnings.length > 0 && (
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-2 mb-3 text-xs text-amber-400">
+                ⚠️ {evaluation.warnings.join(' ')}
+              </div>
+            )}
+
             {/* Reasons */}
-            <div className="bg-white/5 rounded-lg p-3 mb-4 text-sm">
+            <div className="bg-white/5 rounded-lg p-3 mb-3 text-sm space-y-1">
               {evaluation.reasons.map((reason, i) => (
-                <div key={i} className="flex items-start gap-2 text-white/70">
-                  <span className={reason.includes('No ') || reason.includes('Only') || reason.includes('too many') ? 'text-red-400' : 'text-green-400'}>
-                    {reason.includes('No ') || reason.includes('Only') || reason.includes('too many') ? '−' : '+'}
+                <div key={i} className="flex items-start gap-2">
+                  <span className={reason.positive ? 'text-green-400' : 'text-red-400'}>
+                    {reason.positive ? '+' : '−'}
                   </span>
-                  {reason}
+                  <span className="text-white/70">{reason.text}</span>
                 </div>
               ))}
+            </div>
+
+            {/* Play Guide Toggle */}
+            <button
+              onClick={() => setShowPlayGuide(!showPlayGuide)}
+              className="w-full text-left bg-indigo-500/10 border border-indigo-500/30 rounded-lg p-3 mb-3 text-sm"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-indigo-400 font-medium">📖 How to Play This Hand</span>
+                <span className="text-white/40">{showPlayGuide ? '▼' : '▶'}</span>
+              </div>
+              {showPlayGuide && (
+                <div className="mt-2 space-y-2">
+                  <div className="text-white/70">{evaluation.playPlan}</div>
+                  <div className="text-xs text-white/40 border-t border-white/10 pt-2 mt-2">
+                    <div className="text-white/50 mb-1">Suggested sequencing:</div>
+                    {evaluation.turnByTurn.map((turn, i) => (
+                      <div key={i} className="text-white/60">{turn}</div>
+                    ))}
+                  </div>
+                  <div className="text-xs text-indigo-400/70 border-t border-white/10 pt-2">
+                    Win condition: {archetype.winCondition}
+                  </div>
+                </div>
+              )}
+            </button>
+
+            {/* Card Power Summary */}
+            <div className="bg-white/5 rounded-lg p-2 mb-3 text-xs">
+              <div className="text-white/40 mb-1">Card Power (ELO):</div>
+              <div className="flex flex-wrap gap-1">
+                {evaluation.cardAnalysis
+                  .sort((a, b) => b.elo - a.elo)
+                  .map((ca, i) => (
+                    <span key={i} className={`px-1.5 py-0.5 rounded ${
+                      ca.percentile >= 70 ? 'bg-amber-500/30 text-amber-300' :
+                      ca.percentile >= 50 ? 'bg-white/10 text-white/70' :
+                      'bg-white/5 text-white/40'
+                    }`}>
+                      {ca.card.name.split(',')[0].split(' ').slice(0, 2).join(' ')}: {Math.round(ca.elo)}
+                    </span>
+                  ))}
+              </div>
             </div>
 
             <button
