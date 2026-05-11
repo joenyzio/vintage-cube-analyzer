@@ -1548,6 +1548,39 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
 
   // Results view - show all 8 decks
   if (mode === 'results' && draftState) {
+    // Check if allPlayerPicks exists (for drafts started before this feature)
+    if (!draftState.allPlayerPicks || draftState.allPlayerPicks.every(picks => picks.length === 0)) {
+      return (
+        <div className="flex flex-col items-center justify-center py-20 space-y-6">
+          <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
+            <Users className="w-8 h-8 text-white/30" />
+          </div>
+          <div className="text-center space-y-2">
+            <h2 className="text-xl font-semibold text-white">Table View Not Available</h2>
+            <p className="text-white/40 max-w-md">
+              This draft was started before the table view feature was added. Start a new draft to see all 8 decks after completion.
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setMode('draft')}
+              className="flex items-center gap-2 px-5 py-2.5 bg-white/10 border border-white/10 rounded-xl text-white font-medium hover:bg-white/15 transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to Deck
+            </button>
+            <button
+              onClick={returnToMenu}
+              className="flex items-center gap-2 px-5 py-2.5 bg-purple-500/20 border border-purple-500/30 rounded-xl text-white font-medium hover:bg-purple-500/30 transition-colors"
+            >
+              <Play className="w-4 h-4" />
+              Start New Draft
+            </button>
+          </div>
+        </div>
+      );
+    }
+
     // Calculate stats for each player
     const playerStats = draftState.allPlayerPicks.map((picks, playerIdx) => {
       const deckElo = calculateDeckElo(picks.map(p => p.name));
