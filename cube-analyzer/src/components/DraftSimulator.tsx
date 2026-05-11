@@ -10,7 +10,7 @@ import {
 } from '../services/eloHelpers';
 import { Play, RotateCcw, Trophy, Star, ArrowLeft, ArrowRight, Users, Package, Target, Clock, TrendingUp, AlertCircle, HelpCircle, CheckCircle, XCircle, Zap, History, Keyboard, Award, Lightbulb, Eye, EyeOff } from 'lucide-react';
 
-type SimulatorMode = 'menu' | 'draft' | 'quiz';
+type SimulatorMode = 'menu' | 'draft' | 'quiz' | 'results';
 
 // Draft history for persistence
 interface DraftHistoryEntry {
@@ -89,6 +89,8 @@ interface DraftState {
   passedCards: Map<string, { card: CubeCard; passedAtPick: number; packNumber: number }>;
   // New: Decision history for recap
   decisions: PickDecision[];
+  // Track all 8 players' picks for post-draft analysis
+  allPlayerPicks: CubeCard[][];
 }
 
 interface QuizState {
@@ -102,6 +104,18 @@ interface QuizState {
 
 const NUM_PLAYERS = 8;
 const CARDS_PER_PACK = 15;
+
+// AI player names and their color preferences for display
+const AI_PLAYERS = [
+  { name: 'You', colors: [] },
+  { name: 'Dimir Drafter', colors: ['U', 'B'] },
+  { name: 'Boros Drafter', colors: ['R', 'W'] },
+  { name: 'Simic Drafter', colors: ['U', 'G'] },
+  { name: 'Rakdos Drafter', colors: ['B', 'R'] },
+  { name: 'Azorius Drafter', colors: ['U', 'W'] },
+  { name: 'Selesnya Drafter', colors: ['G', 'W'] },
+  { name: 'Izzet Drafter', colors: ['U', 'R'] },
+];
 
 function shuffleArray<T>(array: T[]): T[] {
   const shuffled = [...array];
@@ -571,6 +585,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
       usedCardIds,
       passedCards: new Map(),
       decisions: [],
+      allPlayerPicks: Array.from({ length: NUM_PLAYERS }, () => []),
     });
     setMode('draft');
   }, [cards]);
@@ -586,8 +601,9 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     ['B', 'R'], ['U', 'W'], ['G', 'W'], ['U', 'R'],
   ], []);
 
-  const simulateOtherPlayersPicks = (packs: CubeCard[][]): CubeCard[][] => {
-    return packs.map((pack, playerIndex) => {
+  const simulateOtherPlayersPicks = (packs: CubeCard[][]): { newPacks: CubeCard[][]; aiPicks: (CubeCard | null)[] } => {
+    const aiPicks: (CubeCard | null)[] = Array(NUM_PLAYERS).fill(null);
+    const newPacks = packs.map((pack, playerIndex) => {
       if (playerIndex === 0 || pack.length === 0) return pack;
       const prefs = aiPreferences[playerIndex] || [];
       const scoredCards = pack.map(card => {
@@ -601,8 +617,11 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
         return { card, score };
       });
       scoredCards.sort((a, b) => b.score - a.score);
-      return pack.filter(c => c.id !== scoredCards[0].card.id);
+      const pickedCard = scoredCards[0].card;
+      aiPicks[playerIndex] = pickedCard;
+      return pack.filter(c => c.id !== pickedCard.id);
     });
+    return { newPacks, aiPicks };
   };
 
   const rotatePacks = (packs: CubeCard[][], direction: 'left' | 'right'): CubeCard[][] => {
@@ -619,7 +638,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     return newPacks;
   };
 
-  const startNewPack = useCallback((currentPicks: CubeCard[], nextPackNumber: number, currentUsedCardIds: Set<string>, currentPassedCards: Map<string, { card: CubeCard; passedAtPick: number; packNumber: number }>, currentDecisions: PickDecision[]): DraftState => {
+  const startNewPack = useCallback((currentPicks: CubeCard[], nextPackNumber: number, currentUsedCardIds: Set<string>, currentPassedCards: Map<string, { card: CubeCard; passedAtPick: number; packNumber: number }>, currentDecisions: PickDecision[], currentAllPlayerPicks: CubeCard[][]): DraftState => {
     // Filter out ALL cards that have been dealt in previous packs
     const availableCards = cards.filter(c => !currentUsedCardIds.has(c.id));
     const shuffled = shuffleArray(availableCards);
@@ -643,6 +662,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
       usedCardIds: newUsedCardIds,
       passedCards: currentPassedCards,
       decisions: currentDecisions,
+      allPlayerPicks: currentAllPlayerPicks,
     };
   }, [cards]);
 
@@ -683,21 +703,36 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     const newDecisions = [...draftState.decisions, decision];
     const newPicks = [...draftState.picks, card];
 
-    let newTablePacks = draftState.tablePacks.map((pack, idx) =>
+    // Update all player picks - player 0 is the human
+    const newAllPlayerPicks = draftState.allPlayerPicks.map((picks, idx) =>
+      idx === 0 ? [...picks, card] : [...picks]
+    );
+
+    let packsAfterHumanPick = draftState.tablePacks.map((pack, idx) =>
       idx === 0 ? pack.filter(c => c.id !== card.id) : pack
     );
-    newTablePacks = simulateOtherPlayersPicks(newTablePacks);
-    newTablePacks = rotatePacks(newTablePacks, draftState.direction);
+
+    // AI players make their picks
+    const { newPacks: packsAfterAiPicks, aiPicks } = simulateOtherPlayersPicks(packsAfterHumanPick);
+
+    // Record AI picks
+    aiPicks.forEach((aiPick, playerIdx) => {
+      if (aiPick && playerIdx > 0) {
+        newAllPlayerPicks[playerIdx] = [...newAllPlayerPicks[playerIdx], aiPick];
+      }
+    });
+
+    const newTablePacks = rotatePacks(packsAfterAiPicks, draftState.direction);
     const newPickNumber = draftState.pickNumber + 1;
 
     if (newPickNumber > CARDS_PER_PACK) {
       if (draftState.packNumber >= 3) {
-        setDraftState({ ...draftState, picks: newPicks, isComplete: true, passedCards: newPassedCards, decisions: newDecisions });
+        setDraftState({ ...draftState, picks: newPicks, isComplete: true, passedCards: newPassedCards, decisions: newDecisions, allPlayerPicks: newAllPlayerPicks });
       } else {
-        setDraftState(startNewPack(newPicks, draftState.packNumber + 1, draftState.usedCardIds, newPassedCards, newDecisions));
+        setDraftState(startNewPack(newPicks, draftState.packNumber + 1, draftState.usedCardIds, newPassedCards, newDecisions, newAllPlayerPicks));
       }
     } else {
-      setDraftState({ ...draftState, tablePacks: newTablePacks, picks: newPicks, pickNumber: newPickNumber, passedCards: newPassedCards, decisions: newDecisions });
+      setDraftState({ ...draftState, tablePacks: newTablePacks, picks: newPicks, pickNumber: newPickNumber, passedCards: newPassedCards, decisions: newDecisions, allPlayerPicks: newAllPlayerPicks });
     }
   }, [draftState, startNewPack]);
 
@@ -1367,6 +1402,14 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
             )}
 
             <button
+              onClick={() => setMode('results')}
+              className="flex items-center gap-2.5 px-5 py-2.5 bg-gradient-to-r from-purple-500/20 to-blue-500/20 border border-purple-500/30 rounded-xl text-white font-medium hover:from-purple-500/30 hover:to-blue-500/30 transition-colors"
+            >
+              <Users className="w-4 h-4" />
+              View Table
+            </button>
+
+            <button
               onClick={returnToMenu}
               className="flex items-center gap-2.5 px-5 py-2.5 bg-white/10 border border-white/10 rounded-xl text-white font-medium hover:bg-white/15 transition-colors"
             >
@@ -1492,6 +1535,205 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
           </div>
         </div>
 
+        {hoveredCard && (
+          <div className="fixed bottom-6 right-6 z-50 hidden lg:block pointer-events-none">
+            <div className="bg-black border border-white/10 p-2 rounded-xl shadow-2xl">
+              <img src={getCardImage(hoveredCard)} alt={hoveredCard.name} className="w-56 rounded-lg" />
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Results view - show all 8 decks
+  if (mode === 'results' && draftState) {
+    // Calculate stats for each player
+    const playerStats = draftState.allPlayerPicks.map((picks, playerIdx) => {
+      const deckElo = calculateDeckElo(picks.map(p => p.name));
+      const colorCts: Record<string, number> = {};
+      picks.forEach(c => {
+        c.color_identity?.forEach(col => {
+          colorCts[col] = (colorCts[col] || 0) + 1;
+        });
+      });
+      const mainColors = Object.entries(colorCts)
+        .filter(([_, count]) => count >= 3)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 2)
+        .map(([color]) => color);
+
+      // Detect archetype based on picks
+      let archetype = 'Unknown';
+      const hasChannel = picks.some(p => p.name === 'Channel');
+      const hasEmrakul = picks.some(p => p.name.includes('Emrakul'));
+      const hasReanimation = picks.some(p => ['Reanimate', 'Animate Dead', 'Entomb', 'Necromancy'].includes(p.name));
+      const hasTinker = picks.some(p => p.name === 'Tinker');
+      const hasStorm = picks.some(p => p.oracle_text?.toLowerCase().includes('storm'));
+      const creatureCount = picks.filter(p => p.type_line?.toLowerCase().includes('creature')).length;
+      const spellCount = picks.filter(p => p.type_line?.toLowerCase().includes('instant') || p.type_line?.toLowerCase().includes('sorcery')).length;
+      const avgCmc = picks.reduce((sum, p) => sum + (p.cmc || 0), 0) / picks.length;
+
+      if (hasChannel || hasEmrakul) archetype = 'Channel Combo';
+      else if (hasReanimation) archetype = 'Reanimator';
+      else if (hasTinker) archetype = 'Artifact Combo';
+      else if (hasStorm) archetype = 'Storm';
+      else if (mainColors.includes('U') && mainColors.includes('B') && spellCount > creatureCount) archetype = 'Control';
+      else if (mainColors.includes('R') && mainColors.includes('W') && avgCmc < 3) archetype = 'Aggro';
+      else if (mainColors.includes('G') && creatureCount >= 20) archetype = 'Green Ramp';
+      else if (mainColors.includes('U') && mainColors.includes('R')) archetype = 'Tempo';
+      else if (creatureCount >= 18) archetype = 'Midrange';
+      else archetype = 'Goodstuff';
+
+      const topCards = picks
+        .map(p => ({ card: p, elo: getEloData(p.name)?.elo || 0 }))
+        .sort((a, b) => b.elo - a.elo)
+        .slice(0, 5);
+
+      return {
+        playerIdx,
+        name: AI_PLAYERS[playerIdx].name,
+        picks,
+        deckElo: deckElo.rawAverage,
+        mainColors,
+        archetype,
+        topCards,
+        avgCmc: avgCmc.toFixed(1),
+        creatureCount,
+      };
+    });
+
+    // Sort by ELO (highest first)
+    const rankedPlayers = [...playerStats].sort((a, b) => b.deckElo - a.deckElo);
+    const yourRank = rankedPlayers.findIndex(p => p.playerIdx === 0) + 1;
+
+    return (
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500/20 to-blue-500/10 flex items-center justify-center">
+              <Users className="w-6 h-6 text-purple-400" />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-white tracking-tight">Draft Table</h2>
+              <p className="text-sm text-white/40 mt-0.5">
+                Your deck ranked #{yourRank} of 8
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setMode('draft')}
+              className="flex items-center gap-2.5 px-5 py-2.5 bg-white/10 border border-white/10 rounded-xl text-white font-medium hover:bg-white/15 transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Your Deck
+            </button>
+            <button
+              onClick={returnToMenu}
+              className="flex items-center gap-2.5 px-5 py-2.5 bg-white/10 border border-white/10 rounded-xl text-white font-medium hover:bg-white/15 transition-colors"
+            >
+              <RotateCcw className="w-4 h-4" />
+              New Draft
+            </button>
+          </div>
+        </div>
+
+        {/* Deck Rankings */}
+        <div className="space-y-3">
+          {rankedPlayers.map((player, rank) => {
+            const isYou = player.playerIdx === 0;
+            const colorMap: Record<string, string> = {
+              W: 'bg-amber-100 text-amber-900',
+              U: 'bg-blue-500 text-white',
+              B: 'bg-purple-900 text-purple-100',
+              R: 'bg-red-500 text-white',
+              G: 'bg-green-600 text-white',
+            };
+
+            return (
+              <div
+                key={player.playerIdx}
+                className={`p-4 rounded-xl border transition-all ${
+                  isYou
+                    ? 'bg-gradient-to-r from-purple-500/10 to-blue-500/10 border-purple-500/30'
+                    : 'bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.04]'
+                }`}
+              >
+                <div className="flex items-start gap-4">
+                  {/* Rank */}
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-lg ${
+                    rank === 0 ? 'bg-amber-500/20 text-amber-400' :
+                    rank === 1 ? 'bg-gray-400/20 text-gray-300' :
+                    rank === 2 ? 'bg-orange-600/20 text-orange-400' :
+                    'bg-white/5 text-white/30'
+                  }`}>
+                    {rank + 1}
+                  </div>
+
+                  {/* Player Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`font-semibold ${isYou ? 'text-purple-300' : 'text-white'}`}>
+                        {player.name}
+                      </span>
+                      {isYou && (
+                        <span className="px-2 py-0.5 bg-purple-500/20 text-purple-300 text-[10px] font-bold rounded-full uppercase">
+                          You
+                        </span>
+                      )}
+                      <div className="flex gap-1">
+                        {player.mainColors.map(color => (
+                          <span
+                            key={color}
+                            className={`w-5 h-5 rounded text-[10px] font-bold flex items-center justify-center ${colorMap[color] || 'bg-gray-500 text-white'}`}
+                          >
+                            {color}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 text-xs text-white/40">
+                      <span className="px-2 py-0.5 bg-white/5 rounded">{player.archetype}</span>
+                      <span>{player.picks.length} cards</span>
+                      <span>{player.avgCmc} avg CMC</span>
+                      <span>{player.creatureCount} creatures</span>
+                    </div>
+
+                    {/* Top Cards Preview */}
+                    <div className="flex gap-1.5 mt-3">
+                      {player.topCards.slice(0, 5).map(({ card }) => (
+                        <div
+                          key={card.id}
+                          className="w-10 h-14 rounded overflow-hidden border border-white/10"
+                          onMouseEnter={() => setHoveredCard(card)}
+                          onMouseLeave={() => setHoveredCard(null)}
+                        >
+                          <img src={getCardImage(card)} alt={card.name} className="w-full h-full object-cover" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* ELO Score */}
+                  <div className="text-right">
+                    <div className={`text-2xl font-bold ${
+                      rank === 0 ? 'text-amber-400' : isYou ? 'text-purple-300' : 'text-white'
+                    }`}>
+                      {player.deckElo}
+                    </div>
+                    <div className="text-[10px] text-white/30 uppercase tracking-wide">Deck ELO</div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Hover Preview */}
         {hoveredCard && (
           <div className="fixed bottom-6 right-6 z-50 hidden lg:block pointer-events-none">
             <div className="bg-black border border-white/10 p-2 rounded-xl shadow-2xl">
