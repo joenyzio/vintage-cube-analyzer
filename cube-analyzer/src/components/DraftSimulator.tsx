@@ -498,70 +498,225 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draftStats.quizTotal]);
 
-  // Generate coach explanation for recommended pick
+  // Analyze deck needs for coaching
+  const deckNeeds = useMemo(() => {
+    if (!draftState || draftState.picks.length === 0) return null;
+    const picks = draftState.picks;
+
+    // Count card types
+    const creatures = picks.filter(c => c.type_line?.toLowerCase().includes('creature')).length;
+    const removal = picks.filter(c => {
+      const text = c.oracle_text?.toLowerCase() || '';
+      return text.includes('destroy target') || text.includes('exile target') ||
+             text.includes('deals') && text.includes('damage') || c.name === 'Swords to Plowshares' ||
+             c.name === 'Path to Exile' || c.name === 'Lightning Bolt';
+    }).length;
+    const cardDraw = picks.filter(c => {
+      const text = c.oracle_text?.toLowerCase() || '';
+      return text.includes('draw') && text.includes('card');
+    }).length;
+    const manaAccel = picks.filter(c => {
+      const name = c.name.toLowerCase();
+      const text = c.oracle_text?.toLowerCase() || '';
+      return name.includes('mox') || name.includes('lotus') || name === 'sol ring' ||
+             name === 'mana crypt' || name === 'mana vault' || text.includes('add') && text.includes('mana');
+    }).length;
+    const lands = picks.filter(c => c.type_line?.toLowerCase().includes('land')).length;
+
+    // Curve analysis
+    const cmcCounts = [0, 0, 0, 0, 0, 0, 0, 0]; // 0, 1, 2, 3, 4, 5, 6, 7+
+    picks.filter(c => !c.type_line?.toLowerCase().includes('land')).forEach(c => {
+      const cmc = Math.min(c.cmc || 0, 7);
+      cmcCounts[cmc]++;
+    });
+
+    const avgCmc = picks.filter(c => !c.type_line?.toLowerCase().includes('land'))
+      .reduce((sum, c) => sum + (c.cmc || 0), 0) / Math.max(1, picks.length - lands);
+
+    // Determine needs
+    const needs: string[] = [];
+    const needsWeights: Record<string, number> = {};
+
+    if (removal < 2 && picks.length >= 10) {
+      needs.push('removal');
+      needsWeights['removal'] = 25;
+    }
+    if (cardDraw < 3 && picks.length >= 15) {
+      needs.push('card draw');
+      needsWeights['card_draw'] = 20;
+    }
+    if (manaAccel < 3 && avgCmc > 3) {
+      needs.push('mana acceleration');
+      needsWeights['mana'] = 30;
+    }
+    if (cmcCounts[2] < 3 && picks.length >= 10) {
+      needs.push('2-drops');
+      needsWeights['2drop'] = 15;
+    }
+    if (creatures < picks.length * 0.3 && picks.length >= 15) {
+      needs.push('creatures');
+      needsWeights['creature'] = 10;
+    }
+    if (lands < 3 && picks.length >= 20) {
+      needs.push('lands/fixing');
+      needsWeights['land'] = 20;
+    }
+
+    return { creatures, removal, cardDraw, manaAccel, lands, avgCmc, cmcCounts, needs, needsWeights };
+  }, [draftState]);
+
+  // Generate smart coach recommendation
   const coachExplanation = useMemo(() => {
     if (!draftState || draftState.isComplete) return null;
 
     const currentPack = draftState.tablePacks[0];
     if (!currentPack.length) return null;
 
-    // Find top 3 cards by ELO
-    const sortedByElo = [...currentPack]
-      .map(c => ({ card: c, elo: getEloData(c.name)?.elo || 0, percentile: getPercentile(c.name) }))
-      .sort((a, b) => b.elo - a.elo);
+    const picks = draftState.picks;
+    const pickNames = picks.map(p => p.name);
 
-    const top = sortedByElo[0];
-    const second = sortedByElo[1];
+    // Main colors (2+ cards)
+    const colorCts: Record<string, number> = {};
+    picks.forEach(c => c.color_identity?.forEach(col => { colorCts[col] = (colorCts[col] || 0) + 1; }));
+    const mainColors = Object.entries(colorCts).filter(([_, count]) => count >= 2).map(([color]) => color);
 
-    // Check colors
-    const mainColors = Object.entries(
-      draftState.picks.reduce((acc, c) => {
-        c.color_identity?.forEach(col => {
-          acc[col] = (acc[col] || 0) + 1;
-        });
-        return acc;
-      }, {} as Record<string, number>)
-    ).filter(([_, count]) => count >= 2).map(([color]) => color);
+    // Detect synergy anchors in our pool
+    const hasTinker = pickNames.includes('Tinker');
+    const hasNaturalOrder = pickNames.includes('Natural Order');
+    const hasReanimation = picks.some(p => ['Reanimate', 'Animate Dead', 'Entomb', 'Necromancy', 'Exhume'].includes(p.name));
+    const hasShowTell = picks.some(p => ['Show and Tell', 'Sneak Attack', 'Through the Breach'].includes(p.name));
+    const hasChannel = pickNames.includes('Channel');
 
-    const topColors = top.card.color_identity || [];
-    const isOnColor = topColors.length === 0 || topColors.every(c => mainColors.includes(c));
+    // Score each card in pack
+    const scored = currentPack.map(card => {
+      let score = 0;
+      const reasons: string[] = [];
+      const elo = getEloData(card.name)?.elo || 0;
+      const percentile = getPercentile(card.name);
+      const cardColors = card.color_identity || [];
+      const isColorless = cardColors.length === 0;
+      const isOnColor = isColorless || cardColors.every(c => mainColors.includes(c));
+      const typeLine = card.type_line?.toLowerCase() || '';
+      const oracleText = card.oracle_text?.toLowerCase() || '';
+      const cmc = card.cmc || 0;
 
-    const reasons: string[] = [];
+      // Base ELO score (0-100 points)
+      score += Math.min(100, (elo - 1200) / 10);
 
-    // Explain the recommendation
-    if (top.percentile >= 90) {
-      reasons.push(`${top.card.name} is in the top 10% of all cube cards by ELO`);
-    } else if (top.percentile >= 75) {
-      reasons.push(`${top.card.name} is a premium card (top 25%)`);
-    }
+      // Early draft: prioritize power (picks 1-5)
+      if (picks.length < 5) {
+        if (percentile >= 90) {
+          score += 50;
+          reasons.push('Premium card - take best available early');
+        }
+        // Don't penalize off-color early
+      } else {
+        // Later draft: prioritize synergy and color
+        if (isOnColor) {
+          score += 30;
+          reasons.push(`Fits your ${mainColors.join('')} colors`);
+        } else if (percentile >= 85) {
+          score += 10;
+          reasons.push('Powerful enough to splash');
+        } else {
+          score -= 40;
+          reasons.push('Off-color');
+        }
+      }
 
-    if (draftState.picks.length < 5) {
-      reasons.push('Early in the draft - prioritize raw power over synergy');
-    } else if (isOnColor) {
-      reasons.push(`Fits your ${mainColors.join('')} colors`);
-    } else if (top.percentile >= 85) {
-      reasons.push('Powerful enough to splash or pivot');
-    }
+      // Synergy bonuses
+      if (hasTinker && typeLine.includes('artifact')) {
+        score += 35;
+        reasons.push('Synergy with Tinker');
+      }
+      if (hasNaturalOrder && typeLine.includes('creature') && cardColors.includes('G')) {
+        score += 30;
+        reasons.push('Green creature for Natural Order');
+      }
+      if (hasReanimation && typeLine.includes('creature') && cmc >= 6) {
+        score += 35;
+        reasons.push('Reanimation target');
+      }
+      if (hasShowTell && typeLine.includes('creature') && cmc >= 7) {
+        score += 40;
+        reasons.push('Cheat into play target');
+      }
+      if (hasChannel && (card.name.includes('Emrakul') || card.name.includes('Ulamog'))) {
+        score += 50;
+        reasons.push('Channel payoff');
+      }
 
-    if (second && top.elo - second.elo > 50) {
-      reasons.push(`Clear best card (+${Math.round(top.elo - second.elo)} ELO over next best)`);
-    } else if (second && top.elo - second.elo < 20) {
-      reasons.push(`Close decision - ${second.card.name} is also good`);
-    }
+      // Role-based bonuses based on deck needs
+      if (deckNeeds) {
+        if (deckNeeds.needsWeights['removal'] && (oracleText.includes('destroy target') || oracleText.includes('exile target') || (oracleText.includes('deals') && oracleText.includes('damage')))) {
+          score += deckNeeds.needsWeights['removal'];
+          reasons.push('You need removal');
+        }
+        if (deckNeeds.needsWeights['card_draw'] && oracleText.includes('draw') && oracleText.includes('card')) {
+          score += deckNeeds.needsWeights['card_draw'];
+          reasons.push('You need card draw');
+        }
+        if (deckNeeds.needsWeights['mana'] && (card.name.toLowerCase().includes('mox') || card.name === 'Sol Ring' || card.name === 'Mana Crypt' || oracleText.includes('add') && oracleText.includes('mana'))) {
+          score += deckNeeds.needsWeights['mana'];
+          reasons.push('You need mana acceleration');
+        }
+        if (deckNeeds.needsWeights['2drop'] && cmc === 2 && !typeLine.includes('land')) {
+          score += deckNeeds.needsWeights['2drop'];
+          reasons.push('Fills curve gap at 2 mana');
+        }
+        if (deckNeeds.needsWeights['land'] && typeLine.includes('land')) {
+          const fixesColors = mainColors.some(c => oracleText.includes(c === 'W' ? 'white' : c === 'U' ? 'blue' : c === 'B' ? 'black' : c === 'R' ? 'red' : 'green'));
+          if (fixesColors || card.name.includes('Fetch') || card.name.includes('Delta') || card.name.includes('Tarn')) {
+            score += deckNeeds.needsWeights['land'];
+            reasons.push('Fixing for your colors');
+          }
+        }
+      }
 
-    const wheelLikelihood = getWheelLikelihood(top.card.name);
-    if (wheelLikelihood === 'unlikely') {
-      reasons.push("Won't wheel - take it now");
+      // Premium card bonus
+      if (percentile >= 95) {
+        score += 30;
+        if (!reasons.some(r => r.includes('Premium'))) reasons.unshift('Top 5% card in the cube');
+      } else if (percentile >= 85) {
+        score += 15;
+        if (!reasons.some(r => r.includes('Premium'))) reasons.unshift('High-tier card (top 15%)');
+      }
+
+      // Wheel likelihood consideration
+      const wheel = getWheelLikelihood(card.name);
+      if (wheel === 'unlikely' && percentile >= 70) {
+        score += 10;
+        reasons.push("Won't wheel");
+      }
+
+      return { card, score, elo, percentile, reasons };
+    });
+
+    // Sort by score
+    scored.sort((a, b) => b.score - a.score);
+    const top = scored[0];
+    const alternatives = scored.slice(1, 4);
+
+    // Generate main explanation
+    let mainReason = '';
+    if (picks.length < 3) {
+      mainReason = 'Take the most powerful card available. Stay open.';
+    } else if (top.reasons.length > 0) {
+      mainReason = top.reasons[0];
+    } else {
+      mainReason = 'Best available for your deck';
     }
 
     return {
       card: top.card,
       elo: top.elo,
       percentile: top.percentile,
-      reasons,
-      alternatives: sortedByElo.slice(1, 3).map(s => s.card.name),
+      reasons: top.reasons.slice(0, 3),
+      mainReason,
+      alternatives: alternatives.map(a => ({ name: a.card.name, score: a.score, reason: a.reasons[0] || 'Solid option' })),
+      deckNeeds: deckNeeds?.needs || [],
     };
-  }, [draftState]);
+  }, [draftState, deckNeeds]);
 
   const startDraft = useCallback(() => {
     const shuffled = shuffleArray([...cards]);
@@ -773,42 +928,10 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [mode, draftState, quizState, makePick, makeQuizPick, nextQuizQuestion, returnToMenu]);
 
+  // Use coach's recommended card (same logic)
   const getRecommendedPick = useMemo(() => {
-    if (!draftState) return null;
-    const currentPack = draftState.tablePacks[0];
-    if (!currentPack.length) return null;
-
-    const colorCounts: Record<string, number> = {};
-    draftState.picks.forEach(c => {
-      c.color_identity?.forEach(col => {
-        colorCounts[col] = (colorCounts[col] || 0) + 1;
-      });
-    });
-    const mainColors = Object.entries(colorCounts)
-      .filter(([_, count]) => count >= 2)
-      .map(([color]) => color);
-
-    let bestCard = currentPack[0];
-    let bestScore = -Infinity;
-
-    currentPack.forEach(card => {
-      let score = card.powerLevel * 10;
-      const cardColors = card.color_identity || [];
-      if (cardColors.length === 0) score += 5;
-      if (mainColors.length > 0) {
-        const onColor = cardColors.every(c => mainColors.includes(c));
-        if (onColor) score += 15;
-      }
-      if (card.powerLevel >= 9) score += 20;
-
-      if (score > bestScore) {
-        bestScore = score;
-        bestCard = card;
-      }
-    });
-
-    return bestCard;
-  }, [draftState]);
+    return coachExplanation?.card || null;
+  }, [coachExplanation]);
 
   const colorCounts = useMemo(() => {
     if (!draftState) return {};
@@ -1841,7 +1964,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
       {/* Left Panel - Draft Guidance */}
       <div className="w-56 flex-shrink-0 hidden lg:block">
         <div className="sticky top-20 space-y-3">
-          {/* Coach Panel */}
+          {/* Coach Panel - Enhanced */}
           {coachMode && coachExplanation && (
             <div className="bg-gradient-to-br from-amber-500/10 to-transparent border border-amber-500/20 rounded-xl overflow-hidden">
               <button
@@ -1854,32 +1977,69 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                 </div>
                 <span className="text-white/30 text-xs">{showCoachExplanation ? '▼' : '▶'}</span>
               </button>
-              {showCoachExplanation && (
-                <div className="p-3 pt-0 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-10 h-14 rounded overflow-hidden flex-shrink-0">
-                      <img src={getCardImage(coachExplanation.card)} alt="" className="w-full h-full object-cover" />
-                    </div>
-                    <div>
-                      <div className="text-xs font-medium text-white truncate">{coachExplanation.card.name}</div>
-                      <div className="text-[10px] text-amber-400">ELO {Math.round(coachExplanation.elo)} · Top {100 - coachExplanation.percentile}%</div>
+
+              {/* Always show the main recommendation */}
+              <div className="px-3 pb-3 space-y-3">
+                {/* Main Pick Recommendation */}
+                <div className="flex items-start gap-3">
+                  <div className="w-12 h-16 rounded-lg overflow-hidden flex-shrink-0 ring-2 ring-amber-400/50">
+                    <img src={getCardImage(coachExplanation.card)} alt="" className="w-full h-full object-cover" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-semibold text-white truncate">{coachExplanation.card.name}</div>
+                    <div className="text-[10px] text-amber-400 font-medium">ELO {Math.round(coachExplanation.elo)} · Top {100 - coachExplanation.percentile}%</div>
+                    <div className="mt-1 text-[11px] text-white/80 leading-tight">
+                      {coachExplanation.mainReason}
                     </div>
                   </div>
-                  <div className="space-y-1">
-                    {coachExplanation.reasons.slice(0, 3).map((reason, i) => (
-                      <div key={i} className="flex items-start gap-1.5 text-[10px] text-white/60">
-                        <span className="text-amber-400 mt-0.5">•</span>
-                        <span>{reason}</span>
-                      </div>
-                    ))}
-                  </div>
-                  {coachExplanation.alternatives.length > 0 && (
-                    <div className="text-[10px] text-white/30 pt-1 border-t border-white/[0.06]">
-                      Also consider: {coachExplanation.alternatives.join(', ')}
-                    </div>
-                  )}
                 </div>
-              )}
+
+                {/* Deck Needs Alert */}
+                {coachExplanation.deckNeeds && coachExplanation.deckNeeds.length > 0 && (
+                  <div className="p-2 bg-white/[0.03] rounded-lg">
+                    <div className="text-[9px] text-white/40 uppercase tracking-wider mb-1">Your deck needs</div>
+                    <div className="flex flex-wrap gap-1">
+                      {coachExplanation.deckNeeds.map((need, i) => (
+                        <span key={i} className="px-1.5 py-0.5 bg-amber-500/20 text-amber-300 text-[9px] rounded font-medium">
+                          {need}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {showCoachExplanation && (
+                  <>
+                    {/* Additional Reasons */}
+                    {coachExplanation.reasons.length > 1 && (
+                      <div className="space-y-1">
+                        <div className="text-[9px] text-white/40 uppercase tracking-wider">Why this pick</div>
+                        {coachExplanation.reasons.map((reason, i) => (
+                          <div key={i} className="flex items-start gap-1.5 text-[10px] text-white/60">
+                            <span className="text-green-400 mt-0.5">✓</span>
+                            <span>{reason}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Alternatives */}
+                    {coachExplanation.alternatives && coachExplanation.alternatives.length > 0 && (
+                      <div className="pt-2 border-t border-white/[0.06]">
+                        <div className="text-[9px] text-white/40 uppercase tracking-wider mb-1.5">Also consider</div>
+                        <div className="space-y-1.5">
+                          {coachExplanation.alternatives.slice(0, 2).map((alt, i) => (
+                            <div key={i} className="flex items-center justify-between text-[10px]">
+                              <span className="text-white/70 truncate">{alt.name}</span>
+                              <span className="text-white/30 text-[9px] truncate ml-2">{alt.reason}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
           )}
 
