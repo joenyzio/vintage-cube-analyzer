@@ -565,12 +565,14 @@ function HigherLowerGame({ cards, stats, onUpdate, onBack }: GameComponentProps)
   const [pair, setPair] = useState<[CubeCard, CubeCard] | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [picked, setPicked] = useState<0 | 1 | null>(null);
+  const [viewingCard, setViewingCard] = useState<{ card: CubeCard; index: 0 | 1 } | null>(null);
 
   const newRound = useCallback(() => {
     const [a, b] = getRandomCards(cards, 2);
     setPair([a, b]);
     setRevealed(false);
     setPicked(null);
+    setViewingCard(null);
   }, [cards]);
 
   useEffect(() => { newRound(); }, [newRound]);
@@ -585,14 +587,43 @@ function HigherLowerGame({ cards, stats, onUpdate, onBack }: GameComponentProps)
     if (revealed) return;
     setPicked(index);
     setRevealed(true);
+    setViewingCard(null);
     onUpdate(index === correctIndex);
   };
 
   return (
     <div className="fixed inset-0 bg-black flex flex-col z-40">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3">
-        <button onClick={onBack} className="p-1">
+      {/* Card Preview Modal */}
+      {viewingCard && !revealed && (
+        <div className="fixed inset-0 z-50 flex flex-col">
+          <div className="absolute inset-0 bg-black/90" onClick={() => setViewingCard(null)} />
+          <div className="flex-1 flex items-center justify-center p-4">
+            <img
+              src={getCardImage(viewingCard.card)}
+              alt={viewingCard.card.name}
+              className="max-h-[70vh] max-w-full rounded-xl shadow-2xl"
+            />
+          </div>
+          <div className="relative p-4 pb-8 safe-bottom space-y-3 max-w-sm mx-auto w-full">
+            <button
+              onClick={() => handlePick(viewingCard.index)}
+              className="w-full py-4 bg-white text-black rounded-xl font-bold text-lg active:scale-[0.98]"
+            >
+              Pick This Card
+            </button>
+            <button
+              onClick={() => setViewingCard(null)}
+              className="w-full py-3 bg-white/10 text-white/70 rounded-xl font-medium active:scale-[0.98]"
+            >
+              Go Back
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Header with safe area */}
+      <div className="flex items-center justify-between px-4 py-3 safe-top">
+        <button onClick={onBack} className="p-2 -ml-1 hover:bg-white/5 rounded-lg">
           <ChevronLeft className="w-6 h-6 text-white/60" />
         </button>
         <span className="text-white/50 text-sm">Tap the higher ELO</span>
@@ -613,7 +644,7 @@ function HigherLowerGame({ cards, stats, onUpdate, onBack }: GameComponentProps)
           return (
             <div key={card.id} className="flex flex-col items-center w-[46%] max-w-[280px]">
               <button
-                onClick={() => handlePick(idx as 0 | 1)}
+                onClick={() => revealed ? null : setViewingCard({ card, index: idx as 0 | 1 })}
                 disabled={revealed}
                 className={`w-full rounded-xl overflow-hidden transition-all ${
                   revealed
@@ -627,7 +658,6 @@ function HigherLowerGame({ cards, stats, onUpdate, onBack }: GameComponentProps)
               >
                 <img src={getCardImage(card)} alt={card.name} className="w-full" />
               </button>
-              {/* ELO + Power shown below card after reveal */}
               {revealed && (
                 <div className={`mt-2 text-center ${isCorrect ? 'text-green-400' : 'text-white/40'}`}>
                   <div className="text-xl font-bold">{Math.round(elo)}</div>
@@ -640,7 +670,7 @@ function HigherLowerGame({ cards, stats, onUpdate, onBack }: GameComponentProps)
       </div>
 
       {/* Bottom */}
-      <div className="px-4 pb-8 pt-4 max-w-lg mx-auto w-full">
+      <div className="px-4 pb-8 pt-4 max-w-lg mx-auto w-full safe-bottom">
         {revealed ? (
           <>
             <div className={`text-center text-xl font-bold mb-4 ${picked === correctIndex ? 'text-green-400' : 'text-red-400'}`}>
@@ -650,7 +680,9 @@ function HigherLowerGame({ cards, stats, onUpdate, onBack }: GameComponentProps)
               Next
             </button>
           </>
-        ) : null}
+        ) : (
+          <div className="text-center text-white/30 text-sm">Tap a card to view it larger</div>
+        )}
         {stats.played > 0 && (
           <div className="text-center text-white/20 text-xs mt-3">
             {Math.round((stats.correct / stats.played) * 100)}% · {stats.correct}/{stats.played}
