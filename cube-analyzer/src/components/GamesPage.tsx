@@ -7,7 +7,7 @@ import {
   getWheelLikelihood,
   type WheelLikelihood,
 } from '../services/eloHelpers';
-import { Scale, CircleDot, Layers, Trophy, ChevronLeft, Flame, Timer, Hash, Sparkles, Package, Hand, Radio, GraduationCap, TrendingUp, TrendingDown, Minus, ArrowLeftRight, ListOrdered, Swords, Eye, Target, ListTree, Search, Gauge, Stethoscope, PuzzleIcon, SlidersHorizontal, Shuffle } from 'lucide-react';
+import { Scale, CircleDot, Layers, Trophy, ChevronLeft, Flame, Timer, Hash, Sparkles, Package, Hand, Radio, GraduationCap, TrendingUp, TrendingDown, Minus, ArrowLeftRight, ListOrdered, Swords, Eye, Target, ListTree, Search, Gauge, Stethoscope, PuzzleIcon, SlidersHorizontal, Shuffle, BookOpen } from 'lucide-react';
 import { srs, boolToQuality, type SkillCategory, type SkillRating } from '../services/spacedRepetition';
 
 // Global filter types
@@ -45,12 +45,13 @@ import { ClassificationGame } from './games/ClassificationGame';
 import { SpottingGame } from './games/SpottingGame';
 import { ConstraintGame } from './games/ConstraintGame';
 import { ReconstructionGame } from './games/ReconstructionGame';
+import { RulesQuizGame } from './games/RulesQuizGame';
 
 interface GamesPageProps {
   cards: CubeCard[];
 }
 
-type GameType = 'menu' | 'higher-lower' | 'wheel-or-not' | 'first-pick' | 'color-commit' | 'guess-cmc' | 'synergy-snap' | 'pack-p1p1' | 'mulligan-trainer' | 'signal-quiz' | 'archetype-flashcards' | 'sideboard-drill' | 'sequencing' | 'beatdown' | 'recognition' | 'estimation' | 'pick-order' | 'archetype-sort' | 'odd-one-out' | 'deck-doctor' | 'complete-curve';
+type GameType = 'menu' | 'higher-lower' | 'wheel-or-not' | 'first-pick' | 'color-commit' | 'guess-cmc' | 'synergy-snap' | 'pack-p1p1' | 'mulligan-trainer' | 'signal-quiz' | 'archetype-flashcards' | 'sideboard-drill' | 'sequencing' | 'beatdown' | 'recognition' | 'estimation' | 'pick-order' | 'archetype-sort' | 'odd-one-out' | 'deck-doctor' | 'complete-curve' | 'rules-quiz';
 
 interface GameStats {
   higherLower: { played: number; correct: number; streak: number; bestStreak: number };
@@ -137,7 +138,7 @@ function getRandomCards(cards: CubeCard[], n: number): CubeCard[] {
 const ALL_GAME_IDS: GameType[] = [
   'recognition', 'estimation', 'pick-order', 'archetype-sort', 'odd-one-out', 'deck-doctor', 'complete-curve',
   'pack-p1p1', 'mulligan-trainer', 'signal-quiz', 'archetype-flashcards', 'higher-lower', 'wheel-or-not',
-  'first-pick', 'color-commit', 'guess-cmc', 'synergy-snap', 'sequencing', 'beatdown',
+  'first-pick', 'color-commit', 'guess-cmc', 'synergy-snap', 'sequencing', 'beatdown', 'rules-quiz',
 ];
 
 export function GamesPage({ cards }: GamesPageProps) {
@@ -236,6 +237,7 @@ export function GamesPage({ cards }: GamesPageProps) {
     { id: 'odd-one-out' as GameType, name: 'Odd One Out', desc: 'Find the misfit', icon: Search, cognitive: true },
     { id: 'deck-doctor' as GameType, name: 'Deck Doctor', desc: 'What\'s wrong here?', icon: Stethoscope, cognitive: true },
     { id: 'complete-curve' as GameType, name: 'Complete the Curve', desc: 'Fill the missing slot', icon: PuzzleIcon, cognitive: true },
+    { id: 'rules-quiz' as GameType, name: 'Rules Quiz', desc: 'Master MTG keywords', icon: BookOpen, cognitive: true },
   ];
 
   const games = [
@@ -275,6 +277,9 @@ export function GamesPage({ cards }: GamesPageProps) {
   }
   if (game === 'complete-curve') {
     return <ReconstructionGame cards={filteredCards} onBack={() => setGame('menu')} onShuffle={playRandomGame} />;
+  }
+  if (game === 'rules-quiz') {
+    return <RulesQuizGame cards={filteredCards} onBack={() => setGame('menu')} onShuffle={playRandomGame} />;
   }
 
   // Legacy games with shared stats system

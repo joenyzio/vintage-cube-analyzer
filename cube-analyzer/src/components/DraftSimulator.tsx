@@ -922,11 +922,17 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
       if (e.key === 'Escape') {
         returnToMenu();
       }
+
+      // L to toggle coach mode
+      if (e.key.toLowerCase() === 'l') {
+        e.preventDefault();
+        setCoachMode(c => !c);
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [mode, draftState, quizState, makePick, makeQuizPick, nextQuizQuestion, returnToMenu]);
+  }, [mode, draftState, quizState, makePick, makeQuizPick, nextQuizQuestion, returnToMenu, setCoachMode]);
 
   // Use coach's recommended card (same logic)
   const getRecommendedPick = useMemo(() => {
@@ -2208,10 +2214,11 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                   : 'bg-white/5 border border-white/10 text-white/40 hover:text-white/60'
                 }
               `}
-              title={coachMode ? 'Disable coach' : 'Enable coach'}
+              title={coachMode ? 'Disable coach (L)' : 'Enable coach (L)'}
             >
               {coachMode ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
               Coach
+              <kbd className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${coachMode ? 'bg-amber-500/30' : 'bg-white/10'}`}>L</kbd>
             </button>
 
             <button
