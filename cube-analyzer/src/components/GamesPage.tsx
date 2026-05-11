@@ -593,18 +593,28 @@ function HigherLowerGame({ cards, stats, onUpdate, onBack }: GameComponentProps)
 
   return (
     <div className="fixed inset-0 bg-black flex flex-col z-40">
-      {/* Card Preview Modal */}
+      {/* Card Preview - Full screen */}
       {viewingCard && !revealed && (
-        <div className="fixed inset-0 z-50 flex flex-col">
-          <div className="absolute inset-0 bg-black/90" onClick={() => setViewingCard(null)} />
-          <div className="flex-1 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black flex flex-col safe-top safe-bottom">
+          {/* Back button */}
+          <div className="shrink-0 px-4 pt-4">
+            <button onClick={() => setViewingCard(null)} className="p-2 -ml-2 hover:bg-white/5 rounded-lg">
+              <ChevronLeft className="w-6 h-6 text-white/60" />
+            </button>
+          </div>
+
+          {/* Card centered */}
+          <div className="flex-1 flex items-center justify-center p-6 min-h-0">
             <img
               src={getCardImage(viewingCard.card)}
               alt={viewingCard.card.name}
-              className="max-h-[70vh] max-w-full rounded-xl shadow-2xl"
+              className="max-h-full w-auto rounded-2xl"
+              style={{ maxWidth: '300px' }}
             />
           </div>
-          <div className="relative p-4 pb-8 safe-bottom space-y-3 max-w-sm mx-auto w-full">
+
+          {/* Buttons */}
+          <div className="shrink-0 px-6 pb-6 pt-4 space-y-3">
             <button
               onClick={() => handlePick(viewingCard.index)}
               className="w-full py-4 bg-white text-black rounded-xl font-bold text-lg active:scale-[0.98]"
@@ -613,7 +623,7 @@ function HigherLowerGame({ cards, stats, onUpdate, onBack }: GameComponentProps)
             </button>
             <button
               onClick={() => setViewingCard(null)}
-              className="w-full py-3 bg-white/10 text-white/70 rounded-xl font-medium active:scale-[0.98]"
+              className="w-full py-3 bg-white/5 border border-white/10 text-white/50 rounded-xl font-medium active:scale-[0.98]"
             >
               Go Back
             </button>
