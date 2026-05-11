@@ -171,6 +171,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
   const [hoveredCard, setHoveredCard] = useState<CubeCard | null>(null);
   const [mobileSelectedCard, setMobileSelectedCard] = useState<CubeCard | null>(null);
   const [showMobileDeck, setShowMobileDeck] = useState(false);
+  const [expandedPlayerIdx, setExpandedPlayerIdx] = useState<number | null>(null);
 
   // New: Coach mode and history
   const [coachMode, setCoachMode] = useState(true);
@@ -1686,81 +1687,115 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
               G: 'bg-green-600 text-white',
             };
 
+            const isExpanded = expandedPlayerIdx === player.playerIdx;
+
             return (
               <div
                 key={player.playerIdx}
-                className={`p-4 rounded-xl border transition-all ${
+                className={`rounded-xl border transition-all ${
                   isYou
                     ? 'bg-gradient-to-r from-purple-500/10 to-blue-500/10 border-purple-500/30'
-                    : 'bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.04]'
+                    : 'bg-white/[0.02] border-white/[0.06]'
                 }`}
               >
-                <div className="flex items-start gap-4">
-                  {/* Rank */}
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-lg ${
-                    rank === 0 ? 'bg-amber-500/20 text-amber-400' :
-                    rank === 1 ? 'bg-gray-400/20 text-gray-300' :
-                    rank === 2 ? 'bg-orange-600/20 text-orange-400' :
-                    'bg-white/5 text-white/30'
-                  }`}>
-                    {rank + 1}
-                  </div>
-
-                  {/* Player Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className={`font-semibold ${isYou ? 'text-purple-300' : 'text-white'}`}>
-                        {player.name}
-                      </span>
-                      {isYou && (
-                        <span className="px-2 py-0.5 bg-purple-500/20 text-purple-300 text-[10px] font-bold rounded-full uppercase">
-                          You
-                        </span>
-                      )}
-                      <div className="flex gap-1">
-                        {player.mainColors.map(color => (
-                          <span
-                            key={color}
-                            className={`w-5 h-5 rounded text-[10px] font-bold flex items-center justify-center ${colorMap[color] || 'bg-gray-500 text-white'}`}
-                          >
-                            {color}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-3 text-xs text-white/40">
-                      <span className="px-2 py-0.5 bg-white/5 rounded">{player.archetype}</span>
-                      <span>{player.picks.length} cards</span>
-                      <span>{player.avgCmc} avg CMC</span>
-                      <span>{player.creatureCount} creatures</span>
-                    </div>
-
-                    {/* Top Cards Preview */}
-                    <div className="flex gap-1.5 mt-3">
-                      {player.topCards.slice(0, 5).map(({ card }) => (
-                        <div
-                          key={card.id}
-                          className="w-10 h-14 rounded overflow-hidden border border-white/10"
-                          onMouseEnter={() => setHoveredCard(card)}
-                          onMouseLeave={() => setHoveredCard(null)}
-                        >
-                          <img src={getCardImage(card)} alt={card.name} className="w-full h-full object-cover" />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* ELO Score */}
-                  <div className="text-right">
-                    <div className={`text-2xl font-bold ${
-                      rank === 0 ? 'text-amber-400' : isYou ? 'text-purple-300' : 'text-white'
+                {/* Clickable Header */}
+                <div
+                  className={`p-4 cursor-pointer ${!isExpanded ? 'hover:bg-white/[0.02]' : ''} rounded-xl transition-colors`}
+                  onClick={() => setExpandedPlayerIdx(isExpanded ? null : player.playerIdx)}
+                >
+                  <div className="flex items-start gap-4">
+                    {/* Rank */}
+                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-lg ${
+                      rank === 0 ? 'bg-amber-500/20 text-amber-400' :
+                      rank === 1 ? 'bg-gray-400/20 text-gray-300' :
+                      rank === 2 ? 'bg-orange-600/20 text-orange-400' :
+                      'bg-white/5 text-white/30'
                     }`}>
-                      {player.deckElo}
+                      {rank + 1}
                     </div>
-                    <div className="text-[10px] text-white/30 uppercase tracking-wide">Deck ELO</div>
+
+                    {/* Player Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`font-semibold ${isYou ? 'text-purple-300' : 'text-white'}`}>
+                          {player.name}
+                        </span>
+                        {isYou && (
+                          <span className="px-2 py-0.5 bg-purple-500/20 text-purple-300 text-[10px] font-bold rounded-full uppercase">
+                            You
+                          </span>
+                        )}
+                        <div className="flex gap-1">
+                          {player.mainColors.map(color => (
+                            <span
+                              key={color}
+                              className={`w-5 h-5 rounded text-[10px] font-bold flex items-center justify-center ${colorMap[color] || 'bg-gray-500 text-white'}`}
+                            >
+                              {color}
+                            </span>
+                          ))}
+                        </div>
+                        <span className="text-white/30 text-xs ml-2">
+                          {isExpanded ? '▼' : '▶'} Click to {isExpanded ? 'collapse' : 'view all cards'}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-3 text-xs text-white/40">
+                        <span className="px-2 py-0.5 bg-white/5 rounded">{player.archetype}</span>
+                        <span>{player.picks.length} cards</span>
+                        <span>{player.avgCmc} avg CMC</span>
+                        <span>{player.creatureCount} creatures</span>
+                      </div>
+
+                      {/* Top Cards Preview (only when collapsed) */}
+                      {!isExpanded && (
+                        <div className="flex gap-1.5 mt-3">
+                          {player.topCards.slice(0, 5).map(({ card }) => (
+                            <div
+                              key={card.id}
+                              className="w-10 h-14 rounded overflow-hidden border border-white/10"
+                              onMouseEnter={() => setHoveredCard(card)}
+                              onMouseLeave={() => setHoveredCard(null)}
+                            >
+                              <img src={getCardImage(card)} alt={card.name} className="w-full h-full object-cover" />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* ELO Score */}
+                    <div className="text-right">
+                      <div className={`text-2xl font-bold ${
+                        rank === 0 ? 'text-amber-400' : isYou ? 'text-purple-300' : 'text-white'
+                      }`}>
+                        {player.deckElo}
+                      </div>
+                      <div className="text-[10px] text-white/30 uppercase tracking-wide">Deck ELO</div>
+                    </div>
                   </div>
                 </div>
+
+                {/* Expanded Full Deck */}
+                {isExpanded && (
+                  <div className="px-4 pb-4 border-t border-white/[0.06] pt-4">
+                    <div className="grid grid-cols-7 sm:grid-cols-9 md:grid-cols-11 lg:grid-cols-15 gap-1.5">
+                      {player.picks
+                        .map(card => ({ card, elo: getEloData(card.name)?.elo || 0 }))
+                        .sort((a, b) => b.elo - a.elo)
+                        .map(({ card }) => (
+                          <div
+                            key={card.id}
+                            className="aspect-[488/680] rounded-lg overflow-hidden border border-white/10 hover:border-white/30 hover:scale-105 transition-all cursor-pointer"
+                            onMouseEnter={() => setHoveredCard(card)}
+                            onMouseLeave={() => setHoveredCard(null)}
+                          >
+                            <img src={getCardImage(card)} alt={card.name} className="w-full h-full object-cover" />
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
