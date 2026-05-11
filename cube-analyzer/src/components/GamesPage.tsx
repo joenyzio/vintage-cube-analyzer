@@ -7,8 +7,8 @@ import {
   getWheelLikelihood,
   type WheelLikelihood,
 } from '../services/eloHelpers';
-import { Scale, CircleDot, Layers, Trophy, ChevronLeft, Flame, Timer, Hash, Sparkles, Package, Hand, Radio, GraduationCap } from 'lucide-react';
-import { srs, boolToQuality } from '../services/spacedRepetition';
+import { Scale, CircleDot, Layers, Trophy, ChevronLeft, Flame, Timer, Hash, Sparkles, Package, Hand, Radio, GraduationCap, TrendingUp, TrendingDown, Minus, BarChart3 } from 'lucide-react';
+import { srs, boolToQuality, type SkillCategory, type SkillRating } from '../services/spacedRepetition';
 
 interface GamesPageProps {
   cards: CubeCard[];
@@ -163,69 +163,224 @@ export function GamesPage({ cards }: GamesPageProps) {
     );
   }
 
+  // Get skill data for dashboard
+  const skillRatings = srs.getSkillRatings();
+  const mastery = srs.getOverallMastery();
+  const totalReviews = srs.getTotalReviews();
+
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div className="text-center">
-        <h1 className="text-2xl font-bold text-white">Draft Games</h1>
-        <p className="text-sm text-white/50 mt-1">Quick games to sharpen your instincts</p>
+        <h1 className="text-2xl font-bold text-white">Training</h1>
+        <p className="text-sm text-white/50 mt-1">Drills to internalize before draft day</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {games.map(g => {
-          const accuracy = g.stats.played > 0 ? Math.round((g.stats.correct / g.stats.played) * 100) : null;
-          const colorClasses = {
-            blue: 'bg-blue-500/10 border-blue-500/20 hover:bg-blue-500/20',
-            green: 'bg-green-500/10 border-green-500/20 hover:bg-green-500/20',
-            amber: 'bg-amber-500/10 border-amber-500/20 hover:bg-amber-500/20',
-            purple: 'bg-purple-500/10 border-purple-500/20 hover:bg-purple-500/20',
-            red: 'bg-red-500/10 border-red-500/20 hover:bg-red-500/20',
-            cyan: 'bg-cyan-500/10 border-cyan-500/20 hover:bg-cyan-500/20',
-            pink: 'bg-pink-500/10 border-pink-500/20 hover:bg-pink-500/20',
-            orange: 'bg-orange-500/10 border-orange-500/20 hover:bg-orange-500/20',
-            indigo: 'bg-indigo-500/10 border-indigo-500/20 hover:bg-indigo-500/20',
-          }[g.color];
-          const iconColor = {
-            blue: 'text-blue-400',
-            green: 'text-green-400',
-            amber: 'text-amber-400',
-            purple: 'text-purple-400',
-            red: 'text-red-400',
-            cyan: 'text-cyan-400',
-            pink: 'text-pink-400',
-            orange: 'text-orange-400',
-            indigo: 'text-indigo-400',
-          }[g.color];
+      {/* Progress Dashboard */}
+      <ProgressDashboard
+        mastery={mastery}
+        skillRatings={skillRatings}
+        totalReviews={totalReviews}
+      />
 
-          return (
-            <button
-              key={g.id}
-              onClick={() => setGame(g.id)}
-              className={`${colorClasses} border rounded-xl p-4 text-left transition-all active:scale-[0.98]`}
-            >
-              <div className="flex items-center gap-3">
-                <g.icon className={`w-8 h-8 ${iconColor}`} />
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-white">{g.name}</div>
-                  <div className="text-xs text-white/50">{g.desc}</div>
-                </div>
-                {accuracy !== null && (
-                  <div className="text-right">
-                    <div className="text-lg font-bold text-white">{accuracy}%</div>
-                    <div className="text-[10px] text-white/40">{g.stats.played} played</div>
-                  </div>
-                )}
-              </div>
-              {g.stats.bestStreak > 0 && (
-                <div className="mt-2 flex items-center gap-1 text-xs text-amber-400/80">
-                  <Flame className="w-3 h-3" />
-                  Best streak: {g.stats.bestStreak}
-                </div>
-              )}
-            </button>
-          );
-        })}
+      {/* Featured Training Modes */}
+      <div>
+        <div className="text-xs font-medium text-white/40 uppercase tracking-wider mb-2">Core Drills</div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {games.filter(g => g.featured).map(g => (
+            <GameMenuButton key={g.id} game={g} onSelect={setGame} />
+          ))}
+        </div>
+      </div>
+
+      {/* Other Games */}
+      <div>
+        <div className="text-xs font-medium text-white/40 uppercase tracking-wider mb-2">Quick Games</div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {games.filter(g => !g.featured).map(g => (
+            <GameMenuButton key={g.id} game={g} onSelect={setGame} />
+          ))}
+        </div>
       </div>
     </div>
+  );
+}
+
+// ============ PROGRESS DASHBOARD ============
+const SKILL_NAMES: Record<SkillCategory, string> = {
+  'card-evaluation': 'Card Evaluation',
+  'pack-picks': 'Pack Picks',
+  'mulligans': 'Mulligans',
+  'signals': 'Signals',
+  'archetypes': 'Archetypes',
+  'sideboard': 'Sideboard',
+  'sequencing': 'Sequencing',
+  'matchups': 'Matchups',
+};
+
+function ProgressDashboard({
+  mastery,
+  skillRatings,
+  totalReviews,
+}: {
+  mastery: { elo: number; percentile: number; strengths: SkillCategory[]; weaknesses: SkillCategory[] };
+  skillRatings: SkillRating[];
+  totalReviews: number;
+}) {
+  // Only show if there's some training data
+  const hasData = totalReviews > 0 || skillRatings.some(r => r.totalAttempts > 0);
+
+  if (!hasData) {
+    return (
+      <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
+        <BarChart3 className="w-8 h-8 text-white/20 mx-auto mb-2" />
+        <div className="text-sm text-white/50">Complete drills to track your progress</div>
+      </div>
+    );
+  }
+
+  // Filter to skills with data
+  const activeSkills = skillRatings.filter(r => r.totalAttempts > 0);
+
+  return (
+    <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+      {/* Overall Stats */}
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <div className="text-2xl font-bold text-white">{mastery.elo}</div>
+          <div className="text-xs text-white/40">Overall ELO</div>
+        </div>
+        <div className="text-right">
+          <div className="text-lg font-semibold text-white">Top {100 - mastery.percentile}%</div>
+          <div className="text-xs text-white/40">{totalReviews} reviews</div>
+        </div>
+      </div>
+
+      {/* Skill Ratings */}
+      {activeSkills.length > 0 && (
+        <div className="space-y-2">
+          {activeSkills.map(skill => (
+            <SkillBar key={skill.category} skill={skill} />
+          ))}
+        </div>
+      )}
+
+      {/* Insights */}
+      {mastery.strengths.length > 0 && activeSkills.length >= 2 && (
+        <div className="mt-4 pt-3 border-t border-white/10 flex gap-4 text-xs">
+          <div className="flex-1">
+            <div className="text-white/40 mb-1">Strengths</div>
+            <div className="text-green-400">
+              {mastery.strengths.map(s => SKILL_NAMES[s]).join(', ')}
+            </div>
+          </div>
+          <div className="flex-1">
+            <div className="text-white/40 mb-1">Focus on</div>
+            <div className="text-amber-400">
+              {mastery.weaknesses.map(s => SKILL_NAMES[s]).join(', ')}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SkillBar({ skill }: { skill: SkillRating }) {
+  const TrendIcon = skill.trend === 'improving' ? TrendingUp
+    : skill.trend === 'declining' ? TrendingDown
+    : Minus;
+
+  const trendColor = skill.trend === 'improving' ? 'text-green-400'
+    : skill.trend === 'declining' ? 'text-red-400'
+    : 'text-white/30';
+
+  // Normalize ELO to 0-100 for bar (1000 = 0%, 1400 = 100%)
+  const barWidth = Math.min(100, Math.max(0, ((skill.elo - 1000) / 400) * 100));
+
+  return (
+    <div>
+      <div className="flex items-center justify-between text-xs mb-1">
+        <span className="text-white/70">{SKILL_NAMES[skill.category]}</span>
+        <div className="flex items-center gap-2">
+          <span className="text-white/50">{skill.elo}</span>
+          <TrendIcon className={`w-3 h-3 ${trendColor}`} />
+        </div>
+      </div>
+      <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+        <div
+          className="h-full bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full transition-all duration-500"
+          style={{ width: `${barWidth}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+// ============ GAME MENU BUTTON ============
+interface GameMenuItem {
+  id: GameType;
+  name: string;
+  desc: string;
+  icon: React.ElementType;
+  color: string;
+  stats: { played: number; correct: number; streak: number; bestStreak: number };
+  featured?: boolean;
+}
+
+function GameMenuButton({ game, onSelect }: { game: GameMenuItem; onSelect: (id: GameType) => void }) {
+  const accuracy = game.stats.played > 0 ? Math.round((game.stats.correct / game.stats.played) * 100) : null;
+
+  const colorClasses: Record<string, string> = {
+    blue: 'bg-blue-500/10 border-blue-500/20 hover:bg-blue-500/20',
+    green: 'bg-green-500/10 border-green-500/20 hover:bg-green-500/20',
+    amber: 'bg-amber-500/10 border-amber-500/20 hover:bg-amber-500/20',
+    purple: 'bg-purple-500/10 border-purple-500/20 hover:bg-purple-500/20',
+    red: 'bg-red-500/10 border-red-500/20 hover:bg-red-500/20',
+    cyan: 'bg-cyan-500/10 border-cyan-500/20 hover:bg-cyan-500/20',
+    pink: 'bg-pink-500/10 border-pink-500/20 hover:bg-pink-500/20',
+    orange: 'bg-orange-500/10 border-orange-500/20 hover:bg-orange-500/20',
+    indigo: 'bg-indigo-500/10 border-indigo-500/20 hover:bg-indigo-500/20',
+    emerald: 'bg-emerald-500/10 border-emerald-500/20 hover:bg-emerald-500/20',
+  };
+
+  const iconColors: Record<string, string> = {
+    blue: 'text-blue-400',
+    green: 'text-green-400',
+    amber: 'text-amber-400',
+    purple: 'text-purple-400',
+    red: 'text-red-400',
+    cyan: 'text-cyan-400',
+    pink: 'text-pink-400',
+    orange: 'text-orange-400',
+    indigo: 'text-indigo-400',
+    emerald: 'text-emerald-400',
+  };
+
+  return (
+    <button
+      onClick={() => onSelect(game.id)}
+      className={`${colorClasses[game.color] || colorClasses.blue} border rounded-xl p-4 text-left transition-all active:scale-[0.98]`}
+    >
+      <div className="flex items-center gap-3">
+        <game.icon className={`w-8 h-8 ${iconColors[game.color] || iconColors.blue}`} />
+        <div className="flex-1 min-w-0">
+          <div className="font-semibold text-white">{game.name}</div>
+          <div className="text-xs text-white/50">{game.desc}</div>
+        </div>
+        {accuracy !== null && (
+          <div className="text-right">
+            <div className="text-lg font-bold text-white">{accuracy}%</div>
+            <div className="text-[10px] text-white/40">{game.stats.played} played</div>
+          </div>
+        )}
+      </div>
+      {game.stats.bestStreak > 0 && (
+        <div className="mt-2 flex items-center gap-1 text-xs text-amber-400/80">
+          <Flame className="w-3 h-3" />
+          Best streak: {game.stats.bestStreak}
+        </div>
+      )}
+    </button>
   );
 }
 
