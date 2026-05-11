@@ -1,367 +1,466 @@
 import { useState, useMemo } from 'react';
-import type { Archetype } from '../types/card';
+import type { Archetype, CubeCard } from '../types/card';
 import { Card } from './ui/Card';
-import { X } from 'lucide-react';
+import { getEloData, getPercentile } from '../services/eloHelpers';
+import { ChevronRight, Zap, Shield, Clock, Crosshair, TrendingUp, AlertTriangle } from 'lucide-react';
 
 interface MatchupMatrixProps {
   archetypes: Archetype[];
+  cards: CubeCard[];
 }
 
-const MATCHUP_DATA: Record<string, Record<string, number>> = {
-  'ub-reanimator': {
-    'uw-control': 0.6, 'ur-storm': 0.4, 'mono-white': 0.7, 'br-aggro': 0.5,
-    'ug-ramp': 0.55, 'artifact-combo': 0.45, 'bg-midrange': 0.6, 'rw-aggro': 0.55,
-    'show-tell': 0.5, 'uw-blink': 0.65,
-  },
-  'uw-control': {
-    'ur-storm': 0.55, 'mono-white': 0.45, 'br-aggro': 0.5, 'ug-ramp': 0.55,
-    'artifact-combo': 0.4, 'bg-midrange': 0.6, 'rw-aggro': 0.45, 'show-tell': 0.5, 'uw-blink': 0.55,
-  },
-  'ur-storm': {
-    'mono-white': 0.35, 'br-aggro': 0.4, 'ug-ramp': 0.55, 'artifact-combo': 0.5,
-    'bg-midrange': 0.6, 'rw-aggro': 0.35, 'show-tell': 0.5, 'uw-blink': 0.55,
-  },
-  'mono-white': {
-    'br-aggro': 0.45, 'ug-ramp': 0.5, 'artifact-combo': 0.4, 'bg-midrange': 0.55,
-    'rw-aggro': 0.5, 'show-tell': 0.45, 'uw-blink': 0.4,
-  },
-  'br-aggro': {
-    'ug-ramp': 0.55, 'artifact-combo': 0.45, 'bg-midrange': 0.5, 'rw-aggro': 0.5,
-    'show-tell': 0.6, 'uw-blink': 0.5,
-  },
-  'ug-ramp': {
-    'artifact-combo': 0.45, 'bg-midrange': 0.5, 'rw-aggro': 0.4, 'show-tell': 0.5, 'uw-blink': 0.45,
-  },
-  'artifact-combo': {
-    'bg-midrange': 0.65, 'rw-aggro': 0.4, 'show-tell': 0.5, 'uw-blink': 0.6,
-  },
-  'bg-midrange': { 'rw-aggro': 0.45, 'show-tell': 0.4, 'uw-blink': 0.5 },
-  'rw-aggro': { 'show-tell': 0.55, 'uw-blink': 0.55 },
-  'show-tell': { 'uw-blink': 0.6 },
-};
+// Strategy types for rock-paper-scissors dynamics
+type StrategyType = 'fast-combo' | 'slow-combo' | 'aggro' | 'midrange' | 'control' | 'prison';
 
-const MATCHUP_EXPLANATIONS: Record<string, Record<string, string>> = {
-  'ub-reanimator': {
-    'uw-control': 'Reanimator can go under control before they establish counters. Turn 1-2 Griselbrand is hard to answer.',
-    'ur-storm': 'Both fast combo decks. Storm is slightly faster but Reanimator has Thoughtseize/Grief for disruption.',
-    'mono-white': 'Thalia taxes reanimation spells but Grief + Reanimate is backbreaking. Reanimator wins the long game.',
-  },
-  'artifact-combo': {
-    'rw-aggro': 'Aggro can get under Tinker draws. Need fast mana + Tinker by turn 2 to race.',
-    'bg-midrange': 'Midrange lacks the speed to pressure and the counters to stop Tinker.',
-  },
-  'ur-storm': {
-    'mono-white': 'Thalia is a nightmare. Storm struggles hard against tax effects and has no good removal.',
-    'rw-aggro': 'Too fast, too much pressure. Storm needs to combo turn 2-3 or dies to burn.',
-  },
-  'uw-control': {
-    'artifact-combo': 'Tinker through countermagic is tough. Academy generates too much mana.',
-    'ub-reanimator': 'Hard to keep up countermagic against turn 1-2 reanimation with hand disruption backup.',
-  },
-};
-
-function getMatchup(arch1: string, arch2: string): number {
-  if (arch1 === arch2) return 0.5;
-  if (MATCHUP_DATA[arch1]?.[arch2]) return MATCHUP_DATA[arch1][arch2];
-  if (MATCHUP_DATA[arch2]?.[arch1]) return 1 - MATCHUP_DATA[arch2][arch1];
-  return 0.5;
+interface ArchetypeAnalysis {
+  archetype: Archetype;
+  avgElo: number;
+  avgPercentile: number;
+  keyCardElos: { name: string; elo: number; percentile: number }[];
+  strategyType: StrategyType;
+  goldfish: string; // Average turn to win uncontested
+  interactionLevel: 'low' | 'medium' | 'high';
 }
 
-function getExplanation(arch1: string, arch2: string): string | null {
-  if (MATCHUP_EXPLANATIONS[arch1]?.[arch2]) return MATCHUP_EXPLANATIONS[arch1][arch2];
-  if (MATCHUP_EXPLANATIONS[arch2]?.[arch1]) return MATCHUP_EXPLANATIONS[arch2][arch1];
-  return null;
-}
-
-// Short names for column headers
-const SHORT_NAMES: Record<string, string> = {
-  'ub-reanimator': 'Reanimate',
-  'uw-control': 'UW Ctrl',
-  'ur-storm': 'Storm',
-  'mono-white': 'Mono W',
-  'br-aggro': 'Rakdos',
-  'ug-ramp': 'Ramp',
-  'artifact-combo': 'Artifacts',
-  'bg-midrange': 'BG Mid',
-  'rw-aggro': 'Boros',
-  'show-tell': 'S&T',
-  'uw-blink': 'Blink',
+// Categorize each archetype
+const ARCHETYPE_META: Record<string, { strategy: StrategyType; goldfish: string; interaction: 'low' | 'medium' | 'high' }> = {
+  'ub-reanimator': { strategy: 'fast-combo', goldfish: 'T1-2', interaction: 'medium' },
+  'ur-storm': { strategy: 'fast-combo', goldfish: 'T2-3', interaction: 'low' },
+  'artifact-combo': { strategy: 'fast-combo', goldfish: 'T2-3', interaction: 'low' },
+  'show-tell': { strategy: 'slow-combo', goldfish: 'T3-4', interaction: 'medium' },
+  'oath': { strategy: 'slow-combo', goldfish: 'T3-4', interaction: 'medium' },
+  'ug-ramp': { strategy: 'slow-combo', goldfish: 'T3-4', interaction: 'medium' },
+  'mono-white': { strategy: 'aggro', goldfish: 'T4-5', interaction: 'medium' },
+  'rw-aggro': { strategy: 'aggro', goldfish: 'T4-5', interaction: 'low' },
+  'br-aggro': { strategy: 'aggro', goldfish: 'T4-5', interaction: 'medium' },
+  'bg-midrange': { strategy: 'midrange', goldfish: 'T5-6', interaction: 'high' },
+  'uw-control': { strategy: 'control', goldfish: 'T8+', interaction: 'high' },
+  'uw-blink': { strategy: 'midrange', goldfish: 'T5-6', interaction: 'medium' },
 };
 
-export function MatchupMatrix({ archetypes }: MatchupMatrixProps) {
-  const [selectedArchetype, setSelectedArchetype] = useState<string | null>(null);
-  const [selectedMatchup, setSelectedMatchup] = useState<{
-    arch1: Archetype;
-    arch2: Archetype;
-    winRate: number;
-  } | null>(null);
+// Strategic matchup dynamics - these are established Magic theory
+const STRATEGY_MATCHUPS: Record<StrategyType, { beats: StrategyType[]; losesTo: StrategyType[]; reason: string }> = {
+  'fast-combo': {
+    beats: ['control', 'midrange', 'slow-combo'],
+    losesTo: ['aggro'],
+    reason: 'Goes under slow decks before they can interact, but folds to fast pressure'
+  },
+  'slow-combo': {
+    beats: ['midrange', 'control'],
+    losesTo: ['fast-combo', 'aggro'],
+    reason: 'Powerful inevitability but needs time to set up'
+  },
+  'aggro': {
+    beats: ['fast-combo', 'slow-combo'],
+    losesTo: ['midrange', 'control'],
+    reason: 'Pressure prevents combo from assembling, but gets outvalued by interaction'
+  },
+  'midrange': {
+    beats: ['aggro'],
+    losesTo: ['fast-combo', 'slow-combo', 'control'],
+    reason: 'Grinds out aggro but can\'t pressure combo or match control\'s card advantage'
+  },
+  'control': {
+    beats: ['aggro', 'midrange'],
+    losesTo: ['fast-combo'],
+    reason: 'Answers everything eventually but can\'t stop T1-2 combo without specific hate'
+  },
+  'prison': {
+    beats: ['fast-combo', 'slow-combo', 'control'],
+    losesTo: ['aggro'],
+    reason: 'Locks out spell-based decks but folds to creatures under lock pieces'
+  }
+};
 
-  const sortedArchetypes = useMemo(() =>
-    [...archetypes].sort((a, b) => b.powerRating - a.powerRating),
-    [archetypes]
-  );
+// Key interaction cards that swing matchups
+const HATE_CARDS: Record<string, { hates: string[]; reason: string }> = {
+  'Thalia, Guardian of Thraben': {
+    hates: ['ur-storm', 'artifact-combo', 'uw-control'],
+    reason: 'Taxes all non-creature spells, devastating vs spell-heavy decks'
+  },
+  'Force of Will': {
+    hates: ['ub-reanimator', 'ur-storm', 'artifact-combo', 'show-tell'],
+    reason: 'Free counter stops T1-2 combo'
+  },
+  'Grief': {
+    hates: ['uw-control', 'ur-storm', 'show-tell'],
+    reason: 'T1 Thoughtseize effect strips key pieces'
+  },
+  'Endurance': {
+    hates: ['ub-reanimator', 'ur-storm'],
+    reason: 'Instant speed graveyard exile stops reanimation and Breach lines'
+  },
+  'Null Rod': {
+    hates: ['artifact-combo'],
+    reason: 'Shuts off all artifact mana and abilities'
+  },
+  'Pyroblast': {
+    hates: ['uw-control', 'ur-storm', 'show-tell'],
+    reason: '1-mana answer to blue spells and permanents'
+  },
+  'Collector Ouphe': {
+    hates: ['artifact-combo'],
+    reason: 'Shuts off artifact abilities on a body'
+  },
+  'Containment Priest': {
+    hates: ['ub-reanimator', 'show-tell'],
+    reason: 'Prevents creatures entering without being cast'
+  },
+};
 
-  const getMatchupStyle = (winRate: number, isHighlighted: boolean) => {
-    const base = isHighlighted ? 'ring-1 ring-white/30' : '';
-    if (winRate >= 0.6) return `bg-green-500/40 text-green-300 ${base}`;
-    if (winRate >= 0.55) return `bg-green-500/20 text-green-400 ${base}`;
-    if (winRate <= 0.4) return `bg-red-500/40 text-red-300 ${base}`;
-    if (winRate <= 0.45) return `bg-red-500/20 text-red-400 ${base}`;
-    return `bg-white/5 text-white/50 ${base}`;
+function analyzeArchetype(archetype: Archetype): ArchetypeAnalysis {
+  const meta = ARCHETYPE_META[archetype.id] || { strategy: 'midrange' as StrategyType, goldfish: 'T5-6', interaction: 'medium' as const };
+
+  // Get ELO data for key cards
+  const keyCardElos = archetype.keyCards.map(name => {
+    const eloData = getEloData(name);
+    return {
+      name,
+      elo: eloData?.elo || 0,
+      percentile: getPercentile(name)
+    };
+  }).filter(c => c.elo > 0).sort((a, b) => b.elo - a.elo);
+
+  const avgElo = keyCardElos.length > 0
+    ? keyCardElos.reduce((sum, c) => sum + c.elo, 0) / keyCardElos.length
+    : 0;
+
+  const avgPercentile = keyCardElos.length > 0
+    ? keyCardElos.reduce((sum, c) => sum + c.percentile, 0) / keyCardElos.length
+    : 0;
+
+  return {
+    archetype,
+    avgElo,
+    avgPercentile,
+    keyCardElos,
+    strategyType: meta.strategy,
+    goldfish: meta.goldfish,
+    interactionLevel: meta.interaction
   };
+}
 
-  // Calculate matchup summary for selected archetype
-  const matchupSummary = useMemo(() => {
-    if (!selectedArchetype) return null;
-    const arch = sortedArchetypes.find(a => a.id === selectedArchetype);
-    if (!arch) return null;
+function getMatchupAnalysis(arch1: ArchetypeAnalysis, arch2: ArchetypeAnalysis): {
+  favored: 'arch1' | 'arch2' | 'even';
+  reason: string;
+  keyCards: string[];
+} {
+  const strat1 = STRATEGY_MATCHUPS[arch1.strategyType];
+  const strat2 = STRATEGY_MATCHUPS[arch2.strategyType];
 
-    const matchups = sortedArchetypes
-      .filter(a => a.id !== selectedArchetype)
-      .map(a => ({ archetype: a, winRate: getMatchup(selectedArchetype, a.id) }))
-      .sort((a, b) => b.winRate - a.winRate);
+  // Check if strategy type gives clear advantage
+  if (strat1.beats.includes(arch2.strategyType)) {
+    return {
+      favored: 'arch1',
+      reason: strat1.reason,
+      keyCards: Object.entries(HATE_CARDS)
+        .filter(([_, v]) => v.hates.includes(arch2.archetype.id))
+        .map(([k]) => k)
+        .slice(0, 3)
+    };
+  }
+  if (strat1.losesTo.includes(arch2.strategyType)) {
+    return {
+      favored: 'arch2',
+      reason: strat2.reason,
+      keyCards: Object.entries(HATE_CARDS)
+        .filter(([_, v]) => v.hates.includes(arch1.archetype.id))
+        .map(([k]) => k)
+        .slice(0, 3)
+    };
+  }
 
-    const favorable = matchups.filter(m => m.winRate >= 0.55);
-    const unfavorable = matchups.filter(m => m.winRate <= 0.45);
-    const even = matchups.filter(m => m.winRate > 0.45 && m.winRate < 0.55);
+  // Same strategy type or neutral - compare power levels
+  if (Math.abs(arch1.avgPercentile - arch2.avgPercentile) > 10) {
+    return {
+      favored: arch1.avgPercentile > arch2.avgPercentile ? 'arch1' : 'arch2',
+      reason: 'Higher average card quality gives edge in similar strategies',
+      keyCards: []
+    };
+  }
 
-    return { arch, matchups, favorable, unfavorable, even };
-  }, [selectedArchetype, sortedArchetypes]);
+  return {
+    favored: 'even',
+    reason: 'Similar strategies and power levels - comes down to draws and play',
+    keyCards: []
+  };
+}
+
+const STRATEGY_COLORS: Record<StrategyType, string> = {
+  'fast-combo': 'text-red-400 bg-red-500/10',
+  'slow-combo': 'text-orange-400 bg-orange-500/10',
+  'aggro': 'text-amber-400 bg-amber-500/10',
+  'midrange': 'text-green-400 bg-green-500/10',
+  'control': 'text-blue-400 bg-blue-500/10',
+  'prison': 'text-purple-400 bg-purple-500/10'
+};
+
+const STRATEGY_ICONS: Record<StrategyType, typeof Zap> = {
+  'fast-combo': Zap,
+  'slow-combo': Clock,
+  'aggro': Crosshair,
+  'midrange': TrendingUp,
+  'control': Shield,
+  'prison': AlertTriangle
+};
+
+export function MatchupMatrix({ archetypes, cards: _cards }: MatchupMatrixProps) {
+  const [selectedArchetype, setSelectedArchetype] = useState<string | null>(null);
+
+  // Analyze all archetypes with ELO data
+  const analyses = useMemo(() => {
+    return archetypes
+      .map(arch => analyzeArchetype(arch))
+      .sort((a, b) => b.avgElo - a.avgElo);
+  }, [archetypes]);
+
+  const selectedAnalysis = analyses.find(a => a.archetype.id === selectedArchetype);
 
   return (
-    <div className="space-y-4">
-      {/* Filter + Legend */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex flex-wrap gap-1">
-          <button
-            onClick={() => setSelectedArchetype(null)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors
-              ${!selectedArchetype ? 'bg-white/10 text-white' : 'bg-white/5 text-white/40 hover:text-white/60'}`}
-          >
-            All
-          </button>
-          {sortedArchetypes.map(arch => (
-            <button
-              key={arch.id}
-              onClick={() => setSelectedArchetype(selectedArchetype === arch.id ? null : arch.id)}
-              className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-xs font-medium transition-colors
-                ${selectedArchetype === arch.id ? 'bg-white/10 text-white' : 'bg-white/5 text-white/40 hover:text-white/60'}`}
-            >
-              <div className="flex -space-x-0.5">
-                {arch.colors.map(c => (
-                  <div key={c} className={`w-2.5 h-2.5 rounded-full
-                    ${c === 'W' ? 'bg-amber-100' : ''}
-                    ${c === 'U' ? 'bg-blue-500' : ''}
-                    ${c === 'B' ? 'bg-neutral-500' : ''}
-                    ${c === 'R' ? 'bg-red-500' : ''}
-                    ${c === 'G' ? 'bg-green-500' : ''}
-                  `} />
-                ))}
-              </div>
-              {SHORT_NAMES[arch.id] || arch.name}
-            </button>
-          ))}
-        </div>
+    <div className="space-y-6">
+      {/* Power Rankings - Data Driven */}
+      <Card className="bg-[#111] border-white/8 p-4">
+        <h3 className="text-sm font-semibold text-white/60 mb-3 flex items-center gap-2">
+          <TrendingUp className="w-4 h-4" />
+          Archetype Power Rankings
+          <span className="text-[10px] text-white/30 font-normal ml-2">Based on avg. key card ELO from CubeCobra</span>
+        </h3>
+        <div className="space-y-2">
+          {analyses.map((analysis, idx) => {
+            const Icon = STRATEGY_ICONS[analysis.strategyType];
+            const isSelected = selectedArchetype === analysis.archetype.id;
 
-        <div className="flex gap-3 text-[10px] text-white/40">
-          <span><span className="inline-block w-2 h-2 rounded bg-green-500/40 mr-1" />60%+</span>
-          <span><span className="inline-block w-2 h-2 rounded bg-green-500/20 mr-1" />55%</span>
-          <span><span className="inline-block w-2 h-2 rounded bg-white/10 mr-1" />50%</span>
-          <span><span className="inline-block w-2 h-2 rounded bg-red-500/20 mr-1" />45%</span>
-          <span><span className="inline-block w-2 h-2 rounded bg-red-500/40 mr-1" />40%-</span>
-        </div>
-      </div>
+            return (
+              <button
+                key={analysis.archetype.id}
+                onClick={() => setSelectedArchetype(isSelected ? null : analysis.archetype.id)}
+                className={`w-full flex items-center gap-3 p-3 rounded-lg transition-all ${
+                  isSelected ? 'bg-white/10 ring-1 ring-white/20' : 'bg-white/5 hover:bg-white/8'
+                }`}
+              >
+                <span className="text-white/30 font-mono text-sm w-5">{idx + 1}</span>
 
-      {/* Matchup Summary (when archetype selected) */}
-      {matchupSummary && (
+                <div className="flex -space-x-0.5">
+                  {analysis.archetype.colors.length === 0 ? (
+                    <div className="w-4 h-4 rounded-full bg-gray-500" />
+                  ) : (
+                    analysis.archetype.colors.map(c => (
+                      <div key={c} className={`w-4 h-4 rounded-full
+                        ${c === 'W' ? 'bg-amber-100' : ''}
+                        ${c === 'U' ? 'bg-blue-500' : ''}
+                        ${c === 'B' ? 'bg-neutral-500' : ''}
+                        ${c === 'R' ? 'bg-red-500' : ''}
+                        ${c === 'G' ? 'bg-green-500' : ''}
+                      `} />
+                    ))
+                  )}
+                </div>
+
+                <div className="flex-1 text-left">
+                  <div className="font-medium text-white">{analysis.archetype.name}</div>
+                </div>
+
+                <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs ${STRATEGY_COLORS[analysis.strategyType]}`}>
+                  <Icon className="w-3 h-3" />
+                  {analysis.strategyType.replace('-', ' ')}
+                </div>
+
+                <div className="text-right">
+                  <div className="text-sm font-mono text-white">{Math.round(analysis.avgElo)}</div>
+                  <div className="text-[10px] text-white/40">avg ELO</div>
+                </div>
+
+                <div className={`text-xs font-medium px-2 py-1 rounded ${
+                  analysis.avgPercentile >= 70 ? 'bg-green-500/20 text-green-400' :
+                  analysis.avgPercentile >= 50 ? 'bg-amber-500/20 text-amber-400' :
+                  'bg-white/10 text-white/50'
+                }`}>
+                  Top {Math.round(100 - analysis.avgPercentile)}%
+                </div>
+
+                <ChevronRight className={`w-4 h-4 text-white/30 transition-transform ${isSelected ? 'rotate-90' : ''}`} />
+              </button>
+            );
+          })}
+        </div>
+      </Card>
+
+      {/* Selected Archetype Detail */}
+      {selectedAnalysis && (
         <Card className="bg-[#111] border-white/8 p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <div className="flex -space-x-0.5">
-                {matchupSummary.arch.colors.map(c => (
-                  <div key={c} className={`w-4 h-4 rounded-full
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex -space-x-0.5">
+              {selectedAnalysis.archetype.colors.length === 0 ? (
+                <div className="w-6 h-6 rounded-full bg-gray-500" />
+              ) : (
+                selectedAnalysis.archetype.colors.map(c => (
+                  <div key={c} className={`w-6 h-6 rounded-full
                     ${c === 'W' ? 'bg-amber-100' : ''}
                     ${c === 'U' ? 'bg-blue-500' : ''}
                     ${c === 'B' ? 'bg-neutral-500' : ''}
                     ${c === 'R' ? 'bg-red-500' : ''}
                     ${c === 'G' ? 'bg-green-500' : ''}
                   `} />
-                ))}
-              </div>
-              <span className="font-semibold text-white">{matchupSummary.arch.name}</span>
+                ))
+              )}
             </div>
-            <div className="flex gap-4 text-xs">
-              <span className="text-green-400">{matchupSummary.favorable.length} favorable</span>
-              <span className="text-white/40">{matchupSummary.even.length} even</span>
-              <span className="text-red-400">{matchupSummary.unfavorable.length} unfavorable</span>
+            <div>
+              <h3 className="text-lg font-semibold text-white">{selectedAnalysis.archetype.name}</h3>
+              <p className="text-sm text-white/50">{selectedAnalysis.archetype.description}</p>
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-4 text-sm">
-            <div>
-              <div className="text-xs text-white/30 mb-1">Best matchups</div>
-              {matchupSummary.favorable.slice(0, 3).map(m => (
-                <div key={m.archetype.id} className="flex justify-between text-green-400">
-                  <span>{SHORT_NAMES[m.archetype.id]}</span>
-                  <span className="font-mono">{Math.round(m.winRate * 100)}%</span>
+
+          {/* Key Stats */}
+          <div className="grid grid-cols-3 gap-3 mb-4">
+            <div className="bg-white/5 rounded-lg p-3 text-center">
+              <div className="text-[10px] text-white/40 uppercase mb-1">Speed</div>
+              <div className="text-lg font-bold text-white">{selectedAnalysis.goldfish}</div>
+              <div className="text-[10px] text-white/40">goldfish</div>
+            </div>
+            <div className="bg-white/5 rounded-lg p-3 text-center">
+              <div className="text-[10px] text-white/40 uppercase mb-1">Interaction</div>
+              <div className={`text-lg font-bold ${
+                selectedAnalysis.interactionLevel === 'high' ? 'text-blue-400' :
+                selectedAnalysis.interactionLevel === 'medium' ? 'text-amber-400' :
+                'text-red-400'
+              }`}>{selectedAnalysis.interactionLevel}</div>
+            </div>
+            <div className="bg-white/5 rounded-lg p-3 text-center">
+              <div className="text-[10px] text-white/40 uppercase mb-1">Avg ELO</div>
+              <div className="text-lg font-bold font-mono text-white">{Math.round(selectedAnalysis.avgElo)}</div>
+            </div>
+          </div>
+
+          {/* Key Cards with ELO */}
+          <div className="mb-4">
+            <h4 className="text-xs text-white/40 uppercase mb-2">Key Cards by ELO</h4>
+            <div className="flex flex-wrap gap-2">
+              {selectedAnalysis.keyCardElos.slice(0, 8).map(card => (
+                <div key={card.name} className="flex items-center gap-2 bg-white/5 rounded px-2 py-1">
+                  <span className="text-sm text-white">{card.name}</span>
+                  <span className="text-xs font-mono text-white/40">{Math.round(card.elo)}</span>
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Matchups */}
+          <div className="grid md:grid-cols-2 gap-4">
+            {/* Favorable */}
             <div>
-              <div className="text-xs text-white/30 mb-1">Even matchups</div>
-              {matchupSummary.even.slice(0, 3).map(m => (
-                <div key={m.archetype.id} className="flex justify-between text-white/50">
-                  <span>{SHORT_NAMES[m.archetype.id]}</span>
-                  <span className="font-mono">{Math.round(m.winRate * 100)}%</span>
-                </div>
-              ))}
+              <h4 className="text-xs text-green-400 uppercase mb-2 flex items-center gap-1">
+                <Crosshair className="w-3 h-3" /> Favorable Against
+              </h4>
+              <div className="space-y-2">
+                {analyses
+                  .filter(a => a.archetype.id !== selectedAnalysis.archetype.id)
+                  .map(other => {
+                    const matchup = getMatchupAnalysis(selectedAnalysis, other);
+                    if (matchup.favored !== 'arch1') return null;
+                    return (
+                      <div key={other.archetype.id} className="bg-green-500/10 border border-green-500/20 rounded-lg p-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-white">{other.archetype.name}</span>
+                          <span className={`text-xs px-2 py-0.5 rounded ${STRATEGY_COLORS[other.strategyType]}`}>
+                            {other.strategyType.replace('-', ' ')}
+                          </span>
+                        </div>
+                        <p className="text-xs text-white/50 mt-1">{matchup.reason}</p>
+                        {matchup.keyCards.length > 0 && (
+                          <div className="flex gap-1 mt-1">
+                            {matchup.keyCards.map(c => (
+                              <span key={c} className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-white/70">{c}</span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+              </div>
             </div>
+
+            {/* Unfavorable */}
             <div>
-              <div className="text-xs text-white/30 mb-1">Worst matchups</div>
-              {matchupSummary.unfavorable.slice(0, 3).map(m => (
-                <div key={m.archetype.id} className="flex justify-between text-red-400">
-                  <span>{SHORT_NAMES[m.archetype.id]}</span>
-                  <span className="font-mono">{Math.round(m.winRate * 100)}%</span>
-                </div>
-              ))}
+              <h4 className="text-xs text-red-400 uppercase mb-2 flex items-center gap-1">
+                <AlertTriangle className="w-3 h-3" /> Unfavorable Against
+              </h4>
+              <div className="space-y-2">
+                {analyses
+                  .filter(a => a.archetype.id !== selectedAnalysis.archetype.id)
+                  .map(other => {
+                    const matchup = getMatchupAnalysis(selectedAnalysis, other);
+                    if (matchup.favored !== 'arch2') return null;
+                    return (
+                      <div key={other.archetype.id} className="bg-red-500/10 border border-red-500/20 rounded-lg p-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-white">{other.archetype.name}</span>
+                          <span className={`text-xs px-2 py-0.5 rounded ${STRATEGY_COLORS[other.strategyType]}`}>
+                            {other.strategyType.replace('-', ' ')}
+                          </span>
+                        </div>
+                        <p className="text-xs text-white/50 mt-1">{matchup.reason}</p>
+                        {matchup.keyCards.length > 0 && (
+                          <div className="flex gap-1 mt-1">
+                            {matchup.keyCards.map(c => (
+                              <span key={c} className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-white/70">{c}</span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+              </div>
             </div>
           </div>
         </Card>
       )}
 
-      {/* Matrix */}
-      <Card className="overflow-x-auto bg-[#111] border-white/8 p-0">
-        <table className="w-full min-w-[700px]">
-          <thead>
-            <tr className="border-b border-white/5">
-              <th className="p-2 text-left text-[10px] text-white/30 font-medium w-28" />
-              {sortedArchetypes.map(arch => (
-                <th key={arch.id} className="p-1.5 text-center">
-                  <div className={`text-[10px] font-medium transition-colors
-                    ${selectedArchetype === arch.id ? 'text-white' : 'text-white/40'}`}>
-                    {SHORT_NAMES[arch.id] || arch.name}
-                  </div>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {sortedArchetypes.map(arch1 => {
-              const isRowHighlighted = selectedArchetype === arch1.id;
-              return (
-                <tr key={arch1.id} className={`border-t border-white/5 ${isRowHighlighted ? 'bg-white/5' : ''}`}>
-                  <td className="p-2 text-xs font-medium whitespace-nowrap">
-                    <div className={`flex items-center gap-2 transition-colors ${isRowHighlighted ? 'text-white' : 'text-white/60'}`}>
-                      <div className="flex -space-x-0.5">
-                        {arch1.colors.map(c => (
-                          <div key={c} className={`w-2.5 h-2.5 rounded-full
-                            ${c === 'W' ? 'bg-amber-100' : ''}
-                            ${c === 'U' ? 'bg-blue-500' : ''}
-                            ${c === 'B' ? 'bg-neutral-500' : ''}
-                            ${c === 'R' ? 'bg-red-500' : ''}
-                            ${c === 'G' ? 'bg-green-500' : ''}
-                          `} />
-                        ))}
-                      </div>
-                      <span>{SHORT_NAMES[arch1.id] || arch1.name}</span>
-                    </div>
-                  </td>
-                  {sortedArchetypes.map(arch2 => {
-                    const winRate = getMatchup(arch1.id, arch2.id);
-                    const isSelf = arch1.id === arch2.id;
-                    const isHighlighted = selectedArchetype === arch1.id || selectedArchetype === arch2.id;
-
-                    return (
-                      <td key={arch2.id} className="p-1 text-center">
-                        {isSelf ? (
-                          <div className="w-9 h-6 mx-auto bg-white/5 rounded flex items-center justify-center">
-                            <span className="text-white/20 text-[10px]">—</span>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => setSelectedMatchup({ arch1, arch2, winRate })}
-                            className={`w-9 h-6 mx-auto rounded flex items-center justify-center text-[11px] font-mono transition-all hover:scale-110 ${getMatchupStyle(winRate, isHighlighted)}`}
-                          >
-                            {Math.round(winRate * 100)}
-                          </button>
-                        )}
-                      </td>
-                    );
-                  })}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+      {/* Strategy Type Legend */}
+      <Card className="bg-[#111] border-white/8 p-4">
+        <h3 className="text-sm font-semibold text-white/60 mb-3">Strategy Type Guide</h3>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {Object.entries(STRATEGY_MATCHUPS).map(([type, data]) => {
+            const Icon = STRATEGY_ICONS[type as StrategyType];
+            return (
+              <div key={type} className="bg-white/5 rounded-lg p-3">
+                <div className={`flex items-center gap-2 mb-2 ${STRATEGY_COLORS[type as StrategyType]}`}>
+                  <Icon className="w-4 h-4" />
+                  <span className="font-medium capitalize">{type.replace('-', ' ')}</span>
+                </div>
+                <p className="text-xs text-white/50 mb-2">{data.reason}</p>
+                <div className="flex gap-2 text-[10px]">
+                  <span className="text-green-400">Beats: {data.beats.map(s => s.replace('-', ' ')).join(', ')}</span>
+                </div>
+                <div className="text-[10px] text-red-400">
+                  Loses to: {data.losesTo.map(s => s.replace('-', ' ')).join(', ')}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </Card>
 
-      {/* Modal */}
-      {selectedMatchup && (
-        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4" onClick={() => setSelectedMatchup(null)}>
-          <Card className="max-w-md w-full bg-[#111] border-white/10 p-6" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
-            <div className="flex justify-between items-start mb-6">
-              <h3 className="text-lg font-semibold text-white">Matchup Analysis</h3>
-              <button onClick={() => setSelectedMatchup(null)} className="p-1 hover:bg-white/5 rounded">
-                <X className="w-5 h-5 text-white/40" />
-              </button>
-            </div>
-
-            <div className="flex items-center justify-between mb-6">
-              <div className="text-center flex-1">
-                <div className="flex justify-center gap-1 mb-1">
-                  {selectedMatchup.arch1.colors.map(c => (
-                    <div key={c} className={`w-4 h-4 rounded-full
-                      ${c === 'W' ? 'bg-amber-100' : ''}
-                      ${c === 'U' ? 'bg-blue-500' : ''}
-                      ${c === 'B' ? 'bg-neutral-500' : ''}
-                      ${c === 'R' ? 'bg-red-500' : ''}
-                      ${c === 'G' ? 'bg-green-500' : ''}
-                    `} />
-                  ))}
-                </div>
-                <div className="font-medium text-white">{selectedMatchup.arch1.name}</div>
+      {/* Hate Cards Reference */}
+      <Card className="bg-[#111] border-white/8 p-4">
+        <h3 className="text-sm font-semibold text-white/60 mb-3">Key Hate Cards</h3>
+        <div className="grid sm:grid-cols-2 gap-2">
+          {Object.entries(HATE_CARDS).map(([card, data]) => (
+            <div key={card} className="bg-white/5 rounded-lg p-2 flex items-start gap-2">
+              <div className="flex-1">
+                <div className="text-sm font-medium text-white">{card}</div>
+                <div className="text-xs text-white/50">{data.reason}</div>
               </div>
-
-              <div className="px-6 text-center">
-                <div className={`text-3xl font-bold ${selectedMatchup.winRate >= 0.55 ? 'text-green-400' : selectedMatchup.winRate <= 0.45 ? 'text-red-400' : 'text-white'}`}>
-                  {Math.round(selectedMatchup.winRate * 100)}%
-                </div>
-                <div className="text-xs text-white/40">vs</div>
-                <div className="text-lg text-white/60">
-                  {Math.round((1 - selectedMatchup.winRate) * 100)}%
-                </div>
-              </div>
-
-              <div className="text-center flex-1">
-                <div className="flex justify-center gap-1 mb-1">
-                  {selectedMatchup.arch2.colors.map(c => (
-                    <div key={c} className={`w-4 h-4 rounded-full
-                      ${c === 'W' ? 'bg-amber-100' : ''}
-                      ${c === 'U' ? 'bg-blue-500' : ''}
-                      ${c === 'B' ? 'bg-neutral-500' : ''}
-                      ${c === 'R' ? 'bg-red-500' : ''}
-                      ${c === 'G' ? 'bg-green-500' : ''}
-                    `} />
-                  ))}
-                </div>
-                <div className="font-medium text-white">{selectedMatchup.arch2.name}</div>
+              <div className="flex flex-wrap gap-1">
+                {data.hates.slice(0, 2).map(arch => (
+                  <span key={arch} className="text-[10px] bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded">
+                    vs {arch.split('-')[0]}
+                  </span>
+                ))}
               </div>
             </div>
-
-            <div className="h-2 bg-white/5 rounded-full overflow-hidden mb-6">
-              <div className={`h-full transition-all ${selectedMatchup.winRate >= 0.55 ? 'bg-green-500/50' : selectedMatchup.winRate <= 0.45 ? 'bg-red-500/50' : 'bg-white/30'}`}
-                style={{ width: `${selectedMatchup.winRate * 100}%` }} />
-            </div>
-
-            {getExplanation(selectedMatchup.arch1.id, selectedMatchup.arch2.id) && (
-              <div className="p-4 bg-white/2 border border-white/5 rounded-lg">
-                <p className="text-sm text-white/70">
-                  {getExplanation(selectedMatchup.arch1.id, selectedMatchup.arch2.id)}
-                </p>
-              </div>
-            )}
-          </Card>
+          ))}
         </div>
-      )}
+      </Card>
     </div>
   );
 }

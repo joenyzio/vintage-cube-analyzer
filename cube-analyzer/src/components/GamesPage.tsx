@@ -241,49 +241,112 @@ function GameStats({ stats }: { stats: { played: number; correct: number; bestSt
   );
 }
 
-function CardViewer({ card, onClose }: { card: CubeCard; onClose: () => void }) {
-  const elo = getEloData(card.name)?.elo || 0;
+// Full-screen card viewer matching DraftSimulator style
+function CardViewer({
+  card,
+  onClose,
+  onPick,
+  pickLabel = 'Pick This Card'
+}: {
+  card: CubeCard;
+  onClose: () => void;
+  onPick?: () => void;
+  pickLabel?: string;
+}) {
+  const eloData = getEloData(card.name);
   const percentile = getPercentile(card.name);
+  const wheelLikelihood = getWheelLikelihood(card.name);
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col" onClick={onClose}>
+    <div className="fixed inset-0 z-50">
       {/* Backdrop */}
-      <div className="flex-1 bg-black/70" />
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
 
-      {/* Bottom sheet */}
-      <div
-        className="bg-[#111] border-t border-white/10 rounded-t-2xl p-4 pb-8 animate-in slide-in-from-bottom duration-200"
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="flex gap-4">
-          {/* Card image */}
-          <img src={getCardImage(card)} alt={card.name} className="w-32 rounded-lg shadow-xl" />
+      {/* Full-screen drawer */}
+      <div className="absolute bottom-0 left-0 right-0 top-4 bg-black border-t border-white/10 rounded-t-3xl animate-in slide-in-from-bottom duration-200 flex flex-col">
+        {/* Drag handle */}
+        <div className="flex justify-center py-2">
+          <div className="w-10 h-1 bg-white/20 rounded-full" />
+        </div>
 
-          {/* Card info */}
-          <div className="flex-1 min-w-0">
-            <h3 className="text-white font-bold text-lg truncate">{card.name}</h3>
-            <p className="text-white/50 text-sm truncate mb-3">{card.type_line}</p>
+        {/* Large Card Image - fills available space */}
+        <div className="flex-1 flex items-center justify-center px-4">
+          <img
+            src={getCardImage(card)}
+            alt={card.name}
+            className="max-h-full w-auto max-w-[85vw] rounded-xl shadow-2xl"
+          />
+        </div>
 
-            <div className="grid grid-cols-3 gap-2 text-center">
-              <div className="bg-white/5 rounded-lg py-2">
-                <div className="text-white font-bold">{Math.round(elo)}</div>
-                <div className="text-white/40 text-xs">ELO</div>
+        {/* Stats Grid */}
+        <div className="px-4 py-3">
+          <div className="grid grid-cols-3 gap-3">
+            {/* ELO Rating */}
+            <div className="bg-white/5 rounded-xl p-3 text-center">
+              <div className="text-[10px] text-white/40 uppercase tracking-wider mb-1">ELO</div>
+              <div className="text-lg font-mono font-bold text-white">
+                {eloData ? Math.round(eloData.elo) : '—'}
               </div>
-              <div className="bg-white/5 rounded-lg py-2">
-                <div className="text-white font-bold">{card.powerLevel.toFixed(1)}</div>
-                <div className="text-white/40 text-xs">Power</div>
+              {eloData && (
+                <div className={`text-xs mt-1 ${
+                  percentile >= 75 ? 'text-amber-400' :
+                  percentile >= 50 ? 'text-purple-400' :
+                  'text-white/50'
+                }`}>
+                  Top {100 - percentile}%
+                </div>
+              )}
+            </div>
+
+            {/* Wheel Likelihood */}
+            <div className="bg-white/5 rounded-xl p-3 text-center">
+              <div className="text-[10px] text-white/40 uppercase tracking-wider mb-1">Wheel</div>
+              <div className={`text-lg font-bold ${
+                wheelLikelihood === 'likely' ? 'text-green-400' :
+                wheelLikelihood === 'maybe' ? 'text-amber-400' :
+                'text-red-400'
+              }`}>
+                {wheelLikelihood === 'likely' ? 'Yes' :
+                 wheelLikelihood === 'maybe' ? 'Maybe' :
+                 'No'}
               </div>
-              <div className="bg-white/5 rounded-lg py-2">
-                <div className="text-white font-bold">{100 - percentile}%</div>
-                <div className="text-white/40 text-xs">Top</div>
+              <div className="text-xs text-white/40 mt-1">
+                {wheelLikelihood === 'likely' ? 'Will come back' :
+                 wheelLikelihood === 'maybe' ? 'Risky' :
+                 'Take now'}
+              </div>
+            </div>
+
+            {/* Power */}
+            <div className="bg-white/5 rounded-xl p-3 text-center">
+              <div className="text-[10px] text-white/40 uppercase tracking-wider mb-1">Power</div>
+              <div className="text-lg font-bold text-white">
+                {card.powerLevel.toFixed(1)}
+              </div>
+              <div className="text-xs text-white/40 mt-1">
+                {card.type_line?.split('—')[0]?.trim() || 'Card'}
               </div>
             </div>
           </div>
         </div>
 
-        <button onClick={onClose} className="mt-4 w-full py-3 bg-white/10 text-white rounded-lg font-medium active:scale-[0.98]">
-          Close
-        </button>
+        {/* Action Buttons */}
+        <div className="flex gap-3 p-4 pb-8 border-t border-white/10 bg-black">
+          <button
+            onClick={onClose}
+            className="flex-1 py-4 px-4 bg-white/10 border border-white/10 rounded-xl text-white font-medium active:scale-95 transition-transform"
+          >
+            Back
+          </button>
+          {onPick && (
+            <button
+              onClick={onPick}
+              className="flex-1 py-4 px-4 bg-white text-black rounded-xl font-bold active:scale-95 transition-transform"
+            >
+              {pickLabel}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -294,14 +357,12 @@ function HigherLowerGame({ cards, stats, onUpdate, onBack }: GameComponentProps)
   const [pair, setPair] = useState<[CubeCard, CubeCard] | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [picked, setPicked] = useState<0 | 1 | null>(null);
-  const [viewCard, setViewCard] = useState<CubeCard | null>(null);
 
   const newRound = useCallback(() => {
     const [a, b] = getRandomCards(cards, 2);
     setPair([a, b]);
     setRevealed(false);
     setPicked(null);
-    setViewCard(null);
   }, [cards]);
 
   useEffect(() => { newRound(); }, [newRound]);
@@ -320,55 +381,75 @@ function HigherLowerGame({ cards, stats, onUpdate, onBack }: GameComponentProps)
   };
 
   return (
-    <div>
-      <GameHeader title="Higher or Lower" subtitle="Tap the higher ELO card" streak={stats.streak} onBack={onBack} />
+    <div className="fixed inset-0 bg-black flex flex-col z-40">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3">
+        <button onClick={onBack} className="p-1">
+          <ChevronLeft className="w-6 h-6 text-white/60" />
+        </button>
+        <span className="text-white/50 text-sm">Tap the higher ELO</span>
+        {stats.streak > 0 ? (
+          <div className="flex items-center gap-1 text-amber-400 font-bold">
+            <Flame className="w-5 h-5" />{stats.streak}
+          </div>
+        ) : <div className="w-8" />}
+      </div>
 
-      {viewCard && <CardViewer card={viewCard} onClose={() => setViewCard(null)} />}
-
-      {/* Cards side by side - always */}
-      <div className="flex gap-2 mb-3">
+      {/* Two cards side by side */}
+      <div className="flex-1 flex items-center justify-center gap-4 px-4">
         {pair.map((card, idx) => {
           const elo = idx === 0 ? eloA : eloB;
           const isCorrect = idx === correctIndex;
           const isPicked = picked === idx;
 
           return (
-            <button
-              key={card.id}
-              onClick={() => revealed ? setViewCard(card) : handlePick(idx as 0 | 1)}
-              className={`flex-1 rounded-lg overflow-hidden transition-all ${
-                revealed
-                  ? isCorrect ? 'ring-2 ring-green-500' : isPicked ? 'ring-2 ring-red-500' : 'opacity-40'
-                  : 'active:scale-[0.98]'
-              }`}
-            >
-              <img src={getCardImage(card)} alt={card.name} className="w-full" />
+            <div key={card.id} className="flex flex-col items-center w-[46%] max-w-[280px]">
+              <button
+                onClick={() => handlePick(idx as 0 | 1)}
+                disabled={revealed}
+                className={`w-full rounded-xl overflow-hidden transition-all ${
+                  revealed
+                    ? isCorrect
+                      ? 'ring-4 ring-green-500'
+                      : isPicked
+                        ? 'ring-4 ring-red-500 opacity-60'
+                        : 'opacity-30'
+                    : 'active:scale-[0.97]'
+                }`}
+              >
+                <img src={getCardImage(card)} alt={card.name} className="w-full" />
+              </button>
+              {/* ELO + Power shown below card after reveal */}
               {revealed && (
-                <div className={`py-1.5 text-center text-sm font-bold ${isCorrect ? 'bg-green-500 text-white' : 'bg-black/50 text-white/70'}`}>
-                  {Math.round(elo)} <span className="font-normal opacity-70">({card.powerLevel.toFixed(1)})</span>
+                <div className={`mt-2 text-center ${isCorrect ? 'text-green-400' : 'text-white/40'}`}>
+                  <div className="text-xl font-bold">{Math.round(elo)}</div>
+                  <div className="text-sm opacity-60">{card.powerLevel.toFixed(1)}</div>
                 </div>
               )}
-            </button>
+            </div>
           );
         })}
       </div>
 
-      {/* Result + Next */}
-      {revealed ? (
-        <div className="space-y-2">
-          <div className={`text-center font-bold ${picked === correctIndex ? 'text-green-400' : 'text-red-400'}`}>
-            {picked === correctIndex ? 'Correct!' : 'Wrong!'}{' '}
-            <span className="text-white/40 text-sm font-normal">Diff: {Math.abs(eloA - eloB).toFixed(0)}</span>
+      {/* Bottom */}
+      <div className="px-4 pb-8 pt-4 max-w-lg mx-auto w-full">
+        {revealed ? (
+          <>
+            <div className={`text-center text-xl font-bold mb-4 ${picked === correctIndex ? 'text-green-400' : 'text-red-400'}`}>
+              {picked === correctIndex ? 'Correct!' : 'Wrong!'}
+            </div>
+            <button onClick={newRound} className="w-full py-4 bg-white text-black rounded-xl font-bold text-lg active:scale-[0.98]">
+              Next
+            </button>
+          </>
+        ) : null}
+        {stats.played > 0 && (
+          <div className="text-center text-white/20 text-xs mt-3">
+            {Math.round((stats.correct / stats.played) * 100)}% · {stats.correct}/{stats.played}
+            {stats.bestStreak > 1 && ` · Best: ${stats.bestStreak}`}
           </div>
-          <button onClick={newRound} className="w-full py-3 bg-white text-black rounded-lg font-bold active:scale-[0.98]">
-            Next
-          </button>
-        </div>
-      ) : (
-        <p className="text-center text-white/40 text-xs">Tap a card to pick</p>
-      )}
-
-      <GameStats stats={stats} />
+        )}
+      </div>
     </div>
   );
 }

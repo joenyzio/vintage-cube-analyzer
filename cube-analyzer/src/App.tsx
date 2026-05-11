@@ -149,7 +149,7 @@ function App() {
       case 'decks':
         return <SampleDecks cards={cards} />;
       case 'matchups':
-        return <MatchupMatrix archetypes={archetypes} />;
+        return <MatchupMatrix archetypes={archetypes} cards={cards} />;
       case 'synergies':
         return <SynergyExplorer cards={cards} />;
       case 'buildaround':
