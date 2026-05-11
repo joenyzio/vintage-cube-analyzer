@@ -7,14 +7,14 @@ import {
   getWheelLikelihood,
   type WheelLikelihood,
 } from '../services/eloHelpers';
-import { Scale, CircleDot, Layers, Trophy, ChevronLeft, Flame, Timer, Hash, Sparkles, Package } from 'lucide-react';
+import { Scale, CircleDot, Layers, Trophy, ChevronLeft, Flame, Timer, Hash, Sparkles, Package, Hand } from 'lucide-react';
 import { srs, boolToQuality } from '../services/spacedRepetition';
 
 interface GamesPageProps {
   cards: CubeCard[];
 }
 
-type GameType = 'menu' | 'higher-lower' | 'wheel-or-not' | 'first-pick' | 'color-commit' | 'speed-round' | 'guess-cmc' | 'synergy-snap' | 'pack-p1p1';
+type GameType = 'menu' | 'higher-lower' | 'wheel-or-not' | 'first-pick' | 'color-commit' | 'speed-round' | 'guess-cmc' | 'synergy-snap' | 'pack-p1p1' | 'mulligan-trainer';
 
 interface GameStats {
   higherLower: { played: number; correct: number; streak: number; bestStreak: number };
@@ -25,6 +25,7 @@ interface GameStats {
   guessCmc: { played: number; correct: number; streak: number; bestStreak: number };
   synergySnap: { played: number; correct: number; streak: number; bestStreak: number };
   packP1P1: { played: number; correct: number; streak: number; bestStreak: number };
+  mulliganTrainer: { played: number; correct: number; streak: number; bestStreak: number };
 }
 
 const STORAGE_KEY = 'cube-games-stats';
@@ -44,6 +45,7 @@ function loadStats(): GameStats {
         guessCmc: parsed.guessCmc || { played: 0, correct: 0, streak: 0, bestStreak: 0 },
         synergySnap: parsed.synergySnap || { played: 0, correct: 0, streak: 0, bestStreak: 0 },
         packP1P1: parsed.packP1P1 || { played: 0, correct: 0, streak: 0, bestStreak: 0 },
+        mulliganTrainer: parsed.mulliganTrainer || { played: 0, correct: 0, streak: 0, bestStreak: 0 },
       };
     }
   } catch {}
@@ -56,6 +58,7 @@ function loadStats(): GameStats {
     guessCmc: { played: 0, correct: 0, streak: 0, bestStreak: 0 },
     synergySnap: { played: 0, correct: 0, streak: 0, bestStreak: 0 },
     packP1P1: { played: 0, correct: 0, streak: 0, bestStreak: 0 },
+    mulliganTrainer: { played: 0, correct: 0, streak: 0, bestStreak: 0 },
   };
 }
 
@@ -103,6 +106,7 @@ export function GamesPage({ cards }: GamesPageProps) {
 
   const games = [
     { id: 'pack-p1p1' as GameType, name: 'Pack P1P1', desc: 'Pick the best card from a pack', icon: Package, color: 'orange', stats: stats.packP1P1, featured: true },
+    { id: 'mulligan-trainer' as GameType, name: 'Mulligan Trainer', desc: 'Keep or mull this hand?', icon: Hand, color: 'indigo', stats: stats.mulliganTrainer, featured: true },
     { id: 'higher-lower' as GameType, name: 'Higher or Lower', desc: 'Which has higher ELO?', icon: Scale, color: 'blue', stats: stats.higherLower },
     { id: 'speed-round' as GameType, name: 'Speed Round', desc: '30 seconds, how many right?', icon: Timer, color: 'red', stats: stats.speedRound },
     { id: 'wheel-or-not' as GameType, name: 'Will It Wheel?', desc: 'Will it come back around?', icon: CircleDot, color: 'green', stats: stats.wheelOrNot },
@@ -115,6 +119,7 @@ export function GamesPage({ cards }: GamesPageProps) {
   if (game !== 'menu') {
     const GameComponent = {
       'pack-p1p1': PackP1P1Game,
+      'mulligan-trainer': MulliganTrainerGame,
       'higher-lower': HigherLowerGame,
       'wheel-or-not': WheelOrNotGame,
       'first-pick': FirstPickGame,
@@ -126,6 +131,7 @@ export function GamesPage({ cards }: GamesPageProps) {
 
     const gameKey = {
       'pack-p1p1': 'packP1P1',
+      'mulligan-trainer': 'mulliganTrainer',
       'higher-lower': 'higherLower',
       'wheel-or-not': 'wheelOrNot',
       'first-pick': 'firstPick',
@@ -163,6 +169,8 @@ export function GamesPage({ cards }: GamesPageProps) {
             red: 'bg-red-500/10 border-red-500/20 hover:bg-red-500/20',
             cyan: 'bg-cyan-500/10 border-cyan-500/20 hover:bg-cyan-500/20',
             pink: 'bg-pink-500/10 border-pink-500/20 hover:bg-pink-500/20',
+            orange: 'bg-orange-500/10 border-orange-500/20 hover:bg-orange-500/20',
+            indigo: 'bg-indigo-500/10 border-indigo-500/20 hover:bg-indigo-500/20',
           }[g.color];
           const iconColor = {
             blue: 'text-blue-400',
@@ -172,6 +180,8 @@ export function GamesPage({ cards }: GamesPageProps) {
             red: 'text-red-400',
             cyan: 'text-cyan-400',
             pink: 'text-pink-400',
+            orange: 'text-orange-400',
+            indigo: 'text-indigo-400',
           }[g.color];
 
           return (
@@ -269,19 +279,19 @@ function CardViewer({
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
 
-      {/* Full-screen drawer */}
-      <div className="absolute bottom-0 left-0 right-0 top-4 bg-black border-t border-white/10 rounded-t-3xl animate-in slide-in-from-bottom duration-200 flex flex-col">
+      {/* Drawer - centered on desktop, full on mobile */}
+      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-black border-t border-white/10 rounded-t-3xl animate-in slide-in-from-bottom duration-200 flex flex-col max-h-[90vh]">
         {/* Drag handle */}
-        <div className="flex justify-center py-2">
+        <div className="flex justify-center py-2 shrink-0">
           <div className="w-10 h-1 bg-white/20 rounded-full" />
         </div>
 
-        {/* Large Card Image - fills available space */}
-        <div className="flex-1 flex items-center justify-center px-4">
+        {/* Card Image - constrained */}
+        <div className="flex-1 flex items-center justify-center px-4 min-h-0 overflow-hidden">
           <img
             src={getCardImage(card)}
             alt={card.name}
-            className="max-h-full w-auto max-w-[85vw] rounded-xl shadow-2xl"
+            className="max-h-[50vh] w-auto max-w-full rounded-xl shadow-2xl object-contain"
           />
         </div>
 
@@ -634,6 +644,352 @@ function PackP1P1Game({ cards, stats, onUpdate, onBack }: GameComponentProps) {
             Tap a card to view it, then pick
           </div>
         )}
+        {stats.played > 0 && (
+          <div className="text-center text-white/20 text-xs mt-3">
+            {Math.round((stats.correct / stats.played) * 100)}% · {stats.correct}/{stats.played}
+            {stats.bestStreak > 1 && ` · Best: ${stats.bestStreak}`}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ============ MULLIGAN TRAINER ============
+interface ArchetypeProfile {
+  id: string;
+  name: string;
+  colors: string[];
+  keyTypes: string[];        // Card types we want
+  keyKeywords: string[];     // Keywords to look for in oracle text
+  idealLandCount: [number, number]; // min, max lands
+  needsFastMana: boolean;
+  needsEarlyPlay: boolean;   // Needs something to do T1-2
+}
+
+const ARCHETYPE_PROFILES: ArchetypeProfile[] = [
+  {
+    id: 'reanimator',
+    name: 'Reanimator',
+    colors: ['U', 'B'],
+    keyTypes: ['creature'],
+    keyKeywords: ['reanimate', 'graveyard', 'return', 'discard', 'entomb'],
+    idealLandCount: [2, 4],
+    needsFastMana: true,
+    needsEarlyPlay: true,
+  },
+  {
+    id: 'storm',
+    name: 'Storm',
+    colors: ['U', 'R'],
+    keyTypes: ['instant', 'sorcery'],
+    keyKeywords: ['draw', 'add', 'mana', 'storm', 'ritual'],
+    idealLandCount: [2, 4],
+    needsFastMana: true,
+    needsEarlyPlay: false,
+  },
+  {
+    id: 'aggro',
+    name: 'Aggro',
+    colors: ['R', 'W'],
+    keyTypes: ['creature'],
+    keyKeywords: ['haste', 'first strike', 'damage'],
+    idealLandCount: [2, 3],
+    needsFastMana: false,
+    needsEarlyPlay: true,
+  },
+  {
+    id: 'control',
+    name: 'Control',
+    colors: ['U', 'W'],
+    keyTypes: ['instant', 'sorcery', 'planeswalker'],
+    keyKeywords: ['counter', 'destroy', 'exile', 'draw'],
+    idealLandCount: [3, 5],
+    needsFastMana: false,
+    needsEarlyPlay: false,
+  },
+  {
+    id: 'ramp',
+    name: 'Ramp',
+    colors: ['U', 'G'],
+    keyTypes: ['creature', 'sorcery'],
+    keyKeywords: ['add', 'mana', 'land', 'search'],
+    idealLandCount: [2, 4],
+    needsFastMana: true,
+    needsEarlyPlay: true,
+  },
+  {
+    id: 'midrange',
+    name: 'Midrange',
+    colors: ['B', 'G'],
+    keyTypes: ['creature', 'planeswalker'],
+    keyKeywords: ['destroy', 'discard', 'return'],
+    idealLandCount: [3, 4],
+    needsFastMana: false,
+    needsEarlyPlay: true,
+  },
+];
+
+function evaluateHand(hand: CubeCard[], archetype: ArchetypeProfile): {
+  verdict: 'keep' | 'mull';
+  score: number;
+  reasons: string[];
+} {
+  const reasons: string[] = [];
+  let score = 50; // Start neutral
+
+  // Count lands
+  const lands = hand.filter(c => c.type_line?.toLowerCase().includes('land'));
+  const landCount = lands.length;
+
+  // Check land count
+  if (landCount < archetype.idealLandCount[0]) {
+    score -= 30;
+    reasons.push(`Only ${landCount} land${landCount !== 1 ? 's' : ''} (need ${archetype.idealLandCount[0]}+)`);
+  } else if (landCount > archetype.idealLandCount[1]) {
+    score -= 20;
+    reasons.push(`${landCount} lands is too many (flooding risk)`);
+  } else {
+    score += 15;
+    reasons.push(`Good land count (${landCount})`);
+  }
+
+  // Check for fast mana
+  const fastMana = hand.filter(c => {
+    const name = c.name.toLowerCase();
+    const oracle = c.oracle_text?.toLowerCase() || '';
+    return name.includes('mox') || name.includes('lotus') ||
+           name.includes('crypt') || name.includes('vault') ||
+           name.includes('sol ring') || name.includes('chrome mox') ||
+           oracle.includes('add') && (c.cmc || 0) <= 1;
+  });
+
+  if (archetype.needsFastMana) {
+    if (fastMana.length > 0) {
+      score += 25;
+      reasons.push(`Has fast mana (${fastMana[0].name})`);
+    } else {
+      score -= 15;
+      reasons.push('No fast mana');
+    }
+  }
+
+  // Check for early plays
+  const earlyPlays = hand.filter(c => {
+    const cmc = c.cmc || 0;
+    const isLand = c.type_line?.toLowerCase().includes('land');
+    return !isLand && cmc <= 2;
+  });
+
+  if (archetype.needsEarlyPlay) {
+    if (earlyPlays.length > 0) {
+      score += 20;
+      reasons.push(`Early play available (${earlyPlays[0].name})`);
+    } else {
+      score -= 20;
+      reasons.push('No early plays');
+    }
+  }
+
+  // Check for archetype-relevant cards
+  const relevantCards = hand.filter(c => {
+    const oracle = c.oracle_text?.toLowerCase() || '';
+    const typeLine = c.type_line?.toLowerCase() || '';
+    return archetype.keyKeywords.some(kw => oracle.includes(kw)) ||
+           archetype.keyTypes.some(t => typeLine.includes(t));
+  });
+
+  if (relevantCards.length >= 2) {
+    score += 20;
+    reasons.push('Multiple on-plan cards');
+  } else if (relevantCards.length === 0) {
+    score -= 25;
+    reasons.push('No cards that fit the archetype');
+  }
+
+  // Determine verdict
+  const verdict: 'keep' | 'mull' = score >= 50 ? 'keep' : 'mull';
+
+  return { verdict, score, reasons };
+}
+
+function MulliganTrainerGame({ cards, stats, onUpdate, onBack }: GameComponentProps) {
+  const [hand, setHand] = useState<CubeCard[]>([]);
+  const [archetype, setArchetype] = useState<ArchetypeProfile | null>(null);
+  const [revealed, setRevealed] = useState(false);
+  const [userChoice, setUserChoice] = useState<'keep' | 'mull' | null>(null);
+  const [evaluation, setEvaluation] = useState<{ verdict: 'keep' | 'mull'; score: number; reasons: string[] } | null>(null);
+  const [selectedCard, setSelectedCard] = useState<CubeCard | null>(null);
+
+  const newHand = useCallback(() => {
+    // Pick random archetype
+    const arch = ARCHETYPE_PROFILES[Math.floor(Math.random() * ARCHETYPE_PROFILES.length)];
+    setArchetype(arch);
+
+    // Get cards that could be in this archetype's deck
+    const deckCards = cards.filter(c => {
+      const colors = c.color_identity || [];
+      const isColorless = colors.length === 0;
+      const isOnColor = colors.every(col => arch.colors.includes(col) || isColorless);
+      const isLand = c.type_line?.toLowerCase().includes('land');
+      return isOnColor || isLand || isColorless;
+    });
+
+    // Generate a hand with some lands and some spells
+    const landPool = deckCards.filter(c => c.type_line?.toLowerCase().includes('land'));
+    const spellPool = deckCards.filter(c => !c.type_line?.toLowerCase().includes('land'));
+
+    // Random land count between 1-5
+    const targetLands = Math.floor(Math.random() * 5) + 1;
+    const handLands = shuffleArray(landPool).slice(0, Math.min(targetLands, landPool.length));
+    const handSpells = shuffleArray(spellPool).slice(0, 7 - handLands.length);
+    const newHandCards = shuffleArray([...handLands, ...handSpells]).slice(0, 7);
+
+    setHand(newHandCards);
+    setRevealed(false);
+    setUserChoice(null);
+    setEvaluation(null);
+    setSelectedCard(null);
+  }, [cards]);
+
+  useEffect(() => { newHand(); }, [newHand]);
+
+  if (hand.length === 0 || !archetype) return null;
+
+  const handleChoice = (choice: 'keep' | 'mull') => {
+    if (revealed) return;
+
+    const eval_ = evaluateHand(hand, archetype);
+    setEvaluation(eval_);
+    setUserChoice(choice);
+    setRevealed(true);
+
+    const isCorrect = choice === eval_.verdict;
+
+    // Record in SRS
+    const handId = `mull-${hand.map(c => c.id).sort().join('-').slice(0, 50)}`;
+    srs.recordReview(
+      handId,
+      'mulligans',
+      boolToQuality(isCorrect),
+      isCorrect ? undefined : `wrong-${archetype.id}-mull`,
+      isCorrect ? undefined : `${choice === 'keep' ? 'Kept' : 'Mulled'} when should ${eval_.verdict}`
+    );
+
+    onUpdate(isCorrect);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black flex flex-col z-40">
+      {/* Card viewer */}
+      {selectedCard && (
+        <CardViewer card={selectedCard} onClose={() => setSelectedCard(null)} />
+      )}
+
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 shrink-0">
+        <button onClick={onBack} className="p-1">
+          <ChevronLeft className="w-6 h-6 text-white/60" />
+        </button>
+        <div className="text-center">
+          <div className="text-white font-medium">Mulligan Trainer</div>
+          <div className="flex items-center justify-center gap-1 mt-1">
+            <span className="text-white/40 text-xs">Playing:</span>
+            <div className="flex -space-x-0.5">
+              {archetype.colors.map(c => (
+                <div key={c} className={`w-3 h-3 rounded-full
+                  ${c === 'W' ? 'bg-amber-100' : ''}
+                  ${c === 'U' ? 'bg-blue-500' : ''}
+                  ${c === 'B' ? 'bg-neutral-500' : ''}
+                  ${c === 'R' ? 'bg-red-500' : ''}
+                  ${c === 'G' ? 'bg-green-500' : ''}
+                `} />
+              ))}
+            </div>
+            <span className="text-white/60 text-xs font-medium">{archetype.name}</span>
+          </div>
+        </div>
+        {stats.streak > 0 ? (
+          <div className="flex items-center gap-1 text-amber-400 font-bold">
+            <Flame className="w-5 h-5" />{stats.streak}
+          </div>
+        ) : <div className="w-8" />}
+      </div>
+
+      {/* Hand display */}
+      <div className="flex-1 flex items-center justify-center px-2 overflow-hidden">
+        <div className="flex gap-1 sm:gap-2 max-w-4xl">
+          {hand.map((card) => {
+            const isLand = card.type_line?.toLowerCase().includes('land');
+            return (
+              <button
+                key={card.id}
+                onClick={() => setSelectedCard(card)}
+                className={`flex-1 min-w-0 rounded-lg overflow-hidden transition-all active:scale-95 ${
+                  revealed && isLand ? 'ring-2 ring-amber-400/50' : ''
+                }`}
+                style={{ maxWidth: '14%' }}
+              >
+                <img
+                  src={getCardImage(card)}
+                  alt={card.name}
+                  className="w-full"
+                />
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Decision / Results */}
+      <div className="px-4 pb-8 pt-4 shrink-0 max-w-lg mx-auto w-full">
+        {!revealed ? (
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => handleChoice('keep')}
+              className="py-4 bg-green-500/20 border border-green-500/30 text-green-400 rounded-xl font-bold text-lg active:scale-[0.98]"
+            >
+              Keep
+            </button>
+            <button
+              onClick={() => handleChoice('mull')}
+              className="py-4 bg-red-500/20 border border-red-500/30 text-red-400 rounded-xl font-bold text-lg active:scale-[0.98]"
+            >
+              Mulligan
+            </button>
+          </div>
+        ) : evaluation && (
+          <>
+            <div className={`text-center mb-3 ${userChoice === evaluation.verdict ? 'text-green-400' : 'text-red-400'}`}>
+              <div className="text-xl font-bold mb-1">
+                {userChoice === evaluation.verdict ? 'Correct!' : 'Wrong!'}
+              </div>
+              <div className="text-sm text-white/60">
+                This hand is a <span className={evaluation.verdict === 'keep' ? 'text-green-400' : 'text-red-400'} >{evaluation.verdict.toUpperCase()}</span>
+              </div>
+            </div>
+
+            {/* Reasons */}
+            <div className="bg-white/5 rounded-lg p-3 mb-4 text-sm">
+              {evaluation.reasons.map((reason, i) => (
+                <div key={i} className="flex items-start gap-2 text-white/70">
+                  <span className={reason.includes('No ') || reason.includes('Only') || reason.includes('too many') ? 'text-red-400' : 'text-green-400'}>
+                    {reason.includes('No ') || reason.includes('Only') || reason.includes('too many') ? '−' : '+'}
+                  </span>
+                  {reason}
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={newHand}
+              className="w-full py-4 bg-white text-black rounded-xl font-bold text-lg active:scale-[0.98]"
+            >
+              Next Hand
+            </button>
+          </>
+        )}
+
         {stats.played > 0 && (
           <div className="text-center text-white/20 text-xs mt-3">
             {Math.round((stats.correct / stats.played) * 100)}% · {stats.correct}/{stats.played}
