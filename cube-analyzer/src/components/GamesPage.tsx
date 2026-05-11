@@ -847,15 +847,31 @@ function PackP1P1Game({ cards, stats, onUpdate, onBack }: GameComponentProps) {
 }
 
 // ============ MULLIGAN TRAINER ============
+
+function getCardRole(card: CubeCard): string | null {
+  const name = card.name.toLowerCase();
+  const oracle = card.oracle_text?.toLowerCase() || '';
+  const typeLine = card.type_line?.toLowerCase() || '';
+  if (name.includes('mox') || name.includes('lotus') || name.includes('crypt') || name.includes('sol ring')) return 'Fast Mana';
+  if (oracle.includes('counter target')) return 'Counter';
+  if (oracle.includes('destroy target') || oracle.includes('exile target')) return 'Removal';
+  if (oracle.includes('draw') && oracle.includes('card')) return 'Draw';
+  if ((card.cmc || 0) >= 5 && typeLine.includes('creature')) return 'Finisher';
+  if ((card.cmc || 0) <= 2 && typeLine.includes('creature')) return 'Early Play';
+  return null;
+}
+
 interface ArchetypeProfile {
   id: string;
   name: string;
   colors: string[];
-  keyTypes: string[];        // Card types we want
-  keyKeywords: string[];     // Keywords to look for in oracle text
-  idealLandCount: [number, number]; // min, max lands
+  keyTypes: string[];
+  keyKeywords: string[];
+  idealLandCount: [number, number];
   needsFastMana: boolean;
-  needsEarlyPlay: boolean;   // Needs something to do T1-2
+  needsEarlyPlay: boolean;
+  keepPriority: string[];
+  playstyle: string;
 }
 
 const ARCHETYPE_PROFILES: ArchetypeProfile[] = [
@@ -868,6 +884,8 @@ const ARCHETYPE_PROFILES: ArchetypeProfile[] = [
     idealLandCount: [2, 4],
     needsFastMana: true,
     needsEarlyPlay: true,
+    keepPriority: ['Reanimation spell', 'Discard outlet', 'Big creature'],
+    playstyle: 'Dump a creature, reanimate it fast',
   },
   {
     id: 'storm',
@@ -878,6 +896,8 @@ const ARCHETYPE_PROFILES: ArchetypeProfile[] = [
     idealLandCount: [2, 4],
     needsFastMana: true,
     needsEarlyPlay: false,
+    keepPriority: ['Fast mana', 'Card draw', 'Storm payoff'],
+    playstyle: 'Build mana, go off in one turn',
   },
   {
     id: 'aggro',
@@ -888,6 +908,8 @@ const ARCHETYPE_PROFILES: ArchetypeProfile[] = [
     idealLandCount: [2, 3],
     needsFastMana: false,
     needsEarlyPlay: true,
+    keepPriority: ['1-drop', '2 lands', 'Burn spell'],
+    playstyle: 'Curve out, attack, burn to finish',
   },
   {
     id: 'control',
@@ -898,6 +920,8 @@ const ARCHETYPE_PROFILES: ArchetypeProfile[] = [
     idealLandCount: [3, 5],
     needsFastMana: false,
     needsEarlyPlay: false,
+    keepPriority: ['Lands', 'Removal', 'Card draw'],
+    playstyle: 'Answer everything, win with any threat',
   },
   {
     id: 'ramp',
@@ -908,6 +932,8 @@ const ARCHETYPE_PROFILES: ArchetypeProfile[] = [
     idealLandCount: [2, 4],
     needsFastMana: true,
     needsEarlyPlay: true,
+    keepPriority: ['Mana dork', 'Ramp spell', 'Payoff'],
+    playstyle: 'Accelerate mana, slam haymakers',
   },
   {
     id: 'midrange',
@@ -918,6 +944,8 @@ const ARCHETYPE_PROFILES: ArchetypeProfile[] = [
     idealLandCount: [3, 4],
     needsFastMana: false,
     needsEarlyPlay: true,
+    keepPriority: ['Removal', 'Value creature', 'Planeswalker'],
+    playstyle: 'Trade efficiently, grind them out',
   },
 ];
 
@@ -1099,6 +1127,7 @@ function MulliganTrainerGame({ cards, stats, onUpdate, onBack }: GameComponentPr
             </div>
             <span className="text-white/60 text-xs font-medium">{archetype.name}</span>
           </div>
+          <div className="text-white/30 text-xs mt-1 max-w-[200px]">{archetype.playstyle}</div>
         </div>
         {stats.streak > 0 ? (
           <div className="flex items-center gap-1 text-amber-400 font-bold">
@@ -1112,21 +1141,33 @@ function MulliganTrainerGame({ cards, stats, onUpdate, onBack }: GameComponentPr
         <div className="flex gap-1 sm:gap-2 max-w-4xl">
           {hand.map((card) => {
             const isLand = card.type_line?.toLowerCase().includes('land');
+            const role = revealed ? getCardRole(card) : null;
+            const percentile = revealed ? getPercentile(card.name) : null;
             return (
-              <button
-                key={card.id}
-                onClick={() => setSelectedCard(card)}
-                className={`flex-1 min-w-0 rounded-lg overflow-hidden transition-all active:scale-95 ${
-                  revealed && isLand ? 'ring-2 ring-amber-400/50' : ''
-                }`}
-                style={{ maxWidth: '14%' }}
-              >
-                <img
-                  src={getCardImage(card)}
-                  alt={card.name}
-                  className="w-full"
-                />
-              </button>
+              <div key={card.id} className="flex-1 min-w-0 relative" style={{ maxWidth: '14%' }}>
+                <button
+                  onClick={() => setSelectedCard(card)}
+                  className={`w-full rounded-lg overflow-hidden transition-all active:scale-95 ${
+                    revealed && isLand ? 'ring-2 ring-amber-400/50' : ''
+                  }`}
+                >
+                  <img src={getCardImage(card)} alt={card.name} className="w-full" />
+                </button>
+                {revealed && role && (
+                  <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-black/90 text-white/80 text-[8px] px-1 py-0.5 rounded whitespace-nowrap">
+                    {role}
+                  </div>
+                )}
+                {revealed && percentile !== null && (
+                  <div className={`absolute -bottom-2 left-1/2 -translate-x-1/2 text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                    percentile >= 80 ? 'bg-amber-500 text-black' :
+                    percentile >= 60 ? 'bg-purple-500 text-white' :
+                    percentile >= 40 ? 'bg-blue-500 text-white' : 'bg-white/20 text-white/60'
+                  }`}>
+                    {percentile >= 80 ? 'S' : percentile >= 60 ? 'A' : percentile >= 40 ? 'B' : 'C'}
+                  </div>
+                )}
+              </div>
             );
           })}
         </div>
@@ -1135,20 +1176,25 @@ function MulliganTrainerGame({ cards, stats, onUpdate, onBack }: GameComponentPr
       {/* Decision / Results */}
       <div className="px-4 pb-8 pt-4 shrink-0 max-w-lg mx-auto w-full">
         {!revealed ? (
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              onClick={() => handleChoice('keep')}
-              className="py-4 bg-green-500/20 border border-green-500/30 text-green-400 rounded-xl font-bold text-lg active:scale-[0.98]"
-            >
-              Keep
-            </button>
-            <button
-              onClick={() => handleChoice('mull')}
-              className="py-4 bg-red-500/20 border border-red-500/30 text-red-400 rounded-xl font-bold text-lg active:scale-[0.98]"
-            >
-              Mulligan
-            </button>
-          </div>
+          <>
+            <div className="text-center text-white/40 text-sm mb-3">
+              Look for: <span className="text-white/60">{archetype.keepPriority.join(', ')}</span>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => handleChoice('keep')}
+                className="py-4 bg-green-500/20 border border-green-500/30 text-green-400 rounded-xl font-bold text-lg active:scale-[0.98]"
+              >
+                Keep
+              </button>
+              <button
+                onClick={() => handleChoice('mull')}
+                className="py-4 bg-red-500/20 border border-red-500/30 text-red-400 rounded-xl font-bold text-lg active:scale-[0.98]"
+              >
+                Mulligan
+              </button>
+            </div>
+          </>
         ) : evaluation && (
           <>
             <div className={`text-center mb-3 ${userChoice === evaluation.verdict ? 'text-green-400' : 'text-red-400'}`}>
