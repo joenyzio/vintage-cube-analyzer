@@ -68,8 +68,6 @@ export function CombatMathGame({ cards, onBack, onShuffle }: Props) {
         const theirTeam = shuffled.slice(3, 5);
 
         const yourPower = yourTeam.reduce((sum, c) => sum + (getCreaturePT(c)?.power || 0), 0);
-        const theirPower = theirTeam.reduce((sum, c) => sum + (getCreaturePT(c)?.power || 0), 0);
-        const theirToughness = theirTeam.reduce((sum, c) => sum + (getCreaturePT(c)?.toughness || 0), 0);
 
         // Check for evasion
         const flyersCount = yourTeam.filter(c => hasKeyword(c, 'flying')).length;
@@ -156,7 +154,6 @@ export function CombatMathGame({ cards, onBack, onShuffle }: Props) {
         const yourTeam = shuffled.slice(0, 3);
         const theirTeam = shuffled.slice(3, 4);
 
-        const yourPower = yourTeam.reduce((sum, c) => sum + (getCreaturePT(c)?.power || 0), 0);
         const theirPT = getCreaturePT(theirTeam[0]);
         const yourSmallest = yourTeam.reduce((min, c) => {
           const pt = getCreaturePT(c);
