@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { CubeCard } from '../../types/card';
 import { getCardImage } from '../../services/scryfall';
-import { getEloData, getWheelLikelihood } from '../../services/eloHelpers';
+import { getEloData } from '../../services/eloHelpers';
 import { ChevronLeft, Shuffle, RotateCcw, CheckCircle2, XCircle } from 'lucide-react';
 
 interface Props {
@@ -9,8 +9,6 @@ interface Props {
   onBack: () => void;
   onShuffle?: () => void;
 }
-
-const PACK_SIZE = 9; // Show 9 cards, pick which will wheel
 
 function shuffleArray<T>(arr: T[]): T[] {
   const shuffled = [...arr];

@@ -1,7 +1,6 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { CubeCard } from '../../types/card';
 import { getCardImage } from '../../services/scryfall';
-import { getEloData } from '../../services/eloHelpers';
 import { ChevronLeft, Shuffle, Swords, Shield, CheckCircle2, XCircle } from 'lucide-react';
 
 interface Props {
@@ -18,19 +17,6 @@ interface MatchupScenario {
   correctRole: 'beatdown' | 'control';
   explanation: string;
 }
-
-// Classic "Who's the Beatdown?" scenarios
-const ARCHETYPE_SPEEDS: Record<string, number> = {
-  'mono-red': 10,
-  'white-weenie': 9,
-  'gruul-aggro': 8,
-  'tempo': 7,
-  'midrange': 5,
-  'ramp': 4,
-  'reanimator': 3,
-  'control': 2,
-  'combo': 1,
-};
 
 interface ArchetypeFilter {
   name: string;
