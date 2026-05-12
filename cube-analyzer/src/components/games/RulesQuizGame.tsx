@@ -427,11 +427,30 @@ export function RulesQuizGame({ cards: _cards, onBack, onShuffle }: RulesQuizGam
   const correctAnswer = mode === 'keyword-to-def' ? currentKeyword.definition : currentKeyword.keyword;
   const isCorrect = picked === correctAnswer;
 
+  // Category colors for visual interest
+  const categoryColors: Record<string, string> = {
+    Combat: 'from-red-500/20 to-red-500/5 border-red-500/30',
+    Timing: 'from-blue-500/20 to-blue-500/5 border-blue-500/30',
+    Copy: 'from-purple-500/20 to-purple-500/5 border-purple-500/30',
+    Protection: 'from-amber-500/20 to-amber-500/5 border-amber-500/30',
+    Triggers: 'from-cyan-500/20 to-cyan-500/5 border-cyan-500/30',
+    Graveyard: 'from-gray-500/20 to-gray-500/5 border-gray-500/30',
+    Counters: 'from-green-500/20 to-green-500/5 border-green-500/30',
+    Mana: 'from-emerald-500/20 to-emerald-500/5 border-emerald-500/30',
+    Library: 'from-indigo-500/20 to-indigo-500/5 border-indigo-500/30',
+    Creature: 'from-orange-500/20 to-orange-500/5 border-orange-500/30',
+    Planeswalker: 'from-violet-500/20 to-violet-500/5 border-violet-500/30',
+    Land: 'from-lime-500/20 to-lime-500/5 border-lime-500/30',
+    Rules: 'from-white/20 to-white/5 border-white/30',
+  };
+
+  const catColor = categoryColors[currentKeyword.category] || categoryColors.Rules;
+
   return (
     <div className="fixed inset-0 bg-black flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3">
-        <button onClick={onBack} className="p-1 hover:bg-white/5 rounded-lg">
+        <button onClick={onBack} className="p-2 hover:bg-white/5 rounded-lg transition-colors">
           <ChevronLeft className="w-6 h-6 text-white/60" />
         </button>
         <div className="text-center">
@@ -446,38 +465,50 @@ export function RulesQuizGame({ cards: _cards, onBack, onShuffle }: RulesQuizGam
             )}
           </div>
           {onShuffle && (
-            <button onClick={onShuffle} className="p-2 hover:bg-white/10 rounded-lg" title="Random game (P)">
+            <button onClick={onShuffle} className="p-2 hover:bg-white/10 rounded-lg transition-colors" title="Random game (P)">
               <Shuffle className="w-4 h-4 text-white/50" />
             </button>
           )}
         </div>
       </div>
 
+      {/* Progress bar */}
+      <div className="px-4">
+        <div className="h-1 bg-white/[0.06] rounded-full overflow-hidden">
+          <div
+            className="h-full bg-white/40 rounded-full transition-all duration-300"
+            style={{ width: `${(round / TOTAL_ROUNDS) * 100}%` }}
+          />
+        </div>
+      </div>
+
       {/* Centered content */}
       <div className="flex-1 flex flex-col items-center justify-center p-4 gap-6">
-        {/* Category badge */}
-        <div className="px-3 py-1 bg-white/[0.06] rounded-full text-xs text-white/50">
-          {currentKeyword.category}
-        </div>
+        {/* Question Card */}
+        <div className={`w-full max-w-lg bg-gradient-to-br ${catColor} border rounded-2xl p-6 text-center`}>
+          {/* Category badge */}
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-black/30 rounded-full text-xs text-white/70 mb-4">
+            <BookOpen className="w-3 h-3" />
+            {currentKeyword.category}
+          </div>
 
-        {/* Question */}
-        <div className="max-w-lg w-full text-center">
+          {/* Question */}
           {mode === 'keyword-to-def' ? (
             <>
-              <div className="text-white/50 text-sm mb-2">What does this keyword mean?</div>
-              <div className="text-3xl font-bold text-white">{currentKeyword.keyword}</div>
+              <div className="text-white/50 text-sm mb-3">What does this keyword mean?</div>
+              <div className="text-4xl font-bold text-white tracking-tight">{currentKeyword.keyword}</div>
             </>
           ) : (
             <>
-              <div className="text-white/50 text-sm mb-2">Which keyword is this?</div>
-              <div className="text-xl text-white leading-relaxed px-4">{currentKeyword.definition}</div>
+              <div className="text-white/50 text-sm mb-3">Which keyword is this?</div>
+              <div className="text-lg text-white leading-relaxed font-medium">"{currentKeyword.definition}"</div>
             </>
           )}
         </div>
 
         {/* Options */}
         {!revealed ? (
-          <div className="grid grid-cols-1 gap-3 max-w-lg w-full">
+          <div className="grid grid-cols-2 gap-3 max-w-lg w-full">
             {options.map((opt, idx) => {
               const keys = ['A', 'S', 'D', 'F'];
               const isLongOption = mode === 'keyword-to-def';
@@ -485,13 +516,20 @@ export function RulesQuizGame({ cards: _cards, onBack, onShuffle }: RulesQuizGam
                 <button
                   key={opt}
                   onClick={() => handlePick(opt)}
-                  className="py-4 px-4 bg-white/[0.06] border border-white/[0.08] rounded-xl hover:bg-white/[0.1] active:scale-[0.98] transition-all text-left"
+                  className={`
+                    py-4 px-4 bg-white/[0.04] border border-white/[0.08] rounded-xl
+                    hover:bg-white/[0.08] hover:border-white/20
+                    active:scale-[0.98] transition-all text-left group
+                    ${isLongOption ? 'col-span-2' : ''}
+                  `}
                 >
                   <div className="flex items-start gap-3">
-                    <kbd className="px-2 py-1 bg-white/10 rounded text-xs text-white/40 font-mono flex-shrink-0">
+                    <kbd className="px-2.5 py-1.5 bg-white/10 group-hover:bg-white/20 rounded text-xs text-white/50 font-mono flex-shrink-0 transition-colors">
                       {keys[idx]}
                     </kbd>
-                    <span className={`text-white font-medium ${isLongOption ? 'text-sm' : ''}`}>{opt}</span>
+                    <span className={`text-white/90 font-medium leading-snug ${isLongOption ? 'text-sm' : 'text-base'}`}>
+                      {opt}
+                    </span>
                   </div>
                 </button>
               );
@@ -500,16 +538,19 @@ export function RulesQuizGame({ cards: _cards, onBack, onShuffle }: RulesQuizGam
         ) : (
           <div className="max-w-lg w-full">
             <div className={`text-center mb-4 ${isCorrect ? 'text-green-400' : 'text-red-400'}`}>
-              <div className="flex items-center justify-center gap-2 text-xl font-bold mb-2">
-                {isCorrect ? <CheckCircle className="w-6 h-6" /> : <XCircle className="w-6 h-6" />}
-                {isCorrect ? 'Correct!' : 'Wrong!'}
+              <div className="flex items-center justify-center gap-2 text-2xl font-bold mb-2">
+                {isCorrect ? <CheckCircle className="w-7 h-7" /> : <XCircle className="w-7 h-7" />}
+                {isCorrect ? 'Correct!' : 'Incorrect'}
               </div>
               {!isCorrect && (
-                <div className="text-sm text-white/60">
+                <div className="text-sm text-white/60 mt-2">
                   {mode === 'keyword-to-def' ? (
-                    <>Correct definition: <span className="text-white font-medium">{currentKeyword.definition}</span></>
+                    <div className="bg-white/[0.04] rounded-xl p-4 text-left">
+                      <div className="text-white/40 text-xs uppercase tracking-wide mb-2">Correct Answer</div>
+                      <div className="text-white font-medium text-sm">{currentKeyword.definition}</div>
+                    </div>
                   ) : (
-                    <>The keyword was: <span className="text-white font-medium">{currentKeyword.keyword}</span></>
+                    <>The keyword was: <span className="text-white font-bold text-lg">{currentKeyword.keyword}</span></>
                   )}
                 </div>
               )}
@@ -517,8 +558,9 @@ export function RulesQuizGame({ cards: _cards, onBack, onShuffle }: RulesQuizGam
 
             {/* Extra info */}
             {currentKeyword.example && (
-              <div className="bg-white/[0.04] rounded-xl p-4 mb-4 text-sm text-white/60">
-                <span className="text-white/40">Example:</span> {currentKeyword.example}
+              <div className="bg-white/[0.04] border border-white/[0.06] rounded-xl p-4 mb-4">
+                <div className="text-white/40 text-xs uppercase tracking-wide mb-1">Example Card</div>
+                <div className="text-white/80 font-medium">{currentKeyword.example}</div>
               </div>
             )}
 

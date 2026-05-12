@@ -7,7 +7,7 @@ import {
   getWheelLikelihood,
   type WheelLikelihood,
 } from '../services/eloHelpers';
-import { Scale, CircleDot, Layers, Trophy, ChevronLeft, Flame, Timer, Hash, Sparkles, Package, Hand, Radio, GraduationCap, TrendingUp, TrendingDown, Minus, ArrowLeftRight, ListOrdered, Swords, Eye, Target, ListTree, Search, Gauge, Stethoscope, PuzzleIcon, SlidersHorizontal, Shuffle, BookOpen } from 'lucide-react';
+import { Scale, CircleDot, Layers, Trophy, ChevronLeft, Flame, Timer, Hash, Sparkles, Package, Hand, Radio, GraduationCap, TrendingUp, TrendingDown, Minus, ArrowLeftRight, ListOrdered, Swords, Eye, Target, ListTree, Search, Gauge, Stethoscope, PuzzleIcon, SlidersHorizontal, Shuffle, BookOpen, LayoutGrid, Zap } from 'lucide-react';
 import { srs, boolToQuality, type SkillCategory, type SkillRating } from '../services/spacedRepetition';
 
 // Global filter types
@@ -46,12 +46,15 @@ import { SpottingGame } from './games/SpottingGame';
 import { ConstraintGame } from './games/ConstraintGame';
 import { ReconstructionGame } from './games/ReconstructionGame';
 import { RulesQuizGame } from './games/RulesQuizGame';
+import { ArchetypeIdentifyGame } from './games/ArchetypeIdentifyGame';
+import { PowerPredictorGame } from './games/PowerPredictorGame';
+import { MechanicSpotGame } from './games/MechanicSpotGame';
 
 interface GamesPageProps {
   cards: CubeCard[];
 }
 
-type GameType = 'menu' | 'higher-lower' | 'wheel-or-not' | 'first-pick' | 'color-commit' | 'guess-cmc' | 'synergy-snap' | 'pack-p1p1' | 'mulligan-trainer' | 'signal-quiz' | 'archetype-flashcards' | 'sideboard-drill' | 'sequencing' | 'beatdown' | 'recognition' | 'estimation' | 'pick-order' | 'archetype-sort' | 'odd-one-out' | 'deck-doctor' | 'complete-curve' | 'rules-quiz';
+type GameType = 'menu' | 'higher-lower' | 'wheel-or-not' | 'first-pick' | 'color-commit' | 'guess-cmc' | 'synergy-snap' | 'pack-p1p1' | 'mulligan-trainer' | 'signal-quiz' | 'archetype-flashcards' | 'sideboard-drill' | 'sequencing' | 'beatdown' | 'recognition' | 'estimation' | 'pick-order' | 'archetype-sort' | 'odd-one-out' | 'deck-doctor' | 'complete-curve' | 'rules-quiz' | 'archetype-identify' | 'power-predictor' | 'mechanic-spot';
 
 interface GameStats {
   higherLower: { played: number; correct: number; streak: number; bestStreak: number };
@@ -138,7 +141,7 @@ function getRandomCards(cards: CubeCard[], n: number): CubeCard[] {
 const ALL_GAME_IDS: GameType[] = [
   'recognition', 'estimation', 'pick-order', 'archetype-sort', 'odd-one-out', 'deck-doctor', 'complete-curve',
   'pack-p1p1', 'mulligan-trainer', 'signal-quiz', 'archetype-flashcards', 'higher-lower', 'wheel-or-not',
-  'first-pick', 'color-commit', 'guess-cmc', 'synergy-snap', 'sequencing', 'beatdown', 'rules-quiz',
+  'first-pick', 'color-commit', 'guess-cmc', 'synergy-snap', 'sequencing', 'beatdown', 'rules-quiz', 'archetype-identify', 'power-predictor', 'mechanic-spot',
 ];
 
 export function GamesPage({ cards }: GamesPageProps) {
@@ -238,6 +241,9 @@ export function GamesPage({ cards }: GamesPageProps) {
     { id: 'deck-doctor' as GameType, name: 'Deck Doctor', desc: 'What\'s wrong here?', icon: Stethoscope, cognitive: true },
     { id: 'complete-curve' as GameType, name: 'Complete the Curve', desc: 'Fill the missing slot', icon: PuzzleIcon, cognitive: true },
     { id: 'rules-quiz' as GameType, name: 'Rules Quiz', desc: 'Master MTG keywords', icon: BookOpen, cognitive: true },
+    { id: 'archetype-identify' as GameType, name: 'Name That Deck', desc: 'Identify archetype from cards', icon: LayoutGrid, cognitive: true },
+    { id: 'power-predictor' as GameType, name: 'Power Predictor', desc: 'Guess mechanic strength', icon: Zap, cognitive: true },
+    { id: 'mechanic-spot' as GameType, name: 'Mechanic Spot', desc: 'Quick binary: what does this card do?', icon: Target, cognitive: true },
   ];
 
   const games = [
@@ -280,6 +286,15 @@ export function GamesPage({ cards }: GamesPageProps) {
   }
   if (game === 'rules-quiz') {
     return <RulesQuizGame cards={filteredCards} onBack={() => setGame('menu')} onShuffle={playRandomGame} />;
+  }
+  if (game === 'archetype-identify') {
+    return <ArchetypeIdentifyGame cards={filteredCards} onBack={() => setGame('menu')} onShuffle={playRandomGame} />;
+  }
+  if (game === 'power-predictor') {
+    return <PowerPredictorGame cards={filteredCards} onBack={() => setGame('menu')} onShuffle={playRandomGame} />;
+  }
+  if (game === 'mechanic-spot') {
+    return <MechanicSpotGame cards={filteredCards} onBack={() => setGame('menu')} onShuffle={playRandomGame} />;
   }
 
   // Legacy games with shared stats system
@@ -3399,7 +3414,7 @@ function BeatdownGame({ stats, onUpdate, onBack }: GameComponentProps) {
 }
 
 // ============ GAME 2: Will It Wheel? ============
-function WheelOrNotGame({ cards, stats, onUpdate, onBack }: GameComponentProps) {
+function WheelOrNotGame({ cards, stats, onUpdate, onBack, onShuffle }: GameComponentProps) {
   const [card, setCard] = useState<CubeCard | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [guess, setGuess] = useState<WheelLikelihood | null>(null);
@@ -3412,76 +3427,126 @@ function WheelOrNotGame({ cards, stats, onUpdate, onBack }: GameComponentProps) 
     setGuess(null);
   }, [cards]);
 
-  useEffect(() => { newRound(); }, [newRound]);
+  useEffect(() => { newRound(); }, []);
+
+  const handleGuess = useCallback((g: WheelLikelihood) => {
+    if (revealed || !card) return;
+    setGuess(g);
+    setRevealed(true);
+    const actual = getWheelLikelihood(card.name);
+    onUpdate(g === actual);
+  }, [revealed, card, onUpdate]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement) return;
+      const key = e.key.toLowerCase();
+
+      if (!revealed) {
+        if (key === 'a') { e.preventDefault(); handleGuess('likely'); }
+        if (key === 's') { e.preventDefault(); handleGuess('maybe'); }
+        if (key === 'd') { e.preventDefault(); handleGuess('unlikely'); }
+      } else if (key === 'enter' || key === ' ') {
+        e.preventDefault();
+        newRound();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [revealed, handleGuess, newRound]);
 
   if (!card) return null;
 
   const actual = getWheelLikelihood(card.name);
   const percentile = getPercentile(card.name);
+  const isCorrect = guess === actual;
 
-  const handleGuess = (g: WheelLikelihood) => {
-    if (revealed) return;
-    setGuess(g);
-    setRevealed(true);
-    onUpdate(g === actual);
+  const wheelLabels: Record<WheelLikelihood, string> = {
+    likely: 'Will likely wheel',
+    maybe: 'Might wheel',
+    unlikely: 'Won\'t wheel',
   };
 
   return (
-    <div>
-      <GameHeader title="Will It Wheel?" subtitle="Will this come back around?" streak={stats.streak} onBack={onBack} />
+    <div className="fixed inset-0 bg-black flex flex-col">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3">
+        <button onClick={onBack} className="p-1 hover:bg-white/5 rounded-lg">
+          <ChevronLeft className="w-6 h-6 text-white/60" />
+        </button>
+        <div className="text-center">
+          <div className="text-white font-medium">Will It Wheel?</div>
+          <div className="text-white/40 text-xs">Will this come back around?</div>
+        </div>
+        <div className="flex items-center gap-3">
+          {stats.streak > 0 && (
+            <div className="text-amber-400 text-sm">🔥 {stats.streak}</div>
+          )}
+          {onShuffle && (
+            <button onClick={onShuffle} className="p-2 hover:bg-white/10 rounded-lg" title="Random game (P)">
+              <Shuffle className="w-4 h-4 text-white/50" />
+            </button>
+          )}
+        </div>
+      </div>
 
       {viewCard && <CardViewer card={viewCard} onClose={() => setViewCard(null)} />}
 
-      {/* Card - centered, compact */}
-      <div className="flex justify-center mb-3">
-        <button onClick={() => setViewCard(card)} className="w-44 rounded-lg overflow-hidden active:scale-[0.98]">
-          <img src={getCardImage(card)} alt={card.name} className="w-full" />
+      {/* Centered content */}
+      <div className="flex-1 flex flex-col items-center justify-center p-4 gap-6">
+        {/* Card */}
+        <button onClick={() => setViewCard(card)} className="max-h-[50vh] rounded-xl overflow-hidden active:scale-[0.98] shadow-2xl">
+          <img src={getCardImage(card)} alt={card.name} className="max-h-[50vh] w-auto" />
         </button>
-      </div>
 
-      {/* Answer buttons */}
-      <div className="grid grid-cols-3 gap-2 mb-3">
-        {[
-          { value: 'likely' as WheelLikelihood, label: 'Wheels', color: 'green' },
-          { value: 'maybe' as WheelLikelihood, label: 'Maybe', color: 'amber' },
-          { value: 'unlikely' as WheelLikelihood, label: 'Taken', color: 'red' },
-        ].map(opt => {
-          const isCorrect = opt.value === actual;
-          const isGuessed = opt.value === guess;
-
-          return (
-            <button
-              key={opt.value}
-              onClick={() => handleGuess(opt.value)}
-              disabled={revealed}
-              className={`py-3 rounded-lg font-bold transition-all active:scale-[0.98] ${
-                revealed
-                  ? isCorrect
-                    ? opt.color === 'green' ? 'bg-green-500 text-white' : opt.color === 'amber' ? 'bg-amber-500 text-white' : 'bg-red-500 text-white'
-                    : isGuessed ? 'bg-red-500/50 text-white/70' : 'bg-white/5 text-white/30'
-                  : opt.color === 'green' ? 'bg-green-500/20 text-green-400' : opt.color === 'amber' ? 'bg-amber-500/20 text-amber-400' : 'bg-red-500/20 text-red-400'
-              }`}
-            >
-              {opt.label}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Result + Next */}
-      {revealed && (
-        <div className="space-y-2">
-          <div className={`text-center font-bold ${guess === actual ? 'text-green-400' : 'text-red-400'}`}>
-            {guess === actual ? 'Correct!' : 'Wrong!'}
-            <span className="text-white/40 text-sm font-normal ml-2">Top {100 - percentile}%</span>
+        {/* Answer buttons */}
+        {!revealed ? (
+          <div className="flex gap-3 max-w-lg w-full">
+            {[
+              { value: 'likely' as WheelLikelihood, label: 'Wheels', key: 'A' },
+              { value: 'maybe' as WheelLikelihood, label: 'Maybe', key: 'S' },
+              { value: 'unlikely' as WheelLikelihood, label: 'Taken', key: 'D' },
+            ].map(opt => (
+              <button
+                key={opt.value}
+                onClick={() => handleGuess(opt.value)}
+                className="flex-1 py-4 px-4 bg-white/[0.06] border border-white/[0.08] rounded-xl hover:bg-white/[0.1] active:scale-[0.98] transition-all"
+              >
+                <div className="text-center">
+                  <div className="text-white font-medium mb-1">{opt.label}</div>
+                  <kbd className="px-2 py-1 bg-white/10 rounded text-xs text-white/40 font-mono">{opt.key}</kbd>
+                </div>
+              </button>
+            ))}
           </div>
-          <button onClick={newRound} className="w-full py-3 bg-white text-black rounded-lg font-bold active:scale-[0.98]">
-            Next
-          </button>
-        </div>
-      )}
+        ) : (
+          <div className="max-w-md w-full">
+            <div className={`text-center mb-4 ${isCorrect ? 'text-green-400' : 'text-red-400'}`}>
+              <div className="text-xl font-bold mb-1">
+                {isCorrect ? 'Correct!' : 'Wrong!'}
+              </div>
+              <div className="text-white/50 text-sm">
+                {wheelLabels[actual]} · Top {100 - percentile}%
+              </div>
+            </div>
+            <button
+              onClick={newRound}
+              className="w-full py-4 bg-white text-black rounded-xl font-bold hover:bg-white/90 active:scale-[0.98] transition-all"
+            >
+              Next
+            </button>
+            <div className="text-center text-white/30 text-xs mt-3">
+              Press <kbd className="px-1.5 py-0.5 bg-white/10 rounded">Enter</kbd> to continue
+            </div>
+          </div>
+        )}
 
-      <GameStats stats={stats} />
+        {/* Stats */}
+        <div className="text-center text-white/40 text-sm">
+          {stats.correct}/{stats.played} correct · Best: {stats.bestStreak}
+        </div>
+      </div>
     </div>
   );
 }

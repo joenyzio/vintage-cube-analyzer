@@ -11,13 +11,14 @@ import { MatchupMatrix } from './components/MatchupMatrix';
 import { SampleDecks } from './components/SampleDecks';
 import { BuildAround } from './components/BuildAround';
 import { GamesPage } from './components/GamesPage';
+import { PowerAnalysis } from './components/PowerAnalysis';
 import {
   BarChart3, Layers, Trophy, BookOpen, Search, Sparkles,
   Gamepad2, Link2, Swords, ExternalLink, FileStack, Lightbulb,
-  Menu, ChevronLeft, Dices
+  Menu, ChevronLeft, Dices, FlaskConical
 } from 'lucide-react';
 
-type TabId = 'overview' | 'draft' | 'games' | 'archetypes' | 'decks' | 'matchups' | 'synergies' | 'buildaround' | 'power' | 'guide' | 'cards';
+type TabId = 'overview' | 'draft' | 'games' | 'archetypes' | 'decks' | 'matchups' | 'synergies' | 'buildaround' | 'power' | 'analysis' | 'guide' | 'cards';
 
 interface NavItem {
   id: TabId;
@@ -35,6 +36,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'synergies', label: 'Synergies', icon: Link2 },
   { id: 'buildaround', label: 'Build Around', icon: Lightbulb },
   { id: 'power', label: 'Power Rankings', icon: Trophy },
+  { id: 'analysis', label: 'Power Analysis', icon: FlaskConical },
   { id: 'guide', label: 'Draft Guide', icon: BookOpen },
   { id: 'cards', label: 'Card Browser', icon: Search },
 ];
@@ -156,6 +158,8 @@ function App() {
         return <BuildAround cards={cards} />;
       case 'power':
         return <PowerRankings cards={cards} />;
+      case 'analysis':
+        return <PowerAnalysis cards={cards} />;
       case 'guide':
         return <DraftGuide strategies={draftStrategies} />;
       case 'cards':
