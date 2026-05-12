@@ -7,7 +7,7 @@ import {
   getWheelLikelihood,
   type WheelLikelihood,
 } from '../services/eloHelpers';
-import { Scale, CircleDot, Layers, Trophy, ChevronLeft, Flame, Timer, Hash, Sparkles, Package, Hand, Radio, GraduationCap, TrendingUp, TrendingDown, Minus, ArrowLeftRight, ListOrdered, Swords, Eye, Target, ListTree, Search, Gauge, Stethoscope, PuzzleIcon, SlidersHorizontal, Shuffle, BookOpen, LayoutGrid, Zap } from 'lucide-react';
+import { Scale, CircleDot, Layers, Trophy, ChevronLeft, Flame, Timer, Hash, Sparkles, Package, Hand, Radio, GraduationCap, TrendingUp, TrendingDown, Minus, ArrowLeftRight, ListOrdered, Swords, Eye, Target, ListTree, Search, Gauge, Stethoscope, PuzzleIcon, SlidersHorizontal, Shuffle, BookOpen, LayoutGrid, Zap, Link2 } from 'lucide-react';
 import { srs, boolToQuality, type SkillCategory, type SkillRating } from '../services/spacedRepetition';
 
 // Global filter types
@@ -49,12 +49,13 @@ import { RulesQuizGame } from './games/RulesQuizGame';
 import { ArchetypeIdentifyGame } from './games/ArchetypeIdentifyGame';
 import { PowerPredictorGame } from './games/PowerPredictorGame';
 import { MechanicSpotGame } from './games/MechanicSpotGame';
+import { SynergyMatchGame } from './games/SynergyMatchGame';
 
 interface GamesPageProps {
   cards: CubeCard[];
 }
 
-type GameType = 'menu' | 'higher-lower' | 'wheel-or-not' | 'first-pick' | 'color-commit' | 'guess-cmc' | 'synergy-snap' | 'pack-p1p1' | 'mulligan-trainer' | 'signal-quiz' | 'archetype-flashcards' | 'sideboard-drill' | 'sequencing' | 'beatdown' | 'recognition' | 'estimation' | 'pick-order' | 'archetype-sort' | 'odd-one-out' | 'deck-doctor' | 'complete-curve' | 'rules-quiz' | 'archetype-identify' | 'power-predictor' | 'mechanic-spot';
+type GameType = 'menu' | 'higher-lower' | 'wheel-or-not' | 'first-pick' | 'color-commit' | 'guess-cmc' | 'synergy-snap' | 'pack-p1p1' | 'mulligan-trainer' | 'signal-quiz' | 'archetype-flashcards' | 'sideboard-drill' | 'sequencing' | 'beatdown' | 'recognition' | 'estimation' | 'pick-order' | 'archetype-sort' | 'odd-one-out' | 'deck-doctor' | 'complete-curve' | 'rules-quiz' | 'archetype-identify' | 'power-predictor' | 'mechanic-spot' | 'synergy-match';
 
 interface GameStats {
   higherLower: { played: number; correct: number; streak: number; bestStreak: number };
@@ -141,7 +142,7 @@ function getRandomCards(cards: CubeCard[], n: number): CubeCard[] {
 const ALL_GAME_IDS: GameType[] = [
   'recognition', 'estimation', 'pick-order', 'archetype-sort', 'odd-one-out', 'deck-doctor', 'complete-curve',
   'pack-p1p1', 'mulligan-trainer', 'signal-quiz', 'archetype-flashcards', 'higher-lower', 'wheel-or-not',
-  'first-pick', 'color-commit', 'guess-cmc', 'synergy-snap', 'sequencing', 'beatdown', 'rules-quiz', 'archetype-identify', 'power-predictor', 'mechanic-spot',
+  'first-pick', 'color-commit', 'guess-cmc', 'synergy-snap', 'sequencing', 'beatdown', 'rules-quiz', 'archetype-identify', 'power-predictor', 'mechanic-spot', 'synergy-match',
 ];
 
 export function GamesPage({ cards }: GamesPageProps) {
@@ -244,6 +245,7 @@ export function GamesPage({ cards }: GamesPageProps) {
     { id: 'archetype-identify' as GameType, name: 'Name That Deck', desc: 'Identify archetype from cards', icon: LayoutGrid, cognitive: true },
     { id: 'power-predictor' as GameType, name: 'Power Predictor', desc: 'Guess mechanic strength', icon: Zap, cognitive: true },
     { id: 'mechanic-spot' as GameType, name: 'Mechanic Spot', desc: 'Quick binary: what does this card do?', icon: Target, cognitive: true },
+    { id: 'synergy-match' as GameType, name: 'Synergy Match', desc: 'Which card synergizes best?', icon: Link2, cognitive: true },
   ];
 
   const games = [
@@ -295,6 +297,9 @@ export function GamesPage({ cards }: GamesPageProps) {
   }
   if (game === 'mechanic-spot') {
     return <MechanicSpotGame cards={filteredCards} onBack={() => setGame('menu')} onShuffle={playRandomGame} />;
+  }
+  if (game === 'synergy-match') {
+    return <SynergyMatchGame cards={filteredCards} onBack={() => setGame('menu')} onShuffle={playRandomGame} />;
   }
 
   // Legacy games with shared stats system
