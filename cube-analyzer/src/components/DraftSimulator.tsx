@@ -126,6 +126,91 @@ function shuffleArray<T>(array: T[]): T[] {
   return shuffled;
 }
 
+// Context-aware best pick calculation - considers deck colors, synergy, not just raw ELO
+function getContextAwareBestPick(
+  pack: CubeCard[],
+  picks: CubeCard[]
+): { bestCard: CubeCard; score: number } {
+  const pickNames = picks.map(p => p.name);
+
+  // Calculate main colors (2+ cards)
+  const colorCts: Record<string, number> = {};
+  picks.forEach(c => c.color_identity?.forEach(col => { colorCts[col] = (colorCts[col] || 0) + 1; }));
+  const mainColors = Object.entries(colorCts).filter(([_, count]) => count >= 2).map(([color]) => color);
+
+  // Detect synergy anchors
+  const hasTinker = pickNames.includes('Tinker');
+  const hasReanimation = picks.some(p => ['Reanimate', 'Animate Dead', 'Entomb', 'Necromancy', 'Exhume'].includes(p.name));
+  const hasShowTell = picks.some(p => ['Show and Tell', 'Sneak Attack', 'Through the Breach'].includes(p.name));
+
+  // Score each card
+  const scored = pack.map(card => {
+    let score = 0;
+    const elo = getEloData(card.name)?.elo || 0;
+    const percentile = getPercentile(card.name);
+    const cardColors = card.color_identity || [];
+    const isColorless = cardColors.length === 0;
+    const isOnColor = isColorless || cardColors.every(c => mainColors.includes(c));
+    const typeLine = card.type_line?.toLowerCase() || '';
+    const cmc = card.cmc || 0;
+
+    // Base ELO score (0-100 points)
+    score += Math.min(100, (elo - 1200) / 10);
+
+    // Early draft (picks 0-4): prioritize raw power, stay open
+    if (picks.length < 5) {
+      if (percentile >= 90) score += 50;
+      // Slight bonus for colorless/artifacts early (keep options open)
+      if (isColorless || typeLine.includes('artifact')) score += 10;
+    } else {
+      // After 5 picks: heavily weight color fit
+      if (mainColors.length >= 2) {
+        // We're committed to colors
+        if (isOnColor) {
+          score += 40; // Big bonus for on-color
+        } else if (percentile >= 90) {
+          score += 5; // Only splash truly elite cards
+        } else {
+          score -= 60; // Heavy penalty for off-color non-elite cards
+        }
+      } else if (mainColors.length === 1) {
+        // We have one main color
+        if (cardColors.includes(mainColors[0]) || isColorless) {
+          score += 25;
+        } else if (percentile >= 85) {
+          score += 10; // Consider adding second color for premium
+        } else {
+          score -= 30;
+        }
+      }
+    }
+
+    // Synergy bonuses
+    if (hasTinker && typeLine.includes('artifact')) score += 30;
+    if (hasReanimation && typeLine.includes('creature') && cmc >= 6) score += 35;
+    if (hasShowTell && typeLine.includes('creature') && cmc >= 7) score += 40;
+
+    // Mana fixing always valuable if it fixes our colors
+    if (typeLine.includes('land') && mainColors.length >= 2) {
+      const oracleText = card.oracle_text?.toLowerCase() || '';
+      const fixesBothColors = mainColors.every(c => {
+        const colorWord = c === 'W' ? 'white' : c === 'U' ? 'blue' : c === 'B' ? 'black' : c === 'R' ? 'red' : 'green';
+        return oracleText.includes(colorWord) || oracleText.includes(`{${c}}`);
+      });
+      if (fixesBothColors) score += 25;
+    }
+
+    // Premium card bonus (but less important than color fit late)
+    if (percentile >= 95) score += 20;
+    else if (percentile >= 85) score += 10;
+
+    return { card, score };
+  });
+
+  scored.sort((a, b) => b.score - a.score);
+  return { bestCard: scored[0].card, score: scored[0].score };
+}
+
 // LocalStorage keys
 const STORAGE_KEYS = {
   history: 'cube-analyzer-draft-history',
@@ -175,6 +260,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
 
   // New: Coach mode and history
   const [coachMode, setCoachMode] = useState(true);
+  const [viewingPicks, setViewingPicks] = useState(false);
   const [showCoachExplanation, setShowCoachExplanation] = useState(false);
   const [draftHistory, setDraftHistory] = useState<DraftHistoryEntry[]>(() =>
     loadFromStorage(STORAGE_KEYS.history, [])
@@ -186,6 +272,23 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     loadFromStorage(STORAGE_KEYS.achievements, [])
   );
   const [newAchievement, setNewAchievement] = useState<Achievement | null>(null);
+
+  // Quiz Draft mode - pick blind, then see if you got it right
+  const [quizDraftMode, setQuizDraftMode] = useState(false);
+  const [pendingPick, setPendingPick] = useState<CubeCard | null>(null);
+  const [showPickReveal, setShowPickReveal] = useState(false);
+  const [lastPickResult, setLastPickResult] = useState<{
+    yourPick: CubeCard;
+    optimalPick: CubeCard;
+    wasCorrect: boolean;
+    eloDiff: number;
+  } | null>(null);
+  const [quizDraftStats, setQuizDraftStats] = useState<{
+    correct: number;
+    total: number;
+    totalEloDiff: number;
+    history: { yourPick: string; optimalPick: string; wasCorrect: boolean; eloDiff: number; packNum: number; pickNum: number }[];
+  }>({ correct: 0, total: 0, totalEloDiff: 0, history: [] });
 
   // Get some featured cards for the start screen
   const featuredCards = useMemo(() => {
@@ -580,12 +683,28 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     picks.forEach(c => c.color_identity?.forEach(col => { colorCts[col] = (colorCts[col] || 0) + 1; }));
     const mainColors = Object.entries(colorCts).filter(([_, count]) => count >= 2).map(([color]) => color);
 
-    // Detect synergy anchors in our pool
-    const hasTinker = pickNames.includes('Tinker');
-    const hasNaturalOrder = pickNames.includes('Natural Order');
-    const hasReanimation = picks.some(p => ['Reanimate', 'Animate Dead', 'Entomb', 'Necromancy', 'Exhume'].includes(p.name));
-    const hasShowTell = picks.some(p => ['Show and Tell', 'Sneak Attack', 'Through the Breach'].includes(p.name));
+    // Detect synergy anchors in our pool - these define archetype direction
+    const hasTinker = pickNames.includes('Tinker') || pickNames.includes('Tolarian Academy');
+    const hasNaturalOrder = pickNames.includes('Natural Order') || pickNames.includes('Craterhoof Behemoth');
+    const hasReanimation = picks.some(p => ['Reanimate', 'Animate Dead', 'Entomb', 'Necromancy', 'Exhume', 'Shallow Grave'].includes(p.name));
+    const hasShowTell = picks.some(p => ['Show and Tell', 'Sneak Attack', 'Through the Breach', 'Omniscience'].includes(p.name));
     const hasChannel = pickNames.includes('Channel');
+    const hasStorm = picks.some(p => ['Brain Freeze', 'Tendrils of Agony', "Yawgmoth's Will", 'Underworld Breach'].includes(p.name));
+    const hasAggro = picks.filter(p => {
+      const cmc = p.cmc || 0;
+      const colors = p.color_identity || [];
+      return colors.includes('R') && cmc <= 2 && p.type_line?.toLowerCase().includes('creature');
+    }).length >= 3;
+
+    // Determine current archetype for messaging
+    let currentArchetype = '';
+    if (hasTinker) currentArchetype = 'Artifact Combo';
+    else if (hasReanimation) currentArchetype = 'Reanimator';
+    else if (hasShowTell) currentArchetype = 'Sneak & Show';
+    else if (hasChannel) currentArchetype = 'Channel Ramp';
+    else if (hasStorm) currentArchetype = 'Storm';
+    else if (hasNaturalOrder) currentArchetype = 'Green Ramp';
+    else if (hasAggro) currentArchetype = 'Aggro';
 
     // Score each card in pack
     const scored = currentPack.map(card => {
@@ -624,26 +743,62 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
         }
       }
 
-      // Synergy bonuses
+      // Synergy bonuses - archetype-specific recommendations
       if (hasTinker && typeLine.includes('artifact')) {
         score += 35;
-        reasons.push('Synergy with Tinker');
+        reasons.push('Fits your Artifact Combo deck');
+      }
+      if (hasTinker && ['Blightsteel Colossus', 'Myr Battlesphere', 'Sundering Titan', 'Inkwell Leviathan'].includes(card.name)) {
+        score += 50;
+        reasons.push('Tinker target!');
       }
       if (hasNaturalOrder && typeLine.includes('creature') && cardColors.includes('G')) {
         score += 30;
-        reasons.push('Green creature for Natural Order');
+        reasons.push('Green creature for your Ramp deck');
+      }
+      if (hasNaturalOrder && ['Craterhoof Behemoth', 'Primeval Titan', 'Woodfall Primus'].includes(card.name)) {
+        score += 45;
+        reasons.push('Natural Order payoff!');
       }
       if (hasReanimation && typeLine.includes('creature') && cmc >= 6) {
         score += 35;
-        reasons.push('Reanimation target');
+        reasons.push('Reanimation target for your deck');
+      }
+      if (hasReanimation && ['Griselbrand', 'Archon of Cruelty', 'Sheoldred, Whispering One', 'Grave Titan'].includes(card.name)) {
+        score += 50;
+        reasons.push('Premium Reanimator payoff!');
+      }
+      if (hasReanimation && ['Entomb', 'Careful Study', 'Faithless Looting', 'Collective Brutality'].includes(card.name)) {
+        score += 40;
+        reasons.push('Enables your Reanimator plan');
       }
       if (hasShowTell && typeLine.includes('creature') && cmc >= 7) {
         score += 40;
-        reasons.push('Cheat into play target');
+        reasons.push('Sneak/Show target');
       }
-      if (hasChannel && (card.name.includes('Emrakul') || card.name.includes('Ulamog'))) {
+      if (hasShowTell && ['Emrakul, the Aeons Torn', 'Griselbrand', 'Omniscience'].includes(card.name)) {
+        score += 55;
+        reasons.push('Perfect for Sneak & Show!');
+      }
+      if (hasChannel && (card.name.includes('Emrakul') || card.name.includes('Ulamog') || card.name === 'Kozilek, Butcher of Truth')) {
         score += 50;
-        reasons.push('Channel payoff');
+        reasons.push('Channel payoff!');
+      }
+      if (hasStorm && (oracleText.includes('draw') || oracleText.includes('add {'))) {
+        score += 30;
+        reasons.push('Fuels your Storm deck');
+      }
+      if (hasStorm && ['Dark Ritual', 'Cabal Ritual', 'Lion\'s Eye Diamond', 'Wheel of Fortune'].includes(card.name)) {
+        score += 50;
+        reasons.push('Storm enabler!');
+      }
+      if (hasAggro && typeLine.includes('creature') && cmc <= 2 && cardColors.includes('R')) {
+        score += 25;
+        reasons.push('Fits your Aggro curve');
+      }
+      if (hasAggro && (oracleText.includes('damage') && (oracleText.includes('any target') || oracleText.includes('target player')))) {
+        score += 30;
+        reasons.push('Burn for your Aggro deck');
       }
 
       // Role-based bonuses based on deck needs
@@ -697,10 +852,14 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     const top = scored[0];
     const alternatives = scored.slice(1, 4);
 
-    // Generate main explanation
+    // Generate main explanation with archetype awareness
     let mainReason = '';
     if (picks.length < 3) {
       mainReason = 'Take the most powerful card available. Stay open.';
+    } else if (picks.length < 6 && !currentArchetype) {
+      mainReason = 'Still finding your lane - prioritize power.';
+    } else if (currentArchetype && top.reasons.some(r => r.includes(currentArchetype) || r.includes('!'))) {
+      mainReason = top.reasons.find(r => r.includes(currentArchetype) || r.includes('!')) || top.reasons[0];
     } else if (top.reasons.length > 0) {
       mainReason = top.reasons[0];
     } else {
@@ -715,10 +874,11 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
       mainReason,
       alternatives: alternatives.map(a => ({ name: a.card.name, score: a.score, reason: a.reasons[0] || 'Solid option' })),
       deckNeeds: deckNeeds?.needs || [],
+      currentArchetype, // Include for display in the UI
     };
   }, [draftState, deckNeeds]);
 
-  const startDraft = useCallback(() => {
+  const startDraft = useCallback((isQuizDraft = false) => {
     const shuffled = shuffleArray([...cards]);
     const tablePacks: CubeCard[][] = [];
     const usedCardIds = new Set<string>();
@@ -743,6 +903,17 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
       decisions: [],
       allPlayerPicks: Array.from({ length: NUM_PLAYERS }, () => []),
     });
+
+    // Quiz draft mode: hide coach, show feedback after each pick
+    setQuizDraftMode(isQuizDraft);
+    if (isQuizDraft) {
+      setCoachMode(false);
+      setQuizDraftStats({ correct: 0, total: 0, totalEloDiff: 0, history: [] });
+    }
+    setPendingPick(null);
+    setShowPickReveal(false);
+    setLastPickResult(null);
+
     setMode('draft');
   }, [cards]);
 
@@ -750,6 +921,10 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     setMode('menu');
     setDraftState(null);
     setQuizState(null);
+    setQuizDraftMode(false);
+    setPendingPick(null);
+    setShowPickReveal(false);
+    setLastPickResult(null);
   }, []);
 
   const aiPreferences = useMemo(() => [
@@ -822,14 +997,14 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     };
   }, [cards]);
 
-  const makePick = useCallback((card: CubeCard) => {
-    if (!draftState || draftState.isComplete) return;
+  // Core pick logic - separated so it can be called from quiz draft confirm
+  const executePickLogic = useCallback((card: CubeCard) => {
+    if (!draftState || draftState.isComplete) return null;
 
     const currentPack = draftState.tablePacks[0];
 
-    // Find the best available card by ELO
-    const sortedByElo = [...currentPack].sort((a, b) => compareByElo(a.name, b.name));
-    const bestAvailable = sortedByElo[0];
+    // Find the best available card considering deck context (colors, synergy)
+    const { bestCard: bestAvailable } = getContextAwareBestPick(currentPack, draftState.picks);
     const bestElo = getEloData(bestAvailable.name)?.elo || 0;
     const pickedElo = getEloData(card.name)?.elo || 0;
 
@@ -881,6 +1056,14 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     const newTablePacks = rotatePacks(packsAfterAiPicks, draftState.direction);
     const newPickNumber = draftState.pickNumber + 1;
 
+    // Return the result for quiz draft mode
+    const result = {
+      yourPick: card,
+      optimalPick: bestAvailable,
+      wasCorrect: card.id === bestAvailable.id,
+      eloDiff: Math.max(0, bestElo - pickedElo),
+    };
+
     if (newPickNumber > CARDS_PER_PACK) {
       if (draftState.packNumber >= 3) {
         setDraftState({ ...draftState, picks: newPicks, isComplete: true, passedCards: newPassedCards, decisions: newDecisions, allPlayerPicks: newAllPlayerPicks });
@@ -890,7 +1073,83 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     } else {
       setDraftState({ ...draftState, tablePacks: newTablePacks, picks: newPicks, pickNumber: newPickNumber, passedCards: newPassedCards, decisions: newDecisions, allPlayerPicks: newAllPlayerPicks });
     }
+
+    return result;
   }, [draftState, startNewPack]);
+
+  const makePick = useCallback((card: CubeCard) => {
+    if (!draftState || draftState.isComplete) return;
+
+    // In quiz draft mode, just select the card (don't pick yet)
+    if (quizDraftMode && !showPickReveal) {
+      setPendingPick(card);
+      return;
+    }
+
+    executePickLogic(card);
+  }, [draftState, quizDraftMode, showPickReveal, executePickLogic]);
+
+  // Quiz draft: Lock in the pending pick and show result (WITHOUT progressing draft)
+  const confirmQuizPick = useCallback(() => {
+    if (!pendingPick || !draftState) return;
+
+    const currentPack = draftState.tablePacks[0];
+    const { bestCard: bestAvailable } = getContextAwareBestPick(currentPack, draftState.picks);
+    const bestElo = getEloData(bestAvailable.name)?.elo || 0;
+    const pickedElo = getEloData(pendingPick.name)?.elo || 0;
+
+    // Check if the picked card is "premium" (percentile >= 75 = "TAKE NOW" tier)
+    // Any premium card is considered a correct pick, not just THE highest ELO
+    const pickedPercentile = getPercentile(pendingPick.name);
+    const isPremiumPick = pickedPercentile >= 75;
+
+    // Also check wheel likelihood - unlikely to wheel means it's a priority pick
+    const pickedWheelLikelihood = getWheelLikelihood(pendingPick.name);
+    const isUnlikelyToWheel = pickedWheelLikelihood === 'unlikely';
+
+    // A pick is "correct" if it's either:
+    // 1. The exact best card, OR
+    // 2. A premium card (top 25%), OR
+    // 3. A card unlikely to wheel that's still reasonably good (top 50%)
+    const isExactBest = pendingPick.id === bestAvailable.id;
+    const wasCorrect = isExactBest || isPremiumPick || (isUnlikelyToWheel && pickedPercentile >= 50);
+
+    const result = {
+      yourPick: pendingPick,
+      optimalPick: bestAvailable,
+      wasCorrect,
+      eloDiff: Math.max(0, bestElo - pickedElo),
+    };
+
+    setLastPickResult(result);
+    setShowPickReveal(true);
+    // Keep pendingPick so we know which card to actually pick when continuing
+
+    // Update quiz draft stats
+    setQuizDraftStats(prev => ({
+      correct: prev.correct + (result.wasCorrect ? 1 : 0),
+      total: prev.total + 1,
+      totalEloDiff: prev.totalEloDiff + result.eloDiff,
+      history: [...prev.history, {
+        yourPick: result.yourPick.name,
+        optimalPick: result.optimalPick.name,
+        wasCorrect: result.wasCorrect,
+        eloDiff: result.eloDiff,
+        packNum: draftState.packNumber,
+        pickNum: draftState.pickNumber,
+      }]
+    }));
+  }, [pendingPick, draftState]);
+
+  // Quiz draft: Continue to next pick after viewing result - NOW execute the pick
+  const continueAfterReveal = useCallback(() => {
+    if (pendingPick) {
+      executePickLogic(pendingPick);
+    }
+    setShowPickReveal(false);
+    setLastPickResult(null);
+    setPendingPick(null);
+  }, [pendingPick, executePickLogic]);
 
   // Keyboard shortcuts for fast drafting
   useEffect(() => {
@@ -899,10 +1158,41 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
       if (mode === 'draft' && draftState && !draftState.isComplete) {
-        const currentPack = draftState.tablePacks[0];
-        const num = parseInt(e.key);
-        if (num >= 1 && num <= Math.min(9, currentPack.length)) {
-          makePick(currentPack[num - 1]);
+        // Quiz draft mode keyboard handling
+        if (quizDraftMode) {
+          if (showPickReveal) {
+            // After reveal, Enter/Space to continue
+            if (e.key === ' ' || e.key === 'Enter') {
+              e.preventDefault();
+              continueAfterReveal();
+            }
+          } else if (pendingPick) {
+            // With pending pick, Enter to confirm
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              confirmQuizPick();
+            }
+            // Number keys to change selection
+            const num = parseInt(e.key);
+            const currentPack = draftState.tablePacks[0];
+            if (num >= 1 && num <= Math.min(9, currentPack.length)) {
+              setPendingPick(currentPack[num - 1]);
+            }
+          } else {
+            // No pending pick, number keys to select
+            const currentPack = draftState.tablePacks[0];
+            const num = parseInt(e.key);
+            if (num >= 1 && num <= Math.min(9, currentPack.length)) {
+              setPendingPick(currentPack[num - 1]);
+            }
+          }
+        } else {
+          // Normal draft mode
+          const currentPack = draftState.tablePacks[0];
+          const num = parseInt(e.key);
+          if (num >= 1 && num <= Math.min(9, currentPack.length)) {
+            makePick(currentPack[num - 1]);
+          }
         }
       }
 
@@ -923,16 +1213,22 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
         returnToMenu();
       }
 
-      // L to toggle coach mode
-      if (e.key.toLowerCase() === 'l') {
+      // L to toggle coach mode (not in quiz draft mode)
+      if (e.key.toLowerCase() === 'l' && !quizDraftMode) {
         e.preventDefault();
         setCoachMode(c => !c);
+      }
+
+      // V to toggle viewing picks
+      if (e.key.toLowerCase() === 'v') {
+        e.preventDefault();
+        setViewingPicks(v => !v);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [mode, draftState, quizState, makePick, makeQuizPick, nextQuizQuestion, returnToMenu, setCoachMode]);
+  }, [mode, draftState, quizState, quizDraftMode, showPickReveal, pendingPick, makePick, makeQuizPick, nextQuizQuestion, returnToMenu, confirmQuizPick, continueAfterReveal]);
 
   // Use coach's recommended card (same logic)
   const getRecommendedPick = useMemo(() => {
@@ -966,45 +1262,194 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     return { creatures, instants, sorceries, artifacts, lands, avgCmc, avgPower, spells: instants + sorceries };
   }, [draftState]);
 
-  // Archetype matching
+  // Comprehensive archetype definitions with card detection
+  const ARCHETYPES = useMemo(() => [
+    { id: 'reanimator', name: 'Reanimator', shortName: 'Rean', colors: ['U', 'B'],
+      keyCards: ['Entomb', 'Reanimate', 'Animate Dead', 'Griselbrand', 'Archon of Cruelty', 'Shallow Grave', 'Exhume', 'Necromancy', 'Life // Death', 'Persist'],
+      patterns: [/return.*creature.*graveyard.*battlefield/i, /put.*creature.*graveyard.*battlefield/i],
+      detectCard: (c: CubeCard) => {
+        const name = c.name;
+        const oracle = c.oracle_text?.toLowerCase() || '';
+        const cmc = c.cmc || 0;
+        const type = c.type_line?.toLowerCase() || '';
+        // Reanimation spells
+        if (['Reanimate', 'Animate Dead', 'Entomb', 'Necromancy', 'Exhume', 'Life // Death', 'Persist', 'Shallow Grave', 'Corpse Dance'].includes(name)) return true;
+        // Big creatures that want to be cheated
+        if (type.includes('creature') && cmc >= 7) return true;
+        // Discard outlets
+        if (oracle.includes('discard') && oracle.includes('card')) return true;
+        return false;
+      }
+    },
+    { id: 'storm', name: 'Storm', shortName: 'Storm', colors: ['U', 'R', 'B'],
+      keyCards: ['Brain Freeze', 'Underworld Breach', 'Time Spiral', "Yawgmoth's Will", 'Wheel of Fortune', "Lion's Eye Diamond", 'Dark Ritual', 'Tendrils of Agony'],
+      detectCard: (c: CubeCard) => {
+        const name = c.name;
+        const oracle = c.oracle_text?.toLowerCase() || '';
+        if (['Brain Freeze', 'Tendrils of Agony', "Yawgmoth's Will", 'Underworld Breach', "Lion's Eye Diamond", 'Dark Ritual', 'Cabal Ritual', 'Wheel of Fortune', 'Time Spiral', 'Frantic Search', 'High Tide'].includes(name)) return true;
+        if (oracle.includes('storm')) return true;
+        if (oracle.includes('add {') && oracle.includes('add {') && !c.type_line?.toLowerCase().includes('land')) return true;
+        return false;
+      }
+    },
+    { id: 'tinker', name: 'Artifact Combo', shortName: 'Tinker', colors: ['U'],
+      keyCards: ['Tinker', 'Tolarian Academy', 'Mana Vault', 'Time Vault', 'Blightsteel Colossus', "Mishra's Workshop", "Urza's Saga", 'Kuldotha Forgemaster'],
+      detectCard: (c: CubeCard) => {
+        const name = c.name;
+        const type = c.type_line?.toLowerCase() || '';
+        if (['Tinker', 'Tolarian Academy', "Urza's Saga", 'Kuldotha Forgemaster', 'Blightsteel Colossus', 'Myr Battlesphere', 'Sundering Titan'].includes(name)) return true;
+        if (type.includes('artifact') && !type.includes('creature')) return true;
+        if (name.toLowerCase().includes('mox')) return true;
+        return false;
+      }
+    },
+    { id: 'sneak', name: 'Sneak & Show', shortName: 'Sneak', colors: ['U', 'R'],
+      keyCards: ['Show and Tell', 'Sneak Attack', 'Through the Breach', 'Emrakul, the Aeons Torn', 'Griselbrand', 'Omniscience'],
+      detectCard: (c: CubeCard) => {
+        const name = c.name;
+        const cmc = c.cmc || 0;
+        const type = c.type_line?.toLowerCase() || '';
+        if (['Show and Tell', 'Sneak Attack', 'Through the Breach', 'Omniscience'].includes(name)) return true;
+        // Huge creatures that are cheat targets
+        if (type.includes('creature') && cmc >= 8) return true;
+        return false;
+      }
+    },
+    { id: 'control', name: 'UW Control', shortName: 'Ctrl', colors: ['W', 'U'],
+      keyCards: ['Jace, the Mind Sculptor', 'The Wandering Emperor', 'Counterspell', 'Swords to Plowshares', 'Force of Will', 'Balance', 'Teferi, Time Raveler', 'Wrath of God', 'Supreme Verdict'],
+      detectCard: (c: CubeCard) => {
+        const name = c.name;
+        const oracle = c.oracle_text?.toLowerCase() || '';
+        const type = c.type_line?.toLowerCase() || '';
+        if (['Counterspell', 'Force of Will', 'Mana Drain', 'Force of Negation', 'Cryptic Command'].includes(name)) return true;
+        if (['Wrath of God', 'Supreme Verdict', 'Day of Judgment', 'Terminus', 'Balance'].includes(name)) return true;
+        if (oracle.includes('counter target spell')) return true;
+        if (oracle.includes('destroy all creatures')) return true;
+        if (type.includes('planeswalker') && (c.color_identity?.includes('U') || c.color_identity?.includes('W'))) return true;
+        return false;
+      }
+    },
+    { id: 'aggro', name: 'Mono-Red Aggro', shortName: 'Aggro', colors: ['R'],
+      keyCards: ['Ragavan, Nimble Pilferer', 'Goblin Guide', 'Monastery Swiftspear', 'Lightning Bolt', "Eidolon of the Great Revel", 'Sulfuric Vortex'],
+      detectCard: (c: CubeCard) => {
+        const name = c.name;
+        const cmc = c.cmc || 0;
+        const type = c.type_line?.toLowerCase() || '';
+        const colors = c.color_identity || [];
+        const oracle = c.oracle_text?.toLowerCase() || '';
+        if (['Ragavan, Nimble Pilferer', 'Goblin Guide', 'Monastery Swiftspear', 'Lightning Bolt', "Eidolon of the Great Revel"].includes(name)) return true;
+        // Cheap red creatures with haste
+        if (colors.length === 1 && colors[0] === 'R' && type.includes('creature') && cmc <= 2) return true;
+        // Burn spells
+        if (colors.includes('R') && oracle.includes('damage') && (oracle.includes('any target') || oracle.includes('target player'))) return true;
+        return false;
+      }
+    },
+    { id: 'white-weenie', name: 'White Weenie', shortName: 'WW', colors: ['W'],
+      keyCards: ['Mother of Runes', 'Thalia, Guardian of Thraben', 'Adeline, Resplendent Cathar', 'Armageddon', 'Monastery Mentor', 'Usher of the Fallen'],
+      detectCard: (c: CubeCard) => {
+        const name = c.name;
+        const cmc = c.cmc || 0;
+        const type = c.type_line?.toLowerCase() || '';
+        const colors = c.color_identity || [];
+        if (['Mother of Runes', 'Thalia, Guardian of Thraben', 'Adeline, Resplendent Cathar', 'Armageddon'].includes(name)) return true;
+        // Cheap white creatures
+        if (colors.length === 1 && colors[0] === 'W' && type.includes('creature') && cmc <= 3) return true;
+        return false;
+      }
+    },
+    { id: 'ramp', name: 'Green Ramp', shortName: 'Ramp', colors: ['G', 'U'],
+      keyCards: ['Channel', 'Primeval Titan', 'Craterhoof Behemoth', 'Natural Order', 'Fastbond', "Uro, Titan of Nature's Wrath", 'Oracle of Mul Daya'],
+      detectCard: (c: CubeCard) => {
+        const name = c.name;
+        const oracle = c.oracle_text?.toLowerCase() || '';
+        const type = c.type_line?.toLowerCase() || '';
+        if (['Channel', 'Natural Order', 'Primeval Titan', 'Craterhoof Behemoth', 'Fastbond'].includes(name)) return true;
+        // Mana dorks
+        if (type.includes('creature') && oracle.includes('add {g}')) return true;
+        // Land searching
+        if (oracle.includes('search your library') && oracle.includes('land')) return true;
+        return false;
+      }
+    },
+    { id: 'midrange', name: 'BG Midrange', shortName: 'Mid', colors: ['B', 'G'],
+      keyCards: ['Deathrite Shaman', 'Grist, the Hunger Tide', 'Liliana of the Veil', 'Tireless Tracker', 'Scavenging Ooze', 'Tarmogoyf'],
+      detectCard: (c: CubeCard) => {
+        const name = c.name;
+        const cmc = c.cmc || 0;
+        const type = c.type_line?.toLowerCase() || '';
+        const colors = c.color_identity || [];
+        if (['Deathrite Shaman', 'Tarmogoyf', 'Liliana of the Veil', 'Tireless Tracker'].includes(name)) return true;
+        // Efficient creatures in the 2-4 mana range
+        if ((colors.includes('B') || colors.includes('G')) && type.includes('creature') && cmc >= 2 && cmc <= 4) return true;
+        return false;
+      }
+    },
+    { id: 'tempo', name: 'UR Tempo', shortName: 'Tempo', colors: ['U', 'R'],
+      keyCards: ['Dreadhorde Arcanist', 'Young Pyromancer', 'Snapcaster Mage', 'Brainstorm', 'Lightning Bolt', 'Expressive Iteration'],
+      detectCard: (c: CubeCard) => {
+        const name = c.name;
+        const cmc = c.cmc || 0;
+        const type = c.type_line?.toLowerCase() || '';
+        const colors = c.color_identity || [];
+        if (['Dreadhorde Arcanist', 'Young Pyromancer', 'Snapcaster Mage', 'Brainstorm'].includes(name)) return true;
+        // Cheap UR creatures/spells
+        if ((colors.includes('U') || colors.includes('R')) && (type.includes('instant') || type.includes('sorcery')) && cmc <= 2) return true;
+        return false;
+      }
+    },
+  ], []);
+
+  // Get archetype tags for a card (for display on cards)
+  const getCardArchetypes = useCallback((card: CubeCard): { id: string; shortName: string }[] => {
+    const matches: { id: string; shortName: string }[] = [];
+    for (const arch of ARCHETYPES) {
+      if (arch.keyCards.includes(card.name) || arch.detectCard(card)) {
+        matches.push({ id: arch.id, shortName: arch.shortName });
+      }
+    }
+    return matches.slice(0, 2); // Max 2 archetypes per card
+  }, [ARCHETYPES]);
+
+  // Archetype matching for deck - determines what you're building toward
   const archetypeMatches = useMemo(() => {
     if (!draftState || draftState.picks.length < 3) return [];
-
-    const ARCHETYPES = [
-      { id: 'uw-control', name: 'UW Control', colors: ['W', 'U'], keyCards: ['Jace, the Mind Sculptor', 'The Wandering Emperor', 'Counterspell', 'Swords to Plowshares', 'Force of Will', 'Balance', 'Teferi, Time Raveler'] },
-      { id: 'ub-reanimator', name: 'UB Reanimator', colors: ['U', 'B'], keyCards: ['Entomb', 'Reanimate', 'Animate Dead', 'Griselbrand', 'Archon of Cruelty', 'Shallow Grave', 'Exhume'] },
-      { id: 'br-aggro', name: 'BR Aggro', colors: ['B', 'R'], keyCards: ['Ragavan, Nimble Pilferer', 'Thoughtseize', 'Lightning Bolt', 'Orcish Bowmasters', 'Grief', 'Dark Confidant'] },
-      { id: 'ug-ramp', name: 'UG Ramp', colors: ['U', 'G'], keyCards: ['Channel', 'Primeval Titan', 'Craterhoof Behemoth', 'Natural Order', 'Fastbond', 'Uro, Titan of Nature\'s Wrath'] },
-      { id: 'ur-storm', name: 'UR Storm', colors: ['U', 'R'], keyCards: ['Brain Freeze', 'Underworld Breach', 'Time Spiral', 'Yawgmoth\'s Will', 'Wheel of Fortune', 'Lion\'s Eye Diamond'] },
-      { id: 'mono-white', name: 'Mono W Aggro', colors: ['W'], keyCards: ['Mother of Runes', 'Thalia, Guardian of Thraben', 'Adeline, Resplendent Cathar', 'Armageddon', 'Monastery Mentor'] },
-      { id: 'artifact-combo', name: 'Artifact Combo', colors: [], keyCards: ['Tinker', 'Tolarian Academy', 'Mana Vault', 'Time Vault', 'Blightsteel Colossus', 'Mishra\'s Workshop'] },
-      { id: 'rw-aggro', name: 'RW Aggro', colors: ['R', 'W'], keyCards: ['Lightning Bolt', 'Ragavan, Nimble Pilferer', 'Forth Eorlingas!', 'Monastery Mentor', 'Adeline, Resplendent Cathar'] },
-      { id: 'bg-midrange', name: 'BG Midrange', colors: ['B', 'G'], keyCards: ['Deathrite Shaman', 'Grist, the Hunger Tide', 'Liliana of the Veil', 'Tireless Tracker', 'Scavenging Ooze'] },
-      { id: 'sneak-show', name: 'Sneak & Show', colors: ['U', 'R'], keyCards: ['Show and Tell', 'Sneak Attack', 'Through the Breach', 'Emrakul, the Aeons Torn', 'Griselbrand'] },
-    ];
 
     const pickNames = draftState.picks.map(p => p.name);
     const pickColors = Object.entries(colorCounts).filter(([_, count]) => count >= 2).map(([color]) => color);
 
     return ARCHETYPES.map(arch => {
       let score = 0;
-      // Color match (up to 40 points)
+      // Color match (up to 30 points)
       if (arch.colors.length === 0) {
-        score += 20; // Colorless archetypes get base points
+        score += 15; // Colorless archetypes get base points
       } else {
         const colorMatch = arch.colors.filter(c => pickColors.includes(c)).length;
-        score += (colorMatch / arch.colors.length) * 40;
+        score += (colorMatch / arch.colors.length) * 30;
       }
-      // Key card match (up to 60 points)
+      // Key card match (up to 40 points) - having key cards is very important
       const keyCardsFound = arch.keyCards.filter(kc => pickNames.includes(kc)).length;
-      score += (keyCardsFound / arch.keyCards.length) * 60;
+      score += (keyCardsFound / Math.min(3, arch.keyCards.length)) * 40;
 
-      return { ...arch, score: Math.round(score), keyCardsFound };
+      // Count how many picks fit this archetype (up to 30 points)
+      const fittingCards = draftState.picks.filter(p => arch.detectCard(p)).length;
+      const fitPercent = fittingCards / draftState.picks.length;
+      score += fitPercent * 30;
+
+      return { ...arch, score: Math.round(score), keyCardsFound, fittingCards };
     })
-    .filter(a => a.score > 15)
+    .filter(a => a.score > 20)
     .sort((a, b) => b.score - a.score)
     .slice(0, 3);
-  }, [draftState, colorCounts]);
+  }, [draftState, colorCounts, ARCHETYPES]);
+
+  // The primary archetype we're building toward
+  const buildingToward = useMemo(() => {
+    if (archetypeMatches.length === 0) return null;
+    const top = archetypeMatches[0];
+    if (top.score < 35) return null; // Need reasonable confidence
+    return top;
+  }, [archetypeMatches]);
 
   // Check if a card synergizes with current picks
   const getCardSynergy = useCallback((card: CubeCard): 'high' | 'medium' | 'low' | null => {
@@ -1091,21 +1536,34 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
               Practice drafting against 7 AI opponents. Build the best deck from 3 packs of 15 cards each.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-3">
-              <button
-                onClick={startDraft}
-                className="flex items-center justify-center gap-3 px-8 py-4 bg-white text-black font-semibold rounded-xl hover:bg-white/90 transition-all duration-300 group active:scale-95"
-              >
-                <Play className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                Start Draft
-              </button>
-              <button
-                onClick={startQuiz}
-                className="flex items-center justify-center gap-3 px-8 py-4 bg-amber-500/20 border border-amber-500/30 text-amber-400 font-semibold rounded-xl hover:bg-amber-500/30 transition-all duration-300 group active:scale-95"
-              >
-                <HelpCircle className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                P1P1 Quiz
-              </button>
+            {/* Primary CTA */}
+            <button
+              onClick={() => startDraft(false)}
+              className="flex items-center justify-center gap-3 px-10 py-4 bg-white text-black font-semibold rounded-xl hover:bg-white/90 transition-all duration-300 group active:scale-95"
+            >
+              <Play className="w-5 h-5 group-hover:scale-110 transition-transform" />
+              Start Draft
+            </button>
+
+            {/* Alternatives */}
+            <div className="mt-4 pt-4 border-t border-white/10">
+              <div className="text-xs text-white/30 mb-3">Want to test yourself?</div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => startDraft(true)}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-white/5 border border-white/10 text-white/70 text-sm font-medium rounded-lg hover:bg-white/10 hover:text-white transition-all"
+                >
+                  <Target className="w-4 h-4 text-purple-400" />
+                  Quiz Draft
+                </button>
+                <button
+                  onClick={startQuiz}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-white/5 border border-white/10 text-white/70 text-sm font-medium rounded-lg hover:bg-white/10 hover:text-white transition-all"
+                >
+                  <HelpCircle className="w-4 h-4 text-amber-400" />
+                  P1P1 Quiz
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1598,7 +2056,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                       <div className="flex-1 min-w-0">
                         <div className="text-xs text-white/60 truncate">Picked: {decision.pick.name}</div>
                         <div className="text-[10px] text-red-400">
-                          Should have: {decision.bestAvailable.name} (+{decision.eloDiff} ELO)
+                          Better fit: {decision.bestAvailable.name}
                         </div>
                       </div>
                       <div className="text-[10px] text-white/30">P{decision.packNumber}P{decision.pickNumber}</div>
@@ -1970,8 +2428,8 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
       {/* Left Panel - Draft Guidance */}
       <div className="w-56 flex-shrink-0 hidden lg:block">
         <div className="sticky top-20 space-y-3">
-          {/* Coach Panel - Enhanced */}
-          {coachMode && coachExplanation && (
+          {/* Coach Panel - Enhanced (also shows during quiz reveal) */}
+          {(coachMode || (quizDraftMode && showPickReveal)) && coachExplanation && (
             <div className="bg-gradient-to-br from-amber-500/10 to-transparent border border-amber-500/20 rounded-xl overflow-hidden">
               <button
                 onClick={() => setShowCoachExplanation(!showCoachExplanation)}
@@ -1986,6 +2444,14 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
 
               {/* Always show the main recommendation */}
               <div className="px-3 pb-3 space-y-3">
+                {/* Current Archetype Badge */}
+                {coachExplanation.currentArchetype && (
+                  <div className="px-2 py-1.5 bg-purple-500/20 border border-purple-500/30 rounded-lg">
+                    <div className="text-[9px] text-purple-300/70 uppercase tracking-wider">Building</div>
+                    <div className="text-sm font-semibold text-purple-300">{coachExplanation.currentArchetype}</div>
+                  </div>
+                )}
+
                 {/* Main Pick Recommendation */}
                 <div className="flex items-start gap-3">
                   <div className="w-12 h-16 rounded-lg overflow-hidden flex-shrink-0 ring-2 ring-amber-400/50">
@@ -2049,30 +2515,57 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
             </div>
           )}
 
-          {/* Archetypes Panel */}
+          {/* Archetypes Panel - "Building Toward" */}
           <div className="bg-black border border-white/[0.06] rounded-xl overflow-hidden">
             <div className="p-3 border-b border-white/[0.06]">
-              <span className="text-xs font-medium text-white/60 uppercase tracking-wider">Likely Archetypes</span>
+              <span className="text-xs font-medium text-white/60 uppercase tracking-wider">
+                {buildingToward ? 'Building Toward' : 'Archetype Direction'}
+              </span>
             </div>
             <div className="p-2">
-              {archetypeMatches.length === 0 ? (
-                <p className="text-xs text-white/30 text-center py-3">Pick a few cards to see archetype matches</p>
-              ) : (
-                <div className="space-y-1.5">
-                  {archetypeMatches.map((arch, idx) => (
-                    <div key={arch.id} className={`p-2 rounded-lg ${idx === 0 ? 'bg-white/[0.06]' : 'bg-white/[0.02]'}`}>
-                      <div className="flex items-center justify-between">
-                        <span className={`text-xs font-medium ${idx === 0 ? 'text-white' : 'text-white/60'}`}>{arch.name}</span>
-                        <span className={`text-[10px] font-mono ${arch.score >= 50 ? 'text-green-400' : arch.score >= 30 ? 'text-amber-400' : 'text-white/40'}`}>
-                          {arch.score}%
+              {draftState.picks.length < 3 ? (
+                <p className="text-xs text-white/30 text-center py-3">Pick a few cards to detect archetype</p>
+              ) : buildingToward ? (
+                <div className="space-y-2">
+                  {/* Primary archetype - prominent */}
+                  <div className="p-2.5 rounded-lg bg-gradient-to-br from-purple-500/20 to-blue-500/10 border border-purple-500/30">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-semibold text-purple-300">{buildingToward.name}</span>
+                      <span className="text-[10px] font-mono text-purple-400">{buildingToward.score}%</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[10px] text-white/50">
+                      {buildingToward.keyCardsFound > 0 && (
+                        <span className="px-1.5 py-0.5 bg-purple-500/30 rounded text-purple-300">
+                          {buildingToward.keyCardsFound} key card{buildingToward.keyCardsFound > 1 ? 's' : ''}
                         </span>
-                      </div>
-                      {arch.keyCardsFound > 0 && (
-                        <p className="text-[10px] text-white/30 mt-0.5">{arch.keyCardsFound} key card{arch.keyCardsFound > 1 ? 's' : ''}</p>
                       )}
+                      <span>{buildingToward.fittingCards} cards fit</span>
+                    </div>
+                  </div>
+                  {/* Other possible archetypes */}
+                  {archetypeMatches.slice(1).map((arch) => (
+                    <div key={arch.id} className="p-2 rounded-lg bg-white/[0.02]">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-white/60">{arch.name}</span>
+                        <span className="text-[10px] font-mono text-white/40">{arch.score}%</span>
+                      </div>
                     </div>
                   ))}
                 </div>
+              ) : archetypeMatches.length > 0 ? (
+                <div className="space-y-1.5">
+                  <p className="text-[10px] text-amber-400/70 mb-2">Not strongly committed yet. Options:</p>
+                  {archetypeMatches.map((arch) => (
+                    <div key={arch.id} className="p-2 rounded-lg bg-white/[0.02]">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-white/60">{arch.name}</span>
+                        <span className="text-[10px] font-mono text-white/40">{arch.score}%</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-white/30 text-center py-3">No clear archetype yet - stay open!</p>
               )}
             </div>
           </div>
@@ -2204,22 +2697,66 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
               <span className="text-xs text-white/40 font-mono tabular-nums">{draftState.picks.length}/45</span>
             </div>
 
-            {/* Coach Toggle */}
+            {/* View Picks Toggle */}
             <button
-              onClick={() => setCoachMode(!coachMode)}
+              onClick={() => setViewingPicks(!viewingPicks)}
               className={`
-                hidden lg:flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all
-                ${coachMode
-                  ? 'bg-amber-500/20 border border-amber-500/30 text-amber-400'
+                flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all
+                ${viewingPicks
+                  ? 'bg-purple-500/20 border border-purple-500/30 text-purple-400'
                   : 'bg-white/5 border border-white/10 text-white/40 hover:text-white/60'
                 }
               `}
-              title={coachMode ? 'Disable coach (L)' : 'Enable coach (L)'}
+              title={viewingPicks ? 'View pack (V)' : 'View picks (V)'}
             >
-              {coachMode ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-              Coach
-              <kbd className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${coachMode ? 'bg-amber-500/30' : 'bg-white/10'}`}>L</kbd>
+              <Package className="w-3.5 h-3.5" />
+              {viewingPicks ? 'Pack' : 'Picks'}
+              <kbd className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${viewingPicks ? 'bg-purple-500/30' : 'bg-white/10'}`}>V</kbd>
             </button>
+
+            {/* Coach Toggle - hidden in quiz draft mode */}
+            {!quizDraftMode && (
+              <button
+                onClick={() => setCoachMode(!coachMode)}
+                className={`
+                  hidden lg:flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all
+                  ${coachMode
+                    ? 'bg-amber-500/20 border border-amber-500/30 text-amber-400'
+                    : 'bg-white/5 border border-white/10 text-white/40 hover:text-white/60'
+                  }
+                `}
+                title={coachMode ? 'Disable coach (L)' : 'Enable coach (L)'}
+              >
+                {coachMode ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                Coach
+                <kbd className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${coachMode ? 'bg-amber-500/30' : 'bg-white/10'}`}>L</kbd>
+              </button>
+            )}
+
+            {/* Quiz Draft Stats */}
+            {quizDraftMode && quizDraftStats.total > 0 && (
+              <div className="flex items-center gap-2 px-3 py-2 bg-purple-500/20 border border-purple-500/30 rounded-xl">
+                <Target className="w-3.5 h-3.5 text-purple-400" />
+                <span className={`text-sm font-bold ${
+                  quizDraftStats.total > 0 && (quizDraftStats.correct / quizDraftStats.total) >= 0.7 ? 'text-green-400' :
+                  quizDraftStats.total > 0 && (quizDraftStats.correct / quizDraftStats.total) >= 0.5 ? 'text-amber-400' :
+                  'text-red-400'
+                }`}>
+                  {quizDraftStats.correct}/{quizDraftStats.total}
+                </span>
+                <span className="text-xs text-white/40">
+                  ({Math.round((quizDraftStats.correct / quizDraftStats.total) * 100)}%)
+                </span>
+              </div>
+            )}
+
+            {/* Quiz Draft Mode Indicator */}
+            {quizDraftMode && quizDraftStats.total === 0 && (
+              <div className="flex items-center gap-2 px-3 py-2 bg-purple-500/20 border border-purple-500/30 rounded-xl">
+                <Target className="w-3.5 h-3.5 text-purple-400" />
+                <span className="text-xs font-medium text-purple-400">Quiz Mode</span>
+              </div>
+            )}
 
             <button
               onClick={returnToMenu}
@@ -2262,12 +2799,62 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
         {/* Keyboard hint */}
         <div className="hidden sm:flex items-center gap-2 text-[10px] text-white/30">
           <Keyboard className="w-3.5 h-3.5" />
-          <span>Press 1-9 to quick pick · ESC to exit</span>
+          <span>Press 1-9 to quick pick · V to view picks · ESC to exit</span>
         </div>
 
-        {/* Pack Grid */}
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 sm:gap-4">
-          {currentPack.map((card, index) => {
+        {/* Viewing Picks Mode */}
+        {viewingPicks ? (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium text-white/60">
+                Your Picks ({draftState.picks.length}/45)
+              </h3>
+              <button
+                onClick={() => setViewingPicks(false)}
+                className="text-xs text-purple-400 hover:text-purple-300 transition-colors"
+              >
+                Back to Pack
+              </button>
+            </div>
+            {draftState.picks.length === 0 ? (
+              <div className="text-center py-12 text-white/30">
+                No picks yet - click a card in the pack to draft it
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 sm:gap-4">
+                {draftState.picks.map((card, index) => {
+                  return (
+                    <div
+                      key={`pick-${card.id}-${index}`}
+                      onMouseEnter={() => setHoveredCard(card)}
+                      onMouseLeave={() => setHoveredCard(null)}
+                      className="relative aspect-[488/680] rounded-xl overflow-hidden shadow-lg transition-all duration-200 hover:scale-[1.04] hover:-translate-y-1 hover:z-10 hover:shadow-xl"
+                    >
+                      <img src={getCardImage(card)} alt={card.name} className="w-full h-full object-cover" loading="lazy" />
+                      {/* Pick number */}
+                      <div className="absolute bottom-1.5 left-1.5 w-5 h-5 rounded bg-black/70 flex items-center justify-center text-[10px] font-mono text-white/50">
+                        {index + 1}
+                      </div>
+                      {/* Power badge */}
+                      <div className={`
+                        absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold shadow-lg
+                        ${card.powerLevel >= 10 ? 'bg-gradient-to-br from-amber-400 to-amber-500 text-black' : ''}
+                        ${card.powerLevel === 9 ? 'bg-gradient-to-br from-purple-400 to-purple-500 text-white' : ''}
+                        ${card.powerLevel >= 7 && card.powerLevel < 9 ? 'bg-gradient-to-br from-blue-400 to-blue-500 text-white' : ''}
+                        ${card.powerLevel < 7 ? 'bg-black/70 text-white/80' : ''}
+                      `}>
+                        {card.powerLevel}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        ) : (
+          /* Pack Grid */
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 sm:gap-4">
+            {currentPack.map((card, index) => {
             const isRecommended = recommendedCard?.id === card.id;
             const synergy = getCardSynergy(card);
             const wheelLikelihood = getWheelLikelihood(card.name);
@@ -2276,8 +2863,31 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
             const cardSynergies = getCardSynergies(card);
             const wheelPrediction = getWheelPrediction(card);
             const keyboardNum = index + 1;
+            const cardArchetypes = getCardArchetypes(card);
+            const fitsCurrentArchetype = buildingToward && cardArchetypes.some(a => a.id === buildingToward.id);
+            const isPendingPick = quizDraftMode && pendingPick?.id === card.id;
+
+            // Show coach visuals when coach is on OR during quiz reveal
+            const showCoachVisuals = coachMode || (quizDraftMode && showPickReveal);
+
+            // Quiz reveal: highlight picks
+            const isOriginalPick = quizDraftMode && showPickReveal && lastPickResult?.yourPick.id === card.id;
+            const isCurrentSelection = quizDraftMode && showPickReveal && pendingPick?.id === card.id;
+            const didSwitchPick = quizDraftMode && showPickReveal && pendingPick?.id !== lastPickResult?.yourPick.id;
+
+            // If they switched, show current selection in purple, original faded
+            // If they didn't switch, show green (correct) or red (wrong)
+            const isQuizCorrectPick = isOriginalPick && !didSwitchPick && lastPickResult?.wasCorrect;
+            const isQuizWrongPick = isOriginalPick && !didSwitchPick && !lastPickResult?.wasCorrect;
+            const isSwitchedSelection = isCurrentSelection && didSwitchPick;
+            const wasOriginalButSwitched = isOriginalPick && didSwitchPick;
 
             const handleCardClick = () => {
+              // During quiz reveal, allow switching picks
+              if (quizDraftMode && showPickReveal) {
+                setPendingPick(card);
+                return;
+              }
               // On mobile (< 640px), open drawer first; on desktop, pick immediately
               if (window.innerWidth < 640) {
                 setMobileSelectedCard(card);
@@ -2293,12 +2903,19 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                 onMouseEnter={() => setHoveredCard(card)}
                 onMouseLeave={() => setHoveredCard(null)}
                 className={`
-                  relative aspect-[488/680] rounded-xl overflow-hidden cursor-pointer shadow-lg
-                  transition-all duration-200 hover:scale-[1.04] hover:-translate-y-1 hover:z-10 hover:shadow-xl
-                  ${coachMode && isRecommended ? 'ring-2 ring-amber-400/60 shadow-amber-400/20' : ''}
-                  ${coachMode && !isRecommended && synergy === 'high' ? 'ring-2 ring-green-400/50' : ''}
-                  ${coachMode && !isRecommended && synergy === 'low' ? 'ring-2 ring-red-400/30 opacity-75' : ''}
-                  ${coachMode && wheelPrediction?.mightWheel ? 'ring-2 ring-cyan-400/50' : ''}
+                  relative aspect-[488/680] rounded-xl overflow-hidden shadow-lg
+                  transition-all duration-200
+                  ${!(quizDraftMode && showPickReveal) ? 'hover:scale-[1.04] hover:-translate-y-1 hover:z-10 hover:shadow-xl' : 'hover:ring-2 hover:ring-white/30'}
+                  cursor-pointer
+                  ${isPendingPick && !showPickReveal ? 'ring-4 ring-purple-500 shadow-purple-500/30 scale-[1.02]' : ''}
+                  ${isQuizCorrectPick ? 'ring-4 ring-green-500 shadow-green-500/40 scale-[1.02]' : ''}
+                  ${isQuizWrongPick ? 'ring-4 ring-red-500 shadow-red-500/40 scale-[1.02]' : ''}
+                  ${isSwitchedSelection ? 'ring-4 ring-blue-500 shadow-blue-500/40 scale-[1.02]' : ''}
+                  ${wasOriginalButSwitched ? 'ring-2 ring-red-500/40 opacity-60' : ''}
+                  ${showCoachVisuals && isRecommended && !isCurrentSelection && !isOriginalPick ? 'ring-2 ring-amber-400/60 shadow-amber-400/20' : ''}
+                  ${showCoachVisuals && !isRecommended && !isCurrentSelection && !isOriginalPick && synergy === 'high' ? 'ring-2 ring-green-400/50' : ''}
+                  ${showCoachVisuals && !isRecommended && !isCurrentSelection && !isOriginalPick && synergy === 'low' ? 'ring-2 ring-red-400/30 opacity-75' : ''}
+                  ${showCoachVisuals && !isCurrentSelection && !isOriginalPick && wheelPrediction?.mightWheel ? 'ring-2 ring-cyan-400/50' : ''}
                 `}
               >
                 <img src={getCardImage(card)} alt={card.name} className="w-full h-full object-cover" loading="lazy" />
@@ -2310,16 +2927,16 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                   </div>
                 )}
 
-                {/* Wheeled back indicator - only in coach mode */}
-                {coachMode && wheelPrediction?.mightWheel && (
+                {/* Wheeled back indicator */}
+                {showCoachVisuals && wheelPrediction?.mightWheel && (
                   <div className="absolute top-8 left-1.5 px-1.5 py-0.5 rounded bg-cyan-500/90 text-white text-[8px] font-bold flex items-center gap-1">
                     <History className="w-2.5 h-2.5" />
                     Wheeled!
                   </div>
                 )}
 
-                {/* Synergy tags - only in coach mode */}
-                {coachMode && cardSynergies.length > 0 && (
+                {/* Synergy tags */}
+                {showCoachVisuals && cardSynergies.length > 0 && (
                   <div className="absolute bottom-7 left-1.5 right-1.5 flex flex-wrap gap-0.5 justify-start">
                     {cardSynergies.slice(0, 2).map((syn, i) => (
                       <span key={i} className="px-1 py-0.5 rounded bg-purple-500/80 text-white text-[7px] font-medium truncate max-w-[60px]">
@@ -2329,8 +2946,21 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                   </div>
                 )}
 
-                {/* Wheel likelihood indicator - only in coach mode */}
-                {coachMode && !isRecommended && !wheelPrediction?.mightWheel && (
+                {/* Power badge - TOP RIGHT */}
+                {showCoachVisuals && (
+                  <div className={`
+                    absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold shadow-lg
+                    ${card.powerLevel >= 10 ? 'bg-gradient-to-br from-amber-400 to-amber-500 text-black' : ''}
+                    ${card.powerLevel === 9 ? 'bg-gradient-to-br from-purple-400 to-purple-500 text-white' : ''}
+                    ${card.powerLevel >= 7 && card.powerLevel < 9 ? 'bg-gradient-to-br from-blue-400 to-blue-500 text-white' : ''}
+                    ${card.powerLevel < 7 ? 'bg-black/70 text-white/80' : ''}
+                  `}>
+                    {card.powerLevel}
+                  </div>
+                )}
+
+                {/* Wheel likelihood indicator - BOTTOM RIGHT */}
+                {showCoachVisuals && !wheelPrediction?.mightWheel && (
                   <div className={`
                     absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide
                     ${wheelLikelihood === 'likely' ? 'bg-green-500/80 text-white' : ''}
@@ -2344,43 +2974,139 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                   </div>
                 )}
 
-                {/* Synergy indicator (simplified) - only in coach mode */}
-                {coachMode && synergy && !isRecommended && cardSynergies.length === 0 && (
-                  <div className={`
-                    absolute bottom-7 left-1.5 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide
-                    ${synergy === 'high' ? 'bg-green-500/90 text-white' : ''}
-                    ${synergy === 'medium' ? 'bg-amber-500/90 text-black' : ''}
-                    ${synergy === 'low' ? 'bg-red-500/80 text-white' : ''}
-                  `}>
-                    {synergy === 'high' ? 'Fits' : synergy === 'medium' ? 'OK' : 'Off'}
-                  </div>
-                )}
-
-                {/* Power badge - only in coach mode */}
-                {coachMode && (
-                  <div className={`
-                    absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold shadow-lg
-                    ${card.powerLevel >= 10 ? 'bg-gradient-to-br from-amber-400 to-amber-500 text-black' : ''}
-                    ${card.powerLevel === 9 ? 'bg-gradient-to-br from-purple-400 to-purple-500 text-white' : ''}
-                    ${card.powerLevel >= 7 && card.powerLevel < 9 ? 'bg-gradient-to-br from-blue-400 to-blue-500 text-white' : ''}
-                    ${card.powerLevel < 7 ? 'bg-black/70 text-white/80' : ''}
-                  `}>
-                    {card.powerLevel}
-                  </div>
-                )}
-
-                {/* Recommended indicator - only in coach mode */}
-                {coachMode && isRecommended && (
+                {/* Recommended indicator (star) */}
+                {showCoachVisuals && isRecommended && (
                   <div className="absolute top-1.5 left-1.5">
                     <div className="w-6 h-6 rounded-full bg-amber-400 flex items-center justify-center shadow-lg shadow-amber-400/30">
                       <Star className="w-3.5 h-3.5 text-black fill-black" />
                     </div>
                   </div>
                 )}
+
+                {/* Quiz result badge on user's original pick */}
+                {(isQuizCorrectPick || isQuizWrongPick) && (
+                  <div className={`absolute top-1.5 left-1.5 w-6 h-6 rounded-full flex items-center justify-center shadow-lg ${
+                    isQuizCorrectPick ? 'bg-green-500' : 'bg-red-500'
+                  }`}>
+                    {isQuizCorrectPick ? (
+                      <CheckCircle className="w-4 h-4 text-white" />
+                    ) : (
+                      <XCircle className="w-4 h-4 text-white" />
+                    )}
+                  </div>
+                )}
+
+                {/* Badge when user switches to a different card */}
+                {isSwitchedSelection && (
+                  <div className="absolute top-1.5 left-1.5 w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center shadow-lg">
+                    <CheckCircle className="w-4 h-4 text-white" />
+                  </div>
+                )}
+
+                {/* Faded X on original pick when they've switched */}
+                {wasOriginalButSwitched && (
+                  <div className="absolute top-1.5 left-1.5 w-5 h-5 rounded-full bg-red-500/50 flex items-center justify-center">
+                    <XCircle className="w-3 h-3 text-white/70" />
+                  </div>
+                )}
+
+                {/* Archetype tags - BOTTOM RIGHT, above wheel note */}
+                {showCoachVisuals && cardArchetypes.length > 0 && (
+                  <div className="absolute bottom-7 right-1.5 flex gap-0.5 justify-end">
+                    {cardArchetypes.slice(0, 2).map((arch) => (
+                      <span
+                        key={arch.id}
+                        className={`
+                          px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wide shadow
+                          ${fitsCurrentArchetype && arch.id === buildingToward?.id
+                            ? 'bg-purple-500 text-white ring-1 ring-purple-300'
+                            : 'bg-black/70 text-white/70'
+                          }
+                        `}
+                      >
+                        {arch.shortName}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })}
-        </div>
+          </div>
+        )}
+
+        {/* Quiz Draft: Lock In Button */}
+        {quizDraftMode && pendingPick && !showPickReveal && (
+          <div className="mt-4 flex justify-center">
+            <button
+              onClick={confirmQuizPick}
+              className="px-8 py-3 bg-purple-500 hover:bg-purple-400 text-white font-semibold rounded-xl transition-all active:scale-95 flex items-center gap-2"
+            >
+              <CheckCircle className="w-5 h-5" />
+              Lock In Pick
+              <kbd className="ml-2 px-2 py-0.5 bg-purple-600 rounded text-xs">Enter</kbd>
+            </button>
+          </div>
+        )}
+
+        {/* Quiz Draft: Result Banner + Actions */}
+        {quizDraftMode && showPickReveal && lastPickResult && (
+          <div className="mt-4 flex flex-col items-center gap-3">
+            {/* Result indicator */}
+            {pendingPick?.id === lastPickResult.yourPick.id ? (
+              // Keeping original pick
+              <div className={`flex items-center gap-2 px-4 py-2 rounded-xl ${
+                lastPickResult.wasCorrect
+                  ? 'bg-green-500/20 border border-green-500/30'
+                  : 'bg-red-500/20 border border-red-500/30'
+              }`}>
+                {lastPickResult.wasCorrect ? (
+                  <>
+                    <CheckCircle className="w-5 h-5 text-green-400" />
+                    <span className="font-bold text-green-400">Correct!</span>
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="w-5 h-5 text-red-400" />
+                    <span className="font-bold text-red-400">
+                      -{Math.round(lastPickResult.eloDiff)} ELO
+                    </span>
+                    <span className="text-white/40 text-sm ml-2">Click a card to switch</span>
+                  </>
+                )}
+              </div>
+            ) : (
+              // Switched to a different pick
+              <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-500/20 border border-blue-500/30">
+                <CheckCircle className="w-5 h-5 text-blue-400" />
+                <span className="font-bold text-blue-400">
+                  Switching to {pendingPick?.name}
+                </span>
+              </div>
+            )}
+
+            {/* Action buttons */}
+            <div className="flex items-center gap-3">
+              {/* Quick switch to best pick button - only show if not already selected */}
+              {!lastPickResult.wasCorrect && pendingPick?.id !== lastPickResult.optimalPick.id && (
+                <button
+                  onClick={() => setPendingPick(lastPickResult.optimalPick)}
+                  className="px-4 py-2.5 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/30 text-amber-400 font-medium rounded-xl transition-all flex items-center gap-2"
+                >
+                  <Star className="w-4 h-4" />
+                  Take Best Pick
+                </button>
+              )}
+              <button
+                onClick={continueAfterReveal}
+                className="px-6 py-2.5 bg-white/10 hover:bg-white/15 text-white font-medium rounded-xl transition-all flex items-center gap-2"
+              >
+                {pendingPick?.id === lastPickResult.yourPick.id ? 'Continue' : 'Confirm Switch'}
+                <kbd className="ml-1 px-2 py-0.5 bg-white/10 rounded text-xs">Enter</kbd>
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Mobile Picks Strip - only visible on smaller screens */}
         {draftState.picks.length > 0 && (

@@ -1,7 +1,7 @@
 {
   "metadata": {
     "cubeId": "8eec0c91-6c4e-4f96-957b-1ccc5ecac8fd",
-    "fetchedAt": "2026-05-10T04:46:11.902Z",
+    "fetchedAt": "2026-05-12T20:17:02.395Z",
     "cardCount": 360,
     "eloRange": {
       "min": 1240.4692162430647,
@@ -543,12 +543,6 @@
       "pickCount": 68038,
       "cubeCount": 21843,
       "scryfallId": "befe74b1-c487-42bb-a1a1-4d13f3a86ff7"
-    },
-    "Treachery": {
-      "elo": 1427.0277185207249,
-      "pickCount": 48643,
-      "cubeCount": 15370,
-      "scryfallId": "613694aa-b169-400d-8063-2b83d8303611"
     },
     "Dark Confidant": {
       "elo": 1388.827358205251,
@@ -2169,6 +2163,12 @@
       "pickCount": 116893,
       "cubeCount": 33370,
       "scryfallId": "99ff731b-8399-40c8-b539-ba6ba5783771"
+    },
+    "Candelabra of Tawnos": {
+      "elo": 1391.3367426729615,
+      "pickCount": 23601,
+      "cubeCount": 7225,
+      "scryfallId": "5e8416b8-aae1-4599-9e22-650dd86aefcb"
     }
   }
 }
