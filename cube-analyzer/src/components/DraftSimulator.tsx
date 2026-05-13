@@ -8,7 +8,7 @@ import {
   calculateDeckElo,
   compareByElo,
 } from '../services/eloHelpers';
-import { Play, RotateCcw, Trophy, Star, ArrowLeft, ArrowRight, Users, Package, Target, Clock, TrendingUp, AlertCircle, HelpCircle, CheckCircle, XCircle, Zap, History, Keyboard, Award, Lightbulb, Eye, EyeOff, Layers } from 'lucide-react';
+import { Play, RotateCcw, Trophy, Star, ArrowLeft, ArrowRight, Users, Package, Target, Clock, TrendingUp, AlertCircle, HelpCircle, CheckCircle, XCircle, Zap, History, Keyboard, Award, Lightbulb, Eye, EyeOff } from 'lucide-react';
 
 type SimulatorMode = 'menu' | 'draft' | 'quiz' | 'results';
 
@@ -76,6 +76,57 @@ interface PickDecision {
   eloDiff: number; // How much ELO we left on the table (if any)
 }
 
+// Track how a card's adjusted ELO changes over the draft
+interface CardEloHistory {
+  cardId: string;
+  cardName: string;
+  baseElo: number;
+  history: { pick: number; adjustedElo: number; adjustment: number }[];
+}
+
+// Track archetype commitment probabilities
+interface ArchetypeCommitment {
+  archetype: string;
+  probability: number; // 0-100
+  keyCardsOwned: string[];
+  keyCardsMissing: string[];
+  criticalMass: { current: number; needed: number; category: string }[];
+}
+
+// Track signals about what's open at the table
+interface DraftSignals {
+  // Colors being cut (high pick rate by others)
+  colorsCut: { color: string; intensity: number }[]; // intensity 0-100
+  // Colors that are open (wheeling consistently)
+  colorsOpen: { color: string; confidence: number }[];
+  // Late picks that signal openness
+  lateSignals: { card: CubeCard; pick: number; pack: number; colors: string[] }[];
+  // What the player to our right seems to be drafting
+  rightNeighborColors: string[];
+  // What the player to our left seems to be drafting
+  leftNeighborColors: string[];
+}
+
+// Track enabler/payoff balance for combo archetypes
+interface EnablerPayoffBalance {
+  archetype: string;
+  enablers: { card: CubeCard; role: string }[];
+  payoffs: { card: CubeCard; role: string }[];
+  balance: 'needs-enablers' | 'needs-payoffs' | 'balanced' | 'not-applicable';
+  recommendation: string;
+}
+
+// Track mana base requirements
+interface ManaBaseStatus {
+  colorsNeeded: { color: string; sources: number; cardsRequiring: number }[];
+  fixingCards: CubeCard[];
+  splashViability: { color: string; viable: boolean; reason: string }[];
+  recommendation: string;
+}
+
+// Draft phase for contextual advice
+type DraftPhase = 'speculation' | 'exploration' | 'commitment' | 'completion';
+
 interface DraftState {
   tablePacks: CubeCard[][];
   picks: CubeCard[];
@@ -91,6 +142,14 @@ interface DraftState {
   decisions: PickDecision[];
   // Track all 8 players' picks for post-draft analysis
   allPlayerPicks: CubeCard[][];
+  // Track adjusted ELO history for cards we've seen
+  cardEloHistory: Map<string, CardEloHistory>;
+  // All cards we've seen in packs (for tracking)
+  seenCards: Set<string>;
+  // NEW: Track what we passed and might regret
+  regrettablePasses: Map<string, { card: CubeCard; passedAt: number; whyRegret: string }>;
+  // NEW: Track cards that wheeled back to us
+  wheeledCards: Map<string, { card: CubeCard; originalPick: number; wheeledAt: number }>;
 }
 
 interface QuizState {
@@ -211,174 +270,1549 @@ function getContextAwareBestPick(
   return { bestCard: scored[0].card, score: scored[0].score };
 }
 
+// ============================================================================
+// DRAFT INTELLIGENCE SYSTEM
+// ============================================================================
+
+// Determine current draft phase for contextual advice
+function getDraftPhase(pickNumber: number, packNumber: number): { phase: DraftPhase; description: string; priority: string } {
+  const totalPick = (packNumber - 1) * 15 + pickNumber;
+
+  if (totalPick <= 5) {
+    return {
+      phase: 'speculation',
+      description: 'Speculation Phase',
+      priority: 'Take the most powerful cards. Stay flexible. Don\'t commit to colors yet.',
+    };
+  } else if (totalPick <= 15) {
+    return {
+      phase: 'exploration',
+      description: 'Exploration Phase',
+      priority: 'Find your lane. Look for signals. Start favoring 1-2 colors.',
+    };
+  } else if (totalPick <= 30) {
+    return {
+      phase: 'commitment',
+      description: 'Commitment Phase',
+      priority: 'Lock in your archetype. Take synergy over raw power. Fill holes.',
+    };
+  } else {
+    return {
+      phase: 'completion',
+      description: 'Completion Phase',
+      priority: 'Complete the deck. Prioritize curve, fixing, and sideboard.',
+    };
+  }
+}
+
+// Archetype definitions with requirements
+const ARCHETYPE_DEFINITIONS = {
+  'Reanimator': {
+    keyCards: ['Reanimate', 'Animate Dead', 'Entomb', 'Necromancy', 'Exhume', 'Shallow Grave', 'Life // Death'],
+    enablers: ['Entomb', 'Careful Study', 'Faithless Looting', 'Collective Brutality', 'Putrid Imp', 'Oona\'s Prowler'],
+    payoffs: ['Griselbrand', 'Archon of Cruelty', 'Sheoldred, Whispering One', 'Grave Titan', 'Craterhoof Behemoth', 'Emrakul, the Aeons Torn'],
+    criticalMass: { enablers: 3, payoffs: 2, reanimationSpells: 2 },
+    colors: ['B'],
+  },
+  'Storm': {
+    keyCards: ['Brain Freeze', 'Tendrils of Agony', "Yawgmoth's Will", 'Underworld Breach', 'Dark Ritual', 'Cabal Ritual'],
+    enablers: ['Dark Ritual', 'Cabal Ritual', 'Lion\'s Eye Diamond', 'Lotus Petal', 'Mox Diamond', 'Chrome Mox', 'Rite of Flame'],
+    payoffs: ['Brain Freeze', 'Tendrils of Agony', 'Grapeshot', 'Empty the Warrens'],
+    criticalMass: { rituals: 4, drawSpells: 3, wincons: 1 },
+    colors: ['U', 'B', 'R'],
+  },
+  'Artifact Combo': {
+    keyCards: ['Tinker', 'Tolarian Academy', "Mishra's Workshop", 'Time Vault', 'Voltaic Key'],
+    enablers: ['Mox Sapphire', 'Mox Ruby', 'Mox Jet', 'Mox Pearl', 'Mox Emerald', 'Sol Ring', 'Mana Crypt', 'Grim Monolith'],
+    payoffs: ['Blightsteel Colossus', 'Sundering Titan', 'Myr Battlesphere', 'Inkwell Leviathan', 'Bolas\'s Citadel'],
+    criticalMass: { manaArtifacts: 5, tinkerTargets: 2 },
+    colors: ['U'],
+  },
+  'Channel': {
+    keyCards: ['Channel', 'Rofellos, Llanowar Emissary', 'Gaea\'s Cradle', 'Natural Order'],
+    enablers: ['Channel', 'Elvish Spirit Guide', 'Birds of Paradise', 'Llanowar Elves', 'Rofellos, Llanowar Emissary'],
+    payoffs: ['Emrakul, the Aeons Torn', 'Ulamog, the Ceaseless Hunger', 'Kozilek, Butcher of Truth', 'Craterhoof Behemoth'],
+    criticalMass: { rampSources: 4, fatties: 2 },
+    colors: ['G'],
+  },
+  'Sneak & Show': {
+    keyCards: ['Show and Tell', 'Sneak Attack', 'Through the Breach', 'Eureka'],
+    enablers: ['Show and Tell', 'Sneak Attack', 'Through the Breach', 'Eureka', 'Goryo\'s Vengeance'],
+    payoffs: ['Emrakul, the Aeons Torn', 'Griselbrand', 'Omniscience', 'Progenitus'],
+    criticalMass: { cheaters: 2, fatties: 3 },
+    colors: ['U', 'R'],
+  },
+  'Aggro': {
+    keyCards: ['Goblin Guide', 'Monastery Swiftspear', 'Ragavan, Nimble Pilferer', 'Lightning Bolt'],
+    enablers: [] as string[], // Aggro doesn't need enablers
+    payoffs: [] as string[], // Every creature is a payoff
+    criticalMass: { oneDrops: 4, twoDrops: 5, burnSpells: 3 },
+    colors: ['R', 'W'],
+  },
+  'Control': {
+    keyCards: ['Counterspell', 'Force of Will', 'Jace, the Mind Sculptor', 'Wrath of God', 'Supreme Verdict'],
+    enablers: ['Counterspell', 'Force of Will', 'Mana Leak', 'Cryptic Command'],
+    payoffs: ['Jace, the Mind Sculptor', 'Teferi, Hero of Dominaria', 'The Scarab God'],
+    criticalMass: { counterspells: 3, removal: 4, wincons: 2 },
+    colors: ['U', 'W'],
+  },
+};
+
+// Calculate archetype commitment probabilities
+function getArchetypeCommitments(picks: CubeCard[]): ArchetypeCommitment[] {
+  if (picks.length === 0) return [];
+
+  const pickNames = picks.map(p => p.name);
+  const commitments: ArchetypeCommitment[] = [];
+
+  for (const [archName, arch] of Object.entries(ARCHETYPE_DEFINITIONS)) {
+    let probability = 0;
+    const keyCardsOwned: string[] = [];
+    const keyCardsMissing: string[] = [];
+    const criticalMass: { current: number; needed: number; category: string }[] = [];
+
+    // Check key cards
+    arch.keyCards.forEach(kc => {
+      if (pickNames.includes(kc)) {
+        keyCardsOwned.push(kc);
+        probability += 15; // Each key card adds commitment
+      } else {
+        keyCardsMissing.push(kc);
+      }
+    });
+
+    // Check enablers
+    const enablersOwned = arch.enablers.filter(e => pickNames.includes(e)).length;
+    const payoffsOwned = arch.payoffs.filter(p => pickNames.includes(p)).length;
+
+    // Check color alignment
+    const pickColors = new Set<string>();
+    picks.forEach(p => p.color_identity?.forEach(c => pickColors.add(c)));
+    const colorMatch = arch.colors.filter(c => pickColors.has(c)).length / arch.colors.length;
+    probability += colorMatch * 20;
+
+    // Add critical mass tracking based on archetype
+    if (archName === 'Reanimator') {
+      const reanimationSpells = picks.filter(p =>
+        ['Reanimate', 'Animate Dead', 'Necromancy', 'Exhume', 'Life // Death', 'Shallow Grave'].includes(p.name)
+      ).length;
+      const fatties = picks.filter(p => (p.cmc || 0) >= 6 && p.type_line?.toLowerCase().includes('creature')).length;
+      criticalMass.push({ current: reanimationSpells, needed: 2, category: 'Reanimation Spells' });
+      criticalMass.push({ current: enablersOwned, needed: 3, category: 'Discard Outlets' });
+      criticalMass.push({ current: fatties, needed: 2, category: 'Reanimation Targets' });
+    } else if (archName === 'Aggro') {
+      const oneDrops = picks.filter(p => (p.cmc || 0) === 1 && p.type_line?.toLowerCase().includes('creature')).length;
+      const twoDrops = picks.filter(p => (p.cmc || 0) === 2 && p.type_line?.toLowerCase().includes('creature')).length;
+      const burnSpells = picks.filter(p =>
+        p.oracle_text?.toLowerCase().includes('damage') &&
+        (p.oracle_text?.toLowerCase().includes('any target') || p.oracle_text?.toLowerCase().includes('target player'))
+      ).length;
+      criticalMass.push({ current: oneDrops, needed: 4, category: '1-Drops' });
+      criticalMass.push({ current: twoDrops, needed: 5, category: '2-Drops' });
+      criticalMass.push({ current: burnSpells, needed: 3, category: 'Burn Spells' });
+    } else if (archName === 'Artifact Combo') {
+      const manaArtifacts = picks.filter(p =>
+        p.type_line?.toLowerCase().includes('artifact') &&
+        p.oracle_text?.toLowerCase().includes('add')
+      ).length;
+      const tinkerTargets = picks.filter(p =>
+        p.type_line?.toLowerCase().includes('artifact') &&
+        (p.cmc || 0) >= 6
+      ).length;
+      criticalMass.push({ current: manaArtifacts, needed: 5, category: 'Mana Artifacts' });
+      criticalMass.push({ current: tinkerTargets, needed: 2, category: 'Tinker Targets' });
+    } else if (archName === 'Control') {
+      const counterspells = picks.filter(p => p.oracle_text?.toLowerCase().includes('counter target')).length;
+      const removal = picks.filter(p =>
+        p.oracle_text?.toLowerCase().includes('destroy target') ||
+        p.oracle_text?.toLowerCase().includes('exile target')
+      ).length;
+      criticalMass.push({ current: counterspells, needed: 3, category: 'Counterspells' });
+      criticalMass.push({ current: removal, needed: 4, category: 'Removal' });
+    }
+
+    // Factor in enablers and payoffs
+    if (arch.enablers.length > 0) {
+      probability += (enablersOwned / arch.enablers.length) * 25;
+    }
+    if (arch.payoffs.length > 0) {
+      probability += (payoffsOwned / arch.payoffs.length) * 20;
+    }
+
+    // Only include archetypes with some commitment
+    if (probability >= 10) {
+      commitments.push({
+        archetype: archName,
+        probability: Math.min(100, Math.round(probability)),
+        keyCardsOwned,
+        keyCardsMissing: keyCardsMissing.slice(0, 3), // Top 3 missing
+        criticalMass,
+      });
+    }
+  }
+
+  // Normalize probabilities so they sum to ~100 if any commitment exists
+  const total = commitments.reduce((sum, c) => sum + c.probability, 0);
+  if (total > 0) {
+    commitments.forEach(c => {
+      c.probability = Math.round((c.probability / total) * 100);
+    });
+  }
+
+  // Sort by probability
+  commitments.sort((a, b) => b.probability - a.probability);
+
+  return commitments.slice(0, 4); // Top 4 archetypes
+}
+
+// Analyze draft signals - what's open vs what's cut
+function getDraftSignals(
+  _passedCards: Map<string, { card: CubeCard; passedAtPick: number; packNumber: number }>,
+  wheeledCards: Map<string, { card: CubeCard; originalPick: number; wheeledAt: number }>,
+  _picks: CubeCard[],
+  allPlayerPicks: CubeCard[][]
+): DraftSignals {
+  const colorsCut: { color: string; intensity: number }[] = [];
+  const colorsOpen: { color: string; confidence: number }[] = [];
+  const lateSignals: { card: CubeCard; pick: number; pack: number; colors: string[] }[] = [];
+
+  // Analyze wheeled cards for open signals
+  const wheeledByColor: Record<string, number> = { W: 0, U: 0, B: 0, R: 0, G: 0 };
+  wheeledCards.forEach(({ card }) => {
+    const elo = getEloData(card.name)?.elo || 1500;
+    // Good cards wheeling = that color is open
+    if (elo >= 1600) {
+      card.color_identity?.forEach(c => {
+        wheeledByColor[c] = (wheeledByColor[c] || 0) + 1;
+      });
+      lateSignals.push({
+        card,
+        pick: 0, // We don't track exact pick here
+        pack: 1,
+        colors: card.color_identity || [],
+      });
+    }
+  });
+
+  // Colors with wheeled good cards are open
+  Object.entries(wheeledByColor)
+    .filter(([_, count]) => count >= 1)
+    .forEach(([color, count]) => {
+      colorsOpen.push({ color, confidence: Math.min(100, count * 30) });
+    });
+
+  // Analyze AI picks to detect what's being cut
+  const aiColorPicks: Record<string, number> = { W: 0, U: 0, B: 0, R: 0, G: 0 };
+  allPlayerPicks.slice(1).forEach(playerPicks => {
+    playerPicks.forEach(pick => {
+      pick.color_identity?.forEach(c => {
+        aiColorPicks[c] = (aiColorPicks[c] || 0) + 1;
+      });
+    });
+  });
+
+  // Colors with high AI pick counts are being cut
+  const avgPicks = Object.values(aiColorPicks).reduce((a, b) => a + b, 0) / 5;
+  Object.entries(aiColorPicks)
+    .filter(([_, count]) => count > avgPicks * 1.3) // 30% above average = being cut
+    .forEach(([color, count]) => {
+      colorsCut.push({ color, intensity: Math.min(100, Math.round((count / avgPicks - 1) * 100)) });
+    });
+
+  // Detect neighbor colors (simplified - based on early picks)
+  const rightNeighborPicks = allPlayerPicks[1] || [];
+  const leftNeighborPicks = allPlayerPicks[7] || [];
+
+  const rightColors: Record<string, number> = {};
+  rightNeighborPicks.slice(0, 5).forEach(p => {
+    p.color_identity?.forEach(c => { rightColors[c] = (rightColors[c] || 0) + 1; });
+  });
+  const rightNeighborColors = Object.entries(rightColors)
+    .filter(([_, count]) => count >= 2)
+    .map(([color]) => color);
+
+  const leftColors: Record<string, number> = {};
+  leftNeighborPicks.slice(0, 5).forEach(p => {
+    p.color_identity?.forEach(c => { leftColors[c] = (leftColors[c] || 0) + 1; });
+  });
+  const leftNeighborColors = Object.entries(leftColors)
+    .filter(([_, count]) => count >= 2)
+    .map(([color]) => color);
+
+  return {
+    colorsCut: colorsCut.sort((a, b) => b.intensity - a.intensity),
+    colorsOpen: colorsOpen.sort((a, b) => b.confidence - a.confidence),
+    lateSignals: lateSignals.slice(0, 5),
+    rightNeighborColors,
+    leftNeighborColors,
+  };
+}
+
+// Analyze enabler/payoff balance for combo archetypes
+function getEnablerPayoffBalance(picks: CubeCard[]): EnablerPayoffBalance[] {
+  const balances: EnablerPayoffBalance[] = [];
+  const pickNames = picks.map(p => p.name);
+
+  // Check each combo archetype
+  const comboArchetypes = ['Reanimator', 'Storm', 'Artifact Combo', 'Sneak & Show'];
+
+  for (const archName of comboArchetypes) {
+    const arch = ARCHETYPE_DEFINITIONS[archName as keyof typeof ARCHETYPE_DEFINITIONS];
+    if (!arch) continue;
+
+    const enablers = picks
+      .filter(p => arch.enablers.includes(p.name))
+      .map(p => ({ card: p, role: 'enabler' }));
+
+    const payoffs = picks
+      .filter(p => arch.payoffs.includes(p.name))
+      .map(p => ({ card: p, role: 'payoff' }));
+
+    // Only include if we have at least one piece
+    if (enablers.length > 0 || payoffs.length > 0) {
+      let balance: 'needs-enablers' | 'needs-payoffs' | 'balanced' | 'not-applicable';
+      let recommendation: string;
+
+      if (enablers.length === 0 && payoffs.length === 0) {
+        balance = 'not-applicable';
+        recommendation = '';
+      } else if (enablers.length === 0) {
+        balance = 'needs-enablers';
+        recommendation = `You have payoffs but no enablers! Prioritize: ${arch.enablers.slice(0, 3).join(', ')}`;
+      } else if (payoffs.length === 0) {
+        balance = 'needs-payoffs';
+        recommendation = `You have enablers but no payoffs! Look for: ${arch.payoffs.slice(0, 3).join(', ')}`;
+      } else if (enablers.length < payoffs.length) {
+        balance = 'needs-enablers';
+        recommendation = `More enablers would help. Consider: ${arch.enablers.filter(e => !pickNames.includes(e)).slice(0, 2).join(', ')}`;
+      } else if (payoffs.length < enablers.length * 0.5) {
+        balance = 'needs-payoffs';
+        recommendation = `Could use more payoffs. Look for: ${arch.payoffs.filter(p => !pickNames.includes(p)).slice(0, 2).join(', ')}`;
+      } else {
+        balance = 'balanced';
+        recommendation = 'Good balance of enablers and payoffs!';
+      }
+
+      if (balance !== 'not-applicable') {
+        balances.push({
+          archetype: archName,
+          enablers,
+          payoffs,
+          balance,
+          recommendation,
+        });
+      }
+    }
+  }
+
+  return balances;
+}
+
+// Analyze mana base requirements
+function getManaBaseStatus(picks: CubeCard[]): ManaBaseStatus {
+  const colorRequirements: Record<string, { sources: number; cards: number }> = {};
+  const fixingCards: CubeCard[] = [];
+
+  // Count color requirements and sources
+  picks.forEach(card => {
+    // Check if it's a fixing land or mana source
+    const typeLine = card.type_line?.toLowerCase() || '';
+    const oracleText = card.oracle_text?.toLowerCase() || '';
+
+    if (typeLine.includes('land') && (
+      oracleText.includes('add') && (oracleText.match(/add \{[wubrg]\}/gi)?.length || 0) >= 2
+    )) {
+      fixingCards.push(card);
+    }
+
+    // Count cards requiring each color
+    card.color_identity?.forEach(c => {
+      if (!colorRequirements[c]) colorRequirements[c] = { sources: 0, cards: 0 };
+      colorRequirements[c].cards++;
+    });
+  });
+
+  // Count sources per color (simplified - lands that produce the color)
+  picks.forEach(card => {
+    const typeLine = card.type_line?.toLowerCase() || '';
+    const oracleText = card.oracle_text?.toLowerCase() || '';
+
+    if (typeLine.includes('land')) {
+      ['W', 'U', 'B', 'R', 'G'].forEach(color => {
+        const colorWord = color === 'W' ? 'white' : color === 'U' ? 'blue' : color === 'B' ? 'black' : color === 'R' ? 'red' : 'green';
+        if (oracleText.includes(colorWord) || oracleText.includes(`{${color.toLowerCase()}}`)) {
+          if (colorRequirements[color]) colorRequirements[color].sources++;
+        }
+      });
+    }
+  });
+
+  const colorsNeeded = Object.entries(colorRequirements).map(([color, data]) => ({
+    color,
+    sources: data.sources,
+    cardsRequiring: data.cards,
+  }));
+
+  // Determine splash viability
+  const mainColors = colorsNeeded
+    .filter(c => c.cardsRequiring >= 3)
+    .map(c => c.color);
+
+  const splashViability = colorsNeeded
+    .filter(c => c.cardsRequiring > 0 && c.cardsRequiring < 3)
+    .map(c => {
+      const hasFetches = fixingCards.some(f => f.name.toLowerCase().includes('fetch') || f.name.toLowerCase().includes('delta') || f.name.toLowerCase().includes('tarn'));
+      const hasDuals = fixingCards.some(f => f.oracle_text?.toLowerCase().includes(c.color.toLowerCase() === 'w' ? 'white' : c.color.toLowerCase() === 'u' ? 'blue' : c.color.toLowerCase() === 'b' ? 'black' : c.color.toLowerCase() === 'r' ? 'red' : 'green'));
+
+      return {
+        color: c.color,
+        viable: c.sources >= 2 || hasFetches || hasDuals,
+        reason: c.sources >= 2 ? `${c.sources} sources available` : hasFetches ? 'Fetchable' : 'Needs more fixing',
+      };
+    });
+
+  // Generate recommendation
+  let recommendation = '';
+  const needsFixing = colorsNeeded.filter(c => c.cardsRequiring >= 3 && c.sources < 3);
+  if (needsFixing.length > 0) {
+    recommendation = `Need more ${needsFixing.map(c => c.color).join('/')} sources. Prioritize fixing lands.`;
+  } else if (mainColors.length >= 3) {
+    recommendation = '3+ color deck - prioritize dual lands and fetches.';
+  } else if (fixingCards.length >= 3) {
+    recommendation = 'Good mana base! Keep an eye out for premium fixing.';
+  }
+
+  return {
+    colorsNeeded: colorsNeeded.sort((a, b) => b.cardsRequiring - a.cardsRequiring),
+    fixingCards,
+    splashViability,
+    recommendation,
+  };
+}
+
+// Get contextual letter grade for a card (A+ to F)
+type ContextualGrade = 'A+' | 'A' | 'A-' | 'B+' | 'B' | 'B-' | 'C+' | 'C' | 'C-' | 'D' | 'F';
+
+function getContextualGrade(card: CubeCard, picks: CubeCard[], currentPack?: CubeCard[]): { grade: ContextualGrade; reason: string } {
+  const percentile = getPercentile(card.name);
+  const cardColors = card.color_identity || [];
+
+  // Check for pack synergy (even on P1P1)
+  const packSynergy = currentPack ? getPackSynergyBonus(card, currentPack) : { bonus: 0, reasons: [] };
+
+  // Early draft - grade based on power + pack synergy
+  if (picks.length < 3) {
+    // Boost grade if pack synergy exists
+    const effectivePercentile = Math.min(99, percentile + (packSynergy.bonus / 2));
+    const reason = packSynergy.reasons.length > 0 ? packSynergy.reasons[0] :
+                   (percentile >= 85 ? 'Premium power' : 'Raw power');
+
+    if (effectivePercentile >= 95 || packSynergy.bonus >= 40) return { grade: 'A+', reason };
+    if (effectivePercentile >= 85 || packSynergy.bonus >= 25) return { grade: 'A', reason };
+    if (effectivePercentile >= 70) return { grade: 'B+', reason };
+    if (effectivePercentile >= 50) return { grade: 'B', reason: 'Solid playable' };
+    if (effectivePercentile >= 30) return { grade: 'C', reason: 'Average' };
+    return { grade: 'D', reason: 'Below average' };
+  }
+
+  // Calculate color fit
+  const colorCts: Record<string, number> = {};
+  picks.forEach(c => c.color_identity?.forEach(col => { colorCts[col] = (colorCts[col] || 0) + 1; }));
+  const mainColors = Object.entries(colorCts).filter(([_, count]) => count >= 2).map(([color]) => color);
+  const isColorless = cardColors.length === 0;
+  const isOnColor = isColorless || cardColors.every(c => mainColors.includes(c));
+  const addsThirdColor = !isColorless && cardColors.some(c => !mainColors.includes(c)) && mainColors.length >= 2;
+
+  // Get synergy adjustment
+  const synergy = getSynergyAdjustedElo(card, picks);
+  const adjustedPercentile = Math.min(99, Math.max(1, percentile + (synergy.adjustment / 10)));
+
+  // Combine factors into grade
+  let score = adjustedPercentile;
+
+  // Color penalties/bonuses
+  if (!isOnColor && !isColorless) {
+    if (addsThirdColor && percentile < 90) score -= 30; // Big penalty for splashing mediocre cards
+    else if (addsThirdColor) score -= 15; // Smaller penalty for splashing bombs
+    else score -= 10; // Minor penalty for touching a color
+  }
+  if (isOnColor && mainColors.length > 0) score += 5; // Bonus for being on-color
+
+  // Convert score to grade
+  if (score >= 95) return { grade: 'A+', reason: synergy.reasons[0] || 'Perfect fit' };
+  if (score >= 88) return { grade: 'A', reason: synergy.reasons[0] || 'Excellent pickup' };
+  if (score >= 82) return { grade: 'A-', reason: synergy.reasons[0] || 'Great for your deck' };
+  if (score >= 75) return { grade: 'B+', reason: synergy.reasons[0] || 'Strong option' };
+  if (score >= 65) return { grade: 'B', reason: isOnColor ? 'Solid on-color' : 'Good card' };
+  if (score >= 55) return { grade: 'B-', reason: 'Playable' };
+  if (score >= 45) return { grade: 'C+', reason: 'Filler' };
+  if (score >= 35) return { grade: 'C', reason: 'Below average for you' };
+  if (score >= 25) return { grade: 'C-', reason: 'Poor fit' };
+  if (score >= 15) return { grade: 'D', reason: addsThirdColor ? 'Wrong colors' : 'Weak' };
+  return { grade: 'F', reason: 'Do not pick' };
+}
+
+// Estimate deck win rate based on multiple factors
+interface DeckWinRateEstimate {
+  winRate: number; // 0-100
+  confidence: string; // 'low' | 'medium' | 'high'
+  factors: { name: string; impact: number; description: string }[];
+  grade: string; // S/A/B/C/D/F
+}
+
+function estimateDeckWinRate(picks: CubeCard[], archetypeCommitments: ArchetypeCommitment[]): DeckWinRateEstimate {
+  if (picks.length < 10) {
+    return { winRate: 50, confidence: 'low', factors: [], grade: 'C' };
+  }
+
+  const factors: { name: string; impact: number; description: string }[] = [];
+  let baseWinRate = 50;
+
+  // Factor 1: Card Quality (ELO average)
+  const avgElo = picks.reduce((sum, p) => sum + (getEloData(p.name)?.elo || 1500), 0) / picks.length;
+  const eloImpact = Math.round((avgElo - 1650) / 20); // +/- based on deviation from 1650
+  factors.push({ name: 'Card Quality', impact: eloImpact, description: `Avg ELO ${Math.round(avgElo)}` });
+  baseWinRate += eloImpact;
+
+  // Factor 2: Archetype Coherence
+  const topArchetype = archetypeCommitments[0];
+  if (topArchetype) {
+    const coherenceImpact = topArchetype.probability >= 60 ? 8 :
+                            topArchetype.probability >= 40 ? 4 :
+                            topArchetype.probability >= 25 ? 0 : -5;
+    factors.push({ name: 'Archetype Focus', impact: coherenceImpact, description: `${topArchetype.archetype} ${topArchetype.probability}%` });
+    baseWinRate += coherenceImpact;
+  }
+
+  // Factor 3: Color Consistency
+  const colorCts: Record<string, number> = {};
+  picks.forEach(c => c.color_identity?.forEach(col => { colorCts[col] = (colorCts[col] || 0) + 1; }));
+  const numColors = Object.keys(colorCts).filter(c => colorCts[c] >= 2).length;
+  const colorImpact = numColors <= 2 ? 5 : numColors === 3 ? -3 : -8;
+  factors.push({ name: 'Color Base', impact: colorImpact, description: `${numColors} colors` });
+  baseWinRate += colorImpact;
+
+  // Factor 4: Mana Curve
+  const nonLands = picks.filter(p => !p.type_line?.toLowerCase().includes('land'));
+  const avgCmc = nonLands.reduce((sum, p) => sum + (p.cmc || 0), 0) / nonLands.length;
+  const curveImpact = avgCmc <= 2.5 ? 5 : avgCmc <= 3.2 ? 2 : avgCmc <= 4 ? -3 : -8;
+  factors.push({ name: 'Mana Curve', impact: curveImpact, description: `${avgCmc.toFixed(1)} avg CMC` });
+  baseWinRate += curveImpact;
+
+  // Factor 5: Threat Density
+  const threats = picks.filter(p => {
+    const elo = getEloData(p.name)?.elo || 1500;
+    return elo >= 1700 || p.type_line?.toLowerCase().includes('planeswalker');
+  }).length;
+  const threatImpact = threats >= 8 ? 6 : threats >= 5 ? 3 : threats >= 3 ? 0 : -4;
+  factors.push({ name: 'Threat Density', impact: threatImpact, description: `${threats} premium cards` });
+  baseWinRate += threatImpact;
+
+  // Factor 6: Removal/Interaction
+  const removal = picks.filter(p => {
+    const text = p.oracle_text?.toLowerCase() || '';
+    return text.includes('destroy target') || text.includes('exile target') ||
+           (text.includes('damage') && text.includes('target'));
+  }).length;
+  const removalImpact = removal >= 6 ? 4 : removal >= 4 ? 2 : removal >= 2 ? 0 : -3;
+  factors.push({ name: 'Interaction', impact: removalImpact, description: `${removal} removal spells` });
+  baseWinRate += removalImpact;
+
+  // Clamp win rate
+  const finalWinRate = Math.max(25, Math.min(75, baseWinRate));
+
+  // Determine grade
+  let grade = 'C';
+  if (finalWinRate >= 65) grade = 'S';
+  else if (finalWinRate >= 58) grade = 'A';
+  else if (finalWinRate >= 52) grade = 'B';
+  else if (finalWinRate >= 45) grade = 'C';
+  else if (finalWinRate >= 38) grade = 'D';
+  else grade = 'F';
+
+  return {
+    winRate: Math.round(finalWinRate),
+    confidence: picks.length >= 30 ? 'high' : picks.length >= 20 ? 'medium' : 'low',
+    factors,
+    grade,
+  };
+}
+
+// Find synergy connections between picks (for visualization)
+interface SynergyConnection {
+  card1: string;
+  card2: string;
+  strength: 'strong' | 'medium' | 'weak';
+  reason: string;
+}
+
+function getSynergyConnections(picks: CubeCard[]): SynergyConnection[] {
+  const connections: SynergyConnection[] = [];
+  if (picks.length < 2) return connections;
+
+  // Define synergy patterns
+  const synergyPatterns = [
+    { cards: ['Tinker', 'Blightsteel Colossus'], strength: 'strong' as const, reason: 'Tinker target' },
+    { cards: ['Tinker', 'Myr Battlesphere'], strength: 'strong' as const, reason: 'Tinker target' },
+    { cards: ['Tinker', 'Sundering Titan'], strength: 'strong' as const, reason: 'Tinker target' },
+    { cards: ['Reanimate', 'Griselbrand'], strength: 'strong' as const, reason: 'Reanimate target' },
+    { cards: ['Reanimate', 'Archon of Cruelty'], strength: 'strong' as const, reason: 'Reanimate target' },
+    { cards: ['Entomb', 'Reanimate'], strength: 'strong' as const, reason: 'Reanimator combo' },
+    { cards: ['Entomb', 'Animate Dead'], strength: 'strong' as const, reason: 'Reanimator combo' },
+    { cards: ['Channel', 'Emrakul, the Aeons Torn'], strength: 'strong' as const, reason: 'Channel into Emrakul' },
+    { cards: ['Show and Tell', 'Omniscience'], strength: 'strong' as const, reason: 'Show into Omni' },
+    { cards: ['Show and Tell', 'Emrakul, the Aeons Torn'], strength: 'strong' as const, reason: 'Sneak & Show' },
+    { cards: ['Sneak Attack', 'Emrakul, the Aeons Torn'], strength: 'strong' as const, reason: 'Sneak & Show' },
+    { cards: ['Natural Order', 'Craterhoof Behemoth'], strength: 'strong' as const, reason: 'Natural Order target' },
+    { cards: ['Time Vault', 'Voltaic Key'], strength: 'strong' as const, reason: 'Infinite turns' },
+    { cards: ['Dark Ritual', 'Tendrils of Agony'], strength: 'medium' as const, reason: 'Storm enabler' },
+    { cards: ['Lion\'s Eye Diamond', 'Underworld Breach'], strength: 'strong' as const, reason: 'Breach combo' },
+  ];
+
+  const pickNames = new Set(picks.map(p => p.name));
+
+  // Check for known synergies
+  for (const pattern of synergyPatterns) {
+    if (pattern.cards.every(c => pickNames.has(c))) {
+      connections.push({
+        card1: pattern.cards[0],
+        card2: pattern.cards[1],
+        strength: pattern.strength,
+        reason: pattern.reason,
+      });
+    }
+  }
+
+  // Check for color-based synergies (creatures + pump spells in same colors)
+  const creatures = picks.filter(p => p.type_line?.toLowerCase().includes('creature'));
+  const equipments = picks.filter(p => p.type_line?.toLowerCase().includes('equipment'));
+
+  if (creatures.length >= 5 && equipments.length >= 1) {
+    connections.push({
+      card1: `${creatures.length} creatures`,
+      card2: `${equipments.length} equipment`,
+      strength: 'medium',
+      reason: 'Equipment synergy',
+    });
+  }
+
+  // Tribal synergies
+  const goblins = picks.filter(p => p.type_line?.toLowerCase().includes('goblin')).length;
+  if (goblins >= 3) {
+    connections.push({
+      card1: `${goblins} Goblins`,
+      card2: 'Tribal synergy',
+      strength: 'medium',
+      reason: 'Goblin tribal',
+    });
+  }
+
+  return connections.slice(0, 8); // Limit to 8 connections
+}
+
+// Analyze opening hand quality
+interface CurveAnalysis {
+  playableHandRate: number; // % of hands that can play something T1-3
+  curveScore: string; // 'Excellent' | 'Good' | 'Average' | 'Poor'
+  cmc1Count: number;
+  cmc2Count: number;
+  cmc3Count: number;
+  cmc4PlusCount: number;
+  landCount: number;
+  recommendation: string;
+}
+
+function getCurveAnalysis(picks: CubeCard[]): CurveAnalysis {
+  const lands = picks.filter(p => p.type_line?.toLowerCase().includes('land')).length;
+  const nonLands = picks.filter(p => !p.type_line?.toLowerCase().includes('land'));
+
+  const cmc1 = nonLands.filter(p => (p.cmc || 0) <= 1).length;
+  const cmc2 = nonLands.filter(p => (p.cmc || 0) === 2).length;
+  const cmc3 = nonLands.filter(p => (p.cmc || 0) === 3).length;
+  const cmc4Plus = nonLands.filter(p => (p.cmc || 0) >= 4).length;
+
+  // Estimate playable hand rate (simplified)
+  // A "playable" hand has 2-4 lands and at least one play by turn 3
+  const earlyPlays = cmc1 + cmc2 + cmc3;
+
+  // Rough approximation of mulligan math
+  let playableRate = 70; // Base rate
+
+  // Adjust for curve
+  if (cmc1 + cmc2 >= 8) playableRate += 10; // Good early game
+  if (cmc1 + cmc2 < 4) playableRate -= 15; // Bad early game
+  if (earlyPlays >= 12) playableRate += 5;
+
+  // Adjust for land count (assuming 40 card deck with 17 lands)
+  if (lands >= 3 && lands <= 5) playableRate += 5;
+
+  playableRate = Math.max(40, Math.min(90, playableRate));
+
+  // Determine curve score
+  let curveScore = 'Average';
+  const avgCmc = nonLands.reduce((sum, p) => sum + (p.cmc || 0), 0) / (nonLands.length || 1);
+
+  if (avgCmc <= 2.3 && cmc1 + cmc2 >= 10) curveScore = 'Excellent';
+  else if (avgCmc <= 2.8 && cmc1 + cmc2 >= 7) curveScore = 'Good';
+  else if (avgCmc >= 4.0 || cmc1 + cmc2 < 4) curveScore = 'Poor';
+
+  // Generate recommendation
+  let recommendation = '';
+  if (cmc1 + cmc2 < 5) recommendation = 'Need more 1-2 drops for early game';
+  else if (cmc4Plus > 10) recommendation = 'Top-heavy curve - may struggle early';
+  else if (lands < 2 && picks.length >= 20) recommendation = 'Consider prioritizing fixing lands';
+  else if (curveScore === 'Excellent') recommendation = 'Excellent curve - can be aggressive';
+  else recommendation = 'Balanced curve';
+
+  return {
+    playableHandRate: Math.round(playableRate),
+    curveScore,
+    cmc1Count: cmc1,
+    cmc2Count: cmc2,
+    cmc3Count: cmc3,
+    cmc4PlusCount: cmc4Plus,
+    landCount: lands,
+    recommendation,
+  };
+}
+
+// Calculate pack synergy - what combos exist within this pack?
+// This enables showing adjustments even on P1P1
+function getPackSynergyBonus(
+  card: CubeCard,
+  pack: CubeCard[]
+): { bonus: number; reasons: string[] } {
+  const reasons: string[] = [];
+  let bonus = 0;
+  const cardName = card.name;
+  const packNames = pack.map(p => p.name);
+
+  // Define combo pairs - if both pieces are in the pack, both get bonuses
+  const comboPairs = [
+    { cards: ['Tinker', 'Blightsteel Colossus'], bonus: 40, reason: 'Tinker combo in pack!' },
+    { cards: ['Tinker', 'Myr Battlesphere'], bonus: 30, reason: 'Tinker target available' },
+    { cards: ['Tinker', 'Sundering Titan'], bonus: 30, reason: 'Tinker target available' },
+    { cards: ['Channel', 'Emrakul, the Aeons Torn'], bonus: 50, reason: 'Channel combo in pack!' },
+    { cards: ['Channel', 'Ulamog, the Ceaseless Hunger'], bonus: 40, reason: 'Channel target available' },
+    { cards: ['Reanimate', 'Griselbrand'], bonus: 45, reason: 'Reanimate combo in pack!' },
+    { cards: ['Reanimate', 'Archon of Cruelty'], bonus: 35, reason: 'Reanimate target available' },
+    { cards: ['Entomb', 'Reanimate'], bonus: 40, reason: 'Reanimator pieces together!' },
+    { cards: ['Entomb', 'Animate Dead'], bonus: 35, reason: 'Reanimator pieces together!' },
+    { cards: ['Show and Tell', 'Omniscience'], bonus: 45, reason: 'Show & Tell combo!' },
+    { cards: ['Show and Tell', 'Emrakul, the Aeons Torn'], bonus: 40, reason: 'Show target available' },
+    { cards: ['Sneak Attack', 'Emrakul, the Aeons Torn'], bonus: 40, reason: 'Sneak Attack target!' },
+    { cards: ['Natural Order', 'Craterhoof Behemoth'], bonus: 45, reason: 'Natural Order combo!' },
+    { cards: ['Time Vault', 'Voltaic Key'], bonus: 50, reason: 'Infinite turns combo!' },
+    { cards: ['Splinter Twin', 'Pestermite'], bonus: 45, reason: 'Twin combo in pack!' },
+    { cards: ['Splinter Twin', 'Deceiver Exarch'], bonus: 45, reason: 'Twin combo in pack!' },
+    { cards: ['Dark Ritual', 'Necropotence'], bonus: 25, reason: 'T1 Necro possible' },
+    { cards: ['Lion\'s Eye Diamond', 'Underworld Breach'], bonus: 40, reason: 'Breach combo!' },
+    { cards: ['Tolarian Academy', 'Time Spiral'], bonus: 35, reason: 'Academy combo' },
+  ];
+
+  // Check if this card is part of a combo in the pack
+  for (const combo of comboPairs) {
+    if (combo.cards.includes(cardName)) {
+      const otherCard = combo.cards.find(c => c !== cardName);
+      if (otherCard && packNames.includes(otherCard)) {
+        bonus += combo.bonus;
+        reasons.push(combo.reason);
+      }
+    }
+  }
+
+  // Archetype clustering - if multiple cards for same archetype in pack, all get small boost
+  const archetypeCards: Record<string, string[]> = {
+    'Reanimator': ['Reanimate', 'Animate Dead', 'Entomb', 'Necromancy', 'Griselbrand', 'Archon of Cruelty', 'Shallow Grave', 'Exhume'],
+    'Storm': ['Dark Ritual', 'Cabal Ritual', 'Brain Freeze', 'Tendrils of Agony', 'Yawgmoth\'s Will', 'Underworld Breach', 'Lion\'s Eye Diamond'],
+    'Artifacts': ['Tinker', 'Tolarian Academy', 'Mishra\'s Workshop', 'Time Vault', 'Voltaic Key', 'Mana Crypt', 'Sol Ring'],
+    'Channel': ['Channel', 'Emrakul, the Aeons Torn', 'Ulamog, the Ceaseless Hunger', 'Kozilek, Butcher of Truth'],
+    'Sneak': ['Show and Tell', 'Sneak Attack', 'Through the Breach', 'Omniscience', 'Griselbrand'],
+  };
+
+  for (const [archetype, cards] of Object.entries(archetypeCards)) {
+    if (cards.includes(cardName)) {
+      const otherArchetypeCards = cards.filter(c => c !== cardName && packNames.includes(c));
+      if (otherArchetypeCards.length >= 1 && bonus === 0) { // Don't stack with direct combo bonus
+        bonus += 15;
+        reasons.push(`${archetype} pieces in pack`);
+      }
+    }
+  }
+
+  return { bonus, reasons };
+}
+
+// ============================================================================
+// WORLD-CLASS DRAFT INTELLIGENCE SYSTEM
+// Considers: Curve, Card Types, Mana Base, Roles, Archetypes, Draft Phase,
+// Diminishing Returns, Flexibility, Win Conditions, Signals, Uniqueness,
+// Interaction Density, Build-Around Commitment, Early/Late Balance
+// ============================================================================
+
+interface DeckAnalysis {
+  // Mana curve
+  curve: Record<number, number>; // CMC -> count
+  curveNeeds: { cmc: number; priority: number }[];
+
+  // Card types
+  creatureCount: number;
+  removalCount: number;
+  cardDrawCount: number;
+  landCount: number;
+  artifactCount: number;
+  planeswalkerCount: number;
+  instantSorceryCount: number;
+
+  // Mana base
+  colorSources: Record<string, number>;
+  colorRequirements: Record<string, number>;
+  manaBaseHealth: number; // 0-100
+
+  // Roles
+  hasThreats: boolean;
+  hasAnswers: boolean;
+  hasCardAdvantage: boolean;
+  hasFinisher: boolean;
+  hasEarlyGame: boolean; // 1-2 drops
+  hasLateGame: boolean; // 5+ CMC impactful cards
+  hasManaSinks: boolean; // Things to do with extra mana
+
+  // Interaction
+  interactionCount: number; // Removal + counters + discard
+  interactionDensity: 'low' | 'medium' | 'high';
+
+  // Build-arounds (cards that demand specific support)
+  buildArounds: string[];
+  buildAroundNeeds: Record<string, string[]>; // e.g., "Sneak Attack" -> ["fatties"]
+
+  // Archetype signals
+  archetypeSignals: Record<string, number>;
+  primaryArchetype: string | null;
+  secondaryArchetype: string | null;
+
+  // Draft phase
+  phase: 'power' | 'direction' | 'building' | 'filling';
+  pickNumber: number;
+
+  // Card categories we have
+  hasFastMana: boolean;
+  hasDiscard: boolean;
+  hasTutors: boolean;
+  hasRecursion: boolean;
+}
+
+function analyzeDeck(picks: CubeCard[]): DeckAnalysis {
+  const curve: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+  const colorSources: Record<string, number> = { W: 0, U: 0, B: 0, R: 0, G: 0 };
+  const colorRequirements: Record<string, number> = { W: 0, U: 0, B: 0, R: 0, G: 0 };
+
+  let creatureCount = 0, removalCount = 0, cardDrawCount = 0, landCount = 0;
+  let artifactCount = 0, planeswalkerCount = 0, instantSorceryCount = 0;
+  let hasThreats = false, hasAnswers = false, hasCardAdvantage = false, hasFinisher = false;
+  let hasEarlyGame = false, hasLateGame = false, hasManaSinks = false;
+  let interactionCount = 0;
+  let hasFastMana = false, hasDiscard = false, hasTutors = false, hasRecursion = false;
+  const buildArounds: string[] = [];
+  const buildAroundNeeds: Record<string, string[]> = {};
+
+  const archetypeSignals: Record<string, number> = {
+    aggro: 0, control: 0, midrange: 0, ramp: 0, reanimator: 0,
+    storm: 0, artifacts: 0, sneak: 0, tempo: 0
+  };
+
+  // Build-around definitions
+  const BUILD_AROUND_CARDS: Record<string, string[]> = {
+    'Tinker': ['artifacts', 'artifact targets'],
+    'Sneak Attack': ['fatties', 'big creatures'],
+    'Show and Tell': ['fatties', 'Omniscience'],
+    'Reanimate': ['fatties', 'discard outlets'],
+    'Animate Dead': ['fatties', 'discard outlets'],
+    'Entomb': ['reanimation spells', 'fatties'],
+    'Natural Order': ['green creatures', 'Craterhoof'],
+    'Recurring Nightmare': ['creatures with ETB'],
+    'Splinter Twin': ['Pestermite', 'Deceiver Exarch'],
+    'Channel': ['Eldrazi', 'big spells'],
+    'Oath of Druids': ['fatties', 'few creatures'],
+    'Yawgmoth\'s Will': ['fast mana', 'cantrips'],
+    'Underworld Breach': ['fast mana', 'cantrips'],
+    'Tolarian Academy': ['artifacts'],
+    'Gaea\'s Cradle': ['creatures'],
+    'Opposition': ['token makers', 'creatures'],
+    'Upheaval': ['fast mana', 'threats'],
+    'Wildfire': ['mana rocks', 'big creatures'],
+    'Balance': ['few permanents', 'artifact mana'],
+  };
+
+  for (const card of picks) {
+    const type = card.type_line?.toLowerCase() || '';
+    const oracle = card.oracle_text?.toLowerCase() || '';
+    const cmc = Math.min(card.cmc || 0, 6);
+    const colors = card.color_identity || [];
+    const name = card.name;
+
+    // Curve
+    if (!type.includes('land')) {
+      curve[cmc] = (curve[cmc] || 0) + 1;
+    }
+
+    // Card types
+    if (type.includes('creature')) creatureCount++;
+    if (type.includes('land')) landCount++;
+    if (type.includes('artifact')) artifactCount++;
+    if (type.includes('planeswalker')) planeswalkerCount++;
+    if (type.includes('instant') || type.includes('sorcery')) instantSorceryCount++;
+
+    // Removal/interaction detection
+    const isRemoval = oracle.includes('destroy target') || oracle.includes('exile target') ||
+        (oracle.includes('deals') && oracle.includes('damage') && oracle.includes('target')) ||
+        oracle.includes('counter target spell') || oracle.includes('-x/-x') ||
+        oracle.includes('return target') || oracle.includes('bounce');
+    if (isRemoval) {
+      removalCount++;
+      interactionCount++;
+    }
+
+    // Discard as interaction
+    if (oracle.includes('discard') && oracle.includes('opponent')) {
+      interactionCount++;
+      hasDiscard = true;
+    }
+
+    // Card draw detection
+    if (oracle.includes('draw') && (oracle.includes('card') || oracle.includes('cards'))) {
+      cardDrawCount++;
+    }
+
+    // Color requirements (count pips)
+    colors.forEach(c => {
+      colorRequirements[c] = (colorRequirements[c] || 0) + 1;
+    });
+
+    // Color sources (lands and mana rocks)
+    if (type.includes('land') || (oracle.includes('add') && oracle.includes('mana'))) {
+      colors.forEach(c => {
+        colorSources[c] = (colorSources[c] || 0) + 1;
+      });
+    }
+
+    // Role detection
+    if (type.includes('creature') && (cmc >= 4 || oracle.includes('flying') || oracle.includes('trample'))) {
+      hasThreats = true;
+    }
+    if (oracle.includes('destroy') || oracle.includes('exile') || oracle.includes('counter')) {
+      hasAnswers = true;
+    }
+    if (oracle.includes('draw') && oracle.includes('card')) {
+      hasCardAdvantage = true;
+    }
+    if (cmc >= 6 || oracle.includes('win the game') || (card.power && parseInt(card.power) >= 6)) {
+      hasFinisher = true;
+      hasLateGame = true;
+    }
+
+    // Early game (1-2 drops that affect the board)
+    if (cmc <= 2 && (type.includes('creature') || isRemoval)) {
+      hasEarlyGame = true;
+    }
+
+    // Mana sinks
+    if (oracle.includes('{x}') || oracle.includes('activate') ||
+        (oracle.includes(':') && oracle.includes('pay'))) {
+      hasManaSinks = true;
+    }
+
+    // Fast mana detection
+    if (['Black Lotus', 'Mox Sapphire', 'Mox Ruby', 'Mox Pearl', 'Mox Emerald', 'Mox Jet',
+         'Sol Ring', 'Mana Crypt', 'Mana Vault', 'Lotus Petal', 'Chrome Mox', 'Mox Diamond',
+         'Dark Ritual', 'Cabal Ritual', 'Lion\'s Eye Diamond', 'Grim Monolith'].includes(name)) {
+      hasFastMana = true;
+    }
+
+    // Tutors
+    if (oracle.includes('search your library') && !type.includes('land')) {
+      hasTutors = true;
+    }
+
+    // Recursion
+    if (oracle.includes('return') && oracle.includes('from your graveyard') ||
+        ['Yawgmoth\'s Will', 'Underworld Breach', 'Past in Flames', 'Snapcaster Mage',
+         'Regrowth', 'Eternal Witness', 'Recurring Nightmare'].includes(name)) {
+      hasRecursion = true;
+    }
+
+    // Build-arounds
+    if (BUILD_AROUND_CARDS[name]) {
+      buildArounds.push(name);
+      buildAroundNeeds[name] = BUILD_AROUND_CARDS[name];
+    }
+
+    // Archetype signals
+    // Aggro signals
+    if ((cmc <= 2 && type.includes('creature')) ||
+        ['Goblin Guide', 'Monastery Swiftspear', 'Ragavan, Nimble Pilferer', 'Zurgo Bellstriker',
+         'Thalia, Guardian of Thraben', 'Sulfuric Vortex', 'Hazoret the Fervent', 'Hellrider',
+         'Figure of Destiny', 'Kytheon, Hero of Akros', 'Goblin Rabblemaster', 'Legion Warboss',
+         'Bloodbraid Elf', 'Falkenrath Gorger', 'Bomat Courier'].includes(name)) {
+      archetypeSignals.aggro += 2;
+    }
+    if (oracle.includes('haste') || (oracle.includes('damage') && oracle.includes('player'))) {
+      archetypeSignals.aggro += 1;
+    }
+
+    // Control signals
+    if (['Counterspell', 'Force of Will', 'Mana Drain', 'Cryptic Command', 'Force of Negation',
+         'Jace, the Mind Sculptor', 'Teferi, Hero of Dominaria', 'Wrath of God', 'Supreme Verdict',
+         'Toxic Deluge', 'Day of Judgment', 'Terminus', 'Snapcaster Mage', 'Mystic Confluence',
+         'Fact or Fiction', 'Dig Through Time', 'Treasure Cruise'].includes(name)) {
+      archetypeSignals.control += 3;
+    }
+    if (oracle.includes('counter target spell') || oracle.includes('destroy all creatures')) {
+      archetypeSignals.control += 2;
+    }
+
+    // Tempo signals
+    if (['Daze', 'Spell Pierce', 'Vapor Snag', 'Brazen Borrower', 'Vendilion Clique',
+         'True-Name Nemesis', 'Delver of Secrets', 'Pteramander', 'Sprite Dragon'].includes(name)) {
+      archetypeSignals.tempo += 3;
+    }
+    if (type.includes('instant') && cmc <= 2) {
+      archetypeSignals.tempo += 1;
+    }
+
+    // Ramp signals
+    if (['Channel', 'Fastbond', 'Natural Order', 'Rofellos, Llanowar Emissary', 'Oracle of Mul Daya',
+         'Primeval Titan', 'Craterhoof Behemoth', 'Exploration', 'Gaea\'s Cradle', 'Courser of Kruphix',
+         'Tireless Tracker', 'Nissa, Who Shakes the World'].includes(name)) {
+      archetypeSignals.ramp += 3;
+    }
+    if (oracle.includes('add') && oracle.includes('mana') && type.includes('creature')) {
+      archetypeSignals.ramp += 2;
+    }
+
+    // Reanimator signals
+    if (['Reanimate', 'Animate Dead', 'Entomb', 'Necromancy', 'Exhume', 'Shallow Grave',
+         'Life // Death', 'Unburial Rites', 'Makeshift Mannequin', 'Recurring Nightmare'].includes(name)) {
+      archetypeSignals.reanimator += 4;
+    }
+    if (['Griselbrand', 'Archon of Cruelty', 'Elesh Norn, Grand Cenobite', 'Iona, Shield of Emeria',
+         'Inkwell Leviathan', 'Sheoldred, Whispering One', 'Grave Titan', 'Massacre Wurm'].includes(name)) {
+      archetypeSignals.reanimator += 2;
+    }
+
+    // Storm signals
+    if (['Brain Freeze', 'Tendrils of Agony', 'Yawgmoth\'s Will', 'Underworld Breach',
+         'Past in Flames', 'Mind\'s Desire', 'Empty the Warrens', 'Grapeshot'].includes(name)) {
+      archetypeSignals.storm += 4;
+    }
+    if (['Dark Ritual', 'Cabal Ritual', 'Lion\'s Eye Diamond', 'Lotus Petal', 'Mana Vault',
+         'Seething Song', 'Rite of Flame', 'Burning Wish', 'Gifts Ungiven'].includes(name)) {
+      archetypeSignals.storm += 2;
+    }
+
+    // Artifact signals
+    if (['Tinker', 'Tolarian Academy', 'Mishra\'s Workshop', 'Urza, Lord High Artificer',
+         'Kuldotha Forgemaster', 'Goblin Welder', 'Daretti, Scrap Savant', 'Emry, Lurker of the Loch'].includes(name)) {
+      archetypeSignals.artifacts += 4;
+    }
+    if (type.includes('artifact') && !type.includes('land')) {
+      archetypeSignals.artifacts += 1;
+    }
+
+    // Sneak/Show signals
+    if (['Show and Tell', 'Sneak Attack', 'Through the Breach', 'Eureka', 'Oath of Druids'].includes(name)) {
+      archetypeSignals.sneak += 4;
+    }
+    if (['Emrakul, the Aeons Torn', 'Griselbrand', 'Omniscience', 'Ulamog, the Ceaseless Hunger',
+         'Blightsteel Colossus', 'Woodfall Primus'].includes(name)) {
+      archetypeSignals.sneak += 2;
+    }
+
+    // Midrange signals
+    if (['Tarmogoyf', 'Dark Confidant', 'Stoneforge Mystic', 'Batterskull', 'Umezawa\'s Jitte',
+         'Liliana of the Veil', 'Thoughtseize', 'Hymn to Tourach', 'Vindicate'].includes(name)) {
+      archetypeSignals.midrange += 3;
+    }
+  }
+
+  // Calculate mana base health (0-100)
+  let manaBaseHealth = 100;
+  const activeColors = Object.entries(colorRequirements).filter(([_, count]) => count > 0);
+  if (activeColors.length > 2) manaBaseHealth -= 20;
+  if (activeColors.length > 3) manaBaseHealth -= 20;
+  for (const [color, req] of activeColors) {
+    const sources = colorSources[color] || 0;
+    if (req > 0 && sources < req * 0.5) manaBaseHealth -= 15;
+  }
+  manaBaseHealth = Math.max(0, manaBaseHealth);
+
+  // Determine curve needs (archetype-aware)
+  const curveNeeds: { cmc: number; priority: number }[] = [];
+  // Adjust ideal curve based on archetype
+  let idealCurve = { 1: 3, 2: 5, 3: 4, 4: 3, 5: 2, 6: 1 };
+  if (archetypeSignals.aggro >= 6) {
+    idealCurve = { 1: 5, 2: 6, 3: 4, 4: 2, 5: 1, 6: 0 };
+  } else if (archetypeSignals.control >= 6) {
+    idealCurve = { 1: 2, 2: 4, 3: 4, 4: 4, 5: 3, 6: 2 };
+  } else if (archetypeSignals.ramp >= 6) {
+    idealCurve = { 1: 3, 2: 4, 3: 3, 4: 2, 5: 3, 6: 3 };
+  }
+  for (const [cmcStr, ideal] of Object.entries(idealCurve)) {
+    const cmc = parseInt(cmcStr);
+    const have = curve[cmc] || 0;
+    if (have < ideal) {
+      curveNeeds.push({ cmc, priority: (ideal - have) * (cmc <= 2 ? 2 : 1) });
+    }
+  }
+  curveNeeds.sort((a, b) => b.priority - a.priority);
+
+  // Determine primary and secondary archetype
+  const sortedArchetypes = Object.entries(archetypeSignals)
+    .filter(([_, score]) => score >= 4)
+    .sort((a, b) => b[1] - a[1]);
+  const primaryArchetype = sortedArchetypes.length > 0 ? sortedArchetypes[0][0] : null;
+  const secondaryArchetype = sortedArchetypes.length > 1 ? sortedArchetypes[1][0] : null;
+
+  // Interaction density
+  let interactionDensity: 'low' | 'medium' | 'high' = 'low';
+  if (interactionCount >= 6) interactionDensity = 'high';
+  else if (interactionCount >= 3) interactionDensity = 'medium';
+
+  // Determine draft phase
+  let phase: 'power' | 'direction' | 'building' | 'filling';
+  if (picks.length <= 3) phase = 'power';
+  else if (picks.length <= 8) phase = 'direction';
+  else if (picks.length <= 35) phase = 'building';
+  else phase = 'filling';
+
+  return {
+    curve,
+    curveNeeds,
+    creatureCount,
+    removalCount,
+    cardDrawCount,
+    landCount,
+    artifactCount,
+    planeswalkerCount,
+    instantSorceryCount,
+    colorSources,
+    colorRequirements,
+    manaBaseHealth,
+    hasThreats,
+    hasAnswers,
+    hasCardAdvantage,
+    hasFinisher,
+    hasEarlyGame,
+    hasLateGame,
+    hasManaSinks,
+    interactionCount,
+    interactionDensity,
+    buildArounds,
+    buildAroundNeeds,
+    archetypeSignals,
+    primaryArchetype,
+    secondaryArchetype,
+    phase,
+    pickNumber: picks.length,
+    hasFastMana,
+    hasDiscard,
+    hasTutors,
+    hasRecursion
+  };
+}
+
 // Calculate synergy-adjusted ELO for a card given current picks
+// WORLD-CLASS: Considers curve, types, mana, roles, archetypes, phase, diminishing returns
 function getSynergyAdjustedElo(
   card: CubeCard,
-  picks: CubeCard[]
+  picks: CubeCard[],
+  currentPack?: CubeCard[]
 ): { baseElo: number; adjustedElo: number; adjustment: number; reasons: string[] } {
   const baseElo = getEloData(card.name)?.elo || 1500;
   const reasons: string[] = [];
   let adjustment = 0;
 
-  if (picks.length === 0) {
-    return { baseElo, adjustedElo: baseElo, adjustment: 0, reasons: ['P1P1 - raw power matters most'] };
+  // ALWAYS check pack synergy (combo pairs in same pack)
+  if (currentPack && currentPack.length > 0) {
+    const packSynergy = getPackSynergyBonus(card, currentPack);
+    if (packSynergy.bonus > 0) {
+      adjustment += packSynergy.bonus;
+      reasons.push(...packSynergy.reasons);
+    }
   }
 
+  // P1P1 and P1P2: Pack-relative positioning
+  if (picks.length <= 1 && currentPack && currentPack.length > 0) {
+    const packElos = currentPack.map(c => ({
+      name: c.name,
+      elo: getEloData(c.name)?.elo || 1500
+    })).sort((a, b) => b.elo - a.elo);
+
+    const packAvg = packElos.reduce((sum, c) => sum + c.elo, 0) / packElos.length;
+    const cardRank = packElos.findIndex(c => c.name === card.name) + 1;
+    const topElo = packElos[0]?.elo || 1500;
+    const packSize = packElos.length;
+
+    // Pack position
+    if (cardRank === 1) { adjustment += 30; reasons.push('Best in pack'); }
+    else if (cardRank === 2) { adjustment += 20; reasons.push('2nd best'); }
+    else if (cardRank === 3) { adjustment += 12; reasons.push('3rd best'); }
+    else if (cardRank === 4) { adjustment += 5; reasons.push('4th best'); }
+    else if (cardRank <= Math.floor(packSize / 2)) { adjustment += 3; reasons.push('Upper half'); }
+    else if (cardRank >= packSize - 1) { adjustment -= 25; reasons.push('Bottom of pack'); }
+    else if (cardRank >= packSize - 3) { adjustment -= 15; reasons.push('Lower tier'); }
+    else { adjustment -= 5; reasons.push('Mid-pack'); }
+
+    // Premium/below average
+    const aboveAvg = baseElo - packAvg;
+    if (aboveAvg > 150) { adjustment += 20; reasons.push('Premium card'); }
+    else if (aboveAvg < -150) { adjustment -= 15; reasons.push('Below pack quality'); }
+
+    // Clear standout
+    if (cardRank === 1 && topElo - (packElos[1]?.elo || 1500) > 100) {
+      adjustment += 15; reasons.push('Clear P1');
+    }
+
+    // Early flexibility bonus
+    const cardColors = card.color_identity || [];
+    if (cardColors.length === 0) { adjustment += 15; reasons.push('Colorless flexibility'); }
+    else if (cardColors.length === 1) { adjustment += 5; reasons.push('Single color'); }
+
+    return { baseElo: Math.round(baseElo), adjustedElo: Math.round(baseElo + adjustment), adjustment: Math.round(adjustment), reasons };
+  }
+
+  if (picks.length === 0) {
+    return { baseElo: Math.round(baseElo), adjustedElo: Math.round(baseElo), adjustment: 0, reasons: ['P1P1 - power first'] };
+  }
+
+  // ============================================================================
+  // FULL DECK ANALYSIS FOR PICKS 2+
+  // ============================================================================
+
+  const deck = analyzeDeck(picks);
   const cardColors = card.color_identity || [];
   const typeLine = card.type_line?.toLowerCase() || '';
   const oracleText = card.oracle_text?.toLowerCase() || '';
   const cmc = card.cmc || 0;
+  const name = card.name;
 
-  // Calculate main colors
+  // ============================================================================
+  // 1. COLOR FIT (scales with commitment)
+  // ============================================================================
   const colorCts: Record<string, number> = {};
   picks.forEach(c => c.color_identity?.forEach(col => { colorCts[col] = (colorCts[col] || 0) + 1; }));
-  const mainColors = Object.entries(colorCts).filter(([_, count]) => count >= 1).map(([color]) => color);
-  const strongColors = Object.entries(colorCts).filter(([_, count]) => count >= 2).map(([color]) => color);
+  const mainColors = Object.entries(colorCts).filter(([_, count]) => count >= 2).map(([color]) => color);
+  const touchedColors = Object.entries(colorCts).filter(([_, count]) => count >= 1).map(([color]) => color);
 
-  // Detect archetype direction from picks
-  const hasAggro = picks.some(p => {
-    const pCmc = p.cmc || 0;
-    const pType = p.type_line?.toLowerCase() || '';
-    return pCmc <= 3 && pType.includes('creature') && (p.color_identity?.includes('R') || p.color_identity?.includes('W'));
-  });
-  const hasRamp = picks.some(p => ['Channel', 'Fastbond', 'Natural Order', 'Rofellos, Llanowar Emissary'].includes(p.name) ||
-    (p.oracle_text?.toLowerCase().includes('add') && p.oracle_text?.toLowerCase().includes('mana') && p.type_line?.toLowerCase().includes('creature')));
-  const hasReanimator = picks.some(p => ['Reanimate', 'Animate Dead', 'Entomb', 'Necromancy', 'Exhume', 'Shallow Grave'].includes(p.name));
-  const hasStorm = picks.some(p => ['Brain Freeze', 'Tendrils of Agony', "Yawgmoth's Will", 'Underworld Breach', 'Dark Ritual'].includes(p.name));
-  const hasTinker = picks.some(p => ['Tinker', 'Tolarian Academy', "Mishra's Workshop"].includes(p.name));
-  const hasControl = picks.some(p => ['Counterspell', 'Force of Will', 'Jace, the Mind Sculptor', 'Wrath of God', 'Supreme Verdict'].includes(p.name));
-
-  // COLOR FIT - scales with pick count
   const isColorless = cardColors.length === 0;
   const isOnColor = isColorless || cardColors.every(c => mainColors.includes(c));
-  const isStronglyOnColor = isColorless || cardColors.every(c => strongColors.includes(c));
-  const addsNewColor = cardColors.length > 0 && cardColors.some(c => !mainColors.includes(c));
+  const isTouchedColor = isColorless || cardColors.every(c => touchedColors.includes(c));
+  const addsNewColor = cardColors.some(c => !touchedColors.includes(c));
 
-  // Scale factor: small early, bigger later (0.3 at pick 1, 1.0 at pick 5+)
-  const colorScale = Math.min(1, 0.3 + (picks.length * 0.15));
+  const colorScale = Math.min(1, 0.2 + (picks.length * 0.1)); // 0.2 at pick 1, 1.0 at pick 8+
 
-  if (mainColors.length > 0) {
-    if (isStronglyOnColor) {
-      const bonus = Math.round(80 * colorScale);
+  if (isColorless) {
+    adjustment += 10;
+    reasons.push('+10 colorless');
+  } else if (mainColors.length > 0) {
+    if (isOnColor) {
+      const bonus = Math.round(60 * colorScale);
       adjustment += bonus;
       reasons.push(`+${bonus} on-color`);
-    } else if (isOnColor) {
-      const bonus = Math.round(40 * colorScale);
+    } else if (isTouchedColor) {
+      const bonus = Math.round(25 * colorScale);
       adjustment += bonus;
-      reasons.push(`+${bonus} fits colors`);
+      reasons.push(`+${bonus} touched color`);
     } else if (addsNewColor) {
+      // Adding a new color - penalty based on how late we are
       const percentile = getPercentile(card.name);
-      if (percentile >= 90) {
-        const penalty = Math.round(20 * colorScale);
+      if (percentile >= 95) {
+        // Top 5% cards are worth splashing
+        const penalty = Math.round(10 * colorScale);
         adjustment -= penalty;
-        reasons.push(`-${penalty} splash`);
-      } else if (percentile >= 75) {
-        const penalty = Math.round(60 * colorScale);
+        reasons.push(`-${penalty} splash (worth it)`);
+      } else if (percentile >= 85) {
+        const penalty = Math.round(40 * colorScale);
         adjustment -= penalty;
         reasons.push(`-${penalty} off-color`);
       } else {
-        const penalty = Math.round(100 * colorScale);
+        const penalty = Math.round(80 * colorScale);
         adjustment -= penalty;
-        reasons.push(`-${penalty} off-color`);
+        reasons.push(`-${penalty} wrong colors`);
       }
     }
   }
 
-  // Artifact synergy from first artifact pick
-  const hasArtifacts = picks.some(p => p.type_line?.toLowerCase().includes('artifact'));
-  if (hasArtifacts && typeLine.includes('artifact')) {
-    adjustment += 30;
-    reasons.push('+30 artifact synergy');
+  // ============================================================================
+  // 2. MANA CURVE NEEDS
+  // ============================================================================
+  if (!typeLine.includes('land')) {
+    const cardCmc = Math.min(cmc, 6);
+    const curveNeed = deck.curveNeeds.find(n => n.cmc === cardCmc);
+
+    if (curveNeed && curveNeed.priority >= 4) {
+      adjustment += 40;
+      reasons.push(`+40 need ${cardCmc}-drops`);
+    } else if (curveNeed && curveNeed.priority >= 2) {
+      adjustment += 20;
+      reasons.push(`+20 want ${cardCmc}-drops`);
+    } else if (deck.curve[cardCmc] >= 4 && cardCmc <= 3) {
+      adjustment -= 25;
+      reasons.push(`-25 curve glut at ${cardCmc}`);
+    }
+
+    // Aggro decks need low curve
+    if (deck.primaryArchetype === 'aggro') {
+      if (cmc <= 2) { adjustment += 20; reasons.push('+20 aggro curve'); }
+      else if (cmc >= 5) { adjustment -= 40; reasons.push('-40 too slow for aggro'); }
+    }
   }
 
-  // ARCHETYPE SYNERGY BONUSES
-  if (hasAggro) {
-    if (typeLine.includes('creature') && cmc <= 2) {
-      adjustment += 50;
-      reasons.push('+50 aggro creature');
-    } else if (oracleText.includes('damage') && (oracleText.includes('any target') || oracleText.includes('target player'))) {
-      adjustment += 40;
-      reasons.push('+40 burn spell');
-    } else if (cmc >= 5 && !['Channel', 'Natural Order', 'Tinker'].includes(card.name)) {
-      adjustment -= 40;
-      reasons.push('-40 too slow for aggro');
-    }
-    // Ramp doesn't fit aggro
-    if (['Fastbond', 'Oracle of Mul Daya', 'Exploration'].includes(card.name)) {
-      adjustment -= 80;
-      reasons.push('-80 ramp in aggro deck');
-    }
-  }
+  // ============================================================================
+  // 3. CARD TYPE BALANCE
+  // ============================================================================
 
-  if (hasRamp) {
-    if (cmc >= 6 && typeLine.includes('creature')) {
-      adjustment += 60;
-      reasons.push('+60 ramp payoff');
-    } else if (oracleText.includes('add') && oracleText.includes('mana')) {
-      adjustment += 40;
-      reasons.push('+40 mana acceleration');
-    } else if (oracleText.includes('search') && oracleText.includes('land')) {
+  // Creature count (most decks want 12-17)
+  if (typeLine.includes('creature')) {
+    if (deck.creatureCount < 8) {
       adjustment += 30;
-      reasons.push('+30 land search');
+      reasons.push('+30 need creatures');
+    } else if (deck.creatureCount < 12) {
+      adjustment += 15;
+      reasons.push('+15 want creatures');
+    } else if (deck.creatureCount >= 18 && deck.primaryArchetype !== 'aggro') {
+      adjustment -= 20;
+      reasons.push('-20 enough creatures');
     }
   }
 
-  if (hasReanimator) {
-    if (typeLine.includes('creature') && cmc >= 6) {
-      adjustment += 70;
-      reasons.push('+70 reanimation target');
-    } else if (['Entomb', 'Faithless Looting', 'Careful Study', 'Collective Brutality'].includes(card.name)) {
-      adjustment += 60;
-      reasons.push('+60 enables reanimator');
-    } else if (oracleText.includes('discard') && oracleText.includes('card')) {
+  // Removal (most decks want 4-6)
+  const isRemoval = oracleText.includes('destroy target') || oracleText.includes('exile target') ||
+    (oracleText.includes('deals') && oracleText.includes('damage') && oracleText.includes('target')) ||
+    oracleText.includes('counter target spell');
+  if (isRemoval) {
+    if (deck.removalCount < 3) {
+      adjustment += 35;
+      reasons.push('+35 need removal');
+    } else if (deck.removalCount < 5) {
+      adjustment += 15;
+      reasons.push('+15 want removal');
+    } else if (deck.removalCount >= 8) {
+      adjustment -= 15;
+      reasons.push('-15 enough removal');
+    }
+  }
+
+  // Card draw (most decks want 3-5 sources)
+  const isCardDraw = oracleText.includes('draw') && oracleText.includes('card');
+  if (isCardDraw) {
+    if (deck.cardDrawCount < 2) {
       adjustment += 30;
-      reasons.push('+30 discard outlet');
+      reasons.push('+30 need card draw');
+    } else if (deck.cardDrawCount < 4) {
+      adjustment += 15;
+      reasons.push('+15 want card draw');
+    } else if (deck.cardDrawCount >= 6) {
+      adjustment -= 10;
+      reasons.push('-10 enough draw');
     }
   }
 
-  if (hasStorm) {
-    if (oracleText.includes('add {') || ['Dark Ritual', 'Cabal Ritual', 'Seething Song', 'Lotus Petal'].includes(card.name)) {
-      adjustment += 50;
-      reasons.push('+50 storm mana');
-    } else if (oracleText.includes('draw') && cmc <= 2) {
-      adjustment += 40;
-      reasons.push('+40 cantrip for storm');
+  // ============================================================================
+  // 4. ROLE FULFILLMENT
+  // ============================================================================
+
+  // Need threats
+  if (!deck.hasThreats && typeLine.includes('creature') && (cmc >= 3 || oracleText.includes('flying'))) {
+    adjustment += 25;
+    reasons.push('+25 adds threats');
+  }
+
+  // Need answers
+  if (!deck.hasAnswers && isRemoval) {
+    adjustment += 25;
+    reasons.push('+25 adds answers');
+  }
+
+  // Need card advantage
+  if (!deck.hasCardAdvantage && isCardDraw) {
+    adjustment += 25;
+    reasons.push('+25 adds card advantage');
+  }
+
+  // Need finisher (especially mid/late draft)
+  if (!deck.hasFinisher && deck.pickNumber >= 10) {
+    if (cmc >= 6 || (card.power && parseInt(card.power) >= 6) || oracleText.includes('win the game')) {
+      adjustment += 35;
+      reasons.push('+35 need finisher');
     }
   }
 
-  if (hasTinker) {
-    if (typeLine.includes('artifact') && !typeLine.includes('creature')) {
-      adjustment += 40;
-      reasons.push('+40 artifact for Tinker');
-    } else if (['Blightsteel Colossus', 'Myr Battlesphere', 'Sundering Titan', 'Inkwell Leviathan'].includes(card.name)) {
-      adjustment += 80;
-      reasons.push('+80 Tinker target');
+  // ============================================================================
+  // 5. ARCHETYPE SYNERGY (only if committed)
+  // ============================================================================
+
+  const archetype = deck.primaryArchetype;
+  const archetypeStrength = archetype ? deck.archetypeSignals[archetype] : 0;
+
+  if (archetype && archetypeStrength >= 6) {
+    // Committed to an archetype - apply strong bonuses/penalties
+
+    if (archetype === 'aggro') {
+      if (typeLine.includes('creature') && cmc <= 2) { adjustment += 40; reasons.push('+40 aggro creature'); }
+      if (oracleText.includes('haste')) { adjustment += 25; reasons.push('+25 haste'); }
+      if (oracleText.includes('damage') && oracleText.includes('target')) { adjustment += 30; reasons.push('+30 burn'); }
+      if (cmc >= 5 && !['Hazoret the Fervent', 'Hellrider'].includes(name)) { adjustment -= 50; reasons.push('-50 too slow'); }
+    }
+
+    if (archetype === 'control') {
+      if (oracleText.includes('counter target spell')) { adjustment += 35; reasons.push('+35 counterspell'); }
+      if (oracleText.includes('destroy all')) { adjustment += 45; reasons.push('+45 sweeper'); }
+      if (typeLine.includes('planeswalker')) { adjustment += 30; reasons.push('+30 planeswalker'); }
+      if (typeLine.includes('creature') && cmc <= 2 && !oracleText.includes('flash')) { adjustment -= 25; reasons.push('-25 small creature in control'); }
+    }
+
+    if (archetype === 'ramp') {
+      if (cmc >= 6 && typeLine.includes('creature')) { adjustment += 50; reasons.push('+50 ramp payoff'); }
+      if (oracleText.includes('add') && oracleText.includes('mana')) { adjustment += 35; reasons.push('+35 mana acceleration'); }
+      if (oracleText.includes('search') && oracleText.includes('land')) { adjustment += 25; reasons.push('+25 land search'); }
+    }
+
+    if (archetype === 'reanimator') {
+      if (typeLine.includes('creature') && cmc >= 7) { adjustment += 60; reasons.push('+60 reanimation target'); }
+      if (['Entomb', 'Faithless Looting', 'Careful Study', 'Collective Brutality', 'Unmarked Grave'].includes(name)) {
+        adjustment += 55; reasons.push('+55 enabler');
+      }
+      if (oracleText.includes('discard') && oracleText.includes('card')) { adjustment += 25; reasons.push('+25 discard outlet'); }
+      if (['Reanimate', 'Animate Dead', 'Necromancy', 'Exhume'].includes(name)) { adjustment += 50; reasons.push('+50 reanimation spell'); }
+    }
+
+    if (archetype === 'storm') {
+      if (['Dark Ritual', 'Cabal Ritual', 'Seething Song', 'Lotus Petal', 'Lion\'s Eye Diamond'].includes(name)) {
+        adjustment += 50; reasons.push('+50 fast mana');
+      }
+      if (oracleText.includes('draw') && cmc <= 2) { adjustment += 35; reasons.push('+35 cantrip'); }
+      if (['Yawgmoth\'s Will', 'Underworld Breach', 'Past in Flames'].includes(name)) {
+        adjustment += 70; reasons.push('+70 storm engine');
+      }
+      if (typeLine.includes('creature') && cmc >= 3) { adjustment -= 30; reasons.push('-30 clunky creature'); }
+    }
+
+    if (archetype === 'artifacts') {
+      if (typeLine.includes('artifact')) { adjustment += 25; reasons.push('+25 artifact'); }
+      if (['Tinker', 'Goblin Welder', 'Daretti, Scrap Savant'].includes(name)) { adjustment += 50; reasons.push('+50 artifact engine'); }
+      if (['Blightsteel Colossus', 'Myr Battlesphere', 'Sundering Titan', 'Wurmcoil Engine'].includes(name)) {
+        adjustment += 60; reasons.push('+60 artifact payoff');
+      }
+    }
+
+    if (archetype === 'sneak') {
+      if (['Emrakul, the Aeons Torn', 'Griselbrand', 'Ulamog, the Ceaseless Hunger', 'Omniscience'].includes(name)) {
+        adjustment += 70; reasons.push('+70 cheat target');
+      }
+      if (['Show and Tell', 'Sneak Attack', 'Through the Breach', 'Oath of Druids'].includes(name)) {
+        adjustment += 60; reasons.push('+60 cheat enabler');
+      }
+    }
+  } else if (archetype && archetypeStrength >= 4) {
+    // Leaning toward an archetype - apply moderate bonuses
+    // (Half the committed bonuses)
+    if (archetype === 'reanimator') {
+      if (typeLine.includes('creature') && cmc >= 7) { adjustment += 30; reasons.push('+30 potential target'); }
+      if (['Reanimate', 'Animate Dead', 'Entomb'].includes(name)) { adjustment += 35; reasons.push('+35 reanimator piece'); }
+    }
+    if (archetype === 'storm') {
+      if (['Dark Ritual', 'Cabal Ritual', 'Lion\'s Eye Diamond'].includes(name)) { adjustment += 30; reasons.push('+30 storm mana'); }
+    }
+    if (archetype === 'artifacts' && typeLine.includes('artifact')) {
+      adjustment += 15; reasons.push('+15 artifact synergy');
     }
   }
 
-  if (hasControl) {
-    if (oracleText.includes('counter target spell')) {
-      adjustment += 40;
-      reasons.push('+40 counterspell');
-    } else if (oracleText.includes('destroy all creatures')) {
-      adjustment += 50;
-      reasons.push('+50 board wipe');
-    } else if (typeLine.includes('planeswalker')) {
-      adjustment += 30;
-      reasons.push('+30 planeswalker for control');
+  // ============================================================================
+  // 6. DRAFT PHASE AWARENESS
+  // ============================================================================
+
+  if (deck.phase === 'power') {
+    // Early: prioritize raw power, flexibility
+    if (isColorless) { adjustment += 10; reasons.push('+10 early flexibility'); }
+    const percentile = getPercentile(name);
+    if (percentile >= 95) { adjustment += 20; reasons.push('+20 premium early'); }
+  } else if (deck.phase === 'filling') {
+    // Late: fill holes aggressively
+    if (deck.creatureCount < 10 && typeLine.includes('creature')) {
+      adjustment += 25; reasons.push('+25 late creature need');
+    }
+    if (deck.removalCount < 3 && isRemoval) {
+      adjustment += 30; reasons.push('+30 late removal need');
+    }
+    // Playables matter more
+    if (isOnColor || isColorless) {
+      adjustment += 15; reasons.push('+15 playable');
     }
   }
 
-  // Universal cards get bonus everywhere
-  if (['Black Lotus', 'Ancestral Recall', 'Time Walk', 'Sol Ring', 'Mana Crypt'].includes(card.name)) {
+  // ============================================================================
+  // 7. DIMINISHING RETURNS
+  // ============================================================================
+
+  // Count similar effects already in deck
+  const hasLotusEffect = picks.some(p => ['Black Lotus', 'Lotus Petal', 'Lion\'s Eye Diamond'].includes(p.name));
+  if (hasLotusEffect && ['Black Lotus', 'Lotus Petal', 'Lion\'s Eye Diamond'].includes(name)) {
+    adjustment -= 15; reasons.push('-15 diminishing fast mana');
+  }
+
+  const counterspellCount = picks.filter(p => p.oracle_text?.toLowerCase().includes('counter target spell')).length;
+  if (counterspellCount >= 3 && oracleText.includes('counter target spell')) {
+    adjustment -= 20; reasons.push('-20 enough counters');
+  }
+
+  const boardWipeCount = picks.filter(p => p.oracle_text?.toLowerCase().includes('destroy all creatures')).length;
+  if (boardWipeCount >= 2 && oracleText.includes('destroy all creatures')) {
+    adjustment -= 25; reasons.push('-25 enough wipes');
+  }
+
+  // ============================================================================
+  // 8. MANA BASE HEALTH
+  // ============================================================================
+
+  // Dual lands and fixing
+  if (typeLine.includes('land') && cardColors.length >= 2) {
+    if (deck.manaBaseHealth < 70) {
+      adjustment += 40; reasons.push('+40 need fixing');
+    } else if (cardColors.every(c => touchedColors.includes(c))) {
+      adjustment += 20; reasons.push('+20 on-color dual');
+    }
+  }
+
+  // Fetch lands
+  if (typeLine.includes('land') && oracleText.includes('search') && oracleText.includes('land')) {
+    adjustment += 25; reasons.push('+25 fetch land');
+  }
+
+  // If 3+ colors and mana base is stressed, penalize heavy color requirements
+  if (touchedColors.length >= 3 && deck.manaBaseHealth < 60) {
+    const colorWeight = cardColors.length;
+    if (colorWeight >= 2) {
+      adjustment -= 20; reasons.push('-20 mana concerns');
+    }
+  }
+
+  // ============================================================================
+  // 9. UNIVERSAL POWER (never terrible)
+  // ============================================================================
+
+  const power9 = ['Black Lotus', 'Ancestral Recall', 'Time Walk', 'Mox Sapphire', 'Mox Ruby',
+    'Mox Pearl', 'Mox Emerald', 'Mox Jet', 'Sol Ring', 'Mana Crypt', 'Mana Vault'];
+  if (power9.includes(name)) {
     if (adjustment < 0) {
-      adjustment = Math.max(adjustment, -30); // Cap the penalty for power 9
-      reasons.push('Power 9 penalty capped');
+      adjustment = Math.max(adjustment, -20);
+      reasons.push('Power capped');
     }
   }
 
   const adjustedElo = Math.round(baseElo + adjustment);
-  return { baseElo: Math.round(baseElo), adjustedElo, adjustment, reasons };
+  return { baseElo: Math.round(baseElo), adjustedElo, adjustment: Math.round(adjustment), reasons };
 }
 
 // LocalStorage keys
@@ -533,8 +1967,8 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     return Math.round((correct / quizState.history.length) * 100);
   }, [quizState]);
 
-  // Detect synergies between a card and current picks
-  const getCardSynergies = useCallback((card: CubeCard): string[] => {
+  // Detect synergies between a card and current picks (available for future use)
+  const _getCardSynergies = useCallback((card: CubeCard): string[] => {
     if (!draftState || draftState.picks.length === 0) return [];
 
     const synergies: string[] = [];
@@ -586,8 +2020,8 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     return synergies.slice(0, 3); // Max 3 synergies shown
   }, [draftState]);
 
-  // Wheel prediction - check if a card we passed might come back
-  const getWheelPrediction = useCallback((card: CubeCard): { mightWheel: boolean; passedAtPick: number } | null => {
+  // Wheel prediction - check if a card we passed might come back (available for future use)
+  const _getWheelPrediction = useCallback((card: CubeCard): { mightWheel: boolean; passedAtPick: number } | null => {
     if (!draftState) return null;
 
     const passedInfo = draftState.passedCards.get(card.id);
@@ -838,6 +2272,70 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     return { creatures, removal, cardDraw, manaAccel, lands, avgCmc, cmcCounts, needs, needsWeights };
   }, [draftState]);
 
+  // ============================================================================
+  // DRAFT INTELLIGENCE HOOKS
+  // ============================================================================
+
+  // Current draft phase with contextual advice
+  const draftPhase = useMemo(() => {
+    if (!draftState) return null;
+    return getDraftPhase(draftState.pickNumber, draftState.packNumber);
+  }, [draftState?.pickNumber, draftState?.packNumber]);
+
+  // Archetype commitment probabilities
+  const archetypeCommitments = useMemo(() => {
+    if (!draftState || draftState.picks.length === 0) return [];
+    return getArchetypeCommitments(draftState.picks);
+  }, [draftState?.picks]);
+
+  // Draft signals - what's open vs cut
+  const draftSignals = useMemo(() => {
+    if (!draftState) return null;
+    return getDraftSignals(
+      draftState.passedCards,
+      draftState.wheeledCards,
+      draftState.picks,
+      draftState.allPlayerPicks
+    );
+  }, [draftState?.passedCards, draftState?.wheeledCards, draftState?.picks, draftState?.allPlayerPicks]);
+
+  // Enabler/Payoff balance for combo archetypes
+  const enablerPayoffBalance = useMemo(() => {
+    if (!draftState || draftState.picks.length < 3) return [];
+    return getEnablerPayoffBalance(draftState.picks);
+  }, [draftState?.picks]);
+
+  // Mana base status
+  const manaBaseStatus = useMemo(() => {
+    if (!draftState || draftState.picks.length < 5) return null;
+    return getManaBaseStatus(draftState.picks);
+  }, [draftState?.picks]);
+
+  // Deck win rate estimate
+  const deckWinRate = useMemo(() => {
+    if (!draftState || draftState.picks.length < 10) return null;
+    return estimateDeckWinRate(draftState.picks, archetypeCommitments);
+  }, [draftState?.picks, archetypeCommitments]);
+
+  // Synergy connections between picks
+  const synergyConnections = useMemo(() => {
+    if (!draftState || draftState.picks.length < 3) return [];
+    return getSynergyConnections(draftState.picks);
+  }, [draftState?.picks]);
+
+  // Curve analysis
+  const curveAnalysis = useMemo(() => {
+    if (!draftState || draftState.picks.length < 8) return null;
+    return getCurveAnalysis(draftState.picks);
+  }, [draftState?.picks]);
+
+  // Regrettable passes (cards we passed that we now want)
+  const topRegrets = useMemo(() => {
+    if (!draftState) return [];
+    const regrets = Array.from(draftState.regrettablePasses.values());
+    return regrets.slice(0, 3);
+  }, [draftState?.regrettablePasses]);
+
   // Generate smart coach recommendation
   const coachExplanation = useMemo(() => {
     if (!draftState || draftState.isComplete) return null;
@@ -876,40 +2374,30 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     else if (hasNaturalOrder) currentArchetype = 'Green Ramp';
     else if (hasAggro) currentArchetype = 'Aggro';
 
-    // Score each card in pack
+    // Score each card in pack using synergy-adjusted ELO
     const scored = currentPack.map(card => {
-      let score = 0;
       const reasons: string[] = [];
-      const elo = getEloData(card.name)?.elo || 0;
       const percentile = getPercentile(card.name);
       const cardColors = card.color_identity || [];
-      const isColorless = cardColors.length === 0;
-      const isOnColor = isColorless || cardColors.every(c => mainColors.includes(c));
       const typeLine = card.type_line?.toLowerCase() || '';
       const oracleText = card.oracle_text?.toLowerCase() || '';
       const cmc = card.cmc || 0;
 
-      // Base ELO score (0-100 points)
-      score += Math.min(100, (elo - 1200) / 10);
+      // Use synergy-adjusted ELO as the primary score
+      const synergyData = getSynergyAdjustedElo(card, picks);
+      let score = synergyData.adjustedElo;
+      const elo = synergyData.adjustedElo; // Use adjusted ELO for display
 
-      // Early draft: prioritize power (picks 1-5)
-      if (picks.length < 5) {
-        if (percentile >= 90) {
-          score += 50;
-          reasons.push('Premium card - take best available early');
-        }
-        // Don't penalize off-color early
-      } else {
-        // Later draft: prioritize synergy and color
-        if (isOnColor) {
-          score += 30;
-          reasons.push(`Fits your ${mainColors.join('')} colors`);
-        } else if (percentile >= 85) {
-          score += 10;
-          reasons.push('Powerful enough to splash');
-        } else {
-          score -= 40;
-          reasons.push('Off-color');
+      // Add synergy reasons from adjusted ELO
+      synergyData.reasons.forEach(reason => {
+        if (!reason.includes('P1P1')) reasons.push(reason);
+      });
+
+      // Early draft: extra bonus for premium cards
+      if (picks.length < 5 && percentile >= 90) {
+        score += 50;
+        if (!reasons.some(r => r.includes('Premium'))) {
+          reasons.push('Premium card - prioritize power early');
         }
       }
 
@@ -1061,6 +2549,22 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
       pack.forEach(c => usedCardIds.add(c.id));
     }
 
+    // Initialize ELO history for all cards in pack 1 (what we can see)
+    const initialSeenCards = new Set<string>();
+    const initialEloHistory = new Map<string, CardEloHistory>();
+
+    // Record initial adjusted ELO for cards in our first pack
+    tablePacks[0].forEach(card => {
+      initialSeenCards.add(card.id);
+      const baseElo = getEloData(card.name)?.elo || 1500;
+      initialEloHistory.set(card.id, {
+        cardId: card.id,
+        cardName: card.name,
+        baseElo,
+        history: [{ pick: 0, adjustedElo: baseElo, adjustment: 0 }], // Pick 0 = before any picks
+      });
+    });
+
     setDraftState({
       tablePacks,
       picks: [],
@@ -1072,6 +2576,10 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
       passedCards: new Map(),
       decisions: [],
       allPlayerPicks: Array.from({ length: NUM_PLAYERS }, () => []),
+      cardEloHistory: initialEloHistory,
+      seenCards: initialSeenCards,
+      regrettablePasses: new Map(),
+      wheeledCards: new Map(),
     });
 
     // Quiz draft mode: hide coach, show feedback after each pick
@@ -1102,21 +2610,31 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     ['B', 'R'], ['U', 'W'], ['G', 'W'], ['U', 'R'],
   ], []);
 
-  const simulateOtherPlayersPicks = (packs: CubeCard[][]): { newPacks: CubeCard[][]; aiPicks: (CubeCard | null)[] } => {
+  const simulateOtherPlayersPicks = (packs: CubeCard[][], allPlayerPicks: CubeCard[][]): { newPacks: CubeCard[][]; aiPicks: (CubeCard | null)[] } => {
     const aiPicks: (CubeCard | null)[] = Array(NUM_PLAYERS).fill(null);
     const newPacks = packs.map((pack, playerIndex) => {
       if (playerIndex === 0 || pack.length === 0) return pack;
+
+      // Get this AI's current picks for synergy calculation
+      const aiPlayerPicks = allPlayerPicks[playerIndex] || [];
       const prefs = aiPreferences[playerIndex] || [];
+
       const scoredCards = pack.map(card => {
-        let score = card.powerLevel * 10;
-        if ((card.color_identity?.length || 0) === 0) score += 15;
+        // Use synergy-adjusted ELO as the primary scoring mechanism
+        const synergy = getSynergyAdjustedElo(card, aiPlayerPicks);
+        let score = synergy.adjustedElo;
+
+        // Add color preference bias for AI personality (slight nudge toward their preferred colors)
         const cardColors = card.color_identity || [];
         const matchingColors = cardColors.filter(c => prefs.includes(c)).length;
-        if (matchingColors > 0) score += matchingColors * 20;
-        if (cardColors.length > 0 && matchingColors === 0 && card.powerLevel < 9) score -= 30;
-        score += Math.random() * 10;
+        if (matchingColors > 0) score += matchingColors * 15; // Slight preference bonus
+
+        // Small random variance for variety
+        score += Math.random() * 20;
+
         return { card, score };
       });
+
       scoredCards.sort((a, b) => b.score - a.score);
       const pickedCard = scoredCards[0].card;
       aiPicks[playerIndex] = pickedCard;
@@ -1139,12 +2657,26 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     return newPacks;
   };
 
-  const startNewPack = useCallback((currentPicks: CubeCard[], nextPackNumber: number, currentUsedCardIds: Set<string>, currentPassedCards: Map<string, { card: CubeCard; passedAtPick: number; packNumber: number }>, currentDecisions: PickDecision[], currentAllPlayerPicks: CubeCard[][]): DraftState => {
+  const startNewPack = useCallback((
+    currentPicks: CubeCard[],
+    nextPackNumber: number,
+    currentUsedCardIds: Set<string>,
+    currentPassedCards: Map<string, { card: CubeCard; passedAtPick: number; packNumber: number }>,
+    currentDecisions: PickDecision[],
+    currentAllPlayerPicks: CubeCard[][],
+    currentEloHistory: Map<string, CardEloHistory>,
+    currentSeenCards: Set<string>,
+    currentRegrettablePasses: Map<string, { card: CubeCard; passedAt: number; whyRegret: string }>,
+    currentWheeledCards: Map<string, { card: CubeCard; originalPick: number; wheeledAt: number }>
+  ): DraftState => {
     // Filter out ALL cards that have been dealt in previous packs
     const availableCards = cards.filter(c => !currentUsedCardIds.has(c.id));
     const shuffled = shuffleArray(availableCards);
     const tablePacks: CubeCard[][] = [];
     const newUsedCardIds = new Set(currentUsedCardIds);
+    const newSeenCards = new Set(currentSeenCards);
+    const newEloHistory = new Map(currentEloHistory);
+    const pickNum = currentPicks.length;
 
     // Deal new packs and track the cards
     for (let i = 0; i < NUM_PLAYERS; i++) {
@@ -1152,6 +2684,21 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
       tablePacks.push(pack);
       pack.forEach(c => newUsedCardIds.add(c.id));
     }
+
+    // Add new cards from our pack to history
+    tablePacks[0].forEach(card => {
+      newSeenCards.add(card.id);
+      const baseElo = getEloData(card.name)?.elo || 1500;
+      const synergy = getSynergyAdjustedElo(card, currentPicks);
+      if (!newEloHistory.has(card.id)) {
+        newEloHistory.set(card.id, {
+          cardId: card.id,
+          cardName: card.name,
+          baseElo,
+          history: [{ pick: pickNum, adjustedElo: synergy.adjustedElo, adjustment: synergy.adjustment }],
+        });
+      }
+    });
 
     return {
       tablePacks,
@@ -1164,6 +2711,10 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
       passedCards: currentPassedCards,
       decisions: currentDecisions,
       allPlayerPicks: currentAllPlayerPicks,
+      cardEloHistory: newEloHistory,
+      seenCards: newSeenCards,
+      regrettablePasses: currentRegrettablePasses,
+      wheeledCards: currentWheeledCards,
     };
   }, [cards]);
 
@@ -1209,12 +2760,26 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
       idx === 0 ? [...picks, card] : [...picks]
     );
 
+    // Update ELO history for all cards we can see (track how their value shifts with this pick)
+    const newEloHistory = new Map(draftState.cardEloHistory);
+    const newSeenCards = new Set(draftState.seenCards);
+    const pickNum = newPicks.length;
+
+    // Update history for cards in current pack (they'll go to next player)
+    passed.forEach(c => {
+      const synergy = getSynergyAdjustedElo(c, newPicks);
+      const existing = newEloHistory.get(c.id);
+      if (existing) {
+        existing.history.push({ pick: pickNum, adjustedElo: synergy.adjustedElo, adjustment: synergy.adjustment });
+      }
+    });
+
     let packsAfterHumanPick = draftState.tablePacks.map((pack, idx) =>
       idx === 0 ? pack.filter(c => c.id !== card.id) : pack
     );
 
-    // AI players make their picks
-    const { newPacks: packsAfterAiPicks, aiPicks } = simulateOtherPlayersPicks(packsAfterHumanPick);
+    // AI players make their picks using synergy-adjusted ELO
+    const { newPacks: packsAfterAiPicks, aiPicks } = simulateOtherPlayersPicks(packsAfterHumanPick, newAllPlayerPicks);
 
     // Record AI picks
     aiPicks.forEach((aiPick, playerIdx) => {
@@ -1226,6 +2791,57 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     const newTablePacks = rotatePacks(packsAfterAiPicks, draftState.direction);
     const newPickNumber = draftState.pickNumber + 1;
 
+    // Track wheeled cards and regrettable passes
+    const newRegrettablePasses = new Map(draftState.regrettablePasses);
+    const newWheeledCards = new Map(draftState.wheeledCards);
+
+    // Update history for cards in our new pack (after rotation)
+    if (newTablePacks[0]) {
+      newTablePacks[0].forEach(c => {
+        const synergy = getSynergyAdjustedElo(c, newPicks);
+        const existing = newEloHistory.get(c.id);
+
+        // Check if this card wheeled back to us (we saw it before)
+        if (draftState.seenCards.has(c.id) && !newWheeledCards.has(c.id)) {
+          const passedInfo = draftState.passedCards.get(c.id);
+          if (passedInfo) {
+            newWheeledCards.set(c.id, {
+              card: c,
+              originalPick: passedInfo.passedAtPick,
+              wheeledAt: pickNum,
+            });
+          }
+        }
+
+        newSeenCards.add(c.id);
+        if (existing) {
+          existing.history.push({ pick: pickNum, adjustedElo: synergy.adjustedElo, adjustment: synergy.adjustment });
+        } else {
+          const baseElo = getEloData(c.name)?.elo || 1500;
+          newEloHistory.set(c.id, {
+            cardId: c.id,
+            cardName: c.name,
+            baseElo,
+            history: [{ pick: pickNum, adjustedElo: synergy.adjustedElo, adjustment: synergy.adjustment }],
+          });
+        }
+      });
+    }
+
+    // Detect regrettable passes - cards we passed that would now be great for us
+    passed.forEach(c => {
+      const synergy = getSynergyAdjustedElo(c, newPicks);
+      const elo = getEloData(c.name)?.elo || 1500;
+      // High synergy bonus + good card = regrettable pass
+      if (synergy.adjustment >= 60 && elo >= 1600) {
+        newRegrettablePasses.set(c.id, {
+          card: c,
+          passedAt: pickNum,
+          whyRegret: synergy.reasons.join(', '),
+        });
+      }
+    });
+
     // Return the result for quiz draft mode
     const result = {
       yourPick: card,
@@ -1236,12 +2852,12 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
 
     if (newPickNumber > CARDS_PER_PACK) {
       if (draftState.packNumber >= 3) {
-        setDraftState({ ...draftState, picks: newPicks, isComplete: true, passedCards: newPassedCards, decisions: newDecisions, allPlayerPicks: newAllPlayerPicks });
+        setDraftState({ ...draftState, picks: newPicks, isComplete: true, passedCards: newPassedCards, decisions: newDecisions, allPlayerPicks: newAllPlayerPicks, cardEloHistory: newEloHistory, seenCards: newSeenCards, regrettablePasses: newRegrettablePasses, wheeledCards: newWheeledCards });
       } else {
-        setDraftState(startNewPack(newPicks, draftState.packNumber + 1, draftState.usedCardIds, newPassedCards, newDecisions, newAllPlayerPicks));
+        setDraftState(startNewPack(newPicks, draftState.packNumber + 1, draftState.usedCardIds, newPassedCards, newDecisions, newAllPlayerPicks, newEloHistory, newSeenCards, newRegrettablePasses, newWheeledCards));
       }
     } else {
-      setDraftState({ ...draftState, tablePacks: newTablePacks, picks: newPicks, pickNumber: newPickNumber, passedCards: newPassedCards, decisions: newDecisions, allPlayerPicks: newAllPlayerPicks });
+      setDraftState({ ...draftState, tablePacks: newTablePacks, picks: newPicks, pickNumber: newPickNumber, passedCards: newPassedCards, decisions: newDecisions, allPlayerPicks: newAllPlayerPicks, cardEloHistory: newEloHistory, seenCards: newSeenCards, regrettablePasses: newRegrettablePasses, wheeledCards: newWheeledCards });
     }
 
     return result;
@@ -2187,6 +3803,11 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     const avgCmc = nonLands.reduce((sum, c) => sum + (c.cmc || 0), 0) / nonLands.length;
     const deckElo = calculateDeckElo(picks.map(p => p.name));
 
+    // Calculate synergy-adjusted ELO for the final deck
+    const adjustedElos = picks.map(card => getSynergyAdjustedElo(card, picks).adjustedElo);
+    const avgAdjustedElo = Math.round(adjustedElos.reduce((sum, e) => sum + e, 0) / picks.length);
+    const synergyBonus = avgAdjustedElo - deckElo.rawAverage;
+
     const mainColors = Object.entries(colorCounts)
       .filter(([_, count]) => count >= 3)
       .sort((a, b) => b[1] - a[1])
@@ -2246,10 +3867,19 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
         </div>
 
         {/* Stats Row */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           <div className="bg-black border border-white/[0.06] rounded-xl p-4 text-center">
             <div className="text-2xl font-bold text-white">{deckElo.rawAverage}</div>
-            <div className="text-xs text-white/40 mt-1">Deck ELO</div>
+            <div className="text-xs text-white/40 mt-1">Raw ELO</div>
+          </div>
+          <div className="bg-black border border-white/[0.06] rounded-xl p-4 text-center">
+            <div className={`text-2xl font-bold ${synergyBonus > 0 ? 'text-green-400' : synergyBonus < 0 ? 'text-red-400' : 'text-white'}`}>
+              {avgAdjustedElo}
+              {synergyBonus !== 0 && (
+                <span className="text-sm ml-1">({synergyBonus > 0 ? '+' : ''}{synergyBonus})</span>
+              )}
+            </div>
+            <div className="text-xs text-white/40 mt-1">Synergy ELO</div>
           </div>
           <div className="bg-black border border-white/[0.06] rounded-xl p-4 text-center">
             <div className="text-2xl font-bold text-white">{draftGrade?.optimalPicks || 0}/{draftGrade?.totalDecisions || 0}</div>
@@ -2444,6 +4074,40 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
       else if (creatureCount >= 18) archetype = 'Midrange';
       else archetype = 'Goodstuff';
 
+      // Calculate average synergy-adjusted ELO for the final deck
+      // This shows how well the cards work together, not just raw power
+      const adjustedElos = picks.map(card => getSynergyAdjustedElo(card, picks).adjustedElo);
+      const avgAdjustedElo = Math.round(adjustedElos.reduce((sum, e) => sum + e, 0) / picks.length);
+
+      // Calculate archetype coherence (0-100%)
+      // Based on: color focus, synergy cards, curve appropriateness
+      let coherenceScore = 0;
+
+      // Color coherence: 2 colors = best, 3 = ok, 4+ = bad
+      const colorCount = Object.keys(colorCts).length;
+      if (colorCount <= 2) coherenceScore += 35;
+      else if (colorCount === 3) coherenceScore += 20;
+      else coherenceScore += 5;
+
+      // Color density: how concentrated picks are in main colors
+      const totalColored = picks.filter(p => (p.color_identity?.length || 0) > 0).length;
+      const inMainColors = picks.filter(p =>
+        p.color_identity?.every(c => mainColors.includes(c)) ?? true
+      ).length;
+      const colorFocus = totalColored > 0 ? (inMainColors / totalColored) * 30 : 30;
+      coherenceScore += colorFocus;
+
+      // Archetype synergy: key cards present for the detected archetype
+      if (archetype === 'Channel Combo' && (hasChannel && hasEmrakul)) coherenceScore += 35;
+      else if (archetype === 'Reanimator' && hasReanimation && picks.some(p => (p.cmc || 0) >= 7)) coherenceScore += 35;
+      else if (archetype === 'Artifact Combo' && hasTinker && picks.filter(p => p.type_line?.toLowerCase().includes('artifact')).length >= 8) coherenceScore += 35;
+      else if (archetype === 'Aggro' && avgCmc < 2.8 && creatureCount >= 15) coherenceScore += 35;
+      else if (archetype === 'Control' && picks.filter(p => p.oracle_text?.toLowerCase().includes('counter') || p.oracle_text?.toLowerCase().includes('destroy target')).length >= 6) coherenceScore += 35;
+      else if (archetype !== 'Unknown' && archetype !== 'Goodstuff') coherenceScore += 20; // Some coherence
+      else coherenceScore += 10; // Goodstuff gets some credit
+
+      const archetypeCoherence = Math.min(100, Math.round(coherenceScore));
+
       const topCards = picks
         .map(p => ({ card: p, elo: getEloData(p.name)?.elo || 0 }))
         .sort((a, b) => b.elo - a.elo)
@@ -2454,6 +4118,8 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
         name: AI_PLAYERS[playerIdx].name,
         picks,
         deckElo: deckElo.rawAverage,
+        avgAdjustedElo,
+        archetypeCoherence,
         mainColors,
         archetype,
         topCards,
@@ -2589,14 +4255,46 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                       )}
                     </div>
 
-                    {/* ELO Score */}
-                    <div className="text-right">
-                      <div className={`text-2xl font-bold ${
-                        rank === 0 ? 'text-amber-400' : isYou ? 'text-purple-300' : 'text-white'
-                      }`}>
-                        {player.deckElo}
+                    {/* ELO Scores */}
+                    <div className="text-right flex items-center gap-4">
+                      {/* Synergy-Adjusted ELO */}
+                      <div className="hidden sm:block">
+                        <div className={`text-lg font-semibold ${
+                          player.avgAdjustedElo > player.deckElo
+                            ? 'text-green-400'
+                            : player.avgAdjustedElo < player.deckElo
+                              ? 'text-red-400'
+                              : 'text-white/70'
+                        }`}>
+                          {player.avgAdjustedElo}
+                          {player.avgAdjustedElo !== player.deckElo && (
+                            <span className="text-xs ml-1">
+                              ({player.avgAdjustedElo > player.deckElo ? '+' : ''}{player.avgAdjustedElo - player.deckElo})
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[9px] text-white/30 uppercase tracking-wide">Synergy ELO</div>
                       </div>
-                      <div className="text-[10px] text-white/30 uppercase tracking-wide">Deck ELO</div>
+                      {/* Coherence */}
+                      <div className="hidden md:block">
+                        <div className={`text-lg font-semibold ${
+                          player.archetypeCoherence >= 80 ? 'text-green-400' :
+                          player.archetypeCoherence >= 60 ? 'text-amber-400' :
+                          'text-red-400'
+                        }`}>
+                          {player.archetypeCoherence}%
+                        </div>
+                        <div className="text-[9px] text-white/30 uppercase tracking-wide">Coherence</div>
+                      </div>
+                      {/* Raw Deck ELO */}
+                      <div>
+                        <div className={`text-2xl font-bold ${
+                          rank === 0 ? 'text-amber-400' : isYou ? 'text-purple-300' : 'text-white'
+                        }`}>
+                          {player.deckElo}
+                        </div>
+                        <div className="text-[10px] text-white/30 uppercase tracking-wide">Deck ELO</div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -2749,6 +4447,234 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                     )}
                   </>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* Draft Intelligence Panel - shows from P1P1 */}
+          {coachMode && (
+            <div className="bg-gradient-to-br from-blue-500/5 to-purple-500/5 border border-blue-500/20 rounded-xl overflow-hidden">
+              {/* Phase Indicator */}
+              {draftPhase && (
+                <div className="p-2 border-b border-white/[0.06]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] text-blue-300/70 uppercase tracking-wider">{draftPhase.description}</span>
+                    <span className={`text-[9px] px-1.5 py-0.5 rounded ${
+                      draftPhase.phase === 'speculation' ? 'bg-blue-500/30 text-blue-300' :
+                      draftPhase.phase === 'exploration' ? 'bg-purple-500/30 text-purple-300' :
+                      draftPhase.phase === 'commitment' ? 'bg-amber-500/30 text-amber-300' :
+                      'bg-green-500/30 text-green-300'
+                    }`}>
+                      Pick {draftState.pickNumber}/15
+                    </span>
+                  </div>
+                  <div className="text-[10px] text-white/50 mt-1 leading-tight">{draftPhase.priority}</div>
+                </div>
+              )}
+
+              {/* Archetype Commitments with Progress Bars */}
+              {archetypeCommitments.length > 0 && (
+                <div className="p-2 border-b border-white/[0.06]">
+                  <div className="text-[9px] text-white/40 uppercase tracking-wider mb-2">Archetype Probability</div>
+                  <div className="space-y-2">
+                    {archetypeCommitments.slice(0, 3).map((arch) => (
+                      <div key={arch.archetype}>
+                        <div className="flex items-center justify-between text-[10px] mb-0.5">
+                          <span className="text-white/80">{arch.archetype}</span>
+                          <span className={`font-medium ${arch.probability >= 50 ? 'text-green-400' : arch.probability >= 25 ? 'text-amber-400' : 'text-white/50'}`}>
+                            {arch.probability}%
+                          </span>
+                        </div>
+                        <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full transition-all ${
+                              arch.probability >= 50 ? 'bg-green-500' :
+                              arch.probability >= 25 ? 'bg-amber-500' :
+                              'bg-white/30'
+                            }`}
+                            style={{ width: `${arch.probability}%` }}
+                          />
+                        </div>
+                        {/* Critical Mass Indicators */}
+                        {arch.criticalMass.length > 0 && arch.probability >= 30 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {arch.criticalMass.map((cm, j) => (
+                              <span key={j} className={`text-[8px] px-1 py-0.5 rounded ${
+                                cm.current >= cm.needed ? 'bg-green-500/30 text-green-300' : 'bg-red-500/20 text-red-300'
+                              }`}>
+                                {cm.category}: {cm.current}/{cm.needed}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Signal Indicators */}
+              {draftSignals && (draftSignals.colorsOpen.length > 0 || draftSignals.colorsCut.length > 0) && (
+                <div className="p-2 border-b border-white/[0.06]">
+                  <div className="text-[9px] text-white/40 uppercase tracking-wider mb-1.5">Table Signals</div>
+                  <div className="space-y-1.5">
+                    {draftSignals.colorsOpen.length > 0 && (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[9px] text-green-400">OPEN:</span>
+                        <div className="flex gap-1">
+                          {draftSignals.colorsOpen.slice(0, 3).map(({ color, confidence }) => (
+                            <span key={color} className="text-[10px] px-1.5 py-0.5 bg-green-500/20 text-green-300 rounded font-medium">
+                              {color} ({confidence}%)
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {draftSignals.colorsCut.length > 0 && (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[9px] text-red-400">CUT:</span>
+                        <div className="flex gap-1">
+                          {draftSignals.colorsCut.slice(0, 3).map(({ color, intensity }) => (
+                            <span key={color} className="text-[10px] px-1.5 py-0.5 bg-red-500/20 text-red-300 rounded font-medium">
+                              {color} ({intensity}%)
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Enabler/Payoff Balance Warning */}
+              {enablerPayoffBalance.length > 0 && enablerPayoffBalance.some(b => b.balance !== 'balanced') && (
+                <div className="p-2 border-b border-white/[0.06]">
+                  <div className="text-[9px] text-white/40 uppercase tracking-wider mb-1.5">Combo Balance</div>
+                  {enablerPayoffBalance.filter(b => b.balance !== 'balanced').slice(0, 2).map((balance, i) => (
+                    <div key={i} className={`text-[10px] p-1.5 rounded mb-1 ${
+                      balance.balance === 'needs-payoffs' ? 'bg-amber-500/10 text-amber-300' :
+                      balance.balance === 'needs-enablers' ? 'bg-purple-500/10 text-purple-300' :
+                      'bg-white/5 text-white/60'
+                    }`}>
+                      <div className="font-medium">{balance.archetype}</div>
+                      <div className="text-[9px] opacity-80">{balance.recommendation}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Mana Base Alert */}
+              {manaBaseStatus && manaBaseStatus.recommendation && (
+                <div className="p-2 border-b border-white/[0.06]">
+                  <div className="text-[9px] text-white/40 uppercase tracking-wider mb-1">Mana Base</div>
+                  <div className="text-[10px] text-cyan-300 bg-cyan-500/10 p-1.5 rounded">
+                    {manaBaseStatus.recommendation}
+                  </div>
+                </div>
+              )}
+
+              {/* Curve Analysis */}
+              {curveAnalysis && (
+                <div className="p-2 border-b border-white/[0.06]">
+                  <div className="text-[9px] text-white/40 uppercase tracking-wider mb-1.5">Curve Analysis</div>
+                  <div className="flex items-end gap-1 mb-1.5">
+                    {[curveAnalysis.cmc1Count, curveAnalysis.cmc2Count, curveAnalysis.cmc3Count, curveAnalysis.cmc4PlusCount].map((count, i) => (
+                      <div key={i} className="flex flex-col items-center">
+                        <div
+                          className="w-4 bg-gradient-to-t from-blue-500 to-blue-400 rounded-t"
+                          style={{ height: `${Math.max(4, count * 4)}px` }}
+                        />
+                        <span className="text-[8px] text-white/40 mt-0.5">{i < 3 ? i + 1 : '4+'}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className={`text-[9px] px-1.5 py-0.5 rounded inline-block ${
+                    curveAnalysis.curveScore === 'Excellent' ? 'bg-green-500/20 text-green-300' :
+                    curveAnalysis.curveScore === 'Good' ? 'bg-blue-500/20 text-blue-300' :
+                    curveAnalysis.curveScore === 'Poor' ? 'bg-red-500/20 text-red-300' :
+                    'bg-white/10 text-white/60'
+                  }`}>
+                    {curveAnalysis.curveScore} · {curveAnalysis.playableHandRate}% keepable
+                  </div>
+                </div>
+              )}
+
+              {/* Synergy Connections */}
+              {synergyConnections.length > 0 && (
+                <div className="p-2 border-b border-white/[0.06]">
+                  <div className="text-[9px] text-white/40 uppercase tracking-wider mb-1.5">Synergy Web</div>
+                  <div className="space-y-1">
+                    {synergyConnections.slice(0, 4).map((conn, i) => (
+                      <div key={i} className={`text-[9px] p-1 rounded flex items-center gap-1 ${
+                        conn.strength === 'strong' ? 'bg-green-500/15 text-green-300' :
+                        'bg-purple-500/10 text-purple-300'
+                      }`}>
+                        <span className={conn.strength === 'strong' ? 'text-green-400' : 'text-purple-400'}>⚡</span>
+                        <span className="truncate">{conn.reason}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Regrettable Passes */}
+              {topRegrets.length > 0 && (
+                <div className="p-2">
+                  <div className="text-[9px] text-red-400/70 uppercase tracking-wider mb-1.5">Passed (Regret?)</div>
+                  <div className="space-y-1">
+                    {topRegrets.map((regret, i) => (
+                      <div key={i} className="text-[9px] text-red-300/70 flex items-center gap-1.5">
+                        <div className="w-4 h-5 rounded overflow-hidden flex-shrink-0">
+                          <img src={getCardImage(regret.card)} alt="" className="w-full h-full object-cover opacity-70" />
+                        </div>
+                        <span className="truncate">{regret.card.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Win Rate Estimator Panel */}
+          {coachMode && deckWinRate && (
+            <div className="bg-gradient-to-br from-emerald-500/5 to-transparent border border-emerald-500/20 rounded-xl overflow-hidden">
+              <div className="p-2 border-b border-white/[0.06]">
+                <div className="flex items-center justify-between">
+                  <span className="text-[9px] text-emerald-300/70 uppercase tracking-wider">Deck Power</span>
+                  <div className={`text-xl font-bold ${
+                    deckWinRate.grade === 'S' ? 'text-amber-400' :
+                    deckWinRate.grade === 'A' ? 'text-green-400' :
+                    deckWinRate.grade === 'B' ? 'text-blue-400' :
+                    deckWinRate.grade === 'C' ? 'text-white/60' :
+                    'text-red-400'
+                  }`}>
+                    {deckWinRate.grade}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                  <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full transition-all ${
+                        deckWinRate.winRate >= 60 ? 'bg-green-500' :
+                        deckWinRate.winRate >= 50 ? 'bg-blue-500' :
+                        'bg-red-500'
+                      }`}
+                      style={{ width: `${deckWinRate.winRate}%` }}
+                    />
+                  </div>
+                  <span className="text-[10px] text-white/60">{deckWinRate.winRate}%</span>
+                </div>
+              </div>
+              <div className="p-2 space-y-1">
+                {deckWinRate.factors.slice(0, 4).map((factor, i) => (
+                  <div key={i} className="flex items-center justify-between text-[9px]">
+                    <span className="text-white/50">{factor.name}</span>
+                    <span className={factor.impact >= 0 ? 'text-green-400' : 'text-red-400'}>
+                      {factor.impact >= 0 ? '+' : ''}{factor.impact}%
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -3131,19 +5057,23 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 sm:gap-4">
             {currentPack.map((card, index) => {
             const isRecommended = recommendedCard?.id === card.id;
-            const synergy = getCardSynergy(card);
             const wheelLikelihood = getWheelLikelihood(card.name);
             const percentile = getPercentile(card.name);
             const isPremium = percentile >= 75;
-            const cardSynergies = getCardSynergies(card);
-            const wheelPrediction = getWheelPrediction(card);
             const keyboardNum = index + 1;
-            const cardArchetypes = getCardArchetypes(card);
-            const fitsCurrentArchetype = buildingToward && cardArchetypes.some(a => a.id === buildingToward.id);
             const isPendingPick = quizDraftMode && pendingPick?.id === card.id;
-            // Calculate synergy-adjusted ELO
-            const synergyData = getSynergyAdjustedElo(card, draftState.picks);
-            const hasSignificantAdjustment = Math.abs(synergyData.adjustment) >= 30;
+            // Calculate synergy-adjusted ELO (including pack synergy for early picks)
+            const synergyData = getSynergyAdjustedElo(card, draftState.picks, currentPack);
+            // Check if this card actually wheeled back to us (strong open signal!)
+            const actuallyWheeled = draftState.wheeledCards.has(card.id);
+            // Get contextual letter grade (includes pack synergy from P1P1)
+            const cardGrade = getContextualGrade(card, draftState.picks, currentPack);
+            // REFINED UI: Minimal color - text only, no backgrounds
+            const isTopGrade = cardGrade.grade === 'A+' || cardGrade.grade === 'A';
+            const isMidGrade = cardGrade.grade.startsWith('B');
+            const isLowGrade = cardGrade.grade.startsWith('C') || cardGrade.grade.startsWith('D') || cardGrade.grade === 'F';
+            // Card opacity based on grade (dim bad cards)
+            const cardOpacity = isLowGrade ? 'opacity-60' : '';
 
             // Show coach visuals when coach is on OR during quiz reveal
             const showCoachVisuals = coachMode || (quizDraftMode && showPickReveal);
@@ -3181,19 +5111,18 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                 onMouseEnter={() => setHoveredCard(card)}
                 onMouseLeave={() => setHoveredCard(null)}
                 className={`
-                  relative aspect-[488/680] rounded-xl overflow-hidden shadow-lg
+                  relative aspect-[488/680] rounded-xl overflow-hidden
                   transition-all duration-200
-                  ${!(quizDraftMode && showPickReveal) ? 'hover:scale-[1.04] hover:-translate-y-1 hover:z-10 hover:shadow-xl' : 'hover:ring-2 hover:ring-white/30'}
+                  ${!(quizDraftMode && showPickReveal) ? 'hover:scale-[1.04] hover:-translate-y-1 hover:z-10' : 'hover:ring-2 hover:ring-white/30'}
                   cursor-pointer
-                  ${isPendingPick && !showPickReveal ? 'ring-4 ring-purple-500 shadow-purple-500/30 scale-[1.02]' : ''}
-                  ${isQuizCorrectPick ? 'ring-4 ring-green-500 shadow-green-500/40 scale-[1.02]' : ''}
-                  ${isQuizWrongPick ? 'ring-4 ring-red-500 shadow-red-500/40 scale-[1.02]' : ''}
-                  ${isSwitchedSelection ? 'ring-4 ring-blue-500 shadow-blue-500/40 scale-[1.02]' : ''}
+                  ${cardOpacity}
+                  ${isPendingPick && !showPickReveal ? 'ring-4 ring-purple-500 scale-[1.02]' : ''}
+                  ${isQuizCorrectPick ? 'ring-4 ring-green-500 scale-[1.02]' : ''}
+                  ${isQuizWrongPick ? 'ring-4 ring-red-500 scale-[1.02]' : ''}
+                  ${isSwitchedSelection ? 'ring-4 ring-blue-500 scale-[1.02]' : ''}
                   ${wasOriginalButSwitched ? 'ring-2 ring-red-500/40 opacity-60' : ''}
-                  ${showCoachVisuals && isRecommended && !isCurrentSelection && !isOriginalPick ? 'ring-2 ring-amber-400/60 shadow-amber-400/20' : ''}
-                  ${showCoachVisuals && !isRecommended && !isCurrentSelection && !isOriginalPick && synergy === 'high' ? 'ring-2 ring-green-400/50' : ''}
-                  ${showCoachVisuals && !isRecommended && !isCurrentSelection && !isOriginalPick && synergy === 'low' ? 'ring-2 ring-red-400/30 opacity-75' : ''}
-                  ${showCoachVisuals && !isCurrentSelection && !isOriginalPick && wheelPrediction?.mightWheel ? 'ring-2 ring-cyan-400/50' : ''}
+                  ${showCoachVisuals && isRecommended && !isCurrentSelection && !isOriginalPick ? 'ring-2 ring-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.4)]' : ''}
+                  ${showCoachVisuals && !isRecommended && isTopGrade && !isCurrentSelection && !isOriginalPick ? 'ring-1 ring-white/40' : ''}
                 `}
               >
                 <img src={getCardImage(card)} alt={card.name} className="w-full h-full object-cover" loading="lazy" />
@@ -3205,51 +5134,30 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                   </div>
                 )}
 
-                {/* Wheeled back indicator */}
-                {showCoachVisuals && wheelPrediction?.mightWheel && (
-                  <div className="absolute top-8 left-1.5 px-1.5 py-0.5 rounded bg-cyan-500/90 text-white text-[8px] font-bold flex items-center gap-1">
-                    <History className="w-2.5 h-2.5" />
-                    Wheeled!
+                {/* Wheeled back indicator - subtle */}
+                {showCoachVisuals && actuallyWheeled && (
+                  <div className="absolute top-8 left-1.5 flex items-center gap-1">
+                    <History className="w-3 h-3 text-emerald-400" />
                   </div>
                 )}
 
-                {/* Synergy tags */}
-                {showCoachVisuals && cardSynergies.length > 0 && (
-                  <div className="absolute bottom-7 left-1.5 right-1.5 flex flex-wrap gap-0.5 justify-start">
-                    {cardSynergies.slice(0, 2).map((syn, i) => (
-                      <span key={i} className="px-1 py-0.5 rounded bg-purple-500/80 text-white text-[7px] font-medium truncate max-w-[60px]">
-                        {syn}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                {/* Archetype fit indicator - only shown when building toward an archetype */}
-                {showCoachVisuals && fitsCurrentArchetype && buildingToward && (
-                  <div className="absolute top-8 right-1.5 px-1.5 py-0.5 rounded bg-purple-500/90 text-white text-[8px] font-bold flex items-center gap-1">
-                    <Layers className="w-2.5 h-2.5" />
-                    {buildingToward.shortName}
-                  </div>
-                )}
-
-                {/* Power badge + Synergy Adjustment - TOP RIGHT */}
+                {/* REFINED: Minimal overlay - Grade + Adjustment text only */}
                 {showCoachVisuals && (
-                  <div className="absolute top-1.5 right-1.5 flex flex-col items-end gap-0.5">
-                    {/* Power level badge */}
+                  <div className="absolute top-1.5 right-1.5 flex flex-col items-end gap-1">
+                    {/* Grade - text only with subtle background */}
                     <div className={`
-                      w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold shadow-lg
-                      ${card.powerLevel >= 10 ? 'bg-gradient-to-br from-amber-400 to-amber-500 text-black' : ''}
-                      ${card.powerLevel === 9 ? 'bg-gradient-to-br from-purple-400 to-purple-500 text-white' : ''}
-                      ${card.powerLevel >= 7 && card.powerLevel < 9 ? 'bg-gradient-to-br from-blue-400 to-blue-500 text-white' : ''}
-                      ${card.powerLevel < 7 ? 'bg-black/70 text-white/80' : ''}
+                      px-1.5 py-0.5 rounded text-[11px] font-bold
+                      ${isTopGrade ? 'bg-black/60 text-white' : ''}
+                      ${isMidGrade ? 'bg-black/50 text-white/80' : ''}
+                      ${isLowGrade ? 'bg-black/40 text-white/50' : ''}
                     `}>
-                      {card.powerLevel}
+                      {cardGrade.grade}
                     </div>
-                    {/* Synergy adjustment indicator */}
-                    {hasSignificantAdjustment && (
+                    {/* Adjustment - text only, only show if significant (>=15) */}
+                    {Math.abs(synergyData.adjustment) >= 15 && (
                       <div className={`
-                        px-1 py-0.5 rounded text-[8px] font-bold shadow-lg
-                        ${synergyData.adjustment > 0 ? 'bg-green-500/90 text-white' : 'bg-red-500/90 text-white'}
+                        text-[10px] font-bold px-1
+                        ${synergyData.adjustment > 0 ? 'text-emerald-400' : 'text-red-400'}
                       `}>
                         {synergyData.adjustment > 0 ? '+' : ''}{synergyData.adjustment}
                       </div>
@@ -3257,27 +5165,17 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                   </div>
                 )}
 
-                {/* Wheel likelihood indicator - BOTTOM RIGHT */}
-                {showCoachVisuals && !wheelPrediction?.mightWheel && (
-                  <div className={`
-                    absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wide
-                    ${wheelLikelihood === 'likely' ? 'bg-green-500/80 text-white' : ''}
-                    ${wheelLikelihood === 'maybe' ? 'bg-amber-500/80 text-black' : ''}
-                    ${wheelLikelihood === 'unlikely' && isPremium ? 'bg-red-500/80 text-white' : ''}
-                    ${wheelLikelihood === 'unlikely' && !isPremium ? 'hidden' : ''}
-                  `}>
-                    {wheelLikelihood === 'likely' ? 'Wheels' :
-                     wheelLikelihood === 'maybe' ? 'Maybe' :
-                     isPremium ? 'Take now' : ''}
+                {/* REFINED: Simple bottom banner - only for "take now" premium cards */}
+                {showCoachVisuals && wheelLikelihood === 'unlikely' && isPremium && !isRecommended && (
+                  <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-center py-1">
+                    <span className="text-[9px] font-medium text-white/80 uppercase tracking-wider">Take now</span>
                   </div>
                 )}
 
-                {/* Recommended indicator (star) */}
+                {/* REFINED: Best pick indicator - gold star, subtle */}
                 {showCoachVisuals && isRecommended && (
                   <div className="absolute top-1.5 left-1.5">
-                    <div className="w-6 h-6 rounded-full bg-amber-400 flex items-center justify-center shadow-lg shadow-amber-400/30">
-                      <Star className="w-3.5 h-3.5 text-black fill-black" />
-                    </div>
+                    <Star className="w-5 h-5 text-amber-400 fill-amber-400 drop-shadow-lg" />
                   </div>
                 )}
 
@@ -3308,25 +5206,6 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                   </div>
                 )}
 
-                {/* Archetype tags - BOTTOM RIGHT, above wheel note */}
-                {showCoachVisuals && cardArchetypes.length > 0 && (
-                  <div className="absolute bottom-7 right-1.5 flex gap-0.5 justify-end">
-                    {cardArchetypes.slice(0, 2).map((arch) => (
-                      <span
-                        key={arch.id}
-                        className={`
-                          px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wide shadow
-                          ${fitsCurrentArchetype && arch.id === buildingToward?.id
-                            ? 'bg-purple-500 text-white ring-1 ring-purple-300'
-                            : 'bg-black/70 text-white/70'
-                          }
-                        `}
-                      >
-                        {arch.shortName}
-                      </span>
-                    ))}
-                  </div>
-                )}
               </div>
             );
           })}
@@ -3431,47 +5310,56 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
           <div className="bg-black border border-white/10 p-2 rounded-xl shadow-2xl w-60">
             <img src={getCardImage(hoveredCard)} alt={hoveredCard.name} className="w-full rounded-lg" />
             <div className="mt-2 px-1 space-y-1">
-              <div className="text-sm font-medium text-white">{hoveredCard.name}</div>
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-medium text-white">{hoveredCard.name}</div>
+                {/* REFINED: Grade - simple text */}
+                {draftState && draftState.picks.length >= 0 && (() => {
+                  const grade = getContextualGrade(hoveredCard, draftState.picks, currentPack);
+                  return (
+                    <span className="text-sm font-bold text-white">
+                      {grade.grade}
+                    </span>
+                  );
+                })()}
+              </div>
               <div className="text-xs text-white/40">{hoveredCard.type_line?.split('—')[0]}</div>
               {(() => {
                 const eloData = getEloData(hoveredCard.name);
                 if (!eloData) return null;
-                const percentile = getPercentile(hoveredCard.name);
                 const wheelLikelihood = getWheelLikelihood(hoveredCard.name);
-                const synergyData = draftState ? getSynergyAdjustedElo(hoveredCard, draftState.picks) : null;
+                const synergyData = draftState ? getSynergyAdjustedElo(hoveredCard, draftState.picks, currentPack) : null;
                 const hasAdjustment = synergyData && synergyData.adjustment !== 0;
+                // Get contextual grade for reason display
+                const cardGrade = draftState && draftState.picks.length >= 0 ? getContextualGrade(hoveredCard, draftState.picks, currentPack) : null;
                 return (
                   <div className="space-y-1.5 pt-1 border-t border-white/10">
-                    {/* ELO row - base ELO, adjustment, final */}
+                    {/* Grade reason */}
+                    {cardGrade && (
+                      <div className="text-[10px] text-white/60 italic">{cardGrade.reason}</div>
+                    )}
+                    {/* REFINED: ELO row - clean, minimal color */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5">
-                        <span className={`text-[11px] font-medium ${
-                          percentile >= 75 ? 'text-amber-400' :
-                          percentile >= 50 ? 'text-purple-400' :
-                          percentile >= 25 ? 'text-blue-400' :
-                          'text-white/60'
-                        }`}>
+                        <span className="text-[11px] font-medium text-white/70">
                           {Math.round(eloData.elo)}
                         </span>
                         {hasAdjustment && (
                           <>
                             <span className={`text-[10px] font-bold ${
-                              synergyData.adjustment > 0 ? 'text-green-400' : 'text-red-400'
+                              synergyData.adjustment > 0 ? 'text-emerald-400' : 'text-red-400'
                             }`}>
                               {synergyData.adjustment > 0 ? '+' : ''}{synergyData.adjustment}
                             </span>
                             <span className="text-[9px] text-white/30">=</span>
-                            <span className={`text-[11px] font-bold ${
-                              synergyData.adjustment > 0 ? 'text-green-400' : 'text-red-400'
-                            }`}>
-                              {synergyData.adjustedElo}
+                            <span className="text-[11px] font-bold text-white">
+                              {Math.round(synergyData.adjustedElo)}
                             </span>
                           </>
                         )}
                       </div>
                       <span className={`text-[9px] px-1.5 py-0.5 rounded ${
-                        wheelLikelihood === 'likely' ? 'bg-green-500/20 text-green-400' :
-                        wheelLikelihood === 'maybe' ? 'bg-amber-500/20 text-amber-400' :
+                        wheelLikelihood === 'likely' ? 'bg-white/10 text-white/60' :
+                        wheelLikelihood === 'maybe' ? 'bg-white/10 text-white/50' :
                         'bg-red-500/20 text-red-400'
                       }`}>
                         {wheelLikelihood === 'likely' ? 'Wheels' :
@@ -3479,20 +5367,70 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                          'Take now'}
                       </span>
                     </div>
-                    {/* Adjustment reasons - compact */}
+                    {/* REFINED: Adjustment reasons - text only, minimal */}
                     {hasAdjustment && synergyData.reasons.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {synergyData.reasons.slice(0, 2).map((reason, i) => (
-                          <span key={i} className={`text-[8px] px-1 py-0.5 rounded ${
-                            reason.startsWith('+') ? 'bg-green-500/20 text-green-400/80' :
-                            reason.startsWith('-') ? 'bg-red-500/20 text-red-400/80' :
-                            'bg-white/10 text-white/50'
-                          }`}>
-                            {reason}
-                          </span>
-                        ))}
+                      <div className="pt-1.5 border-t border-white/5">
+                        <div className="text-[9px] text-white/40 mb-1">Why:</div>
+                        <div className="flex flex-wrap gap-x-2 gap-y-0.5">
+                          {synergyData.reasons.map((reason, i) => (
+                            <span key={i} className={`text-[8px] ${
+                              reason.startsWith('+') ? 'text-emerald-400/80' :
+                              reason.startsWith('-') ? 'text-red-400/80' :
+                              'text-white/50'
+                            }`}>
+                              {reason}
+                            </span>
+                          ))}
+                        </div>
                       </div>
                     )}
+                    {/* Sparkline - ELO history for this card */}
+                    {(() => {
+                      const history = draftState?.cardEloHistory?.get(hoveredCard.id);
+                      if (!history || history.history.length < 2) return null;
+                      const points = history.history;
+                      const minElo = Math.min(...points.map(p => p.adjustedElo));
+                      const maxElo = Math.max(...points.map(p => p.adjustedElo));
+                      const range = maxElo - minElo || 1;
+                      const width = 100;
+                      const height = 20;
+                      const trend = points[points.length - 1].adjustedElo - points[0].adjustedElo;
+                      return (
+                        <div className="pt-1">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-[8px] text-white/30">ELO trend</span>
+                            <span className={`text-[8px] font-medium ${trend > 0 ? 'text-green-400' : trend < 0 ? 'text-red-400' : 'text-white/40'}`}>
+                              {trend > 0 ? '↑' : trend < 0 ? '↓' : '→'} {trend > 0 ? '+' : ''}{trend}
+                            </span>
+                          </div>
+                          <svg width={width} height={height} className="w-full">
+                            <polyline
+                              fill="none"
+                              stroke={trend >= 0 ? '#4ade80' : '#f87171'}
+                              strokeWidth="1.5"
+                              points={points.map((p, i) => {
+                                const x = (i / (points.length - 1)) * width;
+                                const y = height - ((p.adjustedElo - minElo) / range) * (height - 4) - 2;
+                                return `${x},${y}`;
+                              }).join(' ')}
+                            />
+                            {points.map((p, i) => {
+                              const x = (i / (points.length - 1)) * width;
+                              const y = height - ((p.adjustedElo - minElo) / range) * (height - 4) - 2;
+                              return (
+                                <circle
+                                  key={i}
+                                  cx={x}
+                                  cy={y}
+                                  r="2"
+                                  fill={trend >= 0 ? '#4ade80' : '#f87171'}
+                                />
+                              );
+                            })}
+                          </svg>
+                        </div>
+                      );
+                    })()}
                   </div>
                 );
               })()}
