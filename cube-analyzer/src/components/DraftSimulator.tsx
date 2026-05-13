@@ -8,7 +8,7 @@ import {
   calculateDeckElo,
   compareByElo,
 } from '../services/eloHelpers';
-import { Play, RotateCcw, Trophy, Star, ArrowLeft, ArrowRight, Users, Package, Target, Clock, TrendingUp, AlertCircle, HelpCircle, CheckCircle, XCircle, Zap, History, Keyboard, Award, Lightbulb, Eye, EyeOff } from 'lucide-react';
+import { Play, RotateCcw, Trophy, Star, ArrowLeft, ArrowRight, Users, Package, Target, Clock, TrendingUp, AlertCircle, HelpCircle, CheckCircle, XCircle, Zap, History, Keyboard, Award, Lightbulb, Eye, EyeOff, Layers } from 'lucide-react';
 
 type SimulatorMode = 'menu' | 'draft' | 'quiz' | 'results';
 
@@ -2946,6 +2946,14 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                   </div>
                 )}
 
+                {/* Archetype fit indicator - only shown when building toward an archetype */}
+                {showCoachVisuals && fitsCurrentArchetype && buildingToward && (
+                  <div className="absolute top-8 right-1.5 px-1.5 py-0.5 rounded bg-purple-500/90 text-white text-[8px] font-bold flex items-center gap-1">
+                    <Layers className="w-2.5 h-2.5" />
+                    {buildingToward.shortName}
+                  </div>
+                )}
+
                 {/* Power badge - TOP RIGHT */}
                 {showCoachVisuals && (
                   <div className={`
@@ -3159,6 +3167,32 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                        wheelLikelihood === 'maybe' ? 'May wheel' :
                        'Won\'t wheel'}
                     </span>
+                  </div>
+                );
+              })()}
+              {/* Archetype signals */}
+              {(() => {
+                const archetypes = getCardArchetypes(hoveredCard);
+                if (archetypes.length === 0) return null;
+                return (
+                  <div className="flex flex-wrap gap-1 pt-1 border-t border-white/10">
+                    <span className="text-[9px] text-white/30">Fits:</span>
+                    {archetypes.map(arch => {
+                      // Highlight if matches what we're building
+                      const isBuilding = buildingToward?.id === arch.id;
+                      return (
+                        <span
+                          key={arch.id}
+                          className={`text-[9px] px-1.5 py-0.5 rounded ${
+                            isBuilding
+                              ? 'bg-purple-500/30 text-purple-300 ring-1 ring-purple-500/50'
+                              : 'bg-white/10 text-white/60'
+                          }`}
+                        >
+                          {arch.shortName}
+                        </span>
+                      );
+                    })}
                   </div>
                 );
               })()}

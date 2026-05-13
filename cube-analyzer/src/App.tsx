@@ -13,13 +13,14 @@ import { BuildAround } from './components/BuildAround';
 import { GamesPage } from './components/GamesPage';
 import { PowerAnalysis } from './components/PowerAnalysis';
 import { GraphExplorer } from './components/GraphExplorer';
+import { ArchetypeOddsPage } from './components/ArchetypeOddsPage';
 import {
   BarChart3, Layers, Trophy, BookOpen, Search, Sparkles,
   Gamepad2, Link2, Swords, ExternalLink, FileStack, Lightbulb,
-  Menu, ChevronLeft, Dices, FlaskConical, Network
+  Menu, ChevronLeft, Dices, FlaskConical, Network, Percent
 } from 'lucide-react';
 
-type TabId = 'overview' | 'draft' | 'games' | 'graph' | 'archetypes' | 'decks' | 'matchups' | 'synergies' | 'buildaround' | 'power' | 'analysis' | 'guide' | 'cards';
+type TabId = 'overview' | 'draft' | 'games' | 'graph' | 'archetypes' | 'odds' | 'decks' | 'matchups' | 'synergies' | 'buildaround' | 'power' | 'analysis' | 'guide' | 'cards';
 
 interface NavItem {
   id: TabId;
@@ -33,6 +34,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'games', label: 'Games', icon: Dices },
   { id: 'graph', label: 'Card Graph', icon: Network },
   { id: 'archetypes', label: 'Archetypes', icon: Layers },
+  { id: 'odds', label: 'Draft Odds', icon: Percent },
   { id: 'decks', label: 'Sample Decks', icon: FileStack },
   { id: 'matchups', label: 'Matchups', icon: Swords },
   { id: 'synergies', label: 'Synergies', icon: Link2 },
@@ -152,6 +154,8 @@ function App() {
         return <GraphExplorer cards={cards} />;
       case 'archetypes':
         return <ArchetypesPage archetypes={archetypes} cards={cards} />;
+      case 'odds':
+        return <ArchetypeOddsPage cards={cards} archetypes={archetypes} />;
       case 'decks':
         return <SampleDecks cards={cards} />;
       case 'matchups':

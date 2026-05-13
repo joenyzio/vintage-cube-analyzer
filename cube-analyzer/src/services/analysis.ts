@@ -661,3 +661,103 @@ export function getColorPairSynergy(cards: CubeCard[]): Record<string, { count: 
 
   return synergies;
 }
+
+// Get archetype signals for a card - which archetypes want it and how much
+export interface ArchetypeSignal {
+  archetypeId: string;
+  archetypeName: string;
+  isKeyCard: boolean; // Is this a signpost/core card for the archetype?
+  colors: string[];
+  powerRating: number;
+}
+
+const ARCHETYPE_DATA = [
+  { id: 'uw-control', name: 'UW Control', colors: ['W', 'U'], power: 9, keyCards: ['jace, the mind sculptor', 'the wandering emperor', 'counterspell', 'swords to plowshares', 'force of will', 'balance', 'teferi, time raveler', 'supreme verdict', 'wrath of god', 'cryptic command'] },
+  { id: 'ub-reanimator', name: 'Reanimator', colors: ['U', 'B'], power: 10, keyCards: ['entomb', 'reanimate', 'animate dead', 'griselbrand', 'archon of cruelty', 'shallow grave', 'exhume', 'necromancy', 'buried alive', 'persist'] },
+  { id: 'br-aggro', name: 'BR Aggro', colors: ['B', 'R'], power: 8, keyCards: ['ragavan, nimble pilferer', 'thoughtseize', 'lightning bolt', 'orcish bowmasters', 'grief', 'dark confidant', 'bloodghast'] },
+  { id: 'ug-ramp', name: 'UG Ramp', colors: ['U', 'G'], power: 9, keyCards: ['channel', 'primeval titan', 'craterhoof behemoth', 'natural order', 'fastbond', 'oracle of mul daya', 'uro, titan of nature\'s wrath', 'rofellos'] },
+  { id: 'ur-storm', name: 'Storm', colors: ['U', 'R'], power: 9, keyCards: ['brain freeze', 'underworld breach', 'time spiral', 'yawgmoth\'s will', 'wheel of fortune', 'lion\'s eye diamond', 'echo of eons', 'tendrils of agony', 'dark ritual', 'cabal ritual'] },
+  { id: 'mono-white', name: 'Mono White', colors: ['W'], power: 7, keyCards: ['mother of runes', 'thalia, guardian of thraben', 'adeline, resplendent cathar', 'armageddon', 'monastery mentor', 'solitude', 'elite spellbinder'] },
+  { id: 'artifact-combo', name: 'Artifacts', colors: [], power: 10, keyCards: ['tinker', 'tolarian academy', 'mishra\'s workshop', 'blightsteel colossus', 'memory jar', 'goblin welder', 'daretti', 'kuldotha forgemaster'] },
+  { id: 'bg-midrange', name: 'BG Midrange', colors: ['B', 'G'], power: 7, keyCards: ['deathrite shaman', 'grist, the hunger tide', 'liliana of the veil', 'endurance', 'scavenging ooze', 'recurring nightmare'] },
+  { id: 'rw-aggro', name: 'RW Aggro', colors: ['R', 'W'], power: 8, keyCards: ['ragavan, nimble pilferer', 'goblin rabblemaster', 'adeline, resplendent cathar', 'lightning bolt', 'forth eorlingas!', 'armageddon', 'monastery swiftspear'] },
+  { id: 'show-tell', name: 'Show & Tell', colors: ['U', 'R'], power: 9, keyCards: ['show and tell', 'sneak attack', 'through the breach', 'emrakul, the aeons torn', 'griselbrand', 'atraxa, grand unifier', 'omniscience'] },
+  { id: 'uw-blink', name: 'UW Blink', colors: ['W', 'U'], power: 7, keyCards: ['flickerwisp', 'restoration angel', 'ephemerate', 'solitude', 'skyclave apparition', 'charming prince', 'yorion'] },
+  { id: 'oath', name: 'Oath', colors: ['U', 'G'], power: 8, keyCards: ['oath of druids', 'emrakul, the aeons torn', 'griselbrand', 'forbidden orchard', 'show and tell'] },
+];
+
+export function getArchetypeSignals(cardName: string): ArchetypeSignal[] {
+  const name = cardName.toLowerCase();
+  const signals: ArchetypeSignal[] = [];
+
+  for (const arch of ARCHETYPE_DATA) {
+    const isKey = arch.keyCards.some(k => name.includes(k) || k.includes(name));
+    if (isKey) {
+      signals.push({
+        archetypeId: arch.id,
+        archetypeName: arch.name,
+        isKeyCard: true,
+        colors: arch.colors,
+        powerRating: arch.power,
+      });
+    }
+  }
+
+  return signals;
+}
+
+// Analyze a set of picks to determine which archetypes you're drafting toward
+export interface DraftDirection {
+  archetypeId: string;
+  archetypeName: string;
+  strength: number; // 0-100, how much your picks align with this archetype
+  keyCardsOwned: string[];
+  colors: string[];
+}
+
+export function analyzeDraftDirection(picks: CubeCard[]): DraftDirection[] {
+  const directions: Map<string, { keyCards: string[]; totalSignals: number }> = new Map();
+
+  for (const pick of picks) {
+    const signals = getArchetypeSignals(pick.name);
+    for (const signal of signals) {
+      const existing = directions.get(signal.archetypeId) || { keyCards: [], totalSignals: 0 };
+      if (signal.isKeyCard && !existing.keyCards.includes(pick.name)) {
+        existing.keyCards.push(pick.name);
+      }
+      existing.totalSignals++;
+      directions.set(signal.archetypeId, existing);
+    }
+  }
+
+  // Also count by archetype tags on cards
+  for (const pick of picks) {
+    for (const archTag of pick.archetypes || []) {
+      const matchingArch = ARCHETYPE_DATA.find(a =>
+        a.name.toLowerCase().includes(archTag.toLowerCase()) ||
+        archTag.toLowerCase().includes(a.name.toLowerCase().split(' ')[0])
+      );
+      if (matchingArch) {
+        const existing = directions.get(matchingArch.id) || { keyCards: [], totalSignals: 0 };
+        existing.totalSignals++;
+        directions.set(matchingArch.id, existing);
+      }
+    }
+  }
+
+  const results: DraftDirection[] = [];
+  for (const [archId, data] of directions) {
+    const arch = ARCHETYPE_DATA.find(a => a.id === archId);
+    if (arch && data.totalSignals > 0) {
+      results.push({
+        archetypeId: archId,
+        archetypeName: arch.name,
+        strength: Math.min(100, data.keyCards.length * 25 + data.totalSignals * 5),
+        keyCardsOwned: data.keyCards,
+        colors: arch.colors,
+      });
+    }
+  }
+
+  return results.sort((a, b) => b.strength - a.strength).slice(0, 4);
+}

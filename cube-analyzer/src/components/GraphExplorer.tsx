@@ -2,353 +2,400 @@ import { useState, useMemo } from 'react';
 import type { CubeCard } from '../types/card';
 import { getEloData } from '../services/eloHelpers';
 import { getCardImage } from '../services/scryfall';
+import { Search, X } from 'lucide-react';
 
 interface Props {
   cards: CubeCard[];
 }
 
-const THEMES = [
-  { id: 'reanimator', name: 'Reanimator', color: '#a855f7', keywords: ['graveyard', 'reanimate', 'entomb', 'buried alive', 'exhume', 'unburial', 'animate dead'] },
-  { id: 'storm', name: 'Storm', color: '#f59e0b', keywords: ['storm', 'ritual', 'tendrils', 'brain freeze', 'past in flames', 'yawgmoth'] },
-  { id: 'artifacts', name: 'Artifacts/Tinker', color: '#64748b', keywords: ['artifact', 'tinker', 'metalcraft', 'affinity', 'tolarian', 'mox', 'colossus'] },
-  { id: 'control', name: 'Control', color: '#3b82f6', keywords: ['counter', 'wrath', 'destroy all', 'verdict', 'terminus'] },
-  { id: 'aggro', name: 'Aggro', color: '#ef4444', keywords: ['haste', 'prowess', 'goblin guide', 'monastery', 'rabblemaster'] },
-  { id: 'ramp', name: 'Ramp/Big Mana', color: '#22c55e', keywords: ['add {g}', 'search your library for a basic', 'channel', 'rofellos', 'cradle', 'primeval'] },
-  { id: 'tempo', name: 'Tempo/Bounce', color: '#06b6d4', keywords: ['flash', 'return target', 'snapcaster', 'clique'] },
-  { id: 'tokens', name: 'Tokens/Go Wide', color: '#fbbf24', keywords: ['create', 'token', 'bitterblossom', 'lingering', 'mentor'] },
-  { id: 'cheaty', name: 'Cheat Into Play', color: '#ec4899', keywords: ['show and tell', 'sneak', 'oath', 'natural order', 'through the breach'] },
-  { id: 'lands', name: 'Lands', color: '#84cc16', keywords: ['land', 'fetch', 'dual', 'shock'] },
+const ARCHETYPES = [
+  { id: 'reanimator', name: 'Reanimator', color: '#a855f7', description: 'Cheat creatures from graveyard', keywords: ['graveyard', 'reanimate', 'entomb', 'buried alive', 'exhume', 'unburial', 'animate dead', 'persist', 'shallow grave'] },
+  { id: 'storm', name: 'Storm', color: '#f59e0b', description: 'Chain spells for a big finish', keywords: ['storm', 'ritual', 'tendrils', 'brain freeze', 'past in flames', 'yawgmoth', 'dark petition', 'minds desire'] },
+  { id: 'artifacts', name: 'Artifacts', color: '#64748b', description: 'Artifact synergies and Tinker', keywords: ['artifact', 'tinker', 'metalcraft', 'affinity', 'tolarian', 'mox', 'colossus', 'welder', 'daretti'] },
+  { id: 'control', name: 'Control', color: '#3b82f6', description: 'Counter, remove, win late', keywords: ['counter', 'wrath', 'destroy all', 'verdict', 'terminus', 'cryptic', 'dissolve'] },
+  { id: 'aggro', name: 'Aggro', color: '#ef4444', description: 'Fast creatures, burn face', keywords: ['haste', 'prowess', 'goblin guide', 'monastery', 'rabblemaster', 'guide', 'swiftspear'] },
+  { id: 'ramp', name: 'Ramp', color: '#22c55e', description: 'Accelerate into big threats', keywords: ['add {g}', 'search your library for a basic', 'channel', 'rofellos', 'cradle', 'primeval', 'oracle of mul daya'] },
+  { id: 'tempo', name: 'Tempo', color: '#06b6d4', description: 'Cheap threats + disruption', keywords: ['flash', 'return target', 'snapcaster', 'clique', 'vendilion', 'remand'] },
+  { id: 'cheaty', name: 'Cheaty', color: '#ec4899', description: 'Cheat big things into play', keywords: ['show and tell', 'sneak', 'oath', 'natural order', 'through the breach', 'eureka'] },
+  { id: 'midrange', name: 'Midrange', color: '#84cc16', description: 'Efficient threats + removal', keywords: ['planeswalker', 'liliana', 'thoughtseize', 'tarmogoyf', 'siege rhino'] },
 ];
 
-function getCardThemes(card: CubeCard): string[] {
+interface Synergy {
+  card: CubeCard;
+  reason: string;
+  strength: 'strong' | 'medium';
+}
+
+function getCardArchetypes(card: CubeCard): string[] {
   const text = (card.oracle_text || '').toLowerCase();
   const name = card.name.toLowerCase();
   const type = (card.type_line || '').toLowerCase();
 
-  const themes = THEMES.filter(theme =>
-    theme.keywords.some(kw => text.includes(kw) || name.includes(kw))
-  ).map(t => t.id);
+  const archetypes: string[] = [];
 
-  // Add lands theme for land cards
-  if (type.includes('land')) themes.push('lands');
+  for (const arch of ARCHETYPES) {
+    if (arch.keywords.some(kw => text.includes(kw) || name.includes(kw))) {
+      archetypes.push(arch.id);
+    }
+  }
 
-  return themes;
+  // Special cases
+  if (type.includes('creature') && (card.cmc || 0) >= 6) {
+    archetypes.push('reanimator', 'cheaty');
+  }
+  if (type.includes('artifact') && !archetypes.includes('artifacts')) {
+    archetypes.push('artifacts');
+  }
+
+  return [...new Set(archetypes)];
 }
 
-function detectSynergy(card1: CubeCard, card2: CubeCard): { hasSynergy: boolean; reason: string } {
-  const text1 = (card1.oracle_text || '').toLowerCase();
-  const text2 = (card2.oracle_text || '').toLowerCase();
-  const types1 = (card1.type_line || '').toLowerCase();
-  const types2 = (card2.type_line || '').toLowerCase();
-  const name1 = card1.name.toLowerCase();
+function findSynergies(card: CubeCard, allCards: CubeCard[]): Synergy[] {
+  const synergies: Synergy[] = [];
+  const text = (card.oracle_text || '').toLowerCase();
+  const types = (card.type_line || '').toLowerCase();
+  const name = card.name.toLowerCase();
+  const cmc = card.cmc || 0;
 
-  // Reanimator synergies
-  if ((text1.includes('graveyard') || text1.includes('reanimate')) &&
-      types2.includes('creature') && (card2.cmc || 0) >= 5) {
-    return { hasSynergy: true, reason: 'Reanimate target' };
-  }
-  if ((text2.includes('graveyard') || text2.includes('reanimate')) &&
-      types1.includes('creature') && (card1.cmc || 0) >= 5) {
-    return { hasSynergy: true, reason: 'Reanimate target' };
+  for (const other of allCards) {
+    if (other.id === card.id) continue;
+
+    const otherText = (other.oracle_text || '').toLowerCase();
+    const otherTypes = (other.type_line || '').toLowerCase();
+    const otherName = other.name.toLowerCase();
+    const otherCmc = other.cmc || 0;
+
+    // Reanimator: enablers + fatties
+    if ((text.includes('graveyard') || text.includes('reanimate') || name.includes('entomb') || name.includes('buried alive')) &&
+        otherTypes.includes('creature') && otherCmc >= 5) {
+      synergies.push({ card: other, reason: 'Reanimate this', strength: 'strong' });
+      continue;
+    }
+    if ((otherText.includes('graveyard') || otherText.includes('reanimate') || otherName.includes('entomb')) &&
+        types.includes('creature') && cmc >= 5) {
+      synergies.push({ card: other, reason: 'Reanimates you', strength: 'strong' });
+      continue;
+    }
+
+    // Artifact synergies
+    if ((text.includes('artifact') || name.includes('tinker') || name.includes('welder')) && otherTypes.includes('artifact')) {
+      synergies.push({ card: other, reason: 'Artifact synergy', strength: 'medium' });
+      continue;
+    }
+
+    // Storm: rituals + payoffs
+    if ((name.includes('ritual') || text.includes('add {')) &&
+        (otherText.includes('storm') || otherName.includes('tendrils') || otherName.includes('brain freeze'))) {
+      synergies.push({ card: other, reason: 'Storm payoff', strength: 'strong' });
+      continue;
+    }
+    if ((text.includes('storm') || name.includes('tendrils')) &&
+        (otherName.includes('ritual') || otherText.includes('add {'))) {
+      synergies.push({ card: other, reason: 'Fuels storm', strength: 'strong' });
+      continue;
+    }
+
+    // Cheat into play
+    if ((name.includes('show and tell') || name.includes('sneak') || name.includes('through the breach') || name.includes('oath')) &&
+        otherTypes.includes('creature') && otherCmc >= 7) {
+      synergies.push({ card: other, reason: 'Cheat this in', strength: 'strong' });
+      continue;
+    }
+
+    // Spells matter
+    if ((otherText.includes('prowess') || otherText.includes('magecraft') || otherName.includes('young pyromancer')) &&
+        (types.includes('instant') || types.includes('sorcery'))) {
+      synergies.push({ card: other, reason: 'Triggers on cast', strength: 'medium' });
+      continue;
+    }
+
+    // Sacrifice synergies
+    if (text.includes('sacrifice') && (otherText.includes('when') && otherText.includes('dies'))) {
+      synergies.push({ card: other, reason: 'Sac fodder', strength: 'medium' });
+      continue;
+    }
   }
 
-  // Artifact synergies
-  if (text1.includes('artifact') && types2.includes('artifact')) {
-    return { hasSynergy: true, reason: 'Artifact synergy' };
-  }
-  if (text2.includes('artifact') && types1.includes('artifact')) {
-    return { hasSynergy: true, reason: 'Artifact synergy' };
-  }
-
-  // Sacrifice synergies
-  if (text1.includes('sacrifice') && (text2.includes('token') || text2.includes('when') && text2.includes('dies'))) {
-    return { hasSynergy: true, reason: 'Sacrifice synergy' };
-  }
-
-  // Spell synergies
-  if ((text1.includes('instant') || text1.includes('sorcery') || name1.includes('bolt') || name1.includes('ritual')) &&
-      (text2.includes('prowess') || text2.includes('magecraft') || text2.includes('storm'))) {
-    return { hasSynergy: true, reason: 'Spells matter' };
-  }
-
-  // Cheat into play
-  if ((name1.includes('show and tell') || name1.includes('sneak') || name1.includes('through the breach')) &&
-      types2.includes('creature') && (card2.cmc || 0) >= 7) {
-    return { hasSynergy: true, reason: 'Cheat into play' };
-  }
-
-  return { hasSynergy: false, reason: '' };
+  // Sort by strength then ELO
+  return synergies
+    .sort((a, b) => {
+      if (a.strength !== b.strength) return a.strength === 'strong' ? -1 : 1;
+      return (getEloData(b.card.name)?.elo || 0) - (getEloData(a.card.name)?.elo || 0);
+    })
+    .slice(0, 20);
 }
 
 export function GraphExplorer({ cards }: Props) {
   const [selectedCard, setSelectedCard] = useState<CubeCard | null>(null);
-  const [selectedTheme, setSelectedTheme] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'themes' | 'connections'>('themes');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedArchetype, setSelectedArchetype] = useState<string | null>(null);
 
-  // Group cards by theme
-  const cardsByTheme = useMemo(() => {
+  // Cards grouped by archetype
+  const cardsByArchetype = useMemo(() => {
     const groups: Record<string, CubeCard[]> = {};
-    const uncategorized: CubeCard[] = [];
+
+    for (const arch of ARCHETYPES) {
+      groups[arch.id] = [];
+    }
 
     cards.forEach(card => {
-      const themes = getCardThemes(card);
-      if (themes.length === 0) {
-        uncategorized.push(card);
-      } else {
-        themes.forEach(theme => {
-          if (!groups[theme]) groups[theme] = [];
-          groups[theme].push(card);
-        });
-      }
+      const archs = getCardArchetypes(card);
+      archs.forEach(a => {
+        if (groups[a]) groups[a].push(card);
+      });
     });
 
-    return { groups, uncategorized };
+    // Sort each group by ELO
+    for (const key of Object.keys(groups)) {
+      groups[key].sort((a, b) => (getEloData(b.name)?.elo || 0) - (getEloData(a.name)?.elo || 0));
+    }
+
+    return groups;
   }, [cards]);
 
-  // Find synergies for selected card
+  // Synergies for selected card
   const synergies = useMemo(() => {
     if (!selectedCard) return [];
-
-    return cards
-      .filter(c => c.id !== selectedCard.id)
-      .map(c => ({ card: c, ...detectSynergy(selectedCard, c) }))
-      .filter(s => s.hasSynergy)
-      .sort((a, b) => (getEloData(b.card.name)?.elo || 0) - (getEloData(a.card.name)?.elo || 0));
+    return findSynergies(selectedCard, cards);
   }, [selectedCard, cards]);
 
-  // Get cards for current view
+  // Filtered cards for search
+  const searchResults = useMemo(() => {
+    if (!searchQuery.trim()) return [];
+    const q = searchQuery.toLowerCase();
+    return cards
+      .filter(c => c.name.toLowerCase().includes(q))
+      .slice(0, 12);
+  }, [searchQuery, cards]);
+
+  // Cards to display in main grid
   const displayCards = useMemo(() => {
-    if (selectedTheme) {
-      return cardsByTheme.groups[selectedTheme] || [];
+    if (selectedArchetype) {
+      return cardsByArchetype[selectedArchetype] || [];
     }
     return [];
-  }, [selectedTheme, cardsByTheme]);
+  }, [selectedArchetype, cardsByArchetype]);
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
-      {/* Header */}
-      <div className="sticky top-0 z-20 bg-[#0a0a0a]/90 backdrop-blur border-b border-white/5">
-        <div className="px-6 py-4">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-xl font-medium text-white">Card Universe</h1>
-              <p className="text-sm text-white/40">Explore how cards connect</p>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => { setViewMode('themes'); setSelectedCard(null); }}
-                className={`px-4 py-2 rounded-lg text-sm transition-all ${
-                  viewMode === 'themes' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white'
-                }`}
-              >
-                By Theme
-              </button>
-              <button
-                onClick={() => setViewMode('connections')}
-                className={`px-4 py-2 rounded-lg text-sm transition-all ${
-                  viewMode === 'connections' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white'
-                }`}
-              >
-                Connections
-              </button>
+    <div className="space-y-6">
+      {/* Search bar */}
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+        <input
+          type="text"
+          placeholder="Search for a card..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-white/20"
+        />
+        {searchQuery && (
+          <button
+            onClick={() => setSearchQuery('')}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
+
+        {/* Search results dropdown */}
+        {searchResults.length > 0 && (
+          <div className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a1a] border border-white/10 rounded-xl overflow-hidden shadow-2xl z-50">
+            <div className="grid grid-cols-4 gap-1 p-2">
+              {searchResults.map(card => (
+                <button
+                  key={card.id}
+                  onClick={() => {
+                    setSelectedCard(card);
+                    setSearchQuery('');
+                  }}
+                  className="rounded overflow-hidden hover:ring-2 ring-white/30 transition-all"
+                >
+                  <img src={getCardImage(card)} alt={card.name} className="w-full" />
+                </button>
+              ))}
             </div>
           </div>
+        )}
+      </div>
 
-          {/* Theme pills */}
-          <div className="flex gap-2 overflow-x-auto pb-2">
-            {THEMES.filter(t => cardsByTheme.groups[t.id]?.length > 0).map(theme => (
+      {/* Selected card panel */}
+      {selectedCard && (
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+          <div className="flex gap-6">
+            {/* Card image */}
+            <div className="w-56 flex-shrink-0">
+              <img
+                src={getCardImage(selectedCard)}
+                alt={selectedCard.name}
+                className="w-full rounded-xl shadow-lg"
+              />
+            </div>
+
+            {/* Card info and synergies */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <h2 className="text-xl font-semibold text-white">{selectedCard.name}</h2>
+                  <p className="text-white/50">{selectedCard.type_line}</p>
+                  {getEloData(selectedCard.name) && (
+                    <p className="text-sm text-white/30 mt-1">
+                      ELO {Math.round(getEloData(selectedCard.name)!.elo)}
+                    </p>
+                  )}
+                </div>
+                <button
+                  onClick={() => setSelectedCard(null)}
+                  className="p-2 rounded-lg hover:bg-white/10 text-white/40 hover:text-white"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Archetype tags */}
+              <div className="flex flex-wrap gap-2 mb-4">
+                {getCardArchetypes(selectedCard).map(archId => {
+                  const arch = ARCHETYPES.find(a => a.id === archId);
+                  return arch ? (
+                    <span
+                      key={archId}
+                      className="px-3 py-1 rounded-full text-xs font-medium"
+                      style={{ backgroundColor: arch.color + '25', color: arch.color }}
+                    >
+                      {arch.name}
+                    </span>
+                  ) : null;
+                })}
+              </div>
+
+              {/* Synergies */}
+              {synergies.length > 0 ? (
+                <div>
+                  <h3 className="text-sm text-white/40 uppercase tracking-wider mb-3">
+                    Works well with ({synergies.length})
+                  </h3>
+                  <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 gap-2">
+                    {synergies.map(({ card, reason, strength }) => (
+                      <button
+                        key={card.id}
+                        onClick={() => setSelectedCard(card)}
+                        className="group relative rounded-lg overflow-hidden hover:ring-2 ring-white/30 transition-all"
+                      >
+                        <img src={getCardImage(card)} alt={card.name} className="w-full" />
+                        <div className={`absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-1.5`}>
+                          <span className={`text-[9px] font-medium ${strength === 'strong' ? 'text-green-400' : 'text-white/70'}`}>
+                            {reason}
+                          </span>
+                        </div>
+                        {strength === 'strong' && (
+                          <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-green-400" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-white/30">No synergies found for this card</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Archetype browser */}
+      {!selectedCard && (
+        <>
+          {/* Archetype pills */}
+          <div className="flex flex-wrap gap-2">
+            {ARCHETYPES.map(arch => (
               <button
-                key={theme.id}
-                onClick={() => {
-                  setSelectedTheme(selectedTheme === theme.id ? null : theme.id);
-                  setSelectedCard(null);
-                }}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm whitespace-nowrap transition-all ${
-                  selectedTheme === theme.id
+                key={arch.id}
+                onClick={() => setSelectedArchetype(selectedArchetype === arch.id ? null : arch.id)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm transition-all ${
+                  selectedArchetype === arch.id
                     ? 'text-white'
                     : 'text-white/50 hover:text-white/80'
                 }`}
                 style={{
-                  backgroundColor: selectedTheme === theme.id ? theme.color + '30' : 'rgba(255,255,255,0.05)',
-                  borderColor: selectedTheme === theme.id ? theme.color : 'transparent',
+                  backgroundColor: selectedArchetype === arch.id ? arch.color + '30' : 'rgba(255,255,255,0.05)',
                   borderWidth: 1,
+                  borderColor: selectedArchetype === arch.id ? arch.color : 'transparent',
                 }}
               >
-                <span
-                  className="w-2 h-2 rounded-full"
-                  style={{ backgroundColor: theme.color }}
-                />
-                {theme.name}
-                <span className="text-white/30">{cardsByTheme.groups[theme.id]?.length || 0}</span>
+                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: arch.color }} />
+                {arch.name}
+                <span className="text-white/30">{cardsByArchetype[arch.id]?.length || 0}</span>
               </button>
             ))}
           </div>
-        </div>
-      </div>
 
-      <div className="flex">
-        {/* Main content */}
-        <div className="flex-1 p-6">
-          {viewMode === 'themes' && !selectedTheme && (
-            // Theme overview - show all themes as card clusters
-            <div className="grid gap-8">
-              {THEMES.filter(t => cardsByTheme.groups[t.id]?.length > 0).map(theme => (
-                <div key={theme.id}>
-                  <button
-                    onClick={() => setSelectedTheme(theme.id)}
-                    className="flex items-center gap-3 mb-3 group"
-                  >
-                    <span
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: theme.color }}
-                    />
-                    <h2 className="text-lg font-medium text-white group-hover:text-white/80 transition-colors">
-                      {theme.name}
-                    </h2>
-                    <span className="text-sm text-white/30">{cardsByTheme.groups[theme.id]?.length} cards</span>
-                    <span className="text-white/20 group-hover:text-white/40 transition-colors">→</span>
-                  </button>
-                  <div className="flex gap-2 overflow-x-auto pb-2">
-                    {cardsByTheme.groups[theme.id]?.slice(0, 12).map(card => (
-                      <button
-                        key={card.id}
-                        onClick={() => {
-                          setSelectedCard(card);
-                          setViewMode('connections');
-                        }}
-                        className="flex-shrink-0 w-24 rounded-lg overflow-hidden hover:ring-2 ring-white/30 transition-all hover:scale-105"
-                      >
-                        <img
-                          src={getCardImage(card)}
-                          alt={card.name}
-                          className="w-full"
-                          loading="lazy"
-                        />
-                      </button>
-                    ))}
-                    {(cardsByTheme.groups[theme.id]?.length || 0) > 12 && (
-                      <button
-                        onClick={() => setSelectedTheme(theme.id)}
-                        className="flex-shrink-0 w-24 aspect-[488/680] rounded-lg bg-white/5 flex items-center justify-center text-white/40 hover:bg-white/10 transition-all"
-                      >
-                        +{(cardsByTheme.groups[theme.id]?.length || 0) - 12}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {viewMode === 'themes' && selectedTheme && (
-            // Single theme expanded
+          {/* Selected archetype cards */}
+          {selectedArchetype && (
             <div>
-              <button
-                onClick={() => setSelectedTheme(null)}
-                className="text-white/40 hover:text-white text-sm mb-4 flex items-center gap-2"
-              >
-                ← All Themes
-              </button>
-              <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-3">
+              <div className="flex items-center gap-3 mb-4">
+                <button
+                  onClick={() => setSelectedArchetype(null)}
+                  className="text-white/40 hover:text-white text-sm"
+                >
+                  ← Back
+                </button>
+                <div>
+                  <h2 className="text-lg font-medium text-white">
+                    {ARCHETYPES.find(a => a.id === selectedArchetype)?.name}
+                  </h2>
+                  <p className="text-sm text-white/40">
+                    {ARCHETYPES.find(a => a.id === selectedArchetype)?.description}
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 gap-2">
                 {displayCards.map(card => (
                   <button
                     key={card.id}
-                    onClick={() => {
-                      setSelectedCard(card);
-                      setViewMode('connections');
-                    }}
-                    className={`rounded-lg overflow-hidden transition-all hover:scale-105 ${
-                      selectedCard?.id === card.id ? 'ring-2 ring-white' : 'hover:ring-2 ring-white/30'
-                    }`}
+                    onClick={() => setSelectedCard(card)}
+                    className="rounded-lg overflow-hidden hover:ring-2 ring-white/30 transition-all hover:scale-105"
                   >
-                    <img
-                      src={getCardImage(card)}
-                      alt={card.name}
-                      className="w-full"
-                      loading="lazy"
-                    />
+                    <img src={getCardImage(card)} alt={card.name} className="w-full" />
                   </button>
                 ))}
               </div>
             </div>
           )}
 
-          {viewMode === 'connections' && (
-            <div>
-              {!selectedCard ? (
-                <div className="text-center py-20">
-                  <p className="text-white/40 mb-4">Click any card to see what it synergizes with</p>
-                  <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 gap-2 max-w-5xl mx-auto">
-                    {cards.slice(0, 48).map(card => (
+          {/* All archetypes overview */}
+          {!selectedArchetype && (
+            <div className="space-y-8">
+              <p className="text-white/40">
+                Click an archetype above to explore cards, or search for a specific card
+              </p>
+
+              {ARCHETYPES.slice(0, 4).map(arch => (
+                <div key={arch.id}>
+                  <button
+                    onClick={() => setSelectedArchetype(arch.id)}
+                    className="flex items-center gap-3 mb-3 group"
+                  >
+                    <span className="w-3 h-3 rounded-full" style={{ backgroundColor: arch.color }} />
+                    <h3 className="font-medium text-white group-hover:text-white/80">{arch.name}</h3>
+                    <span className="text-sm text-white/30">{arch.description}</span>
+                    <span className="text-white/20 group-hover:text-white/40">→</span>
+                  </button>
+                  <div className="flex gap-2 overflow-x-auto pb-2">
+                    {cardsByArchetype[arch.id]?.slice(0, 10).map(card => (
                       <button
                         key={card.id}
                         onClick={() => setSelectedCard(card)}
-                        className="rounded overflow-hidden hover:ring-2 ring-white/30 transition-all hover:scale-110 hover:z-10"
+                        className="flex-shrink-0 w-20 rounded-lg overflow-hidden hover:ring-2 ring-white/30 transition-all"
                       >
-                        <img src={getCardImage(card)} alt={card.name} className="w-full" loading="lazy" />
+                        <img src={getCardImage(card)} alt={card.name} className="w-full" />
                       </button>
                     ))}
                   </div>
                 </div>
-              ) : (
-                <div className="flex gap-8">
-                  {/* Selected card */}
-                  <div className="w-64 flex-shrink-0">
-                    <img
-                      src={getCardImage(selectedCard)}
-                      alt={selectedCard.name}
-                      className="w-full rounded-xl shadow-2xl"
-                    />
-                    <div className="mt-4 space-y-2">
-                      <h2 className="text-lg font-medium text-white">{selectedCard.name}</h2>
-                      <p className="text-sm text-white/40">{selectedCard.type_line}</p>
-                      <div className="flex flex-wrap gap-1">
-                        {getCardThemes(selectedCard).map(themeId => {
-                          const theme = THEMES.find(t => t.id === themeId);
-                          return theme ? (
-                            <span
-                              key={themeId}
-                              className="px-2 py-0.5 rounded-full text-xs"
-                              style={{ backgroundColor: theme.color + '30', color: theme.color }}
-                            >
-                              {theme.name}
-                            </span>
-                          ) : null;
-                        })}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Synergies */}
-                  <div className="flex-1">
-                    <h3 className="text-sm text-white/40 uppercase tracking-wider mb-4">
-                      Synergizes with ({synergies.length} cards)
-                    </h3>
-                    {synergies.length === 0 ? (
-                      <p className="text-white/30">No strong synergies detected</p>
-                    ) : (
-                      <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-3">
-                        {synergies.map(({ card, reason }) => (
-                          <button
-                            key={card.id}
-                            onClick={() => setSelectedCard(card)}
-                            className="group relative rounded-lg overflow-hidden hover:ring-2 ring-white/30 transition-all hover:scale-105"
-                          >
-                            <img src={getCardImage(card)} alt={card.name} className="w-full" loading="lazy" />
-                            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <p className="text-[10px] text-white/80 truncate">{reason}</p>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
+              ))}
             </div>
           )}
-        </div>
-      </div>
+        </>
+      )}
     </div>
   );
 }
