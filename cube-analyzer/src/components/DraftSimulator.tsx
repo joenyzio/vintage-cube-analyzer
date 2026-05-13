@@ -185,10 +185,11 @@ function shuffleArray<T>(array: T[]): T[] {
   return shuffled;
 }
 
-// Context-aware best pick calculation - considers deck colors, synergy, not just raw ELO
+// Context-aware best pick calculation - considers deck colors, synergy, trajectory, not just raw ELO
 function getContextAwareBestPick(
   pack: CubeCard[],
-  picks: CubeCard[]
+  picks: CubeCard[],
+  cardEloHistory?: Map<string, { baseElo: number; history: Array<{ pick: number; adjustedElo: number; adjustment: number }> }>
 ): { bestCard: CubeCard; score: number } {
   const pickNames = picks.map(p => p.name);
 
@@ -262,6 +263,42 @@ function getContextAwareBestPick(
     // Premium card bonus (but less important than color fit late)
     if (percentile >= 95) score += 20;
     else if (percentile >= 85) score += 10;
+
+    // TRAJECTORY BONUS: Cards trending up in value get a boost
+    if (cardEloHistory) {
+      const history = cardEloHistory.get(card.id);
+      if (history && history.history.length >= 2) {
+        const points = history.history;
+        const currentElo = points[points.length - 1].adjustedElo;
+        const startElo = points[0].adjustedElo;
+        const trend = currentElo - startElo;
+
+        // Velocity: ELO change per pick observed
+        const velocity = trend / (points.length - 1);
+
+        // Apply trajectory bonus/penalty
+        // Rising fast (>8 ELO/pick): +15 points - this card is becoming critical
+        // Rising (>3 ELO/pick): +8 points - this card is gaining value
+        // Stable: no change
+        // Falling (<-3 ELO/pick): -5 points - this card is losing relevance
+        // Falling fast (<-8 ELO/pick): -10 points - we're moving away from needing this
+        if (velocity > 8) {
+          score += 15;
+        } else if (velocity > 3) {
+          score += 8;
+        } else if (velocity < -8) {
+          score -= 10;
+        } else if (velocity < -3) {
+          score -= 5;
+        }
+
+        // Additional boost for cards that started low but are now high
+        // This captures "hidden gems" that synergize with our deck
+        if (trend > 50 && currentElo > 1600) {
+          score += 10; // This card has become much better for us specifically
+        }
+      }
+    }
 
     return { card, score };
   });
@@ -836,78 +873,6 @@ function estimateDeckWinRate(picks: CubeCard[], archetypeCommitments: ArchetypeC
     factors,
     grade,
   };
-}
-
-// Find synergy connections between picks (for visualization)
-interface SynergyConnection {
-  card1: string;
-  card2: string;
-  strength: 'strong' | 'medium' | 'weak';
-  reason: string;
-}
-
-function getSynergyConnections(picks: CubeCard[]): SynergyConnection[] {
-  const connections: SynergyConnection[] = [];
-  if (picks.length < 2) return connections;
-
-  // Define synergy patterns
-  const synergyPatterns = [
-    { cards: ['Tinker', 'Blightsteel Colossus'], strength: 'strong' as const, reason: 'Tinker target' },
-    { cards: ['Tinker', 'Myr Battlesphere'], strength: 'strong' as const, reason: 'Tinker target' },
-    { cards: ['Tinker', 'Sundering Titan'], strength: 'strong' as const, reason: 'Tinker target' },
-    { cards: ['Reanimate', 'Griselbrand'], strength: 'strong' as const, reason: 'Reanimate target' },
-    { cards: ['Reanimate', 'Archon of Cruelty'], strength: 'strong' as const, reason: 'Reanimate target' },
-    { cards: ['Entomb', 'Reanimate'], strength: 'strong' as const, reason: 'Reanimator combo' },
-    { cards: ['Entomb', 'Animate Dead'], strength: 'strong' as const, reason: 'Reanimator combo' },
-    { cards: ['Channel', 'Emrakul, the Aeons Torn'], strength: 'strong' as const, reason: 'Channel into Emrakul' },
-    { cards: ['Show and Tell', 'Omniscience'], strength: 'strong' as const, reason: 'Show into Omni' },
-    { cards: ['Show and Tell', 'Emrakul, the Aeons Torn'], strength: 'strong' as const, reason: 'Sneak & Show' },
-    { cards: ['Sneak Attack', 'Emrakul, the Aeons Torn'], strength: 'strong' as const, reason: 'Sneak & Show' },
-    { cards: ['Natural Order', 'Craterhoof Behemoth'], strength: 'strong' as const, reason: 'Natural Order target' },
-    { cards: ['Time Vault', 'Voltaic Key'], strength: 'strong' as const, reason: 'Infinite turns' },
-    { cards: ['Dark Ritual', 'Tendrils of Agony'], strength: 'medium' as const, reason: 'Storm enabler' },
-    { cards: ['Lion\'s Eye Diamond', 'Underworld Breach'], strength: 'strong' as const, reason: 'Breach combo' },
-  ];
-
-  const pickNames = new Set(picks.map(p => p.name));
-
-  // Check for known synergies
-  for (const pattern of synergyPatterns) {
-    if (pattern.cards.every(c => pickNames.has(c))) {
-      connections.push({
-        card1: pattern.cards[0],
-        card2: pattern.cards[1],
-        strength: pattern.strength,
-        reason: pattern.reason,
-      });
-    }
-  }
-
-  // Check for color-based synergies (creatures + pump spells in same colors)
-  const creatures = picks.filter(p => p.type_line?.toLowerCase().includes('creature'));
-  const equipments = picks.filter(p => p.type_line?.toLowerCase().includes('equipment'));
-
-  if (creatures.length >= 5 && equipments.length >= 1) {
-    connections.push({
-      card1: `${creatures.length} creatures`,
-      card2: `${equipments.length} equipment`,
-      strength: 'medium',
-      reason: 'Equipment synergy',
-    });
-  }
-
-  // Tribal synergies
-  const goblins = picks.filter(p => p.type_line?.toLowerCase().includes('goblin')).length;
-  if (goblins >= 3) {
-    connections.push({
-      card1: `${goblins} Goblins`,
-      card2: 'Tribal synergy',
-      strength: 'medium',
-      reason: 'Goblin tribal',
-    });
-  }
-
-  return connections.slice(0, 8); // Limit to 8 connections
 }
 
 // Analyze opening hand quality
@@ -1858,6 +1823,8 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
   const [draftState, setDraftState] = useState<DraftState | null>(null);
   const [quizState, setQuizState] = useState<QuizState | null>(null);
   const [hoveredCard, setHoveredCard] = useState<CubeCard | null>(null);
+  // displayedCard persists the last hovered card so the right panel never goes blank
+  const [displayedCard, setDisplayedCard] = useState<CubeCard | null>(null);
   const [mobileSelectedCard, setMobileSelectedCard] = useState<CubeCard | null>(null);
   const [showMobileDeck, setShowMobileDeck] = useState(false);
   const [expandedPlayerIdx, setExpandedPlayerIdx] = useState<number | null>(null);
@@ -1966,78 +1933,6 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     const correct = quizState.history.filter(h => h.correct).length;
     return Math.round((correct / quizState.history.length) * 100);
   }, [quizState]);
-
-  // Detect synergies between a card and current picks (available for future use)
-  const _getCardSynergies = useCallback((card: CubeCard): string[] => {
-    if (!draftState || draftState.picks.length === 0) return [];
-
-    const synergies: string[] = [];
-    const pickNames = draftState.picks.map(p => p.name);
-    const pickTags = new Set(draftState.picks.flatMap(p => p.synergyTags || []));
-    const cardTags = card.synergyTags || [];
-    const cardText = (card.oracle_text || '').toLowerCase();
-
-    // Check for direct synergy tag matches
-    const matchingTags = cardTags.filter(tag => pickTags.has(tag));
-    if (matchingTags.length > 0) {
-      synergies.push(...matchingTags.slice(0, 2)); // Max 2 tags
-    }
-
-    // Reanimator synergy
-    if (card.role === 'reanimation_target') {
-      const hasReanimate = draftState.picks.some(p =>
-        p.oracle_text?.toLowerCase().includes('return') &&
-        p.oracle_text?.toLowerCase().includes('graveyard')
-      );
-      if (hasReanimate) synergies.push('reanimate target');
-    }
-
-    // Artifact synergy
-    if (card.type_line?.toLowerCase().includes('artifact')) {
-      const hasArtifactSynergy = draftState.picks.some(p =>
-        p.name === 'Tinker' || p.name === 'Tolarian Academy' || p.name === "Urza's Saga"
-      );
-      if (hasArtifactSynergy) synergies.push('artifact synergy');
-    }
-
-    // Creature count for Natural Order / Craterhoof
-    if (card.type_line?.toLowerCase().includes('creature')) {
-      const hasNaturalOrder = pickNames.includes('Natural Order');
-      const hasCraterhoof = pickNames.includes('Craterhoof Behemoth');
-      if (hasNaturalOrder && card.color_identity?.includes('G')) synergies.push('Natural Order');
-      if (hasCraterhoof) synergies.push('Craterhoof food');
-    }
-
-    // Storm / spell count
-    if (cardText.includes('storm') || card.name === 'Brain Freeze') {
-      const spellCount = draftState.picks.filter(p =>
-        p.type_line?.toLowerCase().includes('instant') ||
-        p.type_line?.toLowerCase().includes('sorcery')
-      ).length;
-      if (spellCount >= 5) synergies.push('storm enabler');
-    }
-
-    return synergies.slice(0, 3); // Max 3 synergies shown
-  }, [draftState]);
-
-  // Wheel prediction - check if a card we passed might come back (available for future use)
-  const _getWheelPrediction = useCallback((card: CubeCard): { mightWheel: boolean; passedAtPick: number } | null => {
-    if (!draftState) return null;
-
-    const passedInfo = draftState.passedCards.get(card.id);
-    if (!passedInfo) return null;
-
-    // Card might wheel if:
-    // 1. We passed it early (pick 1-4)
-    // 2. It has low wheel likelihood (so others might pass it too)
-    const wheelLikelihood = getWheelLikelihood(card.name);
-    const mightWheel = passedInfo.passedAtPick <= 4 && wheelLikelihood !== 'unlikely';
-
-    return {
-      mightWheel,
-      passedAtPick: passedInfo.passedAtPick,
-    };
-  }, [draftState]);
 
   // Calculate draft grade based on decisions
   const draftGrade = useMemo(() => {
@@ -2205,6 +2100,14 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draftStats.quizTotal]);
 
+  // Keep displayedCard updated - only update when hoveredCard is non-null
+  // This prevents the right panel from going blank
+  useEffect(() => {
+    if (hoveredCard) {
+      setDisplayedCard(hoveredCard);
+    }
+  }, [hoveredCard]);
+
   // Analyze deck needs for coaching
   const deckNeeds = useMemo(() => {
     if (!draftState || draftState.picks.length === 0) return null;
@@ -2316,12 +2219,6 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     if (!draftState || draftState.picks.length < 10) return null;
     return estimateDeckWinRate(draftState.picks, archetypeCommitments);
   }, [draftState?.picks, archetypeCommitments]);
-
-  // Synergy connections between picks
-  const synergyConnections = useMemo(() => {
-    if (!draftState || draftState.picks.length < 3) return [];
-    return getSynergyConnections(draftState.picks);
-  }, [draftState?.picks]);
 
   // Curve analysis
   const curveAnalysis = useMemo(() => {
@@ -2685,6 +2582,15 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
       pack.forEach(c => newUsedCardIds.add(c.id));
     }
 
+    // CRITICAL: Update ALL existing cards' ELO first (they carry over from previous packs!)
+    newEloHistory.forEach((history, cardId) => {
+      const cardData = cards.find((c: CubeCard) => c.id === cardId);
+      if (cardData) {
+        const synergy = getSynergyAdjustedElo(cardData, currentPicks);
+        history.history.push({ pick: pickNum, adjustedElo: synergy.adjustedElo, adjustment: synergy.adjustment });
+      }
+    });
+
     // Add new cards from our pack to history
     tablePacks[0].forEach(card => {
       newSeenCards.add(card.id);
@@ -2724,8 +2630,8 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
 
     const currentPack = draftState.tablePacks[0];
 
-    // Find the best available card considering deck context (colors, synergy)
-    const { bestCard: bestAvailable } = getContextAwareBestPick(currentPack, draftState.picks);
+    // Find the best available card considering deck context (colors, synergy, trajectory)
+    const { bestCard: bestAvailable } = getContextAwareBestPick(currentPack, draftState.picks, draftState.cardEloHistory);
     const bestElo = getEloData(bestAvailable.name)?.elo || 0;
     const pickedElo = getEloData(card.name)?.elo || 0;
 
@@ -2760,17 +2666,18 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
       idx === 0 ? [...picks, card] : [...picks]
     );
 
-    // Update ELO history for all cards we can see (track how their value shifts with this pick)
+    // Update ELO history for ALL seen cards (track how their value shifts with EVERY pick)
     const newEloHistory = new Map(draftState.cardEloHistory);
     const newSeenCards = new Set(draftState.seenCards);
     const pickNum = newPicks.length;
 
-    // Update history for cards in current pack (they'll go to next player)
-    passed.forEach(c => {
-      const synergy = getSynergyAdjustedElo(c, newPicks);
-      const existing = newEloHistory.get(c.id);
-      if (existing) {
-        existing.history.push({ pick: pickNum, adjustedElo: synergy.adjustedElo, adjustment: synergy.adjustment });
+    // Update history for ALL cards we've ever seen - this gives proper sparklines
+    newEloHistory.forEach((history, cardId) => {
+      // Find the card from our cube data
+      const cardData = cards.find((c: CubeCard) => c.id === cardId);
+      if (cardData) {
+        const synergy = getSynergyAdjustedElo(cardData, newPicks);
+        history.history.push({ pick: pickNum, adjustedElo: synergy.adjustedElo, adjustment: synergy.adjustment });
       }
     });
 
@@ -2880,7 +2787,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     if (!pendingPick || !draftState) return;
 
     const currentPack = draftState.tablePacks[0];
-    const { bestCard: bestAvailable } = getContextAwareBestPick(currentPack, draftState.picks);
+    const { bestCard: bestAvailable } = getContextAwareBestPick(currentPack, draftState.picks, draftState.cardEloHistory);
     const bestElo = getEloData(bestAvailable.name)?.elo || 0;
     const pickedElo = getEloData(pendingPick.name)?.elo || 0;
 
@@ -3283,52 +3190,6 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     return null;
   }, [draftState, colorCounts, archetypeMatches]);
 
-  // Analyze current pack for archetype signposts - useful from P1P1
-  const packArchetypeSignals = useMemo(() => {
-    if (!draftState) return [];
-    const currentPack = draftState.tablePacks[0];
-    if (!currentPack || currentPack.length === 0) return [];
-
-    // Find archetype-defining cards in the pack
-    const signals: { archetype: typeof ARCHETYPES[0]; cards: { card: CubeCard; isKeyCard: boolean; percentile: number }[] }[] = [];
-
-    for (const arch of ARCHETYPES) {
-      const matchingCards: { card: CubeCard; isKeyCard: boolean; percentile: number }[] = [];
-
-      for (const card of currentPack) {
-        const isKeyCard = arch.keyCards.includes(card.name);
-        const fitsArchetype = arch.detectCard(card);
-
-        if (isKeyCard || fitsArchetype) {
-          const percentile = getPercentile(card.name);
-          // Prioritize key cards and high-percentile cards
-          if (isKeyCard || percentile >= 60) {
-            matchingCards.push({ card, isKeyCard, percentile });
-          }
-        }
-      }
-
-      if (matchingCards.length > 0) {
-        // Sort by key card first, then percentile
-        matchingCards.sort((a, b) => {
-          if (a.isKeyCard && !b.isKeyCard) return -1;
-          if (!a.isKeyCard && b.isKeyCard) return 1;
-          return b.percentile - a.percentile;
-        });
-        signals.push({ archetype: arch, cards: matchingCards.slice(0, 3) });
-      }
-    }
-
-    // Sort archetypes by best card quality and number of options
-    return signals
-      .map(s => ({
-        ...s,
-        score: s.cards.reduce((sum, c) => sum + (c.isKeyCard ? 50 : 0) + c.percentile, 0) / s.cards.length
-      }))
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 4); // Show top 4 archetypes available
-  }, [draftState, ARCHETYPES]);
-
   // Pack ELO statistics
   const packEloStats = useMemo(() => {
     if (!draftState) return null;
@@ -3660,7 +3521,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                 key={card.id}
                 onClick={() => makeQuizPick(card)}
                 onMouseEnter={() => setHoveredCard(card)}
-                onMouseLeave={() => setHoveredCard(null)}
+                
                 className={`
                   relative aspect-[488/680] rounded-lg overflow-hidden shadow-lg
                   transition-all duration-200
@@ -3977,7 +3838,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                     wasOptimal === false ? 'ring-2 ring-red-400/30' : ''
                   }`}
                   onMouseEnter={() => setHoveredCard(card)}
-                  onMouseLeave={() => setHoveredCard(null)}
+                  
                 >
                   <img src={getCardImage(card)} alt={card.name} className="w-full h-full object-cover" loading="lazy" />
                   {wasOptimal === false && (
@@ -4246,7 +4107,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                               key={card.id}
                               className="w-10 h-14 rounded overflow-hidden border border-white/10"
                               onMouseEnter={() => setHoveredCard(card)}
-                              onMouseLeave={() => setHoveredCard(null)}
+                              
                             >
                               <img src={getCardImage(card)} alt={card.name} className="w-full h-full object-cover" />
                             </div>
@@ -4311,7 +4172,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                             key={card.id}
                             className="aspect-[488/680] rounded-lg overflow-hidden border border-white/10 hover:border-white/30 hover:scale-105 transition-all cursor-pointer"
                             onMouseEnter={() => setHoveredCard(card)}
-                            onMouseLeave={() => setHoveredCard(null)}
+                            
                           >
                             <img src={getCardImage(card)} alt={card.name} className="w-full h-full object-cover" />
                           </div>
@@ -4344,7 +4205,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
   const recommendedCard = getRecommendedPick;
 
   return (
-    <div className="flex gap-5">
+    <div className="flex gap-4">
       {/* Achievement Popup */}
       {newAchievement && (
         <div className="fixed top-4 right-4 z-50 animate-pulse">
@@ -4361,85 +4222,70 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
         </div>
       )}
 
-      {/* Left Panel - Draft Guidance */}
-      <div className="w-56 flex-shrink-0 hidden lg:block">
-        <div className="sticky top-20 space-y-3">
-          {/* Coach Panel - Enhanced (also shows during quiz reveal) */}
+      {/* Left Panel - Coaching (narrower) */}
+      <div className="w-48 flex-shrink-0 hidden lg:block">
+        <div className="sticky top-20 space-y-2">
+          {/* Coach Panel - Clean minimal design */}
           {(coachMode || (quizDraftMode && showPickReveal)) && coachExplanation && (
-            <div className="bg-gradient-to-br from-amber-500/10 to-transparent border border-amber-500/20 rounded-xl overflow-hidden">
+            <div className="bg-black border border-white/[0.08] rounded-xl overflow-hidden">
               <button
                 onClick={() => setShowCoachExplanation(!showCoachExplanation)}
-                className="w-full p-3 flex items-center justify-between hover:bg-white/[0.02] transition-colors"
+                className="w-full p-2.5 flex items-center justify-between hover:bg-white/[0.02] transition-colors border-b border-white/[0.06]"
               >
                 <div className="flex items-center gap-2">
-                  <Lightbulb className="w-4 h-4 text-amber-400" />
-                  <span className="text-xs font-medium text-amber-400 uppercase tracking-wider">AI Coach</span>
+                  <Lightbulb className="w-3.5 h-3.5 text-white/50" />
+                  <span className="text-[10px] font-medium text-white/50 uppercase tracking-wider">Recommended</span>
                 </div>
-                <span className="text-white/30 text-xs">{showCoachExplanation ? '▼' : '▶'}</span>
+                <span className="text-white/20 text-xs">{showCoachExplanation ? '−' : '+'}</span>
               </button>
 
-              {/* Always show the main recommendation */}
-              <div className="px-3 pb-3 space-y-3">
-                {/* Current Archetype Badge */}
-                {coachExplanation.currentArchetype && (
-                  <div className="px-2 py-1.5 bg-purple-500/20 border border-purple-500/30 rounded-lg">
-                    <div className="text-[9px] text-purple-300/70 uppercase tracking-wider">Building</div>
-                    <div className="text-sm font-semibold text-purple-300">{coachExplanation.currentArchetype}</div>
-                  </div>
-                )}
-
-                {/* Main Pick Recommendation */}
-                <div className="flex items-start gap-3">
-                  <div className="w-12 h-16 rounded-lg overflow-hidden flex-shrink-0 ring-2 ring-amber-400/50">
+              <div className="p-2.5 space-y-2">
+                {/* Main Pick Recommendation - clean */}
+                <div className="flex items-start gap-2.5">
+                  <div className="w-10 h-14 rounded overflow-hidden flex-shrink-0 ring-1 ring-white/20">
                     <img src={getCardImage(coachExplanation.card)} alt="" className="w-full h-full object-cover" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-xs font-semibold text-white truncate">{coachExplanation.card.name}</div>
-                    <div className="text-[10px] text-amber-400 font-medium">ELO {Math.round(coachExplanation.elo)} · Top {100 - coachExplanation.percentile}%</div>
-                    <div className="mt-1 text-[11px] text-white/80 leading-tight">
+                    <div className="text-xs font-medium text-white truncate">{coachExplanation.card.name}</div>
+                    <div className="text-[10px] text-white/40 font-mono">{Math.round(coachExplanation.elo)} ELO</div>
+                    <div className="mt-0.5 text-[10px] text-white/60 leading-tight line-clamp-2">
                       {coachExplanation.mainReason}
                     </div>
                   </div>
                 </div>
 
-                {/* Deck Needs Alert */}
-                {coachExplanation.deckNeeds && coachExplanation.deckNeeds.length > 0 && (
-                  <div className="p-2 bg-white/[0.03] rounded-lg">
-                    <div className="text-[9px] text-white/40 uppercase tracking-wider mb-1">Your deck needs</div>
-                    <div className="flex flex-wrap gap-1">
-                      {coachExplanation.deckNeeds.map((need, i) => (
-                        <span key={i} className="px-1.5 py-0.5 bg-amber-500/20 text-amber-300 text-[9px] rounded font-medium">
-                          {need}
-                        </span>
-                      ))}
-                    </div>
+                {/* Current Archetype - subtle */}
+                {coachExplanation.currentArchetype && (
+                  <div className="text-[9px] text-white/40">
+                    Building: <span className="text-white/70">{coachExplanation.currentArchetype}</span>
                   </div>
                 )}
 
                 {showCoachExplanation && (
                   <>
-                    {/* Additional Reasons */}
-                    {coachExplanation.reasons.length > 1 && (
-                      <div className="space-y-1">
-                        <div className="text-[9px] text-white/40 uppercase tracking-wider">Why this pick</div>
-                        {coachExplanation.reasons.map((reason, i) => (
-                          <div key={i} className="flex items-start gap-1.5 text-[10px] text-white/60">
-                            <span className="text-green-400 mt-0.5">✓</span>
-                            <span>{reason}</span>
-                          </div>
-                        ))}
+                    {/* Deck Needs */}
+                    {coachExplanation.deckNeeds && coachExplanation.deckNeeds.length > 0 && (
+                      <div className="pt-2 border-t border-white/[0.06]">
+                        <div className="text-[9px] text-white/30 mb-1">Needs</div>
+                        <div className="flex flex-wrap gap-1">
+                          {coachExplanation.deckNeeds.map((need, i) => (
+                            <span key={i} className="px-1.5 py-0.5 bg-white/[0.05] text-white/60 text-[9px] rounded">
+                              {need}
+                            </span>
+                          ))}
+                        </div>
                       </div>
                     )}
 
                     {/* Alternatives */}
                     {coachExplanation.alternatives && coachExplanation.alternatives.length > 0 && (
                       <div className="pt-2 border-t border-white/[0.06]">
-                        <div className="text-[9px] text-white/40 uppercase tracking-wider mb-1.5">Also consider</div>
-                        <div className="space-y-1.5">
+                        <div className="text-[9px] text-white/30 mb-1">Also consider</div>
+                        <div className="space-y-1">
                           {coachExplanation.alternatives.slice(0, 2).map((alt, i) => (
                             <div key={i} className="flex items-center justify-between text-[10px]">
-                              <span className="text-white/70 truncate">{alt.name}</span>
-                              <span className="text-white/30 text-[9px] truncate ml-2">{alt.reason}</span>
+                              <span className="text-white/60 truncate">{alt.name}</span>
+                              <span className="text-white/30 text-[9px]">{alt.reason}</span>
                             </div>
                           ))}
                         </div>
@@ -4451,183 +4297,152 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
             </div>
           )}
 
-          {/* Draft Intelligence Panel - shows from P1P1 */}
+          {/* Draft Intelligence Panel - clean minimal */}
           {coachMode && (
-            <div className="bg-gradient-to-br from-blue-500/5 to-purple-500/5 border border-blue-500/20 rounded-xl overflow-hidden">
-              {/* Phase Indicator */}
+            <div className="bg-black border border-white/[0.08] rounded-xl overflow-hidden">
+              {/* Phase Indicator - subtle */}
               {draftPhase && (
                 <div className="p-2 border-b border-white/[0.06]">
                   <div className="flex items-center justify-between">
-                    <span className="text-[9px] text-blue-300/70 uppercase tracking-wider">{draftPhase.description}</span>
-                    <span className={`text-[9px] px-1.5 py-0.5 rounded ${
-                      draftPhase.phase === 'speculation' ? 'bg-blue-500/30 text-blue-300' :
-                      draftPhase.phase === 'exploration' ? 'bg-purple-500/30 text-purple-300' :
-                      draftPhase.phase === 'commitment' ? 'bg-amber-500/30 text-amber-300' :
-                      'bg-green-500/30 text-green-300'
-                    }`}>
-                      Pick {draftState.pickNumber}/15
+                    <span className="text-[9px] text-white/40 uppercase tracking-wider">{draftPhase.description}</span>
+                    <span className="text-[9px] text-white/50 font-mono">
+                      {draftState.pickNumber}/15
                     </span>
                   </div>
                   <div className="text-[10px] text-white/50 mt-1 leading-tight">{draftPhase.priority}</div>
                 </div>
               )}
 
-              {/* Archetype Commitments with Progress Bars */}
+              {/* Archetype Probability - colored by archetype */}
               {archetypeCommitments.length > 0 && (
                 <div className="p-2 border-b border-white/[0.06]">
-                  <div className="text-[9px] text-white/40 uppercase tracking-wider mb-2">Archetype Probability</div>
-                  <div className="space-y-2">
-                    {archetypeCommitments.slice(0, 3).map((arch) => (
-                      <div key={arch.archetype}>
-                        <div className="flex items-center justify-between text-[10px] mb-0.5">
-                          <span className="text-white/80">{arch.archetype}</span>
-                          <span className={`font-medium ${arch.probability >= 50 ? 'text-green-400' : arch.probability >= 25 ? 'text-amber-400' : 'text-white/50'}`}>
-                            {arch.probability}%
-                          </span>
-                        </div>
-                        <div className="h-1 bg-white/10 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full transition-all ${
-                              arch.probability >= 50 ? 'bg-green-500' :
-                              arch.probability >= 25 ? 'bg-amber-500' :
-                              'bg-white/30'
-                            }`}
-                            style={{ width: `${arch.probability}%` }}
-                          />
-                        </div>
-                        {/* Critical Mass Indicators */}
-                        {arch.criticalMass.length > 0 && arch.probability >= 30 && (
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {arch.criticalMass.map((cm, j) => (
-                              <span key={j} className={`text-[8px] px-1 py-0.5 rounded ${
-                                cm.current >= cm.needed ? 'bg-green-500/30 text-green-300' : 'bg-red-500/20 text-red-300'
-                              }`}>
-                                {cm.category}: {cm.current}/{cm.needed}
-                              </span>
-                            ))}
+                  <div className="text-[9px] text-white/30 mb-1.5">Archetypes</div>
+                  <div className="space-y-1.5">
+                    {archetypeCommitments.slice(0, 3).map((arch) => {
+                      // Color mapping for archetypes
+                      const archColors: Record<string, { text: string; bar: string }> = {
+                        'Reanimator': { text: 'text-purple-400', bar: 'bg-purple-500' },
+                        'Storm': { text: 'text-indigo-400', bar: 'bg-indigo-500' },
+                        'Aggro': { text: 'text-red-400', bar: 'bg-red-500' },
+                        'Control': { text: 'text-blue-400', bar: 'bg-blue-500' },
+                        'Artifact Combo': { text: 'text-slate-300', bar: 'bg-slate-400' },
+                        'Ramp': { text: 'text-green-400', bar: 'bg-green-500' },
+                        'Sneak & Show': { text: 'text-rose-400', bar: 'bg-rose-500' },
+                        'Midrange': { text: 'text-amber-400', bar: 'bg-amber-500' },
+                      };
+                      const colors = archColors[arch.archetype] || { text: 'text-white/60', bar: 'bg-white/40' };
+                      return (
+                        <div key={arch.archetype}>
+                          <div className="flex items-center justify-between text-[10px] mb-0.5">
+                            <span className={colors.text}>{arch.archetype}</span>
+                            <span className="text-white/50 font-mono">{arch.probability}%</span>
                           </div>
-                        )}
-                      </div>
-                    ))}
+                          <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full ${colors.bar} transition-all`}
+                              style={{ width: `${arch.probability}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
 
-              {/* Signal Indicators */}
+              {/* Signal Indicators - colored */}
               {draftSignals && (draftSignals.colorsOpen.length > 0 || draftSignals.colorsCut.length > 0) && (
                 <div className="p-2 border-b border-white/[0.06]">
-                  <div className="text-[9px] text-white/40 uppercase tracking-wider mb-1.5">Table Signals</div>
+                  <div className="text-[9px] text-white/30 mb-1">Signals</div>
                   <div className="space-y-1.5">
                     {draftSignals.colorsOpen.length > 0 && (
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[9px] text-green-400">OPEN:</span>
-                        <div className="flex gap-1">
-                          {draftSignals.colorsOpen.slice(0, 3).map(({ color, confidence }) => (
-                            <span key={color} className="text-[10px] px-1.5 py-0.5 bg-green-500/20 text-green-300 rounded font-medium">
-                              {color} ({confidence}%)
+                      <div className="flex items-center gap-1.5 text-[9px]">
+                        <span className="text-green-400/70">Open:</span>
+                        {draftSignals.colorsOpen.slice(0, 3).map(({ color }) => {
+                          const colorBg: Record<string, string> = {
+                            'W': 'bg-amber-100 text-amber-900',
+                            'U': 'bg-blue-500 text-white',
+                            'B': 'bg-neutral-600 text-white',
+                            'R': 'bg-red-500 text-white',
+                            'G': 'bg-green-600 text-white',
+                          };
+                          return (
+                            <span key={color} className={`w-4 h-4 rounded text-[8px] font-bold flex items-center justify-center ${colorBg[color]}`}>
+                              {color}
                             </span>
-                          ))}
-                        </div>
+                          );
+                        })}
                       </div>
                     )}
                     {draftSignals.colorsCut.length > 0 && (
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[9px] text-red-400">CUT:</span>
-                        <div className="flex gap-1">
-                          {draftSignals.colorsCut.slice(0, 3).map(({ color, intensity }) => (
-                            <span key={color} className="text-[10px] px-1.5 py-0.5 bg-red-500/20 text-red-300 rounded font-medium">
-                              {color} ({intensity}%)
+                      <div className="flex items-center gap-1.5 text-[9px]">
+                        <span className="text-red-400/70">Cut:</span>
+                        {draftSignals.colorsCut.slice(0, 3).map(({ color }) => {
+                          const colorBg: Record<string, string> = {
+                            'W': 'bg-amber-100/50 text-amber-900/50',
+                            'U': 'bg-blue-500/50 text-white/50',
+                            'B': 'bg-neutral-600/50 text-white/50',
+                            'R': 'bg-red-500/50 text-white/50',
+                            'G': 'bg-green-600/50 text-white/50',
+                          };
+                          return (
+                            <span key={color} className={`w-4 h-4 rounded text-[8px] font-bold flex items-center justify-center ${colorBg[color]} line-through`}>
+                              {color}
                             </span>
-                          ))}
-                        </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
                 </div>
               )}
 
-              {/* Enabler/Payoff Balance Warning */}
+              {/* Combo Balance - text only */}
               {enablerPayoffBalance.length > 0 && enablerPayoffBalance.some(b => b.balance !== 'balanced') && (
                 <div className="p-2 border-b border-white/[0.06]">
-                  <div className="text-[9px] text-white/40 uppercase tracking-wider mb-1.5">Combo Balance</div>
-                  {enablerPayoffBalance.filter(b => b.balance !== 'balanced').slice(0, 2).map((balance, i) => (
-                    <div key={i} className={`text-[10px] p-1.5 rounded mb-1 ${
-                      balance.balance === 'needs-payoffs' ? 'bg-amber-500/10 text-amber-300' :
-                      balance.balance === 'needs-enablers' ? 'bg-purple-500/10 text-purple-300' :
-                      'bg-white/5 text-white/60'
-                    }`}>
-                      <div className="font-medium">{balance.archetype}</div>
-                      <div className="text-[9px] opacity-80">{balance.recommendation}</div>
+                  {enablerPayoffBalance.filter(b => b.balance !== 'balanced').slice(0, 1).map((balance, i) => (
+                    <div key={i} className="text-[10px] text-white/50">
+                      <span className="text-white/70">{balance.archetype}:</span> {balance.recommendation}
                     </div>
                   ))}
                 </div>
               )}
 
-              {/* Mana Base Alert */}
+              {/* Mana Base - text only */}
               {manaBaseStatus && manaBaseStatus.recommendation && (
                 <div className="p-2 border-b border-white/[0.06]">
-                  <div className="text-[9px] text-white/40 uppercase tracking-wider mb-1">Mana Base</div>
-                  <div className="text-[10px] text-cyan-300 bg-cyan-500/10 p-1.5 rounded">
-                    {manaBaseStatus.recommendation}
-                  </div>
+                  <div className="text-[10px] text-white/50">{manaBaseStatus.recommendation}</div>
                 </div>
               )}
 
-              {/* Curve Analysis */}
+              {/* Curve Analysis - minimal */}
               {curveAnalysis && (
                 <div className="p-2 border-b border-white/[0.06]">
-                  <div className="text-[9px] text-white/40 uppercase tracking-wider mb-1.5">Curve Analysis</div>
-                  <div className="flex items-end gap-1 mb-1.5">
-                    {[curveAnalysis.cmc1Count, curveAnalysis.cmc2Count, curveAnalysis.cmc3Count, curveAnalysis.cmc4PlusCount].map((count, i) => (
-                      <div key={i} className="flex flex-col items-center">
-                        <div
-                          className="w-4 bg-gradient-to-t from-blue-500 to-blue-400 rounded-t"
-                          style={{ height: `${Math.max(4, count * 4)}px` }}
-                        />
-                        <span className="text-[8px] text-white/40 mt-0.5">{i < 3 ? i + 1 : '4+'}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className={`text-[9px] px-1.5 py-0.5 rounded inline-block ${
-                    curveAnalysis.curveScore === 'Excellent' ? 'bg-green-500/20 text-green-300' :
-                    curveAnalysis.curveScore === 'Good' ? 'bg-blue-500/20 text-blue-300' :
-                    curveAnalysis.curveScore === 'Poor' ? 'bg-red-500/20 text-red-300' :
-                    'bg-white/10 text-white/60'
-                  }`}>
-                    {curveAnalysis.curveScore} · {curveAnalysis.playableHandRate}% keepable
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-end gap-0.5">
+                      {[curveAnalysis.cmc1Count, curveAnalysis.cmc2Count, curveAnalysis.cmc3Count, curveAnalysis.cmc4PlusCount].map((count, i) => (
+                        <div key={i} className="flex flex-col items-center">
+                          <div
+                            className="w-3 bg-white/30 rounded-sm"
+                            style={{ height: `${Math.max(2, count * 3)}px` }}
+                          />
+                          <span className="text-[7px] text-white/30 mt-0.5">{i < 3 ? i + 1 : '4+'}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <span className="text-[9px] text-white/40">{curveAnalysis.playableHandRate}% keepable</span>
                   </div>
                 </div>
               )}
 
-              {/* Synergy Connections */}
-              {synergyConnections.length > 0 && (
-                <div className="p-2 border-b border-white/[0.06]">
-                  <div className="text-[9px] text-white/40 uppercase tracking-wider mb-1.5">Synergy Web</div>
-                  <div className="space-y-1">
-                    {synergyConnections.slice(0, 4).map((conn, i) => (
-                      <div key={i} className={`text-[9px] p-1 rounded flex items-center gap-1 ${
-                        conn.strength === 'strong' ? 'bg-green-500/15 text-green-300' :
-                        'bg-purple-500/10 text-purple-300'
-                      }`}>
-                        <span className={conn.strength === 'strong' ? 'text-green-400' : 'text-purple-400'}>⚡</span>
-                        <span className="truncate">{conn.reason}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Regrettable Passes */}
+              {/* Passed cards - minimal */}
               {topRegrets.length > 0 && (
                 <div className="p-2">
-                  <div className="text-[9px] text-red-400/70 uppercase tracking-wider mb-1.5">Passed (Regret?)</div>
-                  <div className="space-y-1">
-                    {topRegrets.map((regret, i) => (
-                      <div key={i} className="text-[9px] text-red-300/70 flex items-center gap-1.5">
-                        <div className="w-4 h-5 rounded overflow-hidden flex-shrink-0">
-                          <img src={getCardImage(regret.card)} alt="" className="w-full h-full object-cover opacity-70" />
-                        </div>
-                        <span className="truncate">{regret.card.name}</span>
+                  <div className="text-[9px] text-white/30 mb-1">Passed</div>
+                  <div className="flex gap-1">
+                    {topRegrets.slice(0, 3).map((regret, i) => (
+                      <div key={i} className="w-6 h-8 rounded overflow-hidden opacity-50">
+                        <img src={getCardImage(regret.card)} alt="" className="w-full h-full object-cover" />
                       </div>
                     ))}
                   </div>
@@ -4636,169 +4451,56 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
             </div>
           )}
 
-          {/* Win Rate Estimator Panel */}
+          {/* Deck Power - minimal */}
           {coachMode && deckWinRate && (
-            <div className="bg-gradient-to-br from-emerald-500/5 to-transparent border border-emerald-500/20 rounded-xl overflow-hidden">
-              <div className="p-2 border-b border-white/[0.06]">
-                <div className="flex items-center justify-between">
-                  <span className="text-[9px] text-emerald-300/70 uppercase tracking-wider">Deck Power</span>
-                  <div className={`text-xl font-bold ${
-                    deckWinRate.grade === 'S' ? 'text-amber-400' :
-                    deckWinRate.grade === 'A' ? 'text-green-400' :
-                    deckWinRate.grade === 'B' ? 'text-blue-400' :
-                    deckWinRate.grade === 'C' ? 'text-white/60' :
-                    'text-red-400'
-                  }`}>
-                    {deckWinRate.grade}
+            <div className="bg-black border border-white/[0.08] rounded-xl overflow-hidden">
+              <div className="p-2 flex items-center justify-between">
+                <span className="text-[9px] text-white/30 uppercase tracking-wider">Power</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-12 h-1 bg-white/10 rounded-full overflow-hidden">
+                    <div className="h-full bg-white/40" style={{ width: `${deckWinRate.winRate}%` }} />
                   </div>
+                  <span className="text-sm font-bold text-white">{deckWinRate.grade}</span>
                 </div>
-                <div className="flex items-center gap-2 mt-1">
-                  <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full transition-all ${
-                        deckWinRate.winRate >= 60 ? 'bg-green-500' :
-                        deckWinRate.winRate >= 50 ? 'bg-blue-500' :
-                        'bg-red-500'
-                      }`}
-                      style={{ width: `${deckWinRate.winRate}%` }}
-                    />
-                  </div>
-                  <span className="text-[10px] text-white/60">{deckWinRate.winRate}%</span>
-                </div>
-              </div>
-              <div className="p-2 space-y-1">
-                {deckWinRate.factors.slice(0, 4).map((factor, i) => (
-                  <div key={i} className="flex items-center justify-between text-[9px]">
-                    <span className="text-white/50">{factor.name}</span>
-                    <span className={factor.impact >= 0 ? 'text-green-400' : 'text-red-400'}>
-                      {factor.impact >= 0 ? '+' : ''}{factor.impact}%
-                    </span>
-                  </div>
-                ))}
               </div>
             </div>
           )}
 
-          {/* Archetypes Panel - "Building Toward" */}
-          <div className="bg-black border border-white/[0.06] rounded-xl overflow-hidden">
-            <div className="p-3 border-b border-white/[0.06]">
-              <span className="text-xs font-medium text-white/60 uppercase tracking-wider">
-                {buildingToward ? 'Building Toward' : draftState.picks.length < 3 ? 'Archetypes in Pack' : 'Archetype Direction'}
-              </span>
-            </div>
-            <div className="p-2">
-              {draftState.picks.length < 3 && packArchetypeSignals.length > 0 ? (
-                <div className="space-y-2 max-h-64 overflow-y-auto">
-                  <p className="text-[10px] text-amber-400/80 mb-2">Signpost cards in this pack:</p>
-                  {packArchetypeSignals.map((signal) => (
-                    <div key={signal.archetype.id} className="p-2 rounded-lg bg-white/[0.03] border border-white/[0.06]">
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-xs font-semibold text-white/90">{signal.archetype.name}</span>
-                        <div className="flex gap-0.5">
-                          {signal.archetype.colors.map(c => (
-                            <span key={c} className={`w-4 h-4 rounded text-[9px] font-bold flex items-center justify-center
-                              ${c === 'W' ? 'bg-amber-100 text-amber-900' : ''}
-                              ${c === 'U' ? 'bg-blue-500 text-white' : ''}
-                              ${c === 'B' ? 'bg-neutral-600 text-white' : ''}
-                              ${c === 'R' ? 'bg-red-500 text-white' : ''}
-                              ${c === 'G' ? 'bg-green-600 text-white' : ''}
-                            `}>{c}</span>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        {signal.cards.map((c, i) => (
-                          <div key={i} className="flex items-center gap-2 text-[10px]">
-                            {c.isKeyCard && <span className="text-amber-400">★</span>}
-                            <span className={c.isKeyCard ? 'text-amber-300 font-medium' : 'text-white/60'}>{c.card.name}</span>
-                            <span className={`ml-auto px-1 py-0.5 rounded text-[8px] font-medium
-                              ${c.percentile >= 75 ? 'bg-amber-500/30 text-amber-300' :
-                                c.percentile >= 50 ? 'bg-purple-500/30 text-purple-300' :
-                                'bg-white/10 text-white/50'}
-                            `}>
-                              {c.percentile >= 75 ? 'Premium' : c.percentile >= 50 ? 'Solid' : 'Role'}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : draftState.picks.length < 3 ? (
-                <p className="text-xs text-white/30 text-center py-3">No strong archetype signals in this pack</p>
-              ) : buildingToward ? (
-                <div className="space-y-2">
-                  {/* Primary archetype - prominent */}
-                  <div className="p-2.5 rounded-lg bg-gradient-to-br from-purple-500/20 to-blue-500/10 border border-purple-500/30">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-semibold text-purple-300">{buildingToward.name}</span>
-                      <span className="text-[10px] font-mono text-purple-400">{buildingToward.score}%</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-[10px] text-white/50">
-                      {buildingToward.keyCardsFound > 0 && (
-                        <span className="px-1.5 py-0.5 bg-purple-500/30 rounded text-purple-300">
-                          {buildingToward.keyCardsFound} key card{buildingToward.keyCardsFound > 1 ? 's' : ''}
-                        </span>
-                      )}
-                      <span>{buildingToward.fittingCards} cards fit</span>
-                    </div>
-                  </div>
-                  {/* Other possible archetypes */}
-                  {archetypeMatches.slice(1).map((arch) => (
-                    <div key={arch.id} className="p-2 rounded-lg bg-white/[0.02]">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-white/60">{arch.name}</span>
-                        <span className="text-[10px] font-mono text-white/40">{arch.score}%</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : archetypeMatches.length > 0 ? (
-                <div className="space-y-1.5">
-                  <p className="text-[10px] text-amber-400/70 mb-2">Not strongly committed yet. Options:</p>
-                  {archetypeMatches.map((arch) => (
-                    <div key={arch.id} className="p-2 rounded-lg bg-white/[0.02]">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-white/60">{arch.name}</span>
-                        <span className="text-[10px] font-mono text-white/40">{arch.score}%</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-xs text-white/30 text-center py-3">No clear archetype yet - stay open!</p>
-              )}
-            </div>
-          </div>
-
-          {/* Deck Stats Panel */}
-          <div className="bg-black border border-white/[0.06] rounded-xl overflow-hidden">
-            <div className="p-3 border-b border-white/[0.06]">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-white/60 uppercase tracking-wider">Deck Stats</span>
-                <span className="text-xs text-white/40 font-mono">{draftState.picks.length}/45</span>
+          {/* Deck Stats - minimal */}
+          <div className="bg-black border border-white/[0.08] rounded-xl overflow-hidden">
+            <div className="p-2 border-b border-white/[0.06]">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[9px] text-white/30 uppercase tracking-wider">Deck</span>
+                <span className="text-[10px] text-white/50 font-mono">{draftState.picks.length}/45</span>
               </div>
-              {/* Progress bar */}
-              <div className="mt-2 h-1 bg-white/[0.06] rounded-full overflow-hidden">
-                <div className="h-full bg-white/40 rounded-full transition-all duration-300" style={{ width: `${progress * 100}%` }} />
+              <div className="h-0.5 bg-white/10 rounded-full overflow-hidden">
+                <div className="h-full bg-white/40 transition-all" style={{ width: `${progress * 100}%` }} />
               </div>
             </div>
 
-            {/* Colors */}
+            {/* Colors - proper MTG colors + colorless */}
             <div className="p-2 border-b border-white/[0.06]">
               <div className="flex gap-1 justify-center">
-                {['W', 'U', 'B', 'R', 'G'].map(c => {
-                  const count = colorCounts[c] || 0;
+                {['W', 'U', 'B', 'R', 'G', 'C'].map(c => {
+                  // For colorless, count cards with no color identity or artifacts
+                  const count = c === 'C'
+                    ? draftState.picks.filter(p => !p.color_identity || p.color_identity.length === 0).length
+                    : (colorCounts[c] || 0);
+                  const colorStyles: Record<string, { bg: string; text: string; dim: string }> = {
+                    'W': { bg: 'bg-amber-100', text: 'text-amber-900', dim: 'bg-amber-100/20 text-amber-200/30' },
+                    'U': { bg: 'bg-blue-500', text: 'text-white', dim: 'bg-blue-500/20 text-blue-300/30' },
+                    'B': { bg: 'bg-neutral-600', text: 'text-white', dim: 'bg-neutral-600/20 text-neutral-300/30' },
+                    'R': { bg: 'bg-red-500', text: 'text-white', dim: 'bg-red-500/20 text-red-300/30' },
+                    'G': { bg: 'bg-green-600', text: 'text-white', dim: 'bg-green-600/20 text-green-300/30' },
+                    'C': { bg: 'bg-slate-400', text: 'text-slate-900', dim: 'bg-slate-400/20 text-slate-300/30' },
+                  };
+                  const style = colorStyles[c];
                   return (
                     <div
                       key={c}
-                      className={`w-7 h-7 rounded flex items-center justify-center text-[10px] font-bold transition-all
-                        ${count === 0 ? 'opacity-20' : count >= 5 ? 'ring-2 ring-white/30' : ''}
-                        ${c === 'W' ? 'bg-amber-100 text-amber-900' : ''}
-                        ${c === 'U' ? 'bg-blue-500 text-white' : ''}
-                        ${c === 'B' ? 'bg-neutral-600 text-white' : ''}
-                        ${c === 'R' ? 'bg-red-500 text-white' : ''}
-                        ${c === 'G' ? 'bg-green-600 text-white' : ''}
+                      className={`w-6 h-6 rounded flex items-center justify-center text-[9px] font-bold transition-all
+                        ${count === 0 ? style.dim : `${style.bg} ${style.text}`}
+                        ${count >= 5 ? 'ring-1 ring-white/40' : ''}
                       `}
                     >
                       {count}
@@ -4808,35 +4510,33 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
               </div>
             </div>
 
-            {/* Stats */}
+            {/* Stats - condensed */}
             {deckStats && (
-              <div className="p-2 grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
-                <div className="flex justify-between"><span className="text-white/40">Creatures</span><span className="text-white font-mono">{deckStats.creatures}</span></div>
-                <div className="flex justify-between"><span className="text-white/40">Spells</span><span className="text-white font-mono">{deckStats.spells}</span></div>
-                <div className="flex justify-between"><span className="text-white/40">Artifacts</span><span className="text-white font-mono">{deckStats.artifacts}</span></div>
-                <div className="flex justify-between"><span className="text-white/40">Lands</span><span className="text-white font-mono">{deckStats.lands}</span></div>
-                <div className="flex justify-between"><span className="text-white/40">Avg CMC</span><span className="text-white font-mono">{deckStats.avgCmc.toFixed(1)}</span></div>
-                <div className="flex justify-between"><span className="text-white/40">Avg Power</span><span className="text-white font-mono">{deckStats.avgPower.toFixed(1)}</span></div>
+              <div className="p-2 grid grid-cols-2 gap-x-2 gap-y-0.5 text-[10px]">
+                <div className="flex justify-between"><span className="text-white/30">Creatures</span><span className="text-white/60 font-mono">{deckStats.creatures}</span></div>
+                <div className="flex justify-between"><span className="text-white/30">Spells</span><span className="text-white/60 font-mono">{deckStats.spells}</span></div>
+                <div className="flex justify-between"><span className="text-white/30">Lands</span><span className="text-white/60 font-mono">{deckStats.lands}</span></div>
+                <div className="flex justify-between"><span className="text-white/30">CMC</span><span className="text-white/60 font-mono">{deckStats.avgCmc.toFixed(1)}</span></div>
               </div>
             )}
           </div>
 
-          {/* Picks Panel */}
-          <div className="bg-black border border-white/[0.06] rounded-xl overflow-hidden">
+          {/* Picks - minimal */}
+          <div className="bg-black border border-white/[0.08] rounded-xl overflow-hidden">
             <div className="p-2 border-b border-white/[0.06]">
-              <span className="text-xs font-medium text-white/60 uppercase tracking-wider">Your Picks</span>
+              <span className="text-[9px] text-white/30 uppercase tracking-wider">Picks</span>
             </div>
-            <div className="p-1.5 max-h-48 overflow-y-auto">
+            <div className="p-1.5 max-h-40 overflow-y-auto">
               {draftState.picks.length === 0 ? (
-                <p className="text-xs text-white/30 text-center py-4">Click a card to draft it</p>
+                <p className="text-[10px] text-white/20 text-center py-3">No picks yet</p>
               ) : (
                 <div className="grid grid-cols-4 gap-0.5">
                   {draftState.picks.map((card, idx) => (
                     <div
                       key={`${card.id}-${idx}`}
-                      className="relative aspect-[488/680] rounded overflow-hidden hover:scale-110 transition-transform cursor-pointer hover:z-10"
+                      className="aspect-[488/680] rounded overflow-hidden hover:scale-105 transition-transform cursor-pointer hover:z-10 opacity-80 hover:opacity-100"
                       onMouseEnter={() => setHoveredCard(card)}
-                      onMouseLeave={() => setHoveredCard(null)}
+                      
                     >
                       <img src={getCardImage(card)} alt={card.name} className="w-full h-full object-cover" />
                     </div>
@@ -4848,8 +4548,8 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 min-w-0 space-y-5">
+      {/* Main Content - Cards */}
+      <div className="flex-1 min-w-0 space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-5">
@@ -5028,7 +4728,6 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                     <div
                       key={`pick-${card.id}-${index}`}
                       onMouseEnter={() => setHoveredCard(card)}
-                      onMouseLeave={() => setHoveredCard(null)}
                       className="relative aspect-[488/680] rounded-xl overflow-hidden shadow-lg transition-all duration-200 hover:scale-[1.04] hover:-translate-y-1 hover:z-10 hover:shadow-xl"
                     >
                       <img src={getCardImage(card)} alt={card.name} className="w-full h-full object-cover" loading="lazy" />
@@ -5070,7 +4769,6 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
             const cardGrade = getContextualGrade(card, draftState.picks, currentPack);
             // REFINED UI: Minimal color - text only, no backgrounds
             const isTopGrade = cardGrade.grade === 'A+' || cardGrade.grade === 'A';
-            const isMidGrade = cardGrade.grade.startsWith('B');
             const isLowGrade = cardGrade.grade.startsWith('C') || cardGrade.grade.startsWith('D') || cardGrade.grade === 'F';
             // Card opacity based on grade (dim bad cards)
             const cardOpacity = isLowGrade ? 'opacity-60' : '';
@@ -5109,7 +4807,6 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                 key={card.id}
                 onClick={handleCardClick}
                 onMouseEnter={() => setHoveredCard(card)}
-                onMouseLeave={() => setHoveredCard(null)}
                 className={`
                   relative aspect-[488/680] rounded-xl overflow-hidden
                   transition-all duration-200
@@ -5141,23 +4838,26 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                   </div>
                 )}
 
-                {/* REFINED: Minimal overlay - Grade + Adjustment text only */}
+                {/* REFINED: Minimal overlay with THOUGHTFUL color */}
                 {showCoachVisuals && (
                   <div className="absolute top-1.5 right-1.5 flex flex-col items-end gap-1">
-                    {/* Grade - text only with subtle background */}
+                    {/* Grade - subtle color coding */}
                     <div className={`
-                      px-1.5 py-0.5 rounded text-[11px] font-bold
-                      ${isTopGrade ? 'bg-black/60 text-white' : ''}
-                      ${isMidGrade ? 'bg-black/50 text-white/80' : ''}
-                      ${isLowGrade ? 'bg-black/40 text-white/50' : ''}
+                      px-1.5 py-0.5 rounded text-[11px] font-bold shadow
+                      ${cardGrade.grade === 'A+' ? 'bg-emerald-500/90 text-white' : ''}
+                      ${cardGrade.grade === 'A' ? 'bg-emerald-600/80 text-white' : ''}
+                      ${cardGrade.grade === 'B+' ? 'bg-sky-600/70 text-white' : ''}
+                      ${cardGrade.grade === 'B' ? 'bg-sky-700/60 text-white/90' : ''}
+                      ${cardGrade.grade === 'C+' || cardGrade.grade === 'C' ? 'bg-black/60 text-white/70' : ''}
+                      ${cardGrade.grade === 'D' || cardGrade.grade === 'F' ? 'bg-black/50 text-white/50' : ''}
                     `}>
                       {cardGrade.grade}
                     </div>
-                    {/* Adjustment - text only, only show if significant (>=15) */}
-                    {Math.abs(synergyData.adjustment) >= 15 && (
+                    {/* Adjustment - only show if >= 20 for cleaner look */}
+                    {Math.abs(synergyData.adjustment) >= 20 && (
                       <div className={`
-                        text-[10px] font-bold px-1
-                        ${synergyData.adjustment > 0 ? 'text-emerald-400' : 'text-red-400'}
+                        text-[10px] font-bold px-1 rounded
+                        ${synergyData.adjustment > 0 ? 'text-emerald-400 bg-black/40' : 'text-red-400 bg-black/40'}
                       `}>
                         {synergyData.adjustment > 0 ? '+' : ''}{synergyData.adjustment}
                       </div>
@@ -5294,7 +4994,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                   key={`${card.id}-${idx}`}
                   className="relative w-11 flex-shrink-0 aspect-[488/680] rounded-lg overflow-hidden opacity-70 hover:opacity-100 transition-all hover:scale-105 shadow-md"
                   onMouseEnter={() => setHoveredCard(card)}
-                  onMouseLeave={() => setHoveredCard(null)}
+                  
                 >
                   <img src={getCardImage(card)} alt={card.name} className="w-full h-full object-cover" />
                 </div>
@@ -5304,130 +5004,256 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
         )}
       </div>
 
-      {/* Hover Preview */}
-      {hoveredCard && (
-        <div className="fixed bottom-6 right-6 z-50 hidden lg:block pointer-events-none">
-          <div className="bg-black border border-white/10 p-2 rounded-xl shadow-2xl w-60">
-            <img src={getCardImage(hoveredCard)} alt={hoveredCard.name} className="w-full rounded-lg" />
-            <div className="mt-2 px-1 space-y-1">
-              <div className="flex items-center justify-between">
-                <div className="text-sm font-medium text-white">{hoveredCard.name}</div>
-                {/* REFINED: Grade - simple text */}
-                {draftState && draftState.picks.length >= 0 && (() => {
-                  const grade = getContextualGrade(hoveredCard, draftState.picks, currentPack);
-                  return (
-                    <span className="text-sm font-bold text-white">
-                      {grade.grade}
-                    </span>
-                  );
-                })()}
+      {/* Right Panel - Card Details - uses displayedCard to prevent flickering */}
+      <div className="w-64 flex-shrink-0 hidden lg:block">
+        <div className="sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto">
+          {displayedCard ? (
+            <div className="bg-black border border-white/[0.08] rounded-xl">
+              {/* Card Image - Large */}
+              <div className="p-3">
+                <img src={getCardImage(displayedCard)} alt={displayedCard.name} className="w-full rounded-lg shadow-lg" />
               </div>
-              <div className="text-xs text-white/40">{hoveredCard.type_line?.split('—')[0]}</div>
-              {(() => {
-                const eloData = getEloData(hoveredCard.name);
-                if (!eloData) return null;
-                const wheelLikelihood = getWheelLikelihood(hoveredCard.name);
-                const synergyData = draftState ? getSynergyAdjustedElo(hoveredCard, draftState.picks, currentPack) : null;
-                const hasAdjustment = synergyData && synergyData.adjustment !== 0;
-                // Get contextual grade for reason display
-                const cardGrade = draftState && draftState.picks.length >= 0 ? getContextualGrade(hoveredCard, draftState.picks, currentPack) : null;
-                return (
-                  <div className="space-y-1.5 pt-1 border-t border-white/10">
-                    {/* Grade reason */}
-                    {cardGrade && (
-                      <div className="text-[10px] text-white/60 italic">{cardGrade.reason}</div>
-                    )}
-                    {/* REFINED: ELO row - clean, minimal color */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[11px] font-medium text-white/70">
-                          {Math.round(eloData.elo)}
-                        </span>
-                        {hasAdjustment && (
-                          <>
-                            <span className={`text-[10px] font-bold ${
-                              synergyData.adjustment > 0 ? 'text-emerald-400' : 'text-red-400'
-                            }`}>
-                              {synergyData.adjustment > 0 ? '+' : ''}{synergyData.adjustment}
-                            </span>
-                            <span className="text-[9px] text-white/30">=</span>
-                            <span className="text-[11px] font-bold text-white">
-                              {Math.round(synergyData.adjustedElo)}
-                            </span>
-                          </>
-                        )}
-                      </div>
-                      <span className={`text-[9px] px-1.5 py-0.5 rounded ${
-                        wheelLikelihood === 'likely' ? 'bg-white/10 text-white/60' :
-                        wheelLikelihood === 'maybe' ? 'bg-white/10 text-white/50' :
-                        'bg-red-500/20 text-red-400'
+
+              {/* Card Info */}
+              <div className="px-3 pb-3 space-y-3">
+                {/* Name & Grade */}
+                <div className="flex items-center justify-between">
+                  <div className="text-base font-semibold text-white">{displayedCard.name}</div>
+                  {draftState && draftState.picks.length >= 0 && (() => {
+                    const grade = getContextualGrade(displayedCard, draftState.picks, currentPack);
+                    return (
+                      <span className={`text-lg font-bold ${
+                        grade.grade === 'A+' ? 'text-emerald-400' :
+                        grade.grade === 'A' ? 'text-emerald-500' :
+                        grade.grade === 'B+' ? 'text-sky-400' :
+                        grade.grade === 'B' ? 'text-sky-500' :
+                        'text-white/60'
                       }`}>
-                        {wheelLikelihood === 'likely' ? 'Wheels' :
-                         wheelLikelihood === 'maybe' ? 'Maybe' :
-                         'Take now'}
+                        {grade.grade}
                       </span>
-                    </div>
-                    {/* REFINED: Adjustment reasons - text only, minimal */}
-                    {hasAdjustment && synergyData.reasons.length > 0 && (
-                      <div className="pt-1.5 border-t border-white/5">
-                        <div className="text-[9px] text-white/40 mb-1">Why:</div>
-                        <div className="flex flex-wrap gap-x-2 gap-y-0.5">
-                          {synergyData.reasons.map((reason, i) => (
-                            <span key={i} className={`text-[8px] ${
-                              reason.startsWith('+') ? 'text-emerald-400/80' :
-                              reason.startsWith('-') ? 'text-red-400/80' :
-                              'text-white/50'
-                            }`}>
-                              {reason}
-                            </span>
-                          ))}
+                    );
+                  })()}
+                </div>
+
+                {/* Type Line */}
+                <div className="text-sm text-white/50">{displayedCard.type_line?.split('—')[0]}</div>
+
+                {/* ELO & Stats Section */}
+                {(() => {
+                  const eloData = getEloData(displayedCard.name);
+                  if (!eloData) return null;
+                  const wheelLikelihood = getWheelLikelihood(displayedCard.name);
+                  const synergyData = draftState ? getSynergyAdjustedElo(displayedCard, draftState.picks, currentPack) : null;
+                  const hasAdjustment = synergyData && synergyData.adjustment !== 0;
+                  const cardGrade = draftState && draftState.picks.length >= 0 ? getContextualGrade(displayedCard, draftState.picks, currentPack) : null;
+                  return (
+                    <div className="space-y-3 pt-3 border-t border-white/[0.08]">
+                      {/* Grade reason */}
+                      {cardGrade && (
+                        <div className="text-xs text-white/50 italic leading-relaxed">{cardGrade.reason}</div>
+                      )}
+
+                      {/* ELO Section */}
+                      <div className="bg-white/[0.03] rounded-lg p-2.5">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs text-white/40">ELO Rating</span>
+                          <span className={`text-xs px-2 py-0.5 rounded ${
+                            wheelLikelihood === 'likely' ? 'bg-white/5 text-white/50' :
+                            wheelLikelihood === 'maybe' ? 'bg-white/5 text-white/40' :
+                            'bg-red-500/10 text-red-400'
+                          }`}>
+                            {wheelLikelihood === 'likely' ? 'Likely wheels' :
+                             wheelLikelihood === 'maybe' ? 'May wheel' :
+                             'Take now'}
+                          </span>
+                        </div>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-2xl font-bold text-white font-mono">
+                            {Math.round(eloData.elo)}
+                          </span>
+                          {hasAdjustment && (
+                            <>
+                              <span className={`text-sm font-bold ${
+                                synergyData.adjustment > 0 ? 'text-emerald-400' : 'text-red-400'
+                              }`}>
+                                {synergyData.adjustment > 0 ? '+' : ''}{synergyData.adjustment}
+                              </span>
+                              <span className="text-sm text-white/30">→</span>
+                              <span className="text-lg font-bold text-white">
+                                {Math.round(synergyData.adjustedElo)}
+                              </span>
+                            </>
+                          )}
                         </div>
                       </div>
-                    )}
-                    {/* Sparkline - ELO history for this card */}
-                    {(() => {
-                      const history = draftState?.cardEloHistory?.get(hoveredCard.id);
-                      if (!history || history.history.length < 2) return null;
-                      const points = history.history;
-                      const minElo = Math.min(...points.map(p => p.adjustedElo));
-                      const maxElo = Math.max(...points.map(p => p.adjustedElo));
-                      const range = maxElo - minElo || 1;
-                      const width = 100;
-                      const height = 20;
-                      const trend = points[points.length - 1].adjustedElo - points[0].adjustedElo;
-                      return (
-                        <div className="pt-1">
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-[8px] text-white/30">ELO trend</span>
-                            <span className={`text-[8px] font-medium ${trend > 0 ? 'text-green-400' : trend < 0 ? 'text-red-400' : 'text-white/40'}`}>
-                              {trend > 0 ? '↑' : trend < 0 ? '↓' : '→'} {trend > 0 ? '+' : ''}{trend}
-                            </span>
+
+                      {/* Adjustment Reasons */}
+                      {hasAdjustment && synergyData.reasons.length > 0 && (
+                        <div className="space-y-1.5">
+                          <div className="text-xs text-white/40">Why this adjustment:</div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {synergyData.reasons.map((reason, i) => (
+                              <span key={i} className={`text-xs px-2 py-1 rounded ${
+                                reason.startsWith('+') ? 'bg-emerald-500/10 text-emerald-400' :
+                                reason.startsWith('-') ? 'bg-red-500/10 text-red-400' :
+                                'bg-white/5 text-white/60'
+                              }`}>
+                                {reason}
+                              </span>
+                            ))}
                           </div>
-                          <svg width={width} height={height} className="w-full">
-                            <polyline
-                              fill="none"
-                              stroke={trend >= 0 ? '#4ade80' : '#f87171'}
-                              strokeWidth="1.5"
-                              points={points.map((p, i) => {
-                                const x = (i / (points.length - 1)) * width;
-                                const y = height - ((p.adjustedElo - minElo) / range) * (height - 4) - 2;
-                                return `${x},${y}`;
-                              }).join(' ')}
-                            />
-                            {points.map((p, i) => {
-                              const x = (i / (points.length - 1)) * width;
-                              const y = height - ((p.adjustedElo - minElo) / range) * (height - 4) - 2;
-                              return (
-                                <circle
-                                  key={i}
-                                  cx={x}
-                                  cy={y}
-                                  r="2"
-                                  fill={trend >= 0 ? '#4ade80' : '#f87171'}
+                        </div>
+                      )}
+                    {/* Sparkline with PROJECTED TRAJECTORY */}
+                    {(() => {
+                      const history = draftState?.cardEloHistory?.get(displayedCard.id);
+
+                      // Show message if no history or just 1 point
+                      if (!history || history.history.length === 0) {
+                        return (
+                          <div className="pt-3 border-t border-white/[0.06]">
+                            <div className="text-xs text-white/30">No trajectory data yet</div>
+                          </div>
+                        );
+                      }
+
+                      if (history.history.length === 1) {
+                        return (
+                          <div className="pt-3 border-t border-white/[0.06]">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-white/40">Trajectory</span>
+                              <span className="text-xs text-white/30">Just saw this card</span>
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      const points = history.history;
+                      const currentElo = points[points.length - 1].adjustedElo;
+                      const startElo = points[0].adjustedElo;
+                      const trend = currentElo - startElo;
+
+                      // Calculate velocity (ELO change per pick)
+                      const velocity = trend / (points.length - 1);
+
+                      // Project forward 5 picks
+                      const remainingPicks = Math.max(0, 45 - (draftState?.picks.length || 0));
+                      const projectPicks = Math.min(5, remainingPicks);
+                      const projectedElo = currentElo + (velocity * projectPicks);
+
+                      // Momentum classification
+                      const momentum = velocity > 8 ? 'rising-fast' :
+                                       velocity > 3 ? 'rising' :
+                                       velocity < -8 ? 'falling-fast' :
+                                       velocity < -3 ? 'falling' : 'stable';
+
+                      // Calculate range including projection
+                      const allValues = [...points.map(p => p.adjustedElo), projectedElo];
+                      const minElo = Math.min(...allValues);
+                      const maxElo = Math.max(...allValues);
+                      const range = maxElo - minElo || 1;
+                      const padding = 8; // Padding for endpoint circle
+                      const width = 220; // Full width of panel
+                      const height = 60; // Much taller for better visibility
+                      const drawWidth = width - padding; // Leave room for endpoint circle
+                      const historyWidth = drawWidth * 0.8; // 80% for history, 20% for projection
+
+                      return (
+                        <div className="pt-3 mt-3 border-t border-white/[0.08]">
+                          {/* Header with momentum indicator */}
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-white/50 font-medium">Trajectory</span>
+                              {momentum === 'rising-fast' && <span className="text-sm">🚀</span>}
+                              {momentum === 'falling-fast' && <span className="text-sm">📉</span>}
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <span className={`text-sm font-bold ${trend > 0 ? 'text-emerald-400' : trend < 0 ? 'text-red-400' : 'text-white/40'}`}>
+                                {trend > 0 ? '+' : ''}{Math.round(trend)}
+                              </span>
+                              {projectPicks > 0 && Math.abs(velocity) > 2 && (
+                                <span className={`text-sm font-medium ${velocity > 0 ? 'text-emerald-400/70' : 'text-red-400/70'}`}>
+                                  → {Math.round(projectedElo)}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Sparkline - full width */}
+                          <div className="bg-white/[0.03] rounded-lg p-2">
+                            <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-16">
+                              {/* Grid lines */}
+                              <line x1="0" y1={height/2} x2={width} y2={height/2} stroke="white" strokeOpacity="0.05" strokeDasharray="4,4" />
+
+                              {/* Solid line for actual history */}
+                              {points.length > 1 && (
+                                <polyline
+                                  fill="none"
+                                  stroke={trend >= 0 ? '#4ade80' : '#f87171'}
+                                  strokeWidth="2.5"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  points={points.map((p, i) => {
+                                    const x = (i / Math.max(1, points.length - 1)) * historyWidth;
+                                    const y = height - ((p.adjustedElo - minElo) / range) * (height - 8) - 4;
+                                    return `${x},${y}`;
+                                  }).join(' ')}
                                 />
-                              );
-                            })}
-                          </svg>
+                              )}
+
+                              {/* DASHED projection line */}
+                              {projectPicks > 0 && Math.abs(velocity) > 2 && (
+                                <line
+                                  x1={historyWidth}
+                                  y1={height - ((currentElo - minElo) / range) * (height - 8) - 4}
+                                  x2={drawWidth}
+                                  y2={height - ((projectedElo - minElo) / range) * (height - 8) - 4}
+                                  stroke={velocity > 0 ? '#4ade80' : '#f87171'}
+                                  strokeWidth="2.5"
+                                  strokeLinecap="round"
+                                  strokeDasharray="6,4"
+                                  opacity="0.6"
+                                />
+                              )}
+
+                              {/* Dots for actual data points */}
+                              {points.map((p, i) => {
+                                const x = points.length === 1 ? historyWidth / 2 : (i / Math.max(1, points.length - 1)) * historyWidth;
+                                const y = height - ((p.adjustedElo - minElo) / range) * (height - 8) - 4;
+                                return (
+                                  <circle
+                                    key={i}
+                                    cx={x}
+                                    cy={y}
+                                    r="4"
+                                    fill={trend >= 0 ? '#4ade80' : '#f87171'}
+                                  />
+                                );
+                              })}
+
+                              {/* Projected endpoint (hollow circle) */}
+                              {projectPicks > 0 && Math.abs(velocity) > 2 && (
+                                <circle
+                                  cx={drawWidth}
+                                  cy={height - ((projectedElo - minElo) / range) * (height - 8) - 4}
+                                  r="5"
+                                  fill="none"
+                                  stroke={velocity > 0 ? '#4ade80' : '#f87171'}
+                                  strokeWidth="2"
+                                  opacity="0.6"
+                                />
+                              )}
+                            </svg>
+                          </div>
+
+                          {/* Velocity insight - larger text */}
+                          {Math.abs(velocity) > 3 && (
+                            <div className={`text-xs mt-2 font-medium ${velocity > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                              {velocity > 0 ? '↑' : '↓'} {Math.abs(Math.round(velocity))} ELO per pick
+                              {momentum === 'rising-fast' && ' · Perfect fit!'}
+                              {momentum === 'falling-fast' && ' · Wrong direction'}
+                            </div>
+                          )}
                         </div>
                       );
                     })()}
@@ -5436,7 +5262,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
               })()}
               {/* Archetype signals */}
               {(() => {
-                const archetypes = getCardArchetypes(hoveredCard);
+                const archetypes = getCardArchetypes(displayedCard);
                 if (archetypes.length === 0) return null;
                 const universalTags = archetypes.filter(a => a.isUniversal);
                 const archetypeTags = archetypes.filter(a => !a.isUniversal);
@@ -5478,10 +5304,23 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                   </div>
                 );
               })()}
+              </div>
             </div>
-          </div>
+          ) : (
+            /* No card hovered state */
+            <div className="bg-black border border-white/[0.08] rounded-xl p-6 text-center">
+              <div className="text-white/20 mb-2">
+                <svg className="w-12 h-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+              </div>
+              <div className="text-sm text-white/30">Hover over a card</div>
+              <div className="text-xs text-white/20 mt-1">to see details</div>
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       {/* Mobile Card Drawer */}
       {mobileSelectedCard && (
