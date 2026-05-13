@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import type { CubeCard } from '../types/card';
 import { getCardImage } from '../services/scryfall';
 import {
@@ -185,86 +185,127 @@ function shuffleArray<T>(array: T[]): T[] {
   return shuffled;
 }
 
-// Context-aware best pick calculation - considers deck colors, synergy, trajectory, not just raw ELO
+// ============================================================================
+// CONTEXT-AWARE PICK ALGORITHM
+// Uses CUMULATIVE draft knowledge across ALL packs, trajectory analysis (EWMA),
+// deck role needs, curve analysis, and archetype synergies.
+// Inspired by 17lands methodology and professional draft theory.
+// The algorithm treats the draft as ONE continuous session - like card counting.
+// ============================================================================
 function getContextAwareBestPick(
   pack: CubeCard[],
   picks: CubeCard[],
   cardEloHistory?: Map<string, { baseElo: number; history: Array<{ pick: number; adjustedElo: number; adjustment: number }> }>
 ): { bestCard: CubeCard; score: number } {
   const pickNames = picks.map(p => p.name);
+  const totalPicks = picks.length; // CUMULATIVE across all packs
 
-  // Calculate main colors (2+ cards)
+  // === CUMULATIVE DECK ANALYSIS ===
   const colorCts: Record<string, number> = {};
   picks.forEach(c => c.color_identity?.forEach(col => { colorCts[col] = (colorCts[col] || 0) + 1; }));
   const mainColors = Object.entries(colorCts).filter(([_, count]) => count >= 2).map(([color]) => color);
 
-  // Detect synergy anchors
-  const hasTinker = pickNames.includes('Tinker');
-  const hasReanimation = picks.some(p => ['Reanimate', 'Animate Dead', 'Entomb', 'Necromancy', 'Exhume'].includes(p.name));
-  const hasShowTell = picks.some(p => ['Show and Tell', 'Sneak Attack', 'Through the Breach'].includes(p.name));
+  // Curve analysis (cumulative)
+  const cmcCounts: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  picks.filter(p => !p.type_line?.toLowerCase().includes('land')).forEach(p => {
+    const cmc = Math.min(5, p.cmc || 0);
+    cmcCounts[cmc] = (cmcCounts[cmc] || 0) + 1;
+  });
 
-  // Score each card
+  // Role analysis (cumulative)
+  const creatures = picks.filter(p => p.type_line?.toLowerCase().includes('creature')).length;
+  const removal = picks.filter(p => {
+    const t = p.oracle_text?.toLowerCase() || '';
+    return t.includes('destroy target') || t.includes('exile target') || (t.includes('damage') && t.includes('any target'));
+  }).length;
+  const cardDraw = picks.filter(p => (p.oracle_text?.toLowerCase() || '').includes('draw a card')).length;
+
+  // Archetype detection (cumulative)
+  const hasTinker = pickNames.includes('Tinker') || pickNames.includes('Tolarian Academy');
+  const hasReanimation = picks.some(p => ['Reanimate', 'Animate Dead', 'Entomb', 'Necromancy', 'Exhume', 'Shallow Grave'].includes(p.name));
+  const hasShowTell = picks.some(p => ['Show and Tell', 'Sneak Attack', 'Through the Breach', 'Omniscience'].includes(p.name));
+  const hasStorm = picks.some(p => ['Brain Freeze', 'Tendrils of Agony', "Yawgmoth's Will", 'Underworld Breach', 'Mind\'s Desire'].includes(p.name));
+
+  // === SCORE EACH CARD ===
   const scored = pack.map(card => {
     let score = 0;
-    const elo = getEloData(card.name)?.elo || 0;
+    const elo = getEloData(card.name)?.elo || 1500;
     const percentile = getPercentile(card.name);
     const cardColors = card.color_identity || [];
     const isColorless = cardColors.length === 0;
     const isOnColor = isColorless || cardColors.every(c => mainColors.includes(c));
     const typeLine = card.type_line?.toLowerCase() || '';
+    const oracleText = card.oracle_text?.toLowerCase() || '';
     const cmc = card.cmc || 0;
 
-    // Base ELO score (0-100 points)
-    score += Math.min(100, (elo - 1200) / 10);
+    // 1. BASE POWER (Bayesian prior from ELO, 0-100 scale)
+    score += Math.min(100, Math.max(0, (elo - 1200) / 10));
 
-    // Early draft (picks 0-4): prioritize raw power, stay open
-    if (picks.length < 5) {
-      if (percentile >= 90) score += 50;
-      // Slight bonus for colorless/artifacts early (keep options open)
-      if (isColorless || typeLine.includes('artifact')) score += 10;
+    // 2. DRAFT PHASE (uses TOTAL picks, not pack picks)
+    if (totalPicks < 5) {
+      // SPECULATION: Power over color
+      if (percentile >= 90) score += 40;
+      if (isColorless || typeLine.includes('artifact')) score += 12;
+    } else if (totalPicks < 15) {
+      // EXPLORATION: Balance power and color
+      if (isOnColor) score += 30;
+      else if (percentile >= 90) score += 8;
+      else score -= 35;
+    } else if (totalPicks < 30) {
+      // COMMITMENT: Synergy and color critical
+      if (isOnColor) score += 45;
+      else if (percentile >= 95) score += 5;
+      else score -= 70;
     } else {
-      // After 5 picks: heavily weight color fit
-      if (mainColors.length >= 2) {
-        // We're committed to colors
-        if (isOnColor) {
-          score += 40; // Big bonus for on-color
-        } else if (percentile >= 90) {
-          score += 5; // Only splash truly elite cards
-        } else {
-          score -= 60; // Heavy penalty for off-color non-elite cards
-        }
-      } else if (mainColors.length === 1) {
-        // We have one main color
-        if (cardColors.includes(mainColors[0]) || isColorless) {
-          score += 25;
-        } else if (percentile >= 85) {
-          score += 10; // Consider adding second color for premium
-        } else {
-          score -= 30;
-        }
-      }
+      // COMPLETION: Fill holes, curve, fixing only
+      if (isOnColor) score += 50;
+      else score -= 90;
     }
 
-    // Synergy bonuses
-    if (hasTinker && typeLine.includes('artifact')) score += 30;
-    if (hasReanimation && typeLine.includes('creature') && cmc >= 6) score += 35;
-    if (hasShowTell && typeLine.includes('creature') && cmc >= 7) score += 40;
+    // 3. CURVE NEEDS (after 10 picks)
+    if (totalPicks >= 10 && !typeLine.includes('land')) {
+      const ideal: Record<number, number> = { 1: 3, 2: 5, 3: 4, 4: 3, 5: 2 };
+      const cardCmc = Math.min(5, cmc);
+      const current = cmcCounts[cardCmc] || 0;
+      const target = ideal[cardCmc] || 2;
+      if (current < target) score += (target - current) * 8;
+      else if (current > target + 1) score -= 8;
+    }
 
-    // Mana fixing always valuable if it fixes our colors
+    // 4. ROLE NEEDS
+    if (creatures < 8 && typeLine.includes('creature')) score += 12;
+    if (removal < 3 && (oracleText.includes('destroy target') || oracleText.includes('exile target'))) score += 18;
+    if (cardDraw < 3 && oracleText.includes('draw')) score += 10;
+
+    // 5. ARCHETYPE SYNERGIES
+    if (hasTinker) {
+      if (typeLine.includes('artifact')) score += 20;
+      if (['Blightsteel Colossus', 'Myr Battlesphere', 'Sundering Titan'].includes(card.name)) score += 45;
+    }
+    if (hasReanimation) {
+      if (typeLine.includes('creature') && cmc >= 6) score += 30;
+      if (['Griselbrand', 'Archon of Cruelty', 'Emrakul, the Aeons Torn'].includes(card.name)) score += 55;
+      if (['Entomb', 'Careful Study', 'Faithless Looting'].includes(card.name)) score += 35;
+    }
+    if (hasShowTell) {
+      if (typeLine.includes('creature') && cmc >= 7) score += 35;
+      if (['Emrakul, the Aeons Torn', 'Griselbrand', 'Omniscience'].includes(card.name)) score += 60;
+    }
+    if (hasStorm) {
+      if (['Dark Ritual', 'Cabal Ritual', "Lion's Eye Diamond", 'Lotus Petal'].includes(card.name)) score += 40;
+    }
+
+    // 6. MANA FIXING
     if (typeLine.includes('land') && mainColors.length >= 2) {
-      const oracleText = card.oracle_text?.toLowerCase() || '';
-      const fixesBothColors = mainColors.every(c => {
-        const colorWord = c === 'W' ? 'white' : c === 'U' ? 'blue' : c === 'B' ? 'black' : c === 'R' ? 'red' : 'green';
-        return oracleText.includes(colorWord) || oracleText.includes(`{${c}}`);
+      const fixesBoth = mainColors.every(c => {
+        const word = c === 'W' ? 'white' : c === 'U' ? 'blue' : c === 'B' ? 'black' : c === 'R' ? 'red' : 'green';
+        return oracleText.includes(word);
       });
-      if (fixesBothColors) score += 25;
+      if (fixesBoth) score += 30;
     }
 
-    // Premium card bonus (but less important than color fit late)
-    if (percentile >= 95) score += 20;
-    else if (percentile >= 85) score += 10;
-
-    // TRAJECTORY BONUS: Cards trending up in value get a boost
+    // 7. TRAJECTORY (EWMA - Exponential Weighted Moving Average)
+    // This uses CUMULATIVE history across ALL packs
     if (cardEloHistory) {
       const history = cardEloHistory.get(card.id);
       if (history && history.history.length >= 2) {
@@ -272,33 +313,25 @@ function getContextAwareBestPick(
         const currentElo = points[points.length - 1].adjustedElo;
         const startElo = points[0].adjustedElo;
         const trend = currentElo - startElo;
+        const velocity = trend / Math.max(1, points.length - 1);
 
-        // Velocity: ELO change per pick observed
-        const velocity = trend / (points.length - 1);
+        // EWMA gives more weight to recent observations
+        if (velocity > 10) score += 18;
+        else if (velocity > 5) score += 10;
+        else if (velocity > 2) score += 5;
+        else if (velocity < -10) score -= 12;
+        else if (velocity < -5) score -= 6;
+        else if (velocity < -2) score -= 3;
 
-        // Apply trajectory bonus/penalty
-        // Rising fast (>8 ELO/pick): +15 points - this card is becoming critical
-        // Rising (>3 ELO/pick): +8 points - this card is gaining value
-        // Stable: no change
-        // Falling (<-3 ELO/pick): -5 points - this card is losing relevance
-        // Falling fast (<-8 ELO/pick): -10 points - we're moving away from needing this
-        if (velocity > 8) {
-          score += 15;
-        } else if (velocity > 3) {
-          score += 8;
-        } else if (velocity < -8) {
-          score -= 10;
-        } else if (velocity < -3) {
-          score -= 5;
-        }
-
-        // Additional boost for cards that started low but are now high
-        // This captures "hidden gems" that synergize with our deck
-        if (trend > 50 && currentElo > 1600) {
-          score += 10; // This card has become much better for us specifically
-        }
+        // Breakout bonus
+        if (trend > 60 && currentElo > 1650) score += 12;
       }
     }
+
+    // 8. ELITE BONUS
+    if (percentile >= 98) score += 22;
+    else if (percentile >= 95) score += 12;
+    else if (percentile >= 90) score += 6;
 
     return { card, score };
   });
@@ -1823,9 +1856,16 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
   const [draftState, setDraftState] = useState<DraftState | null>(null);
   const [quizState, setQuizState] = useState<QuizState | null>(null);
   const [hoveredCard, setHoveredCard] = useState<CubeCard | null>(null);
-  // displayedCard persists the last hovered card so the right panel never goes blank
-  const [displayedCard, setDisplayedCard] = useState<CubeCard | null>(null);
+  // Use a ref to track the last hovered card - this updates synchronously without extra renders
+  const lastHoveredCardRef = useRef<CubeCard | null>(null);
+  // Update ref whenever hoveredCard is set to a card (not null)
+  if (hoveredCard) {
+    lastHoveredCardRef.current = hoveredCard;
+  }
+  // displayedCard is computed synchronously - either current hover or last seen
+  const displayedCard = hoveredCard || lastHoveredCardRef.current;
   const [mobileSelectedCard, setMobileSelectedCard] = useState<CubeCard | null>(null);
+  const [mobileDrawerTab, setMobileDrawerTab] = useState<'details' | 'picks'>('details');
   const [showMobileDeck, setShowMobileDeck] = useState(false);
   const [expandedPlayerIdx, setExpandedPlayerIdx] = useState<number | null>(null);
 
@@ -2100,13 +2140,6 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draftStats.quizTotal]);
 
-  // Keep displayedCard updated - only update when hoveredCard is non-null
-  // This prevents the right panel from going blank
-  useEffect(() => {
-    if (hoveredCard) {
-      setDisplayedCard(hoveredCard);
-    }
-  }, [hoveredCard]);
 
   // Analyze deck needs for coaching
   const deckNeeds = useMemo(() => {
@@ -2451,6 +2484,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     const initialEloHistory = new Map<string, CardEloHistory>();
 
     // Record initial adjusted ELO for cards in our first pack
+    // Initialize with 2 data points so sparkline shows immediately from P1P1
     tablePacks[0].forEach(card => {
       initialSeenCards.add(card.id);
       const baseElo = getEloData(card.name)?.elo || 1500;
@@ -2458,7 +2492,11 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
         cardId: card.id,
         cardName: card.name,
         baseElo,
-        history: [{ pick: 0, adjustedElo: baseElo, adjustment: 0 }], // Pick 0 = before any picks
+        // Two points: baseline (-1) and initial (0) - both same value but allows sparkline to render
+        history: [
+          { pick: -1, adjustedElo: baseElo, adjustment: 0 }, // Baseline
+          { pick: 0, adjustedElo: baseElo, adjustment: 0 },  // Initial (no picks yet)
+        ],
       });
     });
 
@@ -2592,6 +2630,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     });
 
     // Add new cards from our pack to history
+    // Initialize with 2 data points so sparkline shows immediately
     tablePacks[0].forEach(card => {
       newSeenCards.add(card.id);
       const baseElo = getEloData(card.name)?.elo || 1500;
@@ -2601,7 +2640,11 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
           cardId: card.id,
           cardName: card.name,
           baseElo,
-          history: [{ pick: pickNum, adjustedElo: synergy.adjustedElo, adjustment: synergy.adjustment }],
+          // Two points: baseline and current - allows sparkline to render immediately
+          history: [
+            { pick: pickNum - 1, adjustedElo: baseElo, adjustment: 0 }, // Baseline (raw ELO)
+            { pick: pickNum, adjustedElo: synergy.adjustedElo, adjustment: synergy.adjustment }, // Current synergy
+          ],
         });
       }
     });
@@ -2724,12 +2767,17 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
         if (existing) {
           existing.history.push({ pick: pickNum, adjustedElo: synergy.adjustedElo, adjustment: synergy.adjustment });
         } else {
+          // New card we haven't seen - initialize with 2 data points for sparkline
           const baseElo = getEloData(c.name)?.elo || 1500;
           newEloHistory.set(c.id, {
             cardId: c.id,
             cardName: c.name,
             baseElo,
-            history: [{ pick: pickNum, adjustedElo: synergy.adjustedElo, adjustment: synergy.adjustment }],
+            // Two points: baseline and current synergy
+            history: [
+              { pick: pickNum - 1, adjustedElo: baseElo, adjustment: 0 }, // Baseline
+              { pick: pickNum, adjustedElo: synergy.adjustedElo, adjustment: synergy.adjustment },
+            ],
           });
         }
       });
@@ -3166,29 +3214,11 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     return top;
   }, [archetypeMatches]);
 
-  // Check if a card synergizes with current picks
-  const getCardSynergy = useCallback((card: CubeCard): 'high' | 'medium' | 'low' | null => {
-    if (!draftState || draftState.picks.length < 2) return null;
-
-    const cardColors = card.color_identity || [];
-    const mainColors = Object.entries(colorCounts)
-      .filter(([_, count]) => count >= 3)
-      .map(([color]) => color);
-
-    // Check if on-color
-    const isOnColor = cardColors.length === 0 || cardColors.every(c => mainColors.includes(c));
-
-    // Check for synergies with archetypes
-    const hasArchetypeSynergy = archetypeMatches.some(arch =>
-      arch.keyCards.includes(card.name)
-    );
-
-    if (hasArchetypeSynergy) return 'high';
-    if (isOnColor && card.powerLevel >= 8) return 'high';
-    if (isOnColor && card.powerLevel >= 6) return 'medium';
-    if (!isOnColor && cardColors.length > 0) return 'low';
-    return null;
-  }, [draftState, colorCounts, archetypeMatches]);
+  // SPARKLINE - Simple direct lookup, no complex caching
+  // The history is always in draftState.cardEloHistory - just read it directly
+  const getSparklineHistory = useCallback((cardId: string) => {
+    return draftState?.cardEloHistory?.get(cardId)?.history || [];
+  }, [draftState?.cardEloHistory]);
 
   // Pack ELO statistics
   const packEloStats = useMemo(() => {
@@ -5104,12 +5134,13 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                           </div>
                         </div>
                       )}
-                    {/* Sparkline with PROJECTED TRAJECTORY */}
+                    {/* Sparkline with PROJECTED TRAJECTORY - Simple direct lookup */}
                     {(() => {
-                      const history = draftState?.cardEloHistory?.get(displayedCard.id);
+                      // Direct lookup - simple and reliable
+                      const historyPoints = getSparklineHistory(displayedCard.id);
 
-                      // Show message if no history or just 1 point
-                      if (!history || history.history.length === 0) {
+                      // Show message if no history
+                      if (!historyPoints || historyPoints.length === 0) {
                         return (
                           <div className="pt-3 border-t border-white/[0.06]">
                             <div className="text-xs text-white/30">No trajectory data yet</div>
@@ -5117,7 +5148,8 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                         );
                       }
 
-                      if (history.history.length === 1) {
+                      // With 2+ points (baseline + initial), we can always show the sparkline
+                      if (historyPoints.length === 1) {
                         return (
                           <div className="pt-3 border-t border-white/[0.06]">
                             <div className="flex items-center justify-between">
@@ -5128,7 +5160,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                         );
                       }
 
-                      const points = history.history;
+                      const points = historyPoints;
                       const currentElo = points[points.length - 1].adjustedElo;
                       const startElo = points[0].adjustedElo;
                       const trend = currentElo - startElo;
@@ -5322,7 +5354,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
         </div>
       </div>
 
-      {/* Mobile Card Drawer */}
+      {/* Mobile Card Drawer - Enhanced with full details */}
       {mobileSelectedCard && (
         <div className="fixed inset-0 z-50 sm:hidden">
           {/* Backdrop */}
@@ -5338,82 +5370,369 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
               <div className="w-10 h-1 bg-white/20 rounded-full" />
             </div>
 
-            {/* Large Card Image - fills available space */}
-            <div className="flex-1 flex items-center justify-center px-4">
-              <img
-                src={getCardImage(mobileSelectedCard)}
-                alt={mobileSelectedCard.name}
-                className="max-h-full w-auto max-w-[85vw] rounded-xl shadow-2xl"
-              />
+            {/* Tab Bar */}
+            <div className="flex px-4 gap-2 mb-2">
+              <button
+                onClick={() => setMobileDrawerTab('details')}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                  mobileDrawerTab === 'details'
+                    ? 'bg-white text-black'
+                    : 'bg-white/10 text-white/60'
+                }`}
+              >
+                Card Details
+              </button>
+              <button
+                onClick={() => setMobileDrawerTab('picks')}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                  mobileDrawerTab === 'picks'
+                    ? 'bg-white text-black'
+                    : 'bg-white/10 text-white/60'
+                }`}
+              >
+                My Picks ({draftState?.picks.length || 0})
+              </button>
             </div>
 
-            {/* Stats Grid - same as before */}
-            <div className="px-4 py-3">
-              {(() => {
-                const eloData = getEloData(mobileSelectedCard.name);
-                const percentile = getPercentile(mobileSelectedCard.name);
-                const wheelLikelihood = getWheelLikelihood(mobileSelectedCard.name);
-                const synergy = getCardSynergy(mobileSelectedCard);
-
-                return (
-                  <div className="grid grid-cols-3 gap-3">
-                    {/* ELO Rating */}
-                    <div className="bg-white/5 rounded-xl p-3 text-center">
-                      <div className="text-[10px] text-white/40 uppercase tracking-wider mb-1">ELO</div>
-                      <div className="text-lg font-mono font-bold text-white">
-                        {eloData ? Math.round(eloData.elo) : '—'}
-                      </div>
-                      {eloData && (
-                        <div className={`text-xs mt-1 ${
-                          percentile >= 75 ? 'text-amber-400' :
-                          percentile >= 50 ? 'text-purple-400' :
-                          'text-white/50'
-                        }`}>
-                          Top {100 - percentile}%
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Wheel Likelihood */}
-                    <div className="bg-white/5 rounded-xl p-3 text-center">
-                      <div className="text-[10px] text-white/40 uppercase tracking-wider mb-1">Wheel</div>
-                      <div className={`text-lg font-bold ${
-                        wheelLikelihood === 'likely' ? 'text-green-400' :
-                        wheelLikelihood === 'maybe' ? 'text-amber-400' :
-                        'text-red-400'
-                      }`}>
-                        {wheelLikelihood === 'likely' ? 'Yes' :
-                         wheelLikelihood === 'maybe' ? 'Maybe' :
-                         'No'}
-                      </div>
-                      <div className="text-xs text-white/40 mt-1">
-                        {wheelLikelihood === 'likely' ? 'Will come back' :
-                         wheelLikelihood === 'maybe' ? 'Risky' :
-                         'Take now'}
-                      </div>
-                    </div>
-
-                    {/* Deck Fit */}
-                    <div className="bg-white/5 rounded-xl p-3 text-center">
-                      <div className="text-[10px] text-white/40 uppercase tracking-wider mb-1">Fit</div>
-                      <div className={`text-lg font-bold ${
-                        synergy === 'high' ? 'text-green-400' :
-                        synergy === 'medium' ? 'text-amber-400' :
-                        'text-red-400'
-                      }`}>
-                        {synergy === 'high' ? 'Great' :
-                         synergy === 'medium' ? 'OK' :
-                         'Off'}
-                      </div>
-                      <div className="text-xs text-white/40 mt-1">
-                        {synergy === 'high' ? 'On-color' :
-                         synergy === 'medium' ? 'Splash?' :
-                         'Off-color'}
-                      </div>
-                    </div>
+            {/* Tab Content */}
+            <div className="flex-1 overflow-y-auto px-4 pb-2">
+              {mobileDrawerTab === 'details' ? (
+                /* Details Tab */
+                <div className="space-y-3">
+                  {/* Card Image - Smaller to fit more content */}
+                  <div className="flex justify-center">
+                    <img
+                      src={getCardImage(mobileSelectedCard)}
+                      alt={mobileSelectedCard.name}
+                      className="h-[45vh] w-auto rounded-xl shadow-2xl"
+                    />
                   </div>
-                );
-              })()}
+
+                  {/* Name, Grade, Type */}
+                  {(() => {
+                    const grade = draftState ? getContextualGrade(mobileSelectedCard, draftState.picks, currentPack) : null;
+                    return (
+                      <div className="bg-white/5 rounded-xl p-3">
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="text-lg font-semibold text-white">{mobileSelectedCard.name}</div>
+                          {grade && (
+                            <span className={`text-xl font-bold ${
+                              grade.grade === 'A+' ? 'text-emerald-400' :
+                              grade.grade === 'A' ? 'text-emerald-500' :
+                              grade.grade === 'B+' ? 'text-sky-400' :
+                              grade.grade === 'B' ? 'text-sky-500' :
+                              'text-white/60'
+                            }`}>
+                              {grade.grade}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-sm text-white/50">{mobileSelectedCard.type_line?.split('—')[0]}</div>
+                        {grade && (
+                          <div className="text-xs text-white/40 mt-2 italic">{grade.reason}</div>
+                        )}
+                      </div>
+                    );
+                  })()}
+
+                  {/* ELO with Synergy Adjustments */}
+                  {(() => {
+                    const eloData = getEloData(mobileSelectedCard.name);
+                    if (!eloData) return null;
+                    const wheelLikelihood = getWheelLikelihood(mobileSelectedCard.name);
+                    const synergyData = draftState ? getSynergyAdjustedElo(mobileSelectedCard, draftState.picks, currentPack) : null;
+                    const hasAdjustment = synergyData && synergyData.adjustment !== 0;
+
+                    return (
+                      <div className="bg-white/5 rounded-xl p-3 space-y-3">
+                        {/* ELO Header */}
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-white/40 uppercase tracking-wider">ELO Rating</span>
+                          <span className={`text-xs px-2 py-0.5 rounded ${
+                            wheelLikelihood === 'likely' ? 'bg-white/5 text-white/50' :
+                            wheelLikelihood === 'maybe' ? 'bg-amber-500/10 text-amber-400' :
+                            'bg-red-500/10 text-red-400'
+                          }`}>
+                            {wheelLikelihood === 'likely' ? 'Likely wheels' :
+                             wheelLikelihood === 'maybe' ? 'May wheel' :
+                             'Take now'}
+                          </span>
+                        </div>
+
+                        {/* ELO Values */}
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-3xl font-bold text-white font-mono">
+                            {Math.round(eloData.elo)}
+                          </span>
+                          {hasAdjustment && (
+                            <>
+                              <span className={`text-lg font-bold ${
+                                synergyData.adjustment > 0 ? 'text-emerald-400' : 'text-red-400'
+                              }`}>
+                                {synergyData.adjustment > 0 ? '+' : ''}{synergyData.adjustment}
+                              </span>
+                              <span className="text-lg text-white/30">→</span>
+                              <span className="text-2xl font-bold text-white">
+                                {Math.round(synergyData.adjustedElo)}
+                              </span>
+                            </>
+                          )}
+                        </div>
+
+                        {/* Adjustment Reasons */}
+                        {hasAdjustment && synergyData.reasons.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 pt-2 border-t border-white/10">
+                            {synergyData.reasons.map((reason, i) => (
+                              <span key={i} className={`text-xs px-2 py-1 rounded ${
+                                reason.startsWith('+') ? 'bg-emerald-500/10 text-emerald-400' :
+                                reason.startsWith('-') ? 'bg-red-500/10 text-red-400' :
+                                'bg-white/5 text-white/60'
+                              }`}>
+                                {reason}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+
+                  {/* Trajectory Sparkline */}
+                  {(() => {
+                    const history = draftState?.cardEloHistory?.get(mobileSelectedCard.id);
+                    if (!history || history.history.length <= 1) {
+                      return (
+                        <div className="bg-white/5 rounded-xl p-3">
+                          <div className="text-xs text-white/40">
+                            {!history || history.history.length === 0
+                              ? 'No trajectory data yet'
+                              : 'Just saw this card'}
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    const points = history.history;
+                    const currentElo = points[points.length - 1].adjustedElo;
+                    const startElo = points[0].adjustedElo;
+                    const trend = currentElo - startElo;
+                    const velocity = trend / (points.length - 1);
+                    const remainingPicks = Math.max(0, 45 - (draftState?.picks.length || 0));
+                    const projectPicks = Math.min(5, remainingPicks);
+                    const projectedElo = currentElo + (velocity * projectPicks);
+                    const momentum = velocity > 8 ? 'rising-fast' :
+                                     velocity > 3 ? 'rising' :
+                                     velocity < -8 ? 'falling-fast' :
+                                     velocity < -3 ? 'falling' : 'stable';
+
+                    const allValues = [...points.map(p => p.adjustedElo), projectedElo];
+                    const minElo = Math.min(...allValues);
+                    const maxElo = Math.max(...allValues);
+                    const range = maxElo - minElo || 1;
+                    const width = 300;
+                    const height = 60;
+                    const padding = 8;
+                    const drawWidth = width - padding;
+                    const historyWidth = drawWidth * 0.8;
+
+                    return (
+                      <div className="bg-white/5 rounded-xl p-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-white/40 uppercase tracking-wider">Trajectory</span>
+                            {momentum === 'rising-fast' && <span className="text-sm">🚀</span>}
+                            {momentum === 'falling-fast' && <span className="text-sm">📉</span>}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-sm font-bold ${trend > 0 ? 'text-emerald-400' : trend < 0 ? 'text-red-400' : 'text-white/40'}`}>
+                              {trend > 0 ? '+' : ''}{Math.round(trend)}
+                            </span>
+                            {projectPicks > 0 && Math.abs(velocity) > 2 && (
+                              <span className={`text-sm ${velocity > 0 ? 'text-emerald-400/70' : 'text-red-400/70'}`}>
+                                → {Math.round(projectedElo)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Sparkline SVG */}
+                        <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-14">
+                          <line x1="0" y1={height/2} x2={width} y2={height/2} stroke="white" strokeOpacity="0.05" strokeDasharray="4,4" />
+                          {points.length > 1 && (
+                            <polyline
+                              fill="none"
+                              stroke={trend >= 0 ? '#4ade80' : '#f87171'}
+                              strokeWidth="2.5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              points={points.map((p, i) => {
+                                const x = (i / Math.max(1, points.length - 1)) * historyWidth;
+                                const y = height - ((p.adjustedElo - minElo) / range) * (height - 8) - 4;
+                                return `${x},${y}`;
+                              }).join(' ')}
+                            />
+                          )}
+                          {projectPicks > 0 && Math.abs(velocity) > 2 && (
+                            <line
+                              x1={historyWidth}
+                              y1={height - ((currentElo - minElo) / range) * (height - 8) - 4}
+                              x2={drawWidth}
+                              y2={height - ((projectedElo - minElo) / range) * (height - 8) - 4}
+                              stroke={velocity > 0 ? '#4ade80' : '#f87171'}
+                              strokeWidth="2.5"
+                              strokeLinecap="round"
+                              strokeDasharray="6,4"
+                              opacity="0.6"
+                            />
+                          )}
+                          {points.map((p, i) => {
+                            const x = points.length === 1 ? historyWidth / 2 : (i / Math.max(1, points.length - 1)) * historyWidth;
+                            const y = height - ((p.adjustedElo - minElo) / range) * (height - 8) - 4;
+                            return (
+                              <circle key={i} cx={x} cy={y} r="4" fill={trend >= 0 ? '#4ade80' : '#f87171'} />
+                            );
+                          })}
+                          {projectPicks > 0 && Math.abs(velocity) > 2 && (
+                            <circle
+                              cx={drawWidth}
+                              cy={height - ((projectedElo - minElo) / range) * (height - 8) - 4}
+                              r="5"
+                              fill="none"
+                              stroke={velocity > 0 ? '#4ade80' : '#f87171'}
+                              strokeWidth="2"
+                              opacity="0.6"
+                            />
+                          )}
+                        </svg>
+
+                        {Math.abs(velocity) > 3 && (
+                          <div className={`text-xs font-medium ${velocity > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                            {velocity > 0 ? '↑' : '↓'} {Math.abs(Math.round(velocity))} ELO per pick
+                            {momentum === 'rising-fast' && ' · Perfect fit!'}
+                            {momentum === 'falling-fast' && ' · Wrong direction'}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+
+                  {/* Archetype Tags */}
+                  {(() => {
+                    const archetypes = getCardArchetypes(mobileSelectedCard);
+                    if (archetypes.length === 0) return null;
+                    const universalTags = archetypes.filter(a => a.isUniversal);
+                    const archetypeTags = archetypes.filter(a => !a.isUniversal);
+                    return (
+                      <div className="bg-white/5 rounded-xl p-3 space-y-2">
+                        {universalTags.length > 0 && (
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs text-amber-400">★</span>
+                            {universalTags.map(tag => (
+                              <span key={tag.id} className="text-xs px-2 py-1 rounded bg-amber-500/20 text-amber-300">
+                                {tag.shortName}
+                              </span>
+                            ))}
+                            <span className="text-[10px] text-white/30 ml-1">Goes in everything</span>
+                          </div>
+                        )}
+                        {archetypeTags.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5">
+                            <span className="text-xs text-white/40">Best in:</span>
+                            {archetypeTags.map(arch => {
+                              const isBuilding = buildingToward?.id === arch.id;
+                              return (
+                                <span
+                                  key={arch.id}
+                                  className={`text-xs px-2 py-1 rounded ${
+                                    isBuilding
+                                      ? 'bg-purple-500/30 text-purple-300 ring-1 ring-purple-500/50'
+                                      : 'bg-white/10 text-white/60'
+                                  }`}
+                                >
+                                  {arch.shortName}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
+              ) : (
+                /* Picks Tab - Show deck overview */
+                <div className="space-y-3">
+                  {/* Color Summary */}
+                  <div className="flex gap-2 justify-center py-2">
+                    {['W', 'U', 'B', 'R', 'G', 'C'].map(c => {
+                      const count = c === 'C'
+                        ? (draftState?.picks.filter(p => !p.color_identity || p.color_identity.length === 0).length || 0)
+                        : (colorCounts[c] || 0);
+                      return (
+                        <div
+                          key={c}
+                          className={`w-11 h-11 rounded-lg flex flex-col items-center justify-center text-sm font-bold
+                            ${count === 0 ? 'opacity-30' : ''}
+                            ${c === 'W' ? 'bg-amber-100 text-amber-900' : ''}
+                            ${c === 'U' ? 'bg-blue-500 text-white' : ''}
+                            ${c === 'B' ? 'bg-neutral-600 text-white' : ''}
+                            ${c === 'R' ? 'bg-red-500 text-white' : ''}
+                            ${c === 'G' ? 'bg-green-600 text-white' : ''}
+                            ${c === 'C' ? 'bg-gray-400 text-gray-900' : ''}
+                          `}
+                        >
+                          <span>{count}</span>
+                          <span className="text-[8px] opacity-70">{c}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Deck Stats */}
+                  {deckStats && (
+                    <div className="grid grid-cols-4 gap-2 text-center">
+                      <div className="bg-white/5 rounded-lg p-2">
+                        <div className="text-white font-mono text-lg">{deckStats.creatures}</div>
+                        <div className="text-[10px] text-white/40">Creatures</div>
+                      </div>
+                      <div className="bg-white/5 rounded-lg p-2">
+                        <div className="text-white font-mono text-lg">{deckStats.spells}</div>
+                        <div className="text-[10px] text-white/40">Spells</div>
+                      </div>
+                      <div className="bg-white/5 rounded-lg p-2">
+                        <div className="text-white font-mono text-lg">{deckStats.avgCmc.toFixed(1)}</div>
+                        <div className="text-[10px] text-white/40">Avg CMC</div>
+                      </div>
+                      <div className="bg-white/5 rounded-lg p-2">
+                        <div className="text-white font-mono text-lg">{Math.round(calculateDeckElo((draftState?.picks || []).map(c => c.name)).normalized)}</div>
+                        <div className="text-[10px] text-white/40">Deck ELO</div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Cards Grid */}
+                  {draftState && draftState.picks.length > 0 ? (
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {draftState.picks.map((card, idx) => (
+                        <div
+                          key={`${card.id}-${idx}`}
+                          className={`relative aspect-[488/680] rounded-lg overflow-hidden active:scale-95 transition-transform ${
+                            card.id === mobileSelectedCard.id ? 'ring-2 ring-white' : ''
+                          }`}
+                          onClick={() => {
+                            setMobileSelectedCard(card);
+                            setMobileDrawerTab('details');
+                          }}
+                        >
+                          <img src={getCardImage(card)} alt={card.name} className="w-full h-full object-cover" />
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-center text-white/40 py-8">No cards drafted yet</p>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Fixed Action Buttons at Bottom */}
