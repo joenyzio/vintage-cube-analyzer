@@ -1475,6 +1475,52 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     return null;
   }, [draftState, colorCounts, archetypeMatches]);
 
+  // Analyze current pack for archetype signposts - useful from P1P1
+  const packArchetypeSignals = useMemo(() => {
+    if (!draftState) return [];
+    const currentPack = draftState.tablePacks[0];
+    if (!currentPack || currentPack.length === 0) return [];
+
+    // Find archetype-defining cards in the pack
+    const signals: { archetype: typeof ARCHETYPES[0]; cards: { card: CubeCard; isKeyCard: boolean; percentile: number }[] }[] = [];
+
+    for (const arch of ARCHETYPES) {
+      const matchingCards: { card: CubeCard; isKeyCard: boolean; percentile: number }[] = [];
+
+      for (const card of currentPack) {
+        const isKeyCard = arch.keyCards.includes(card.name);
+        const fitsArchetype = arch.detectCard(card);
+
+        if (isKeyCard || fitsArchetype) {
+          const percentile = getPercentile(card.name);
+          // Prioritize key cards and high-percentile cards
+          if (isKeyCard || percentile >= 60) {
+            matchingCards.push({ card, isKeyCard, percentile });
+          }
+        }
+      }
+
+      if (matchingCards.length > 0) {
+        // Sort by key card first, then percentile
+        matchingCards.sort((a, b) => {
+          if (a.isKeyCard && !b.isKeyCard) return -1;
+          if (!a.isKeyCard && b.isKeyCard) return 1;
+          return b.percentile - a.percentile;
+        });
+        signals.push({ archetype: arch, cards: matchingCards.slice(0, 3) });
+      }
+    }
+
+    // Sort archetypes by best card quality and number of options
+    return signals
+      .map(s => ({
+        ...s,
+        score: s.cards.reduce((sum, c) => sum + (c.isKeyCard ? 50 : 0) + c.percentile, 0) / s.cards.length
+      }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 4); // Show top 4 archetypes available
+  }, [draftState, ARCHETYPES]);
+
   // Pack ELO statistics
   const packEloStats = useMemo(() => {
     if (!draftState) return null;
@@ -2519,12 +2565,49 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
           <div className="bg-black border border-white/[0.06] rounded-xl overflow-hidden">
             <div className="p-3 border-b border-white/[0.06]">
               <span className="text-xs font-medium text-white/60 uppercase tracking-wider">
-                {buildingToward ? 'Building Toward' : 'Archetype Direction'}
+                {buildingToward ? 'Building Toward' : draftState.picks.length < 3 ? 'Archetypes in Pack' : 'Archetype Direction'}
               </span>
             </div>
             <div className="p-2">
-              {draftState.picks.length < 3 ? (
-                <p className="text-xs text-white/30 text-center py-3">Pick a few cards to detect archetype</p>
+              {draftState.picks.length < 3 && packArchetypeSignals.length > 0 ? (
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  <p className="text-[10px] text-amber-400/80 mb-2">Signpost cards in this pack:</p>
+                  {packArchetypeSignals.map((signal) => (
+                    <div key={signal.archetype.id} className="p-2 rounded-lg bg-white/[0.03] border border-white/[0.06]">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs font-semibold text-white/90">{signal.archetype.name}</span>
+                        <div className="flex gap-0.5">
+                          {signal.archetype.colors.map(c => (
+                            <span key={c} className={`w-4 h-4 rounded text-[9px] font-bold flex items-center justify-center
+                              ${c === 'W' ? 'bg-amber-100 text-amber-900' : ''}
+                              ${c === 'U' ? 'bg-blue-500 text-white' : ''}
+                              ${c === 'B' ? 'bg-neutral-600 text-white' : ''}
+                              ${c === 'R' ? 'bg-red-500 text-white' : ''}
+                              ${c === 'G' ? 'bg-green-600 text-white' : ''}
+                            `}>{c}</span>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        {signal.cards.map((c, i) => (
+                          <div key={i} className="flex items-center gap-2 text-[10px]">
+                            {c.isKeyCard && <span className="text-amber-400">★</span>}
+                            <span className={c.isKeyCard ? 'text-amber-300 font-medium' : 'text-white/60'}>{c.card.name}</span>
+                            <span className={`ml-auto px-1 py-0.5 rounded text-[8px] font-medium
+                              ${c.percentile >= 75 ? 'bg-amber-500/30 text-amber-300' :
+                                c.percentile >= 50 ? 'bg-purple-500/30 text-purple-300' :
+                                'bg-white/10 text-white/50'}
+                            `}>
+                              {c.percentile >= 75 ? 'Premium' : c.percentile >= 50 ? 'Solid' : 'Role'}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : draftState.picks.length < 3 ? (
+                <p className="text-xs text-white/30 text-center py-3">No strong archetype signals in this pack</p>
               ) : buildingToward ? (
                 <div className="space-y-2">
                   {/* Primary archetype - prominent */}
