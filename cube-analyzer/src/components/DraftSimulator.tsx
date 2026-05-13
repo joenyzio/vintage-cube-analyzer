@@ -211,6 +211,176 @@ function getContextAwareBestPick(
   return { bestCard: scored[0].card, score: scored[0].score };
 }
 
+// Calculate synergy-adjusted ELO for a card given current picks
+function getSynergyAdjustedElo(
+  card: CubeCard,
+  picks: CubeCard[]
+): { baseElo: number; adjustedElo: number; adjustment: number; reasons: string[] } {
+  const baseElo = getEloData(card.name)?.elo || 1500;
+  const reasons: string[] = [];
+  let adjustment = 0;
+
+  if (picks.length === 0) {
+    return { baseElo, adjustedElo: baseElo, adjustment: 0, reasons: ['P1P1 - raw power matters most'] };
+  }
+
+  const cardColors = card.color_identity || [];
+  const typeLine = card.type_line?.toLowerCase() || '';
+  const oracleText = card.oracle_text?.toLowerCase() || '';
+  const cmc = card.cmc || 0;
+
+  // Calculate main colors
+  const colorCts: Record<string, number> = {};
+  picks.forEach(c => c.color_identity?.forEach(col => { colorCts[col] = (colorCts[col] || 0) + 1; }));
+  const mainColors = Object.entries(colorCts).filter(([_, count]) => count >= 1).map(([color]) => color);
+  const strongColors = Object.entries(colorCts).filter(([_, count]) => count >= 2).map(([color]) => color);
+
+  // Detect archetype direction from picks
+  const hasAggro = picks.some(p => {
+    const pCmc = p.cmc || 0;
+    const pType = p.type_line?.toLowerCase() || '';
+    return pCmc <= 3 && pType.includes('creature') && (p.color_identity?.includes('R') || p.color_identity?.includes('W'));
+  });
+  const hasRamp = picks.some(p => ['Channel', 'Fastbond', 'Natural Order', 'Rofellos, Llanowar Emissary'].includes(p.name) ||
+    (p.oracle_text?.toLowerCase().includes('add') && p.oracle_text?.toLowerCase().includes('mana') && p.type_line?.toLowerCase().includes('creature')));
+  const hasReanimator = picks.some(p => ['Reanimate', 'Animate Dead', 'Entomb', 'Necromancy', 'Exhume', 'Shallow Grave'].includes(p.name));
+  const hasStorm = picks.some(p => ['Brain Freeze', 'Tendrils of Agony', "Yawgmoth's Will", 'Underworld Breach', 'Dark Ritual'].includes(p.name));
+  const hasTinker = picks.some(p => ['Tinker', 'Tolarian Academy', "Mishra's Workshop"].includes(p.name));
+  const hasControl = picks.some(p => ['Counterspell', 'Force of Will', 'Jace, the Mind Sculptor', 'Wrath of God', 'Supreme Verdict'].includes(p.name));
+
+  // COLOR FIT - scales with pick count
+  const isColorless = cardColors.length === 0;
+  const isOnColor = isColorless || cardColors.every(c => mainColors.includes(c));
+  const isStronglyOnColor = isColorless || cardColors.every(c => strongColors.includes(c));
+  const addsNewColor = cardColors.length > 0 && cardColors.some(c => !mainColors.includes(c));
+
+  // Scale factor: small early, bigger later (0.3 at pick 1, 1.0 at pick 5+)
+  const colorScale = Math.min(1, 0.3 + (picks.length * 0.15));
+
+  if (mainColors.length > 0) {
+    if (isStronglyOnColor) {
+      const bonus = Math.round(80 * colorScale);
+      adjustment += bonus;
+      reasons.push(`+${bonus} on-color`);
+    } else if (isOnColor) {
+      const bonus = Math.round(40 * colorScale);
+      adjustment += bonus;
+      reasons.push(`+${bonus} fits colors`);
+    } else if (addsNewColor) {
+      const percentile = getPercentile(card.name);
+      if (percentile >= 90) {
+        const penalty = Math.round(20 * colorScale);
+        adjustment -= penalty;
+        reasons.push(`-${penalty} splash`);
+      } else if (percentile >= 75) {
+        const penalty = Math.round(60 * colorScale);
+        adjustment -= penalty;
+        reasons.push(`-${penalty} off-color`);
+      } else {
+        const penalty = Math.round(100 * colorScale);
+        adjustment -= penalty;
+        reasons.push(`-${penalty} off-color`);
+      }
+    }
+  }
+
+  // Artifact synergy from first artifact pick
+  const hasArtifacts = picks.some(p => p.type_line?.toLowerCase().includes('artifact'));
+  if (hasArtifacts && typeLine.includes('artifact')) {
+    adjustment += 30;
+    reasons.push('+30 artifact synergy');
+  }
+
+  // ARCHETYPE SYNERGY BONUSES
+  if (hasAggro) {
+    if (typeLine.includes('creature') && cmc <= 2) {
+      adjustment += 50;
+      reasons.push('+50 aggro creature');
+    } else if (oracleText.includes('damage') && (oracleText.includes('any target') || oracleText.includes('target player'))) {
+      adjustment += 40;
+      reasons.push('+40 burn spell');
+    } else if (cmc >= 5 && !['Channel', 'Natural Order', 'Tinker'].includes(card.name)) {
+      adjustment -= 40;
+      reasons.push('-40 too slow for aggro');
+    }
+    // Ramp doesn't fit aggro
+    if (['Fastbond', 'Oracle of Mul Daya', 'Exploration'].includes(card.name)) {
+      adjustment -= 80;
+      reasons.push('-80 ramp in aggro deck');
+    }
+  }
+
+  if (hasRamp) {
+    if (cmc >= 6 && typeLine.includes('creature')) {
+      adjustment += 60;
+      reasons.push('+60 ramp payoff');
+    } else if (oracleText.includes('add') && oracleText.includes('mana')) {
+      adjustment += 40;
+      reasons.push('+40 mana acceleration');
+    } else if (oracleText.includes('search') && oracleText.includes('land')) {
+      adjustment += 30;
+      reasons.push('+30 land search');
+    }
+  }
+
+  if (hasReanimator) {
+    if (typeLine.includes('creature') && cmc >= 6) {
+      adjustment += 70;
+      reasons.push('+70 reanimation target');
+    } else if (['Entomb', 'Faithless Looting', 'Careful Study', 'Collective Brutality'].includes(card.name)) {
+      adjustment += 60;
+      reasons.push('+60 enables reanimator');
+    } else if (oracleText.includes('discard') && oracleText.includes('card')) {
+      adjustment += 30;
+      reasons.push('+30 discard outlet');
+    }
+  }
+
+  if (hasStorm) {
+    if (oracleText.includes('add {') || ['Dark Ritual', 'Cabal Ritual', 'Seething Song', 'Lotus Petal'].includes(card.name)) {
+      adjustment += 50;
+      reasons.push('+50 storm mana');
+    } else if (oracleText.includes('draw') && cmc <= 2) {
+      adjustment += 40;
+      reasons.push('+40 cantrip for storm');
+    }
+  }
+
+  if (hasTinker) {
+    if (typeLine.includes('artifact') && !typeLine.includes('creature')) {
+      adjustment += 40;
+      reasons.push('+40 artifact for Tinker');
+    } else if (['Blightsteel Colossus', 'Myr Battlesphere', 'Sundering Titan', 'Inkwell Leviathan'].includes(card.name)) {
+      adjustment += 80;
+      reasons.push('+80 Tinker target');
+    }
+  }
+
+  if (hasControl) {
+    if (oracleText.includes('counter target spell')) {
+      adjustment += 40;
+      reasons.push('+40 counterspell');
+    } else if (oracleText.includes('destroy all creatures')) {
+      adjustment += 50;
+      reasons.push('+50 board wipe');
+    } else if (typeLine.includes('planeswalker')) {
+      adjustment += 30;
+      reasons.push('+30 planeswalker for control');
+    }
+  }
+
+  // Universal cards get bonus everywhere
+  if (['Black Lotus', 'Ancestral Recall', 'Time Walk', 'Sol Ring', 'Mana Crypt'].includes(card.name)) {
+    if (adjustment < 0) {
+      adjustment = Math.max(adjustment, -30); // Cap the penalty for power 9
+      reasons.push('Power 9 penalty capped');
+    }
+  }
+
+  const adjustedElo = Math.round(baseElo + adjustment);
+  return { baseElo: Math.round(baseElo), adjustedElo, adjustment, reasons };
+}
+
 // LocalStorage keys
 const STORAGE_KEYS = {
   history: 'cube-analyzer-draft-history',
@@ -1400,15 +1570,37 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     },
   ], []);
 
+  // Universal cards that fit multiple archetypes
+  const UNIVERSAL_TUTORS = ['Demonic Tutor', 'Vampiric Tutor', 'Imperial Seal', 'Mystical Tutor', 'Enlightened Tutor'];
+  const UNIVERSAL_FAST_MANA = ['Black Lotus', 'Mox Pearl', 'Mox Sapphire', 'Mox Jet', 'Mox Ruby', 'Mox Emerald', 'Sol Ring', 'Mana Crypt', 'Mana Vault', 'Chrome Mox', 'Mox Diamond', 'Lotus Petal'];
+  const UNIVERSAL_DRAW = ['Ancestral Recall', 'Time Walk', 'Timetwister', 'Brainstorm', 'Ponder', 'Preordain'];
+
   // Get archetype tags for a card (for display on cards)
-  const getCardArchetypes = useCallback((card: CubeCard): { id: string; shortName: string }[] => {
-    const matches: { id: string; shortName: string }[] = [];
-    for (const arch of ARCHETYPES) {
-      if (arch.keyCards.includes(card.name) || arch.detectCard(card)) {
-        matches.push({ id: arch.id, shortName: arch.shortName });
+  const getCardArchetypes = useCallback((card: CubeCard): { id: string; shortName: string; isUniversal?: boolean }[] => {
+    const matches: { id: string; shortName: string; isUniversal?: boolean }[] = [];
+
+    // Check for universal cards first
+    if (UNIVERSAL_TUTORS.includes(card.name)) {
+      matches.push({ id: 'tutor', shortName: 'Tutor', isUniversal: true });
+      // Tutors especially help combo decks
+      matches.push({ id: 'storm', shortName: 'Storm' });
+      matches.push({ id: 'reanimator', shortName: 'Rean' });
+    } else if (UNIVERSAL_FAST_MANA.includes(card.name)) {
+      matches.push({ id: 'fast-mana', shortName: 'Mana', isUniversal: true });
+      matches.push({ id: 'storm', shortName: 'Storm' });
+      matches.push({ id: 'tinker', shortName: 'Tinker' });
+    } else if (UNIVERSAL_DRAW.includes(card.name)) {
+      matches.push({ id: 'card-draw', shortName: 'Draw', isUniversal: true });
+    } else {
+      // Check specific archetypes
+      for (const arch of ARCHETYPES) {
+        if (arch.keyCards.includes(card.name) || arch.detectCard(card)) {
+          matches.push({ id: arch.id, shortName: arch.shortName });
+        }
       }
     }
-    return matches.slice(0, 2); // Max 2 archetypes per card
+
+    return matches.slice(0, 3); // Max 3 tags per card
   }, [ARCHETYPES]);
 
   // Archetype matching for deck - determines what you're building toward
@@ -2949,6 +3141,9 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
             const cardArchetypes = getCardArchetypes(card);
             const fitsCurrentArchetype = buildingToward && cardArchetypes.some(a => a.id === buildingToward.id);
             const isPendingPick = quizDraftMode && pendingPick?.id === card.id;
+            // Calculate synergy-adjusted ELO
+            const synergyData = getSynergyAdjustedElo(card, draftState.picks);
+            const hasSignificantAdjustment = Math.abs(synergyData.adjustment) >= 30;
 
             // Show coach visuals when coach is on OR during quiz reveal
             const showCoachVisuals = coachMode || (quizDraftMode && showPickReveal);
@@ -3037,16 +3232,28 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                   </div>
                 )}
 
-                {/* Power badge - TOP RIGHT */}
+                {/* Power badge + Synergy Adjustment - TOP RIGHT */}
                 {showCoachVisuals && (
-                  <div className={`
-                    absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold shadow-lg
-                    ${card.powerLevel >= 10 ? 'bg-gradient-to-br from-amber-400 to-amber-500 text-black' : ''}
-                    ${card.powerLevel === 9 ? 'bg-gradient-to-br from-purple-400 to-purple-500 text-white' : ''}
-                    ${card.powerLevel >= 7 && card.powerLevel < 9 ? 'bg-gradient-to-br from-blue-400 to-blue-500 text-white' : ''}
-                    ${card.powerLevel < 7 ? 'bg-black/70 text-white/80' : ''}
-                  `}>
-                    {card.powerLevel}
+                  <div className="absolute top-1.5 right-1.5 flex flex-col items-end gap-0.5">
+                    {/* Power level badge */}
+                    <div className={`
+                      w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold shadow-lg
+                      ${card.powerLevel >= 10 ? 'bg-gradient-to-br from-amber-400 to-amber-500 text-black' : ''}
+                      ${card.powerLevel === 9 ? 'bg-gradient-to-br from-purple-400 to-purple-500 text-white' : ''}
+                      ${card.powerLevel >= 7 && card.powerLevel < 9 ? 'bg-gradient-to-br from-blue-400 to-blue-500 text-white' : ''}
+                      ${card.powerLevel < 7 ? 'bg-black/70 text-white/80' : ''}
+                    `}>
+                      {card.powerLevel}
+                    </div>
+                    {/* Synergy adjustment indicator */}
+                    {hasSignificantAdjustment && (
+                      <div className={`
+                        px-1 py-0.5 rounded text-[8px] font-bold shadow-lg
+                        ${synergyData.adjustment > 0 ? 'bg-green-500/90 text-white' : 'bg-red-500/90 text-white'}
+                      `}>
+                        {synergyData.adjustment > 0 ? '+' : ''}{synergyData.adjustment}
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -3231,25 +3438,61 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                 if (!eloData) return null;
                 const percentile = getPercentile(hoveredCard.name);
                 const wheelLikelihood = getWheelLikelihood(hoveredCard.name);
+                const synergyData = draftState ? getSynergyAdjustedElo(hoveredCard, draftState.picks) : null;
+                const hasAdjustment = synergyData && synergyData.adjustment !== 0;
                 return (
-                  <div className="flex items-center gap-2 pt-1 border-t border-white/10">
-                    <span className={`text-[10px] font-medium ${
-                      percentile >= 75 ? 'text-amber-400' :
-                      percentile >= 50 ? 'text-purple-400' :
-                      percentile >= 25 ? 'text-blue-400' :
-                      'text-white/40'
-                    }`}>
-                      ELO {Math.round(eloData.elo)}
-                    </span>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded ${
-                      wheelLikelihood === 'likely' ? 'bg-green-500/20 text-green-400' :
-                      wheelLikelihood === 'maybe' ? 'bg-amber-500/20 text-amber-400' :
-                      'bg-red-500/20 text-red-400'
-                    }`}>
-                      {wheelLikelihood === 'likely' ? 'Will wheel' :
-                       wheelLikelihood === 'maybe' ? 'May wheel' :
-                       'Won\'t wheel'}
-                    </span>
+                  <div className="space-y-1.5 pt-1 border-t border-white/10">
+                    {/* ELO row - base ELO, adjustment, final */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <span className={`text-[11px] font-medium ${
+                          percentile >= 75 ? 'text-amber-400' :
+                          percentile >= 50 ? 'text-purple-400' :
+                          percentile >= 25 ? 'text-blue-400' :
+                          'text-white/60'
+                        }`}>
+                          {Math.round(eloData.elo)}
+                        </span>
+                        {hasAdjustment && (
+                          <>
+                            <span className={`text-[10px] font-bold ${
+                              synergyData.adjustment > 0 ? 'text-green-400' : 'text-red-400'
+                            }`}>
+                              {synergyData.adjustment > 0 ? '+' : ''}{synergyData.adjustment}
+                            </span>
+                            <span className="text-[9px] text-white/30">=</span>
+                            <span className={`text-[11px] font-bold ${
+                              synergyData.adjustment > 0 ? 'text-green-400' : 'text-red-400'
+                            }`}>
+                              {synergyData.adjustedElo}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                      <span className={`text-[9px] px-1.5 py-0.5 rounded ${
+                        wheelLikelihood === 'likely' ? 'bg-green-500/20 text-green-400' :
+                        wheelLikelihood === 'maybe' ? 'bg-amber-500/20 text-amber-400' :
+                        'bg-red-500/20 text-red-400'
+                      }`}>
+                        {wheelLikelihood === 'likely' ? 'Wheels' :
+                         wheelLikelihood === 'maybe' ? 'Maybe' :
+                         'Take now'}
+                      </span>
+                    </div>
+                    {/* Adjustment reasons - compact */}
+                    {hasAdjustment && synergyData.reasons.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {synergyData.reasons.slice(0, 2).map((reason, i) => (
+                          <span key={i} className={`text-[8px] px-1 py-0.5 rounded ${
+                            reason.startsWith('+') ? 'bg-green-500/20 text-green-400/80' :
+                            reason.startsWith('-') ? 'bg-red-500/20 text-red-400/80' :
+                            'bg-white/10 text-white/50'
+                          }`}>
+                            {reason}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 );
               })()}
@@ -3257,25 +3500,43 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
               {(() => {
                 const archetypes = getCardArchetypes(hoveredCard);
                 if (archetypes.length === 0) return null;
+                const universalTags = archetypes.filter(a => a.isUniversal);
+                const archetypeTags = archetypes.filter(a => !a.isUniversal);
                 return (
-                  <div className="flex flex-wrap gap-1 pt-1 border-t border-white/10">
-                    <span className="text-[9px] text-white/30">Fits:</span>
-                    {archetypes.map(arch => {
-                      // Highlight if matches what we're building
-                      const isBuilding = buildingToward?.id === arch.id;
-                      return (
-                        <span
-                          key={arch.id}
-                          className={`text-[9px] px-1.5 py-0.5 rounded ${
-                            isBuilding
-                              ? 'bg-purple-500/30 text-purple-300 ring-1 ring-purple-500/50'
-                              : 'bg-white/10 text-white/60'
-                          }`}
-                        >
-                          {arch.shortName}
-                        </span>
-                      );
-                    })}
+                  <div className="space-y-1 pt-1 border-t border-white/10">
+                    {/* Universal role (Tutor, Mana, Draw) */}
+                    {universalTags.length > 0 && (
+                      <div className="flex items-center gap-1">
+                        <span className="text-[9px] text-amber-400/70">★</span>
+                        {universalTags.map(tag => (
+                          <span key={tag.id} className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-medium">
+                            {tag.shortName}
+                          </span>
+                        ))}
+                        <span className="text-[8px] text-white/30 ml-1">Goes in everything</span>
+                      </div>
+                    )}
+                    {/* Specific archetypes */}
+                    {archetypeTags.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        <span className="text-[9px] text-white/30">Best in:</span>
+                        {archetypeTags.map(arch => {
+                          const isBuilding = buildingToward?.id === arch.id;
+                          return (
+                            <span
+                              key={arch.id}
+                              className={`text-[9px] px-1.5 py-0.5 rounded ${
+                                isBuilding
+                                  ? 'bg-purple-500/30 text-purple-300 ring-1 ring-purple-500/50'
+                                  : 'bg-white/10 text-white/60'
+                              }`}
+                            >
+                              {arch.shortName}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 );
               })()}
