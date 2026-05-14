@@ -8,6 +8,14 @@ import {
   calculateDeckElo,
   compareByElo,
 } from '../services/eloHelpers';
+import {
+  rateAllCards,
+  createInitialContext,
+  updateContext,
+  updateArchetypeWeights,
+  type DraftContext,
+  type CardRating,
+} from '../services/cardRating';
 import { Play, RotateCcw, Trophy, Star, ArrowLeft, ArrowRight, Users, Package, Target, Clock, TrendingUp, AlertCircle, HelpCircle, CheckCircle, XCircle, Zap, History, Keyboard, Award, Lightbulb, Eye, EyeOff } from 'lucide-react';
 
 type SimulatorMode = 'menu' | 'draft' | 'quiz' | 'results';
@@ -338,6 +346,44 @@ function getContextAwareBestPick(
 
   scored.sort((a, b) => b.score - a.score);
   return { bestCard: scored[0].card, score: scored[0].score };
+}
+
+/**
+ * NEW: Rate pack cards using the archetype-aware multiplicative rating system.
+ * Returns all card ratings sorted by contextual score.
+ * TODO: Integrate this into the main draft flow to replace getContextAwareBestPick
+ */
+export function getArchetypeAwareRatings(
+  pack: CubeCard[],
+  picks: CubeCard[],
+  packNumber: number,
+  pickNumber: number,
+  archetypeContext?: DraftContext
+): { ratings: CardRating[]; context: DraftContext } {
+  // Build or use existing context
+  let context: DraftContext;
+
+  if (archetypeContext) {
+    context = archetypeContext;
+  } else {
+    // Build fresh context from picks
+    context = createInitialContext();
+    context.packNumber = packNumber;
+    context.pickNumber = pickNumber;
+
+    for (const pick of picks) {
+      const newWeights = updateArchetypeWeights(context.archetypeWeights, pick);
+      context = updateContext(context, pick, newWeights);
+    }
+  }
+
+  // Rate all pack cards
+  const ratings = rateAllCards(pack, context);
+
+  // Sort by contextual score (highest first)
+  ratings.sort((a, b) => b.contextualScore - a.contextualScore);
+
+  return { ratings, context };
 }
 
 // ============================================================================
