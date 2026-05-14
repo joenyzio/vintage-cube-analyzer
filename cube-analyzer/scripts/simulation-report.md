@@ -1,6 +1,6 @@
 # Draft Simulation Report
 
-Generated: 2026-05-14T04:33:38.836Z
+Generated: 2026-05-14T05:41:56.008Z
 
 **Drafts Simulated:** 500
 **Total Decks Built:** 4000
@@ -19,16 +19,16 @@ Generated: 2026-05-14T04:33:38.836Z
 
 | Archetype | Decks | % | Avg Commitment | Avg Deck Quality |
 |-----------|-------|---|----------------|------------------|
-| midrange | 824 | 20.6% | 0.83 | 2844 |
-| aggro | 632 | 15.8% | 0.80 | 2793 |
-| reanimator | 523 | 13.1% | 0.91 | 3198 |
-| storm | 512 | 12.8% | 0.80 | 2746 |
-| tempo | 425 | 10.6% | 0.77 | 2716 |
-| ramp | 345 | 8.6% | 0.87 | 3051 |
-| artifacts | 148 | 3.7% | 0.69 | 2474 |
-| control | 143 | 3.6% | 0.69 | 2449 |
-| oath | 62 | 1.6% | 0.87 | 3104 |
-| sneak | 42 | 1.1% | 0.75 | 2617 |
+| midrange | 811 | 20.3% | 0.84 | 2850 |
+| aggro | 633 | 15.8% | 0.80 | 2790 |
+| reanimator | 529 | 13.2% | 0.91 | 3175 |
+| storm | 503 | 12.6% | 0.79 | 2737 |
+| tempo | 423 | 10.6% | 0.76 | 2718 |
+| ramp | 365 | 9.1% | 0.86 | 3000 |
+| control | 145 | 3.6% | 0.69 | 2462 |
+| artifacts | 143 | 3.6% | 0.70 | 2509 |
+| oath | 62 | 1.6% | 0.87 | 3086 |
+| sneak | 40 | 1.0% | 0.76 | 2641 |
 
 ## Color Distribution
 
@@ -36,41 +36,41 @@ Generated: 2026-05-14T04:33:38.836Z
 
 | Color | Appearances | % of Decks |
 |-------|-------------|------------|
-| White (W) | 1995 | 49.9% |
-| Blue (U) | 2424 | 60.6% |
+| White (W) | 1978 | 49.5% |
+| Blue (U) | 2419 | 60.5% |
 | Black (B) | 2119 | 53.0% |
-| Red (R) | 2044 | 51.1% |
-| Green (G) | 2189 | 54.7% |
+| Red (R) | 2033 | 50.8% |
+| Green (G) | 2199 | 55.0% |
 
 ### Color Combinations
 
 | Colors | Count | % |
 |--------|-------|---|
-| BGU | 394 | 9.8% |
-| RUW | 333 | 8.3% |
-| GRU | 319 | 8.0% |
-| BUW | 314 | 7.8% |
-| GUW | 269 | 6.7% |
-| GRW | 255 | 6.4% |
-| BRU | 248 | 6.2% |
-| BGR | 239 | 6.0% |
-| BRW | 223 | 5.6% |
+| BGU | 396 | 9.9% |
+| RUW | 338 | 8.5% |
+| GRU | 309 | 7.7% |
+| BUW | 307 | 7.7% |
+| GUW | 265 | 6.6% |
+| BRU | 249 | 6.2% |
+| GRW | 249 | 6.2% |
+| BGR | 241 | 6.0% |
+| BRW | 207 | 5.2% |
 | BG | 206 | 5.1% |
-| BGW | 177 | 4.4% |
-| UW | 151 | 3.8% |
-| GU | 148 | 3.7% |
-| BU | 141 | 3.5% |
-| GR | 126 | 3.1% |
+| BGW | 187 | 4.7% |
+| GU | 158 | 4.0% |
+| UW | 145 | 3.6% |
+| BU | 143 | 3.6% |
+| GR | 129 | 3.2% |
 
 ## Average Deck Profile
 
 | Metric | Mean | Std Dev | Min | Max |
 |--------|------|---------|-----|-----|
 | Creatures | 10.48 | 3.95 | 0 | 23 |
-| Removal | 3.93 | 1.96 | 0 | 13 |
-| Card Draw | 5.06 | 2.41 | 0 | 14 |
-| Avg CMC | 2.68 | 0.77 | 1.3 | 5.7 |
-| Deck Quality | 2753.93 | 656.76 | 1614 | 4581 |
+| Removal | 3.93 | 1.94 | 0 | 13 |
+| Card Draw | 5.04 | 2.39 | 0 | 14 |
+| Avg CMC | 2.68 | 0.76 | 1.2 | 5.7 |
+| Deck Quality | 2749.17 | 653.93 | 1614 | 4567 |
 
 ## Most Picked Cards
 
@@ -92,10 +92,10 @@ Generated: 2026-05-14T04:33:38.836Z
 | 12 | Mox Ruby | 16.7 | 500 |
 | 13 | Urza, Lord High Artificer | 16.7 | 500 |
 | 14 | Mana Vault | 16.8 | 500 |
-| 15 | Timetwister | 16.8 | 500 |
-| 16 | Ancestral Recall | 16.9 | 500 |
-| 17 | Mox Diamond | 16.9 | 500 |
-| 18 | Mox Jet | 16.9 | 500 |
+| 15 | Mox Jet | 16.8 | 500 |
+| 16 | Timetwister | 16.8 | 500 |
+| 17 | Ancestral Recall | 16.9 | 500 |
+| 18 | Mox Diamond | 16.9 | 500 |
 | 19 | Mox Emerald | 17 | 500 |
 | 20 | Broadside Bombardiers | 17.2 | 500 |
 
@@ -105,21 +105,21 @@ Generated: 2026-05-14T04:33:38.836Z
 
 | Card | Wheel Rate | Opportunities |
 |------|------------|---------------|
-| Vindicate | 93.9% | 3500 |
-| Lush Portico | 93.3% | 3500 |
-| Damn | 93.0% | 3500 |
-| Golos, Tireless Pilgrim | 90.7% | 3500 |
-| Shadowy Backstreet | 90.6% | 3499 |
-| Commercial District | 89.0% | 3499 |
-| Temple Garden | 87.1% | 3496 |
-| Overgrown Tomb | 86.5% | 3500 |
+| Vindicate | 93.8% | 3500 |
+| Lush Portico | 93.2% | 3500 |
+| Damn | 92.9% | 3500 |
+| Shadowy Backstreet | 90.7% | 3499 |
+| Golos, Tireless Pilgrim | 90.5% | 3500 |
+| Commercial District | 89.7% | 3499 |
+| Temple Garden | 87.3% | 3496 |
+| Overgrown Tomb | 86.7% | 3500 |
 | Underground Mortuary | 85.9% | 3500 |
-| Elegant Parlor | 84.7% | 3500 |
-| Lingering Souls | 84.7% | 3499 |
-| Godless Shrine | 84.2% | 3499 |
-| Scapeshift | 83.9% | 3498 |
-| Crop Rotation | 81.1% | 3500 |
-| Raucous Theater | 80.8% | 3499 |
+| Lingering Souls | 84.6% | 3499 |
+| Elegant Parlor | 84.6% | 3500 |
+| Godless Shrine | 84.4% | 3499 |
+| Scapeshift | 84.1% | 3498 |
+| Raucous Theater | 81.5% | 3499 |
+| Crop Rotation | 81.3% | 3500 |
 
 ### Never Wheelers (wheel < 5% of opportunities)
 
@@ -139,7 +139,7 @@ Generated: 2026-05-14T04:33:38.836Z
 | Mox Ruby | 16.7 |
 | Urza, Lord High Artificer | 16.7 |
 | Mana Vault | 16.8 |
-| Timetwister | 16.8 |
+| Mox Jet | 16.8 |
 
 ## Sideboard Analysis
 
@@ -150,21 +150,21 @@ Generated: 2026-05-14T04:33:38.836Z
 | Boseiju, Who Endures | 100.0% | 500 |
 | Golos, Tireless Pilgrim | 100.0% | 500 |
 | Urza's Saga | 100.0% | 500 |
-| Damn | 99.0% | 500 |
-| Vindicate | 99.0% | 500 |
-| Lingering Souls | 98.2% | 500 |
-| Scapeshift | 97.2% | 500 |
-| Enlightened Tutor | 97.0% | 500 |
-| Pyrokinesis | 96.8% | 500 |
-| Atraxa, Grand Unifier | 96.0% | 500 |
-| Crop Rotation | 96.0% | 500 |
-| Chaos Defiler | 95.8% | 500 |
-| Ephemerate | 95.0% | 500 |
-| Firebolt | 94.8% | 500 |
-| Council's Judgment | 94.2% | 500 |
+| Vindicate | 99.4% | 500 |
+| Damn | 98.8% | 500 |
+| Lingering Souls | 98.6% | 500 |
+| Ephemerate | 97.0% | 500 |
+| Crop Rotation | 96.8% | 500 |
+| Enlightened Tutor | 96.6% | 500 |
+| Atraxa, Grand Unifier | 96.4% | 500 |
+| Pyrokinesis | 96.4% | 500 |
+| Chaos Defiler | 96.0% | 500 |
+| Scapeshift | 95.6% | 500 |
+| Council's Judgment | 94.8% | 500 |
+| Portal to Phyrexia | 94.8% | 500 |
 
 ## Anomalies
 
-### Insufficient Pool Depth: 72 decks
+### Insufficient Pool Depth: 84 decks
 
-1.8% of decks had fewer than 23 castable non-land cards in their chosen colors.
+2.1% of decks had fewer than 23 castable non-land cards in their chosen colors.

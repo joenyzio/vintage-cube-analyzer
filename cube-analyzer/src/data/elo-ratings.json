@@ -1,7 +1,7 @@
 {
   "metadata": {
     "cubeId": "8eec0c91-6c4e-4f96-957b-1ccc5ecac8fd",
-    "fetchedAt": "2026-05-14T02:59:30.055Z",
+    "fetchedAt": "2026-05-14T05:39:55.188Z",
     "cardCount": 360,
     "eloRange": {
       "min": 1242.6970345984987,
@@ -2169,6 +2169,13 @@
       "pickCount": 117078,
       "cubeCount": 33468,
       "scryfallId": "99ff731b-8399-40c8-b539-ba6ba5783771"
+    },
+    "Candelabra of Tawnos": {
+      "elo": 1550,
+      "pickCount": 0,
+      "cubeCount": 1,
+      "scryfallId": "5e8416b8-aae1-4599-9e22-650dd86aefcb",
+      "note": "Manually added - no CubeCobra data yet"
     }
   }
 }
