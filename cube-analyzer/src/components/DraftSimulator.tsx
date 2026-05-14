@@ -235,6 +235,30 @@ function getCardByRating(pack: CubeCard[], cardName: string): CubeCard | undefin
   return pack.find(c => c.name === cardName);
 }
 
+// Build full history for a card based on all picks made so far
+function buildFullHistory(
+  card: CubeCard,
+  allPicks: CubeCard[]
+): { pick: number; adjustedElo: number; adjustment: number }[] {
+  const baseElo = getEloData(card.name)?.elo || 1500;
+  const history: { pick: number; adjustedElo: number; adjustment: number }[] = [
+    { pick: 0, adjustedElo: baseElo, adjustment: 0 }
+  ];
+
+  // Calculate what the card's rating would have been at each pick
+  for (let i = 1; i <= allPicks.length; i++) {
+    const picksAtThisPoint = allPicks.slice(0, i);
+    const synergy = getSynergyAdjustedElo(card, picksAtThisPoint);
+    history.push({
+      pick: i,
+      adjustedElo: synergy.adjustedElo,
+      adjustment: synergy.adjustment
+    });
+  }
+
+  return history;
+}
+
 function getManaBaseStatus(picks: CubeCard[]): ManaBaseStatus | null {
   if (picks.length < 5) return null;
 
@@ -325,6 +349,15 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
   const [mobileSelectedCard, setMobileSelectedCard] = useState<CubeCard | null>(null);
   const [showMobileDeck, setShowMobileDeck] = useState(false);
   const [expandedPlayerIdx, setExpandedPlayerIdx] = useState<number | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile viewport
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 1024);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Coach and UI state
   const [coachMode, setCoachMode] = useState(true);
@@ -600,17 +633,17 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     const newTablePacks = rotatePacks(packsAfterAiPicks, draftState.direction);
     const newPickNumber = draftState.pickNumber + 1;
 
-    // Add new pack cards to history
+    // Add new pack cards to history with FULL trajectory from pick 0 to current
     if (newTablePacks[0]) {
       newTablePacks[0].forEach(c => {
         newSeenCards.add(c.id);
         if (!newEloHistory.has(c.id)) {
-          const synergy = getSynergyAdjustedElo(c, newPicks);
+          const baseElo = getEloData(c.name)?.elo || 1500;
           newEloHistory.set(c.id, {
             cardId: c.id,
             cardName: c.name,
-            baseElo: synergy.baseElo,
-            history: [{ pick: pickNum, adjustedElo: synergy.adjustedElo, adjustment: synergy.adjustment }],
+            baseElo: baseElo,
+            history: buildFullHistory(c, newPicks),
           });
         }
       });
@@ -646,12 +679,12 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
         newPacks[0].forEach(c => {
           newSeenCards.add(c.id);
           if (!newEloHistory.has(c.id)) {
-            const synergy = getSynergyAdjustedElo(c, newPicks);
+            const baseElo = getEloData(c.name)?.elo || 1500;
             newEloHistory.set(c.id, {
               cardId: c.id,
               cardName: c.name,
-              baseElo: synergy.baseElo,
-              history: [{ pick: newPicks.length, adjustedElo: synergy.adjustedElo, adjustment: synergy.adjustment }],
+              baseElo: baseElo,
+              history: buildFullHistory(c, newPicks),
             });
           }
         });
@@ -685,8 +718,14 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     }
   }, [draftState, cards, rotatePacks]);
 
-  // Handle card click (quiz mode or regular)
+  // Handle card click (quiz mode, mobile, or regular)
   const handleCardClick = useCallback((card: CubeCard) => {
+    // On mobile, open detail drawer instead of picking directly
+    if (isMobile && !quizDraftMode) {
+      setMobileSelectedCard(card);
+      return;
+    }
+
     if (quizDraftMode && !showPickReveal) {
       setPendingPick(card);
       const currentPack = draftState?.tablePacks[0] || [];
@@ -708,7 +747,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     } else {
       makePick(card);
     }
-  }, [quizDraftMode, showPickReveal, pendingPick, draftState, makePick]);
+  }, [isMobile, quizDraftMode, showPickReveal, pendingPick, draftState, makePick]);
 
   // ============================================================================
   // COMPUTED VALUES
@@ -1168,7 +1207,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
           cardEloHistory={draftState.cardEloHistory}
           onClose={() => setMobileSelectedCard(null)}
           onPick={() => {
-            handleCardClick(mobileSelectedCard);
+            makePick(mobileSelectedCard);
             setMobileSelectedCard(null);
           }}
         />
