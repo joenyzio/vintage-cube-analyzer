@@ -2529,7 +2529,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     const initialEloHistory = new Map<string, CardEloHistory>();
 
     // Record initial adjusted ELO for cards in our first pack
-    // Initialize with 2 data points so sparkline shows immediately from P1P1
+    // Start with pick 0 (before any picks made) - history will grow with each pick
     tablePacks[0].forEach(card => {
       initialSeenCards.add(card.id);
       const baseElo = getEloData(card.name)?.elo || 1500;
@@ -2537,10 +2537,9 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
         cardId: card.id,
         cardName: card.name,
         baseElo,
-        // Two points: baseline (-1) and initial (0) - both same value but allows sparkline to render
+        // Single point at pick 0 - one dot per pick as draft progresses
         history: [
-          { pick: -1, adjustedElo: baseElo, adjustment: 0 }, // Baseline
-          { pick: 0, adjustedElo: baseElo, adjustment: 0 },  // Initial (no picks yet)
+          { pick: 0, adjustedElo: baseElo, adjustment: 0 },
         ],
       });
     });
@@ -2675,7 +2674,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     });
 
     // Add new cards from our pack to history
-    // Initialize with 2 data points so sparkline shows immediately
+    // New cards start at current pick with their synergy-adjusted ELO
     tablePacks[0].forEach(card => {
       newSeenCards.add(card.id);
       const baseElo = getEloData(card.name)?.elo || 1500;
@@ -2685,10 +2684,9 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
           cardId: card.id,
           cardName: card.name,
           baseElo,
-          // Two points: baseline and current - allows sparkline to render immediately
+          // Single point at current pick - history grows from here
           history: [
-            { pick: pickNum - 1, adjustedElo: baseElo, adjustment: 0 }, // Baseline (raw ELO)
-            { pick: pickNum, adjustedElo: synergy.adjustedElo, adjustment: synergy.adjustment }, // Current synergy
+            { pick: pickNum, adjustedElo: synergy.adjustedElo, adjustment: synergy.adjustment },
           ],
         });
       }
@@ -2810,17 +2808,20 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
 
         newSeenCards.add(c.id);
         if (existing) {
-          existing.history.push({ pick: pickNum, adjustedElo: synergy.adjustedElo, adjustment: synergy.adjustment });
+          // Only add point if we don't already have one for this pick
+          const lastPick = existing.history[existing.history.length - 1]?.pick;
+          if (lastPick !== pickNum) {
+            existing.history.push({ pick: pickNum, adjustedElo: synergy.adjustedElo, adjustment: synergy.adjustment });
+          }
         } else {
-          // New card we haven't seen - initialize with 2 data points for sparkline
+          // New card we haven't seen - start with single point at current pick
           const baseElo = getEloData(c.name)?.elo || 1500;
           newEloHistory.set(c.id, {
             cardId: c.id,
             cardName: c.name,
             baseElo,
-            // Two points: baseline and current synergy
+            // Single point - history grows with each subsequent pick
             history: [
-              { pick: pickNum - 1, adjustedElo: baseElo, adjustment: 0 }, // Baseline
               { pick: pickNum, adjustedElo: synergy.adjustedElo, adjustment: synergy.adjustment },
             ],
           });
@@ -5182,17 +5183,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                         );
                       }
 
-                      // With 2+ points (baseline + initial), we can always show the sparkline
-                      if (historyPoints.length === 1) {
-                        return (
-                          <div className="pt-2 border-t border-white/[0.06]">
-                            <div className="flex items-center justify-between">
-                              <span className="text-[10px] text-white/40">Trajectory</span>
-                              <span className="text-[10px] text-white/30">Just saw this card</span>
-                            </div>
-                          </div>
-                        );
-                      }
+                      // Even with 1 point, show it - each point = 1 pick in draft history
 
                       const points = historyPoints;
                       const currentElo = points[points.length - 1].adjustedElo;
@@ -5460,10 +5451,80 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                           </div>
                         )}
 
-                        {/* Quick reason if available */}
-                        {grade && grade.reason && (
-                          <p className="text-xs text-white/50 line-clamp-2">{grade.reason}</p>
+                        {/* Synergy tags */}
+                        {synergyData && synergyData.reasons.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {synergyData.reasons.slice(0, 4).map((reason, i) => (
+                              <span
+                                key={i}
+                                className={`text-[10px] px-1.5 py-0.5 rounded ${
+                                  reason.startsWith('+') ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'
+                                }`}
+                              >
+                                {reason}
+                              </span>
+                            ))}
+                          </div>
                         )}
+
+                        {/* Trajectory Sparkline - Mobile */}
+                        {(() => {
+                          const historyPoints = getSparklineHistory(mobileSelectedCard.id);
+                          if (!historyPoints || historyPoints.length === 0) return null;
+
+                          const points = historyPoints;
+                          const currentElo = points[points.length - 1].adjustedElo;
+                          const startElo = points[0].adjustedElo;
+                          const trend = currentElo - startElo;
+                          const velocity = points.length > 1 ? trend / (points.length - 1) : 0;
+
+                          const minElo = Math.min(...points.map(p => p.adjustedElo));
+                          const maxElo = Math.max(...points.map(p => p.adjustedElo));
+                          const range = maxElo - minElo || 1;
+                          const width = 180;
+                          const height = 32;
+
+                          return (
+                            <div className="mt-3 pt-2 border-t border-white/10">
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-[10px] text-white/40">Trajectory ({points.length} picks)</span>
+                                <span className={`text-xs font-bold ${trend > 0 ? 'text-emerald-400' : trend < 0 ? 'text-red-400' : 'text-white/40'}`}>
+                                  {trend > 0 ? '+' : ''}{Math.round(trend)}
+                                </span>
+                              </div>
+                              <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-8">
+                                {/* Line */}
+                                {points.length > 1 && (
+                                  <polyline
+                                    fill="none"
+                                    stroke={trend >= 0 ? '#4ade80' : '#f87171'}
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    points={points.map((p, i) => {
+                                      const x = points.length === 1 ? width / 2 : (i / (points.length - 1)) * width;
+                                      const y = height - ((p.adjustedElo - minElo) / range) * (height - 8) - 4;
+                                      return `${x},${y}`;
+                                    }).join(' ')}
+                                  />
+                                )}
+                                {/* Dots */}
+                                {points.map((p, i) => {
+                                  const x = points.length === 1 ? width / 2 : (i / (points.length - 1)) * width;
+                                  const y = height - ((p.adjustedElo - minElo) / range) * (height - 8) - 4;
+                                  return (
+                                    <circle key={i} cx={x} cy={y} r="3" fill={trend >= 0 ? '#4ade80' : '#f87171'} />
+                                  );
+                                })}
+                              </svg>
+                              {Math.abs(velocity) > 3 && (
+                                <div className={`text-[10px] ${velocity > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                  {velocity > 0 ? '↑' : '↓'} {Math.abs(Math.round(velocity))} ELO/pick
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </>
                     );
                   })()}
