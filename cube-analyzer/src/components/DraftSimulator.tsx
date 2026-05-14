@@ -4235,7 +4235,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
   const recommendedCard = getRecommendedPick;
 
   return (
-    <div className="flex gap-4">
+    <div className="flex h-[calc(100vh-8rem)] -mx-4 lg:-mx-8 -my-8">
       {/* Achievement Popup */}
       {newAchievement && (
         <div className="fixed top-4 right-4 z-50 animate-pulse">
@@ -4252,42 +4252,42 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
         </div>
       )}
 
-      {/* Left Panel - Coaching (narrower) */}
-      <div className="w-48 flex-shrink-0 hidden lg:block">
-        <div className="sticky top-20 space-y-2">
-          {/* Coach Panel - Clean minimal design */}
+      {/* Left Panel - Coaching (full-height panel with background) */}
+      <div className="w-[320px] flex-shrink-0 hidden lg:flex flex-col bg-white/[0.02] border-r border-white/[0.08]">
+        <div className="flex-1 overflow-y-auto p-5 space-y-4">
+          {/* Coach Panel - Spacious design */}
           {(coachMode || (quizDraftMode && showPickReveal)) && coachExplanation && (
-            <div className="bg-black border border-white/[0.08] rounded-xl overflow-hidden">
+            <div className="space-y-4">
               <button
                 onClick={() => setShowCoachExplanation(!showCoachExplanation)}
-                className="w-full p-2.5 flex items-center justify-between hover:bg-white/[0.02] transition-colors border-b border-white/[0.06]"
+                className="w-full flex items-center justify-between"
               >
                 <div className="flex items-center gap-2">
-                  <Lightbulb className="w-3.5 h-3.5 text-white/50" />
-                  <span className="text-[10px] font-medium text-white/50 uppercase tracking-wider">Recommended</span>
+                  <Lightbulb className="w-4 h-4 text-white/50" />
+                  <span className="text-xs font-medium text-white/50 uppercase tracking-wider">Recommended</span>
                 </div>
-                <span className="text-white/20 text-xs">{showCoachExplanation ? '−' : '+'}</span>
+                <span className="text-white/30 text-sm">{showCoachExplanation ? '−' : '+'}</span>
               </button>
 
-              <div className="p-2.5 space-y-2">
-                {/* Main Pick Recommendation - clean */}
-                <div className="flex items-start gap-2.5">
-                  <div className="w-10 h-14 rounded overflow-hidden flex-shrink-0 ring-1 ring-white/20">
+              <div className="space-y-4">
+                {/* Main Pick Recommendation - LARGER */}
+                <div className="flex items-start gap-4">
+                  <div className="w-16 h-22 rounded-lg overflow-hidden flex-shrink-0 ring-1 ring-white/20">
                     <img src={getCardImage(coachExplanation.card)} alt="" className="w-full h-full object-cover" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-xs font-medium text-white truncate">{coachExplanation.card.name}</div>
-                    <div className="text-[10px] text-white/40 font-mono">{Math.round(coachExplanation.elo)} ELO</div>
-                    <div className="mt-0.5 text-[10px] text-white/60 leading-tight line-clamp-2">
+                    <div className="text-base font-semibold text-white">{coachExplanation.card.name}</div>
+                    <div className="text-sm text-white/40 font-mono">{Math.round(coachExplanation.elo)} ELO</div>
+                    <div className="mt-1 text-sm text-white/60 leading-snug">
                       {coachExplanation.mainReason}
                     </div>
                   </div>
                 </div>
 
-                {/* Current Archetype - subtle */}
+                {/* Current Archetype */}
                 {coachExplanation.currentArchetype && (
-                  <div className="text-[9px] text-white/40">
-                    Building: <span className="text-white/70">{coachExplanation.currentArchetype}</span>
+                  <div className="text-sm text-white/40">
+                    Building: <span className="text-white/70 font-medium">{coachExplanation.currentArchetype}</span>
                   </div>
                 )}
 
@@ -4295,11 +4295,11 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                   <>
                     {/* Deck Needs */}
                     {coachExplanation.deckNeeds && coachExplanation.deckNeeds.length > 0 && (
-                      <div className="pt-2 border-t border-white/[0.06]">
-                        <div className="text-[9px] text-white/30 mb-1">Needs</div>
-                        <div className="flex flex-wrap gap-1">
+                      <div className="pt-4 border-t border-white/[0.08]">
+                        <div className="text-xs text-white/40 uppercase tracking-wider mb-2">Deck Needs</div>
+                        <div className="flex flex-wrap gap-2">
                           {coachExplanation.deckNeeds.map((need, i) => (
-                            <span key={i} className="px-1.5 py-0.5 bg-white/[0.05] text-white/60 text-[9px] rounded">
+                            <span key={i} className="px-3 py-1.5 bg-white/[0.05] text-white/70 text-sm rounded-lg">
                               {need}
                             </span>
                           ))}
@@ -4309,12 +4309,12 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
 
                     {/* Alternatives */}
                     {coachExplanation.alternatives && coachExplanation.alternatives.length > 0 && (
-                      <div className="pt-2 border-t border-white/[0.06]">
-                        <div className="text-[9px] text-white/30 mb-1">Also consider</div>
-                        <div className="space-y-1">
+                      <div className="pt-4 border-t border-white/[0.08]">
+                        <div className="text-xs text-white/40 uppercase tracking-wider mb-2">Also Consider</div>
+                        <div className="space-y-2">
                           {coachExplanation.alternatives.slice(0, 2).map((alt, i) => (
-                            <div key={i} className="flex items-center justify-between text-[10px]">
-                              <span className="text-white/60 truncate">{alt.name}</span>
+                            <div key={i} className="flex items-center justify-between text-sm">
+                              <span className="text-white/70">{alt.name}</span>
                               <span className="text-white/30 text-[9px]">{alt.reason}</span>
                             </div>
                           ))}
@@ -4578,8 +4578,8 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
         </div>
       </div>
 
-      {/* Main Content - Cards */}
-      <div className="flex-1 min-w-0 space-y-4">
+      {/* Main Content - Cards (center panel, scrollable) */}
+      <div className="flex-1 min-w-0 flex flex-col overflow-y-auto p-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-5">
@@ -4752,7 +4752,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                 No picks yet - click a card in the pack to draft it
               </div>
             ) : (
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 sm:gap-4">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                 {draftState.picks.map((card, index) => {
                   return (
                     <div
@@ -4782,8 +4782,8 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
             )}
           </div>
         ) : (
-          /* Pack Grid */
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 sm:gap-4">
+          /* Pack Grid - responsive columns, cards sized for readability */
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-5 xl:grid-cols-6 gap-4">
             {currentPack.map((card, index) => {
             const isRecommended = recommendedCard?.id === card.id;
             const wheelLikelihood = getWheelLikelihood(card.name);
@@ -5034,9 +5034,9 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
         )}
       </div>
 
-      {/* Right Panel - Card Details - uses displayedCard to prevent flickering */}
-      <div className="w-64 flex-shrink-0 hidden lg:block">
-        <div className="sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto">
+      {/* Right Panel - Card Details (full-height panel with background) */}
+      <div className="w-[320px] flex-shrink-0 hidden lg:flex flex-col bg-white/[0.02] border-l border-white/[0.08]">
+        <div className="flex-1 overflow-y-auto p-5">
           {displayedCard ? (
             <div className="bg-black border border-white/[0.08] rounded-xl">
               {/* Card Image - Large */}
@@ -5185,7 +5185,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                       const maxElo = Math.max(...allValues);
                       const range = maxElo - minElo || 1;
                       const padding = 8; // Padding for endpoint circle
-                      const width = 220; // Full width of panel
+                      const width = 280; // Full width of wider panel (w-80 = 320px minus padding)
                       const height = 60; // Much taller for better visibility
                       const drawWidth = width - padding; // Leave room for endpoint circle
                       const historyWidth = drawWidth * 0.8; // 80% for history, 20% for projection

@@ -308,9 +308,16 @@ function App() {
 
         {/* Content */}
         <main ref={mainRef} className="flex-1 overflow-auto">
-          <div className="max-w-6xl mx-auto px-4 lg:px-8 py-8">
-            {renderContent()}
-          </div>
+          {/* Draft Simulator is full-height flex, others get normal layout */}
+          {activeTab === 'draft' ? (
+            <div className="h-full">
+              {renderContent()}
+            </div>
+          ) : (
+            <div className="max-w-6xl mx-auto px-4 lg:px-8 py-8">
+              {renderContent()}
+            </div>
+          )}
         </main>
 
         {/* Footer */}
