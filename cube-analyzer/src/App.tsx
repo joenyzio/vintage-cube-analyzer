@@ -14,15 +14,14 @@ import { GamesPage } from './components/GamesPage';
 import { PowerAnalysis } from './components/PowerAnalysis';
 import { GraphExplorer } from './components/GraphExplorer';
 import { ArchetypeOddsPage } from './components/ArchetypeOddsPage';
-import { PrepCalendar } from './components/PrepCalendar';
-import { SimulationAnalysis } from './components/SimulationAnalysis';
+import { SimulationReports } from './components/SimulationReports';
 import {
   BarChart3, Layers, Trophy, BookOpen, Search, Sparkles,
   Gamepad2, Link2, Swords, ExternalLink, FileStack, Lightbulb,
-  Menu, ChevronLeft, Dices, FlaskConical, Network, Percent, Calendar
+  Menu, ChevronLeft, Dices, FlaskConical, Network, Percent
 } from 'lucide-react';
 
-type TabId = 'overview' | 'draft' | 'prep' | 'games' | 'graph' | 'archetypes' | 'odds' | 'decks' | 'matchups' | 'synergies' | 'buildaround' | 'power' | 'analysis' | 'simulation' | 'guide' | 'cards';
+type TabId = 'overview' | 'draft' | 'games' | 'graph' | 'archetypes' | 'odds' | 'decks' | 'matchups' | 'synergies' | 'buildaround' | 'power' | 'analysis' | 'simulation' | 'guide' | 'cards';
 
 interface NavItem {
   id: TabId;
@@ -33,7 +32,6 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { id: 'overview', label: 'Overview', icon: BarChart3 },
   { id: 'draft', label: 'Draft Simulator', icon: Gamepad2 },
-  { id: 'prep', label: 'Prep Calendar', icon: Calendar },
   { id: 'games', label: 'Games', icon: Dices },
   { id: 'graph', label: 'Card Graph', icon: Network },
   { id: 'archetypes', label: 'Archetypes', icon: Layers },
@@ -152,8 +150,6 @@ function App() {
         );
       case 'draft':
         return <DraftSimulator cards={cards} />;
-      case 'prep':
-        return <PrepCalendar />;
       case 'games':
         return <GamesPage cards={cards} />;
       case 'graph':
@@ -175,7 +171,7 @@ function App() {
       case 'analysis':
         return <PowerAnalysis cards={cards} />;
       case 'simulation':
-        return <SimulationAnalysis cards={cards} />;
+        return <SimulationReports cards={cards} />;
       case 'guide':
         return <DraftGuide strategies={draftStrategies} />;
       case 'cards':

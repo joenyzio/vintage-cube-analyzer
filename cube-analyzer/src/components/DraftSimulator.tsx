@@ -40,6 +40,13 @@ import {
   getSynergyAdjustedElo,
 } from '../services/draftUtilities';
 import {
+  playPickSound,
+  playWhooshSound,
+  playCelebrationSound,
+  getMuted,
+  setMuted,
+} from '../services/sounds';
+import {
   getEloData,
   getPercentile,
   calculateDeckElo,
@@ -362,6 +369,14 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
   // Coach and UI state
   const [coachMode, setCoachMode] = useState(true);
   const [showCoachExplanation, setShowCoachExplanation] = useState(false);
+  const [soundMuted, setSoundMuted] = useState(() => getMuted());
+
+  // Undo state - store previous draft state
+  const [previousDraftState, setPreviousDraftState] = useState<DraftState | null>(null);
+  const [canUndo, setCanUndo] = useState(false);
+
+  // Passed cards drawer
+  const [showPassedCards, setShowPassedCards] = useState(false);
 
   // Persistence state
   const [draftHistory, setDraftHistory] = useState<DraftHistoryEntry[]>(() =>
@@ -534,7 +549,17 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     setPendingPick(null);
     setShowPickReveal(false);
     setLastPickResult(null);
+    setPreviousDraftState(null);
+    setCanUndo(false);
   }, []);
+
+  // Undo last pick
+  const undoLastPick = useCallback(() => {
+    if (!canUndo || !previousDraftState) return;
+    setDraftState(previousDraftState);
+    setPreviousDraftState(null);
+    setCanUndo(false);
+  }, [canUndo, previousDraftState]);
 
   // ============================================================================
   // MAKE PICK
@@ -542,6 +567,10 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
 
   const makePick = useCallback((card: CubeCard) => {
     if (!draftState || draftState.isComplete) return;
+
+    // Save current state for undo
+    setPreviousDraftState(draftState);
+    setCanUndo(true);
 
     const currentPack = draftState.tablePacks[0];
     const newPicks = [...draftState.picks, card];
@@ -563,6 +592,15 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
       wasOptimal,
       eloDiff: Math.max(0, eloDiff),
     };
+
+    // Play sound effects
+    playPickSound();
+    if (wasOptimal) {
+      // Delay celebration slightly so it doesn't overlap
+      setTimeout(() => playCelebrationSound(), 100);
+    }
+    // Whoosh for pack rotation (after a brief delay)
+    setTimeout(() => playWhooshSound(), 200);
 
     const newDecisions = [...draftState.decisions, decision];
     const newAllPlayerPicks = draftState.allPlayerPicks.map((picks, idx) =>
@@ -838,31 +876,45 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     };
   }, [draftState]);
 
-  // Recommended pick
+  // Recommended pick - uses synergy-adjusted ELO for consistency with displayed values
   const getRecommendedPick = useMemo(() => {
     if (!draftState || draftState.isComplete) return null;
     const currentPack = draftState.tablePacks[0];
     if (!currentPack.length) return null;
 
-    const ratings = rateAllCards(currentPack, createInitialContext());
-    const bestCardName = ratings[0]?.cardName;
-    return bestCardName ? getCardByRating(currentPack, bestCardName) || null : null;
+    // Get synergy-adjusted ELO for each card (same system shown on cards)
+    const cardsWithAdjustedElo = currentPack.map(card => {
+      const synergy = getSynergyAdjustedElo(card, draftState.picks, currentPack);
+      return { card, adjustedElo: synergy.adjustedElo };
+    });
+
+    // Sort by adjusted ELO (highest first)
+    cardsWithAdjustedElo.sort((a, b) => b.adjustedElo - a.adjustedElo);
+
+    return cardsWithAdjustedElo[0]?.card || null;
   }, [draftState]);
 
-  // Coach explanation
+  // Coach explanation - uses synergy-adjusted ELO for consistency
   const coachExplanation = useMemo(() => {
     if (!draftState || draftState.isComplete) return null;
     const currentPack = draftState.tablePacks[0];
     if (!currentPack.length) return null;
 
     const picks = draftState.picks;
-    const ratings = rateAllCards(currentPack, createInitialContext());
-    const bestCardName = ratings[0]?.cardName;
-    const bestCard = bestCardName ? getCardByRating(currentPack, bestCardName) : null;
+
+    // Get synergy-adjusted ELO for each card and sort
+    const cardsWithAdjustedElo = currentPack.map(card => {
+      const synergy = getSynergyAdjustedElo(card, picks, currentPack);
+      return { card, adjustedElo: synergy.adjustedElo, adjustment: synergy.adjustment, reasons: synergy.reasons };
+    });
+    cardsWithAdjustedElo.sort((a, b) => b.adjustedElo - a.adjustedElo);
+
+    const bestCard = cardsWithAdjustedElo[0]?.card;
     if (!bestCard) return null;
 
     const elo = getEloData(bestCard.name)?.elo || 1500;
     const percentile = getPercentile(bestCard.name);
+    const bestSynergy = cardsWithAdjustedElo[0];
 
     const colorCts: Record<string, number> = {};
     picks.forEach((c: CubeCard) => c.color_identity?.forEach(col => { colorCts[col] = (colorCts[col] || 0) + 1; }));
@@ -870,6 +922,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
 
     let mainReason = 'Best card in pack';
     if (percentile >= 95) mainReason = 'Premium bomb - always take';
+    else if (bestSynergy.adjustment > 50) mainReason = 'Strong synergy with your deck';
     else if (mainColors.length > 0 && bestCard.color_identity?.every(c => mainColors.includes(c))) mainReason = 'On-color and powerful';
 
     let currentArchetype = '';
@@ -877,10 +930,10 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
       currentArchetype = archetypeCommitments[0].archetype;
     }
 
-    const alternatives = ratings.slice(1, 3).map(r => ({
-      name: r.cardName,
-      score: r.contextualScore,
-      reason: r.reasons[0] || 'Alternative',
+    const alternatives = cardsWithAdjustedElo.slice(1, 3).map(item => ({
+      name: item.card.name,
+      score: item.adjustedElo,
+      reason: item.adjustment > 0 ? `+${item.adjustment} synergy` : 'Raw power',
     }));
 
     const deckNeeds: string[] = [];
@@ -895,7 +948,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
       card: bestCard,
       elo,
       percentile,
-      reasons: ratings[0]?.reasons || [],
+      reasons: bestSynergy.reasons || [],
       mainReason,
       alternatives,
       deckNeeds,
@@ -938,6 +991,92 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
         .sort((a, b) => b.elo - a.elo)
         .slice(0, 3);
 
+      // Calculate tendency data
+      const picks = draftState.picks;
+      const decisions = draftState.decisions;
+
+      // Average CMC
+      const avgPickCmc = picks.reduce((sum, p) => sum + (p.cmc || 0), 0) / picks.length;
+
+      // Creature vs spell count
+      const creatureCount = picks.filter(p => p.type_line?.toLowerCase().includes('creature')).length;
+      const spellCount = picks.filter(p =>
+        !p.type_line?.toLowerCase().includes('creature') &&
+        !p.type_line?.toLowerCase().includes('land')
+      ).length;
+
+      // Full color distribution
+      const colorDistribution: Record<string, number> = {};
+      picks.forEach(p => {
+        p.color_identity?.forEach(c => {
+          colorDistribution[c] = (colorDistribution[c] || 0) + 1;
+        });
+      });
+
+      // High value cards passed (ELO > 1700)
+      const passedHighValue: { name: string; elo: number }[] = [];
+      decisions.forEach(d => {
+        d.passed.forEach(card => {
+          const elo = getEloData(card.name)?.elo || 0;
+          if (elo > 1700) {
+            passedHighValue.push({ name: card.name, elo });
+          }
+        });
+      });
+      passedHighValue.sort((a, b) => b.elo - a.elo);
+
+      // Detect archetypes from picks
+      const archetypesDrafted: string[] = [];
+      const hasReanimatorTargets = picks.some(p => (getEloData(p.name)?.elo || 0) > 1800 && (p.cmc || 0) >= 6);
+      const hasReanimateSpells = picks.some(p => ['Reanimate', 'Animate Dead', 'Entomb', 'Necromancy'].includes(p.name));
+      if (hasReanimatorTargets && hasReanimateSpells) archetypesDrafted.push('Reanimator');
+
+      const avgCmc = picks.reduce((sum, p) => sum + (p.cmc || 0), 0) / picks.length;
+      if (avgCmc < 2.5 && creatureCount >= 12) archetypesDrafted.push('Aggro');
+      if (avgCmc > 3.2) archetypesDrafted.push('Control');
+      if (picks.filter(p => p.type_line?.toLowerCase().includes('artifact')).length >= 8) archetypesDrafted.push('Artifacts');
+
+      // Pick timing pattern (early aggro vs late value)
+      const firstHalfPicks = picks.slice(0, 22);
+      const firstHalfAvgCmc = firstHalfPicks.reduce((sum, p) => sum + (p.cmc || 0), 0) / firstHalfPicks.length;
+      const pickTimingPattern = firstHalfAvgCmc < 2.3 ? 'early-aggro' : firstHalfAvgCmc > 3.0 ? 'late-value' : 'balanced';
+
+      // When did second color get committed (3+ cards)
+      let colorCommitmentPick = 45;
+      const colorCountsByPick: Record<string, number> = {};
+      for (let i = 0; i < picks.length; i++) {
+        picks[i].color_identity?.forEach(c => {
+          colorCountsByPick[c] = (colorCountsByPick[c] || 0) + 1;
+        });
+        const colorsWithThree = Object.values(colorCountsByPick).filter(v => v >= 3).length;
+        if (colorsWithThree >= 2) {
+          colorCommitmentPick = i + 1;
+          break;
+        }
+      }
+
+      // Rare pick rate
+      const raresAvailable = decisions.filter(d =>
+        d.packContents.some(c => c.rarity === 'rare' || c.rarity === 'mythic')
+      ).length;
+      const raresPicked = decisions.filter(d =>
+        d.pick.rarity === 'rare' || d.pick.rarity === 'mythic'
+      ).length;
+      const rarePickRate = raresAvailable > 0 ? Math.round((raresPicked / raresAvailable) * 100) : 0;
+
+      // Signal ignore count (late picks where a high-value on-color card was passed)
+      let signalIgnoreCount = 0;
+      decisions.forEach(d => {
+        if (d.pickNumber >= 6) { // Late in pack
+          const onColorHighValue = d.passed.filter(card => {
+            const elo = getEloData(card.name)?.elo || 0;
+            const isOnColor = card.color_identity?.every(c => mainColors.includes(c));
+            return elo > 1600 && isOnColor;
+          });
+          if (onColorHighValue.length > 0) signalIgnoreCount++;
+        }
+      });
+
       const entry: DraftHistoryEntry = {
         id: Date.now().toString(),
         date: new Date().toLocaleDateString(),
@@ -947,6 +1086,19 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
         mainColors,
         totalPicks: draftState.picks.length,
         topPicks,
+        tendencyData: {
+          avgPickCmc: Math.round(avgPickCmc * 100) / 100,
+          creatureCount,
+          spellCount,
+          colorDistribution,
+          passedHighValueCount: passedHighValue.length,
+          passedHighValueCards: passedHighValue.slice(0, 3).map(p => p.name),
+          archetypesDrafted,
+          pickTimingPattern,
+          colorCommitmentPick,
+          rarePickRate,
+          signalIgnoreCount,
+        },
       };
 
       const updatedHistory = [entry, ...draftHistory].slice(0, 20);
@@ -1131,6 +1283,14 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
               >
                 ← Exit
               </button>
+              {canUndo && (
+                <button
+                  onClick={undoLastPick}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 rounded-lg text-amber-400 hover:bg-amber-500/20 transition-colors text-sm"
+                >
+                  ↩ Undo
+                </button>
+              )}
               <div>
                 <div className="text-sm font-semibold text-white">
                   Pack {draftState.packNumber} · Pick {draftState.pickNumber}
@@ -1141,6 +1301,19 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  const newMuted = !soundMuted;
+                  setSoundMuted(newMuted);
+                  setMuted(newMuted);
+                }}
+                className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                  !soundMuted ? 'bg-white/10 text-white/60' : 'bg-white/5 text-white/30'
+                }`}
+                title={soundMuted ? 'Unmute sounds' : 'Mute sounds'}
+              >
+                {soundMuted ? '🔇' : '🔊'}
+              </button>
               <button
                 onClick={() => setCoachMode(!coachMode)}
                 className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
@@ -1174,12 +1347,22 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
         {/* Mobile Bottom Bar */}
         <div className="lg:hidden flex-shrink-0 p-3 border-t border-white/[0.08] bg-black">
           <div className="flex items-center justify-between">
-            <button
-              onClick={() => setShowMobileDeck(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-white/10 rounded-lg text-sm text-white"
-            >
-              Deck ({draftState.picks.length})
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowMobileDeck(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-white/10 rounded-lg text-sm text-white"
+              >
+                Deck ({draftState.picks.length})
+              </button>
+              {draftState.passedCards.size > 0 && (
+                <button
+                  onClick={() => setShowPassedCards(true)}
+                  className="flex items-center gap-2 px-3 py-2 bg-white/5 rounded-lg text-sm text-white/60"
+                >
+                  Passed ({draftState.passedCards.size})
+                </button>
+              )}
+            </div>
             <div className="text-xs text-white/40">
               Tap card to pick
             </div>
@@ -1223,6 +1406,41 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
             setShowMobileDeck(false);
           }}
         />
+      )}
+
+      {/* Passed Cards Drawer */}
+      {showPassedCards && (
+        <div className="fixed inset-0 z-50">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowPassedCards(false)} />
+          <div className="absolute bottom-0 left-0 right-0 bg-[#0a0a0a] border-t border-white/10 rounded-t-2xl max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-white/10">
+              <h3 className="text-lg font-semibold text-white">Cards You Passed ({draftState.passedCards.size})</h3>
+              <button onClick={() => setShowPassedCards(false)} className="text-white/40 hover:text-white text-xl">×</button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4">
+              {Array.from(draftState.passedCards.values())
+                .sort((a, b) => {
+                  const eloA = getEloData(a.card.name)?.elo || 0;
+                  const eloB = getEloData(b.card.name)?.elo || 0;
+                  return eloB - eloA;
+                })
+                .map(({ card, passedAtPick, packNumber }) => {
+                  const elo = getEloData(card.name)?.elo || 0;
+                  const wasGoodPass = elo < 1600;
+                  return (
+                    <div key={card.id} className={`flex items-center gap-3 p-2 rounded-lg mb-2 ${wasGoodPass ? 'bg-white/5' : 'bg-red-500/10 border border-red-500/20'}`}>
+                      <img src={`https://api.scryfall.com/cards/named?exact=${encodeURIComponent(card.name)}&format=image&version=small`} alt={card.name} className="w-12 h-16 rounded object-cover" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm text-white truncate">{card.name}</div>
+                        <div className="text-xs text-white/40">P{packNumber}P{passedAtPick} · ELO {elo}</div>
+                      </div>
+                      {!wasGoodPass && <div className="text-xs text-red-400">High value!</div>}
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

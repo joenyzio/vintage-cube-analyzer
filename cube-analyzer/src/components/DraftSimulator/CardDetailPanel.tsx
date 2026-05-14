@@ -37,7 +37,7 @@ export function CardDetailPanel({
   const eloData = getEloData(card.name);
   const wheelLikelihood = getWheelLikelihood(card.name);
   const synergyData = getSynergyData(card);
-  const hasAdjustment = synergyData && synergyData.adjustment !== 0;
+  const hasAdjustment = synergyData && Math.abs(synergyData.adjustment) >= 10;
   const cardGrade = getGrade(card);
 
   return (
@@ -77,24 +77,26 @@ export function CardDetailPanel({
                    'Take now'}
                 </span>
               </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-bold text-white font-mono">
+              {hasAdjustment ? (
+                <div className="flex items-baseline gap-2">
+                  <span className="text-xl text-white/50 font-mono">
+                    {Math.round(eloData.elo)}
+                  </span>
+                  <span className={`text-lg font-bold ${
+                    synergyData.adjustment > 0 ? 'text-emerald-400' : 'text-red-400'
+                  }`}>
+                    {synergyData.adjustment > 0 ? '+' : ''}{synergyData.adjustment}
+                  </span>
+                  <span className="text-white/30">→</span>
+                  <span className="text-2xl font-bold text-white font-mono">
+                    {Math.round(synergyData.adjustedElo)}
+                  </span>
+                </div>
+              ) : (
+                <div className="text-2xl font-bold text-white font-mono">
                   {Math.round(eloData.elo)}
-                </span>
-                {hasAdjustment && (
-                  <>
-                    <span className={`text-sm font-bold ${
-                      synergyData.adjustment > 0 ? 'text-emerald-400' : 'text-red-400'
-                    }`}>
-                      {synergyData.adjustment > 0 ? '+' : ''}{synergyData.adjustment}
-                    </span>
-                    <span className="text-sm text-white/30">→</span>
-                    <span className="text-lg font-bold text-white">
-                      {Math.round(synergyData.adjustedElo)}
-                    </span>
-                  </>
-                )}
-              </div>
+                </div>
+              )}
             </div>
 
             {/* Adjustment Reasons */}
@@ -227,10 +229,12 @@ function RatingTrendSparkline({ cardId, cardEloHistory, totalPicks }: RatingTren
   const trend = currentElo - startElo;
   const velocity = points.length > 1 ? trend / (points.length - 1) : 0;
 
-  // Project forward
+  // Project forward based on velocity
   const remainingPicks = Math.max(0, 45 - totalPicks);
   const projectPicks = Math.min(5, remainingPicks);
   const projectedElo = currentElo + (velocity * projectPicks);
+  // Show projection when there's any meaningful velocity (lowered threshold)
+  const showProjection = points.length > 1 && projectPicks > 0 && Math.abs(velocity) > 0;
 
   // Momentum classification
   const momentum = velocity > 8 ? 'rising-fast' :
@@ -239,13 +243,13 @@ function RatingTrendSparkline({ cardId, cardEloHistory, totalPicks }: RatingTren
                    velocity < -3 ? 'falling' : 'stable';
 
   // Calculate range including projection
-  const allValues = [...points.map(p => p.adjustedElo), projectedElo];
+  const allValues = [...points.map(p => p.adjustedElo), ...(showProjection ? [projectedElo] : [])];
   const minElo = Math.min(...allValues) - 20;
   const maxElo = Math.max(...allValues) + 20;
   const range = maxElo - minElo || 100;
   const width = 260;
   const height = 40;
-  const historyWidth = width * 0.8;
+  const historyWidth = showProjection ? width * 0.8 : width;
 
   const trendColor = points.length === 1 ? '#9ca3af' : (trend >= 0 ? '#4ade80' : '#f87171');
 
@@ -260,16 +264,20 @@ function RatingTrendSparkline({ cardId, cardEloHistory, totalPicks }: RatingTren
         </div>
         <div className="flex items-center gap-2">
           {points.length > 1 ? (
-            <span className={`text-xs font-bold ${trend > 0 ? 'text-emerald-400' : trend < 0 ? 'text-red-400' : 'text-white/40'}`}>
-              {trend > 0 ? '+' : ''}{Math.round(trend)}
-            </span>
+            <>
+              {/* Current adjusted ELO */}
+              <span className="text-xs font-bold text-white">
+                {Math.round(currentElo)}
+              </span>
+              {/* Projection */}
+              {showProjection && Math.abs(velocity) > 1 && (
+                <span className={`text-xs ${velocity > 0 ? 'text-emerald-400/70' : 'text-red-400/70'}`}>
+                  → {Math.round(projectedElo)}
+                </span>
+              )}
+            </>
           ) : (
             <span className="text-[10px] text-white/30">baseline</span>
-          )}
-          {projectPicks > 0 && Math.abs(velocity) > 2 && (
-            <span className={`text-xs ${velocity > 0 ? 'text-emerald-400/70' : 'text-red-400/70'}`}>
-              → {Math.round(projectedElo)}
-            </span>
           )}
         </div>
       </div>
@@ -277,11 +285,11 @@ function RatingTrendSparkline({ cardId, cardEloHistory, totalPicks }: RatingTren
       {/* Sparkline SVG */}
       <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-10">
         {/* Projection line (dashed) */}
-        {points.length > 1 && projectPicks > 0 && Math.abs(velocity) > 2 && (
+        {showProjection && (
           <line
             x1={historyWidth}
             y1={height - ((currentElo - minElo) / range) * (height - 8) - 4}
-            x2={width}
+            x2={width - 4}
             y2={height - ((projectedElo - minElo) / range) * (height - 8) - 4}
             stroke={trendColor}
             strokeWidth="1.5"
@@ -322,7 +330,7 @@ function RatingTrendSparkline({ cardId, cardEloHistory, totalPicks }: RatingTren
         })}
 
         {/* Projected dot */}
-        {projectPicks > 0 && Math.abs(velocity) > 2 && (
+        {showProjection && (
           <circle
             cx={width - 4}
             cy={height - ((projectedElo - minElo) / range) * (height - 8) - 4}

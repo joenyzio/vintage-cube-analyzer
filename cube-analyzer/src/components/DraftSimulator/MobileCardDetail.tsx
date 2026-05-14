@@ -45,15 +45,20 @@ export function MobileCardDetail({
   const history = cardEloHistory.get(card.id);
   const historyPoints = history?.history || [];
 
-  // Calculate grade
-  const grade = getGrade(percentile);
-
-  // Calculate synergy adjustment (simplified)
+  // Calculate synergy adjustment
   const baseElo = eloData?.elo || 1500;
   const adjustment = historyPoints.length > 0
     ? historyPoints[historyPoints.length - 1].adjustment
     : 0;
+  const adjustedElo = baseElo + adjustment;
   const hasAdjustment = Math.abs(adjustment) >= 10;
+
+  // Calculate grade based on ADJUSTED ELO, not base
+  // Map adjusted ELO to a percentile-like scale (1300-2000 range)
+  const adjustedPercentile = hasAdjustment
+    ? Math.min(100, Math.max(0, ((adjustedElo - 1300) / 700) * 100))
+    : percentile;
+  const grade = getGrade(adjustedPercentile);
 
   return (
     <div className="fixed inset-0 z-50 sm:hidden">
@@ -63,89 +68,95 @@ export function MobileCardDetail({
         onClick={onClose}
       />
 
-      {/* Drawer */}
-      <div className="absolute bottom-0 left-0 right-0 bg-[#0a0a0a] border-t border-white/10 rounded-t-2xl animate-in slide-in-from-bottom duration-200 flex flex-col max-h-[85vh]">
+      {/* Drawer - taller to show bigger card */}
+      <div className="absolute bottom-0 left-0 right-0 bg-[#0a0a0a] border-t border-white/10 rounded-t-2xl animate-in slide-in-from-bottom duration-200 flex flex-col max-h-[92vh]">
         {/* Drag handle */}
         <div className="flex justify-center py-2 flex-shrink-0">
           <div className="w-10 h-1 bg-white/20 rounded-full" />
         </div>
 
-        {/* Content */}
+        {/* Content - Card on top, details below */}
         <div className="flex-1 overflow-y-auto px-4 pb-2">
-          <div className="flex gap-4">
-            {/* Card Image */}
-            <div className="w-28 flex-shrink-0">
-              <img
-                src={getCardImage(card)}
-                alt={card.name}
-                className="w-full rounded-lg shadow-xl"
-              />
+          {/* Large Card Image */}
+          <div className="flex justify-center mb-3">
+            <img
+              src={getCardImage(card)}
+              alt={card.name}
+              className="w-56 rounded-xl shadow-2xl"
+            />
+          </div>
+
+          {/* Card Info */}
+          <div className="space-y-3">
+            {/* Name + Grade Row */}
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-white">
+                {card.name}
+              </h3>
+              <span className={`text-xl font-bold ${getGradeColor(grade)}`}>
+                {grade}
+              </span>
             </div>
 
-            {/* Card Info */}
-            <div className="flex-1 min-w-0 py-1">
-              {/* Name + Grade */}
-              <div className="flex items-start justify-between gap-2 mb-2">
-                <h3 className="text-base font-semibold text-white leading-tight">
-                  {card.name}
-                </h3>
-                <span className={`text-lg font-bold flex-shrink-0 ${getGradeColor(grade)}`}>
-                  {grade}
-                </span>
-              </div>
-
-              {/* ELO Rating */}
-              {eloData && (
-                <div className="mb-2">
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="text-2xl font-bold text-white font-mono">
-                      {Math.round(baseElo)}
-                    </span>
-                    {hasAdjustment && (
-                      <span className={`text-sm font-bold ${adjustment > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+            {/* ELO Rating */}
+            {eloData && (
+              <div className="bg-white/5 rounded-xl p-3">
+                {hasAdjustment ? (
+                  <>
+                    {/* Base → Adjusted with clear visual flow */}
+                    <div className="flex items-baseline gap-2 justify-center">
+                      <span className="text-xl text-white/50 font-mono">
+                        {Math.round(baseElo)}
+                      </span>
+                      <span className={`text-lg font-bold ${adjustment > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                         {adjustment > 0 ? '+' : ''}{adjustment}
                       </span>
-                    )}
-                  </div>
-                  <div className="text-[10px] text-white/40 uppercase tracking-wide">ELO Rating</div>
-                </div>
-              )}
-
-              {/* Simulation Data */}
-              <div className="mt-3 pt-2 border-t border-white/10 space-y-2">
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div className="bg-white/5 rounded px-2 py-1.5">
-                    <div className="text-white/40 text-[10px]">Avg Pick</div>
-                    <div className="text-white font-mono font-medium">
-                      {avgPick ? `#${Math.round(avgPick)}` : 'N/A'}
-                    </div>
-                  </div>
-                  <div className="bg-white/5 rounded px-2 py-1.5">
-                    <div className="text-white/40 text-[10px]">Wheel Rate</div>
-                    <div className="text-white font-mono font-medium">
-                      {wheelRate !== null ? `${Math.round(wheelRate)}%` : 'N/A'}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Top Archetypes */}
-                {topArchetypes.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    {topArchetypes.map(arch => (
-                      <span
-                        key={arch.archetypeId}
-                        className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-white/60"
-                      >
-                        {arch.archetypeId} ({Math.round(arch.percentage)}%)
+                      <span className="text-white/30">→</span>
+                      <span className="text-3xl font-bold text-white font-mono">
+                        {Math.round(adjustedElo)}
                       </span>
-                    ))}
+                    </div>
+                    {/* Archetype synergy tags */}
+                    {topArchetypes.length > 0 && (
+                      <div className="flex items-center justify-center gap-2 mt-2">
+                        {topArchetypes.map(arch => (
+                          <span
+                            key={arch.archetypeId}
+                            className={`text-xs px-2 py-1 rounded-lg font-medium ${
+                              adjustment > 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
+                            }`}
+                          >
+                            {arch.archetypeId}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-white font-mono">
+                      {Math.round(baseElo)}
+                    </div>
+                    <div className="text-xs text-white/40 mt-1">ELO Rating</div>
                   </div>
                 )}
               </div>
+            )}
 
-              {/* Rating Trend Sparkline */}
-              <RatingTrendSparkline historyPoints={historyPoints} />
+            {/* Stats Row */}
+            <div className="flex justify-center gap-6 text-sm">
+              <div className="text-center">
+                <div className="text-white font-mono font-bold">#{avgPick ? Math.round(avgPick) : '—'}</div>
+                <div className="text-[10px] text-white/40">Avg Pick</div>
+              </div>
+              <div className="text-center">
+                <div className="text-white font-mono font-bold">{wheelRate !== null ? `${Math.round(wheelRate)}%` : '—'}</div>
+                <div className="text-[10px] text-white/40">Wheel Rate</div>
+              </div>
             </div>
+
+            {/* Rating Trend Sparkline */}
+            <RatingTrendSparkline historyPoints={historyPoints} totalPicks={historyPoints.length > 0 ? historyPoints[historyPoints.length - 1].pick : 0} />
           </div>
         </div>
 
@@ -188,9 +199,10 @@ export function MobileCardDetail({
 
 interface RatingTrendSparklineProps {
   historyPoints: { pick: number; adjustedElo: number; adjustment: number }[];
+  totalPicks: number;
 }
 
-function RatingTrendSparkline({ historyPoints }: RatingTrendSparklineProps) {
+function RatingTrendSparkline({ historyPoints, totalPicks }: RatingTrendSparklineProps) {
   // Always show sparkline if we have at least 1 point
   if (!historyPoints || historyPoints.length === 0) {
     return (
@@ -206,31 +218,68 @@ function RatingTrendSparkline({ historyPoints }: RatingTrendSparklineProps) {
   const trend = currentElo - startElo;
   const velocity = points.length > 1 ? trend / (points.length - 1) : 0;
 
-  // For sparkline rendering - add padding to prevent flat lines
-  const allElos = points.map(p => p.adjustedElo);
-  const minElo = Math.min(...allElos) - 50;
-  const maxElo = Math.max(...allElos) + 50;
+  // Project forward based on velocity
+  const remainingPicks = Math.max(0, 45 - totalPicks);
+  const projectPicks = Math.min(5, remainingPicks);
+  const projectedElo = currentElo + (velocity * projectPicks);
+  const showProjection = points.length > 1 && projectPicks > 0 && Math.abs(velocity) > 0;
+
+  // Momentum classification
+  const momentum = velocity > 8 ? 'rising-fast' :
+                   velocity > 3 ? 'rising' :
+                   velocity < -8 ? 'falling-fast' :
+                   velocity < -3 ? 'falling' : 'stable';
+
+  // For sparkline rendering - include projection in range calculation
+  const allElos = [...points.map(p => p.adjustedElo), ...(showProjection ? [projectedElo] : [])];
+  const minElo = Math.min(...allElos) - 30;
+  const maxElo = Math.max(...allElos) + 30;
   const range = maxElo - minElo || 100;
   const width = 180;
   const height = 32;
+  const historyWidth = showProjection ? width * 0.75 : width;
 
   const trendColor = points.length === 1 ? '#9ca3af' : (trend >= 0 ? '#4ade80' : '#f87171');
 
   return (
     <div className="mt-3 pt-2 border-t border-white/10">
       <div className="flex items-center justify-between mb-1">
-        <span className="text-[10px] text-white/40">Rating Trend</span>
-        {points.length > 1 ? (
-          <span className={`text-xs font-bold ${trend > 0 ? 'text-emerald-400' : trend < 0 ? 'text-red-400' : 'text-white/40'}`}>
-            {trend > 0 ? '+' : ''}{Math.round(trend)}
-          </span>
-        ) : (
-          <span className="text-[10px] text-white/30">baseline</span>
-        )}
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] text-white/40">Trend</span>
+          {momentum === 'rising-fast' && <span className="text-xs">🚀</span>}
+          {momentum === 'rising' && <span className="text-xs">📈</span>}
+          {momentum === 'falling-fast' && <span className="text-xs">📉</span>}
+          {momentum === 'falling' && <span className="text-xs">📉</span>}
+        </div>
+        <div className="flex items-center gap-1.5">
+          {points.length > 1 && showProjection && Math.abs(velocity) > 1 ? (
+            <span className={`text-xs font-medium ${velocity > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+              → {Math.round(projectedElo)} in 5 picks
+            </span>
+          ) : points.length > 1 ? (
+            <span className="text-[10px] text-white/40">stable</span>
+          ) : (
+            <span className="text-[10px] text-white/30">building...</span>
+          )}
+        </div>
       </div>
 
       <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-8">
-        {/* Line - only if more than 1 point */}
+        {/* Projection line (dashed) */}
+        {showProjection && (
+          <line
+            x1={historyWidth}
+            y1={height - ((currentElo - minElo) / range) * (height - 8) - 4}
+            x2={width - 4}
+            y2={height - ((projectedElo - minElo) / range) * (height - 8) - 4}
+            stroke={trendColor}
+            strokeWidth="1.5"
+            strokeDasharray="3,3"
+            opacity="0.5"
+          />
+        )}
+
+        {/* History line */}
         {points.length > 1 && (
           <polyline
             fill="none"
@@ -239,31 +288,42 @@ function RatingTrendSparkline({ historyPoints }: RatingTrendSparklineProps) {
             strokeLinecap="round"
             strokeLinejoin="round"
             points={points.map((p, i) => {
-              const x = (i / (points.length - 1)) * width;
+              const x = (i / (points.length - 1)) * historyWidth;
               const y = height - ((p.adjustedElo - minElo) / range) * (height - 8) - 4;
               return `${x},${y}`;
             }).join(' ')}
           />
         )}
 
-        {/* Dots */}
+        {/* History dots */}
         {points.map((p, i) => {
-          const x = points.length === 1 ? width / 2 : (i / (points.length - 1)) * width;
+          const x = points.length === 1 ? historyWidth / 2 : (i / (points.length - 1)) * historyWidth;
           const y = height - ((p.adjustedElo - minElo) / range) * (height - 8) - 4;
           return (
             <circle
               key={i}
               cx={x}
               cy={y}
-              r="4"
+              r={i === points.length - 1 ? 4 : 3}
               fill={trendColor}
             />
           );
         })}
+
+        {/* Projected dot */}
+        {showProjection && (
+          <circle
+            cx={width - 4}
+            cy={height - ((projectedElo - minElo) / range) * (height - 8) - 4}
+            r="3"
+            fill={trendColor}
+            opacity="0.5"
+          />
+        )}
       </svg>
 
       {/* Velocity indicator */}
-      {points.length > 1 && Math.abs(velocity) > 3 && (
+      {points.length > 1 && Math.abs(velocity) > 2 && (
         <div className={`text-[10px] ${velocity > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
           {velocity > 0 ? '↑' : '↓'} {Math.abs(Math.round(velocity))} ELO/pick
         </div>

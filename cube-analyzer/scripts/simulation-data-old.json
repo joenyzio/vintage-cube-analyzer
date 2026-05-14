@@ -1,0 +1,7264 @@
+{
+  "draftCount": 100,
+  "totalDecks": 800,
+  "archetypeDistribution": {
+    "oath": {
+      "count": 35,
+      "avgCommitment": 1,
+      "avgDeckQuality": 1923
+    },
+    "tempo": {
+      "count": 85,
+      "avgCommitment": 0.99,
+      "avgDeckQuality": 1883
+    },
+    "sneak": {
+      "count": 168,
+      "avgCommitment": 1,
+      "avgDeckQuality": 1915
+    },
+    "midrange": {
+      "count": 174,
+      "avgCommitment": 1,
+      "avgDeckQuality": 1852
+    },
+    "artifacts": {
+      "count": 45,
+      "avgCommitment": 1,
+      "avgDeckQuality": 1896
+    },
+    "aggro": {
+      "count": 89,
+      "avgCommitment": 1,
+      "avgDeckQuality": 1860
+    },
+    "control": {
+      "count": 50,
+      "avgCommitment": 1,
+      "avgDeckQuality": 1902
+    },
+    "ramp": {
+      "count": 42,
+      "avgCommitment": 1,
+      "avgDeckQuality": 1869
+    },
+    "reanimator": {
+      "count": 77,
+      "avgCommitment": 1,
+      "avgDeckQuality": 1914
+    },
+    "storm": {
+      "count": 35,
+      "avgCommitment": 1,
+      "avgDeckQuality": 1870
+    }
+  },
+  "cardStats": {
+    "Abrade": {
+      "pickCount": 100,
+      "totalAppearances": 1113,
+      "avgPickPosition": 27.2,
+      "wheelCount": 315,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "oath": 1,
+        "midrange": 9,
+        "ramp": 2,
+        "sneak": 10,
+        "reanimator": 4,
+        "control": 4,
+        "artifacts": 2,
+        "tempo": 4,
+        "storm": 2,
+        "aggro": 6
+      },
+      "sideboardCount": 56
+    },
+    "Adeline, Resplendent Cathar": {
+      "pickCount": 100,
+      "totalAppearances": 869,
+      "avgPickPosition": 24.7,
+      "wheelCount": 121,
+      "wheelOpportunities": 679,
+      "archetypeBreakdown": {
+        "sneak": 10,
+        "aggro": 36,
+        "tempo": 6,
+        "midrange": 20,
+        "control": 3,
+        "reanimator": 6,
+        "artifacts": 4,
+        "oath": 1
+      },
+      "sideboardCount": 14
+    },
+    "Ancestral Recall": {
+      "pickCount": 100,
+      "totalAppearances": 121,
+      "avgPickPosition": 16.5,
+      "wheelCount": 0,
+      "wheelOpportunities": 121,
+      "archetypeBreakdown": {
+        "midrange": 18,
+        "ramp": 5,
+        "aggro": 11,
+        "sneak": 12,
+        "artifacts": 4,
+        "reanimator": 5,
+        "tempo": 10,
+        "storm": 4,
+        "control": 6
+      },
+      "sideboardCount": 25
+    },
+    "Ancient Tomb": {
+      "pickCount": 100,
+      "totalAppearances": 717,
+      "avgPickPosition": 23.7,
+      "wheelCount": 52,
+      "wheelOpportunities": 620,
+      "archetypeBreakdown": {
+        "sneak": 23,
+        "control": 5,
+        "midrange": 25,
+        "tempo": 13,
+        "reanimator": 10,
+        "ramp": 2,
+        "artifacts": 9,
+        "storm": 5,
+        "aggro": 6,
+        "oath": 2
+      },
+      "sideboardCount": 0
+    },
+    "Animate Dead": {
+      "pickCount": 100,
+      "totalAppearances": 301,
+      "avgPickPosition": 20.6,
+      "wheelCount": 0,
+      "wheelOpportunities": 301,
+      "archetypeBreakdown": {
+        "sneak": 25,
+        "reanimator": 30,
+        "artifacts": 1,
+        "midrange": 8,
+        "tempo": 4,
+        "oath": 3,
+        "aggro": 2,
+        "ramp": 6,
+        "storm": 1,
+        "control": 2
+      },
+      "sideboardCount": 18
+    },
+    "Arbor Elf": {
+      "pickCount": 100,
+      "totalAppearances": 1390,
+      "avgPickPosition": 28.9,
+      "wheelCount": 590,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "tempo": 1,
+        "reanimator": 5,
+        "sneak": 4,
+        "storm": 2,
+        "artifacts": 1,
+        "ramp": 1,
+        "aggro": 2,
+        "control": 1,
+        "midrange": 1
+      },
+      "sideboardCount": 82
+    },
+    "Archon of Cruelty": {
+      "pickCount": 100,
+      "totalAppearances": 172,
+      "avgPickPosition": 16,
+      "wheelCount": 0,
+      "wheelOpportunities": 172,
+      "archetypeBreakdown": {
+        "sneak": 28,
+        "midrange": 11,
+        "reanimator": 20,
+        "storm": 3,
+        "oath": 11,
+        "control": 2,
+        "ramp": 7,
+        "artifacts": 4
+      },
+      "sideboardCount": 14
+    },
+    "Arid Mesa": {
+      "pickCount": 100,
+      "totalAppearances": 652,
+      "avgPickPosition": 21.7,
+      "wheelCount": 31,
+      "wheelOpportunities": 585,
+      "archetypeBreakdown": {
+        "aggro": 11,
+        "artifacts": 6,
+        "reanimator": 6,
+        "midrange": 13,
+        "sneak": 19,
+        "control": 6,
+        "tempo": 10,
+        "ramp": 4,
+        "storm": 2,
+        "oath": 2
+      },
+      "sideboardCount": 21
+    },
+    "Armageddon": {
+      "pickCount": 100,
+      "totalAppearances": 1072,
+      "avgPickPosition": 23.5,
+      "wheelCount": 288,
+      "wheelOpportunities": 694,
+      "archetypeBreakdown": {
+        "oath": 2,
+        "control": 19,
+        "tempo": 7,
+        "midrange": 13,
+        "ramp": 1,
+        "sneak": 6,
+        "aggro": 4,
+        "reanimator": 3,
+        "storm": 5
+      },
+      "sideboardCount": 40
+    },
+    "Atraxa, Grand Unifier": {
+      "pickCount": 100,
+      "totalAppearances": 166,
+      "avgPickPosition": 17.1,
+      "wheelCount": 0,
+      "wheelOpportunities": 166,
+      "archetypeBreakdown": {
+        "reanimator": 5,
+        "ramp": 3,
+        "sneak": 1
+      },
+      "sideboardCount": 91
+    },
+    "Badgermole Cub": {
+      "pickCount": 100,
+      "totalAppearances": 622,
+      "avgPickPosition": 21.4,
+      "wheelCount": 22,
+      "wheelOpportunities": 574,
+      "archetypeBreakdown": {
+        "ramp": 9,
+        "midrange": 17,
+        "sneak": 17,
+        "artifacts": 8,
+        "tempo": 6,
+        "storm": 2,
+        "reanimator": 8,
+        "aggro": 5,
+        "oath": 1,
+        "control": 2
+      },
+      "sideboardCount": 25
+    },
+    "Badlands": {
+      "pickCount": 100,
+      "totalAppearances": 975,
+      "avgPickPosition": 25.2,
+      "wheelCount": 199,
+      "wheelOpportunities": 690,
+      "archetypeBreakdown": {
+        "midrange": 14,
+        "sneak": 20,
+        "tempo": 9,
+        "reanimator": 15,
+        "aggro": 9,
+        "artifacts": 2,
+        "control": 6,
+        "ramp": 8,
+        "oath": 5,
+        "storm": 1
+      },
+      "sideboardCount": 11
+    },
+    "Balance": {
+      "pickCount": 100,
+      "totalAppearances": 912,
+      "avgPickPosition": 21.4,
+      "wheelCount": 145,
+      "wheelOpportunities": 686,
+      "archetypeBreakdown": {
+        "oath": 2,
+        "midrange": 14,
+        "ramp": 6,
+        "artifacts": 5,
+        "tempo": 7,
+        "sneak": 10,
+        "reanimator": 6,
+        "control": 3,
+        "aggro": 5,
+        "storm": 3
+      },
+      "sideboardCount": 39
+    },
+    "Baleful Strix": {
+      "pickCount": 100,
+      "totalAppearances": 505,
+      "avgPickPosition": 19.5,
+      "wheelCount": 8,
+      "wheelOpportunities": 490,
+      "archetypeBreakdown": {
+        "ramp": 1,
+        "sneak": 4,
+        "tempo": 4,
+        "midrange": 18,
+        "aggro": 6,
+        "control": 3,
+        "reanimator": 3,
+        "storm": 6,
+        "artifacts": 2
+      },
+      "sideboardCount": 53
+    },
+    "Barrowgoyf": {
+      "pickCount": 100,
+      "totalAppearances": 1068,
+      "avgPickPosition": 27,
+      "wheelCount": 276,
+      "wheelOpportunities": 697,
+      "archetypeBreakdown": {
+        "midrange": 29,
+        "storm": 5,
+        "oath": 1,
+        "reanimator": 9,
+        "tempo": 4,
+        "sneak": 4,
+        "artifacts": 1,
+        "aggro": 6,
+        "control": 2,
+        "ramp": 2
+      },
+      "sideboardCount": 37
+    },
+    "Basalt Monolith": {
+      "pickCount": 100,
+      "totalAppearances": 691,
+      "avgPickPosition": 21.8,
+      "wheelCount": 36,
+      "wheelOpportunities": 615,
+      "archetypeBreakdown": {
+        "sneak": 20,
+        "ramp": 7,
+        "reanimator": 14,
+        "control": 7,
+        "tempo": 7,
+        "midrange": 21,
+        "artifacts": 8,
+        "aggro": 9,
+        "storm": 5,
+        "oath": 2
+      },
+      "sideboardCount": 0
+    },
+    "Batterskull": {
+      "pickCount": 100,
+      "totalAppearances": 917,
+      "avgPickPosition": 25.1,
+      "wheelCount": 155,
+      "wheelOpportunities": 683,
+      "archetypeBreakdown": {
+        "tempo": 28,
+        "control": 12,
+        "reanimator": 11,
+        "ramp": 3,
+        "artifacts": 4,
+        "midrange": 16,
+        "aggro": 1,
+        "oath": 3,
+        "sneak": 16,
+        "storm": 4
+      },
+      "sideboardCount": 2
+    },
+    "Bayou": {
+      "pickCount": 100,
+      "totalAppearances": 1153,
+      "avgPickPosition": 27.1,
+      "wheelCount": 357,
+      "wheelOpportunities": 697,
+      "archetypeBreakdown": {
+        "sneak": 24,
+        "oath": 5,
+        "ramp": 5,
+        "reanimator": 12,
+        "tempo": 4,
+        "midrange": 19,
+        "aggro": 5,
+        "storm": 3,
+        "artifacts": 4,
+        "control": 5
+      },
+      "sideboardCount": 14
+    },
+    "Birds of Paradise": {
+      "pickCount": 100,
+      "totalAppearances": 563,
+      "avgPickPosition": 21.1,
+      "wheelCount": 7,
+      "wheelOpportunities": 540,
+      "archetypeBreakdown": {
+        "artifacts": 6,
+        "ramp": 10,
+        "reanimator": 7,
+        "tempo": 8,
+        "aggro": 6,
+        "midrange": 17,
+        "sneak": 8,
+        "control": 2,
+        "storm": 1
+      },
+      "sideboardCount": 35
+    },
+    "Bitter Triumph": {
+      "pickCount": 100,
+      "totalAppearances": 905,
+      "avgPickPosition": 22.4,
+      "wheelCount": 141,
+      "wheelOpportunities": 685,
+      "archetypeBreakdown": {
+        "control": 1,
+        "midrange": 21,
+        "reanimator": 7,
+        "sneak": 11,
+        "aggro": 6,
+        "artifacts": 3,
+        "tempo": 2,
+        "ramp": 1,
+        "storm": 4,
+        "oath": 2
+      },
+      "sideboardCount": 42
+    },
+    "Black Lotus": {
+      "pickCount": 100,
+      "totalAppearances": 105,
+      "avgPickPosition": 17.1,
+      "wheelCount": 0,
+      "wheelOpportunities": 105,
+      "archetypeBreakdown": {
+        "oath": 6,
+        "ramp": 6,
+        "aggro": 16,
+        "sneak": 18,
+        "midrange": 24,
+        "tempo": 9,
+        "storm": 6,
+        "reanimator": 7,
+        "artifacts": 6,
+        "control": 2
+      },
+      "sideboardCount": 0
+    },
+    "Blightsteel Colossus": {
+      "pickCount": 100,
+      "totalAppearances": 163,
+      "avgPickPosition": 13.9,
+      "wheelCount": 0,
+      "wheelOpportunities": 163,
+      "archetypeBreakdown": {
+        "oath": 10,
+        "sneak": 39,
+        "artifacts": 10,
+        "reanimator": 18,
+        "midrange": 11,
+        "control": 4,
+        "storm": 1,
+        "ramp": 4,
+        "aggro": 1,
+        "tempo": 2
+      },
+      "sideboardCount": 0
+    },
+    "Blood Crypt": {
+      "pickCount": 100,
+      "totalAppearances": 1185,
+      "avgPickPosition": 26.3,
+      "wheelCount": 387,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "midrange": 16,
+        "control": 5,
+        "oath": 5,
+        "sneak": 27,
+        "reanimator": 11,
+        "ramp": 4,
+        "storm": 5,
+        "aggro": 10,
+        "tempo": 6,
+        "artifacts": 3
+      },
+      "sideboardCount": 8
+    },
+    "Bloodstained Mire": {
+      "pickCount": 100,
+      "totalAppearances": 614,
+      "avgPickPosition": 21.4,
+      "wheelCount": 29,
+      "wheelOpportunities": 559,
+      "archetypeBreakdown": {
+        "sneak": 25,
+        "midrange": 24,
+        "ramp": 6,
+        "aggro": 7,
+        "control": 2,
+        "artifacts": 6,
+        "reanimator": 9,
+        "tempo": 4,
+        "storm": 1,
+        "oath": 1
+      },
+      "sideboardCount": 15
+    },
+    "Bolas's Citadel": {
+      "pickCount": 100,
+      "totalAppearances": 1413,
+      "avgPickPosition": 27.6,
+      "wheelCount": 613,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "artifacts": 5,
+        "sneak": 10,
+        "midrange": 2,
+        "oath": 2,
+        "tempo": 2,
+        "reanimator": 2,
+        "ramp": 3,
+        "storm": 2
+      },
+      "sideboardCount": 72
+    },
+    "Bone Shards": {
+      "pickCount": 100,
+      "totalAppearances": 1212,
+      "avgPickPosition": 26.5,
+      "wheelCount": 412,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "midrange": 23,
+        "reanimator": 8,
+        "sneak": 15,
+        "oath": 3,
+        "tempo": 2,
+        "storm": 4,
+        "artifacts": 2,
+        "aggro": 1
+      },
+      "sideboardCount": 42
+    },
+    "Bonecrusher Giant // Stomp": {
+      "pickCount": 100,
+      "totalAppearances": 1355,
+      "avgPickPosition": 27.5,
+      "wheelCount": 555,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "midrange": 7,
+        "sneak": 3,
+        "artifacts": 2,
+        "aggro": 3,
+        "tempo": 2,
+        "oath": 2,
+        "reanimator": 1,
+        "ramp": 2,
+        "storm": 1
+      },
+      "sideboardCount": 77
+    },
+    "Boseiju, Who Endures": {
+      "pickCount": 100,
+      "totalAppearances": 1309,
+      "avgPickPosition": 28.8,
+      "wheelCount": 509,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {},
+      "sideboardCount": 100
+    },
+    "Brain Freeze": {
+      "pickCount": 100,
+      "totalAppearances": 286,
+      "avgPickPosition": 19.7,
+      "wheelCount": 0,
+      "wheelOpportunities": 285,
+      "archetypeBreakdown": {
+        "tempo": 12,
+        "control": 3,
+        "aggro": 10,
+        "storm": 29,
+        "reanimator": 4,
+        "artifacts": 1,
+        "midrange": 12,
+        "sneak": 7,
+        "ramp": 4
+      },
+      "sideboardCount": 18
+    },
+    "Brainstorm": {
+      "pickCount": 100,
+      "totalAppearances": 401,
+      "avgPickPosition": 18.9,
+      "wheelCount": 0,
+      "wheelOpportunities": 400,
+      "archetypeBreakdown": {
+        "tempo": 32,
+        "control": 8,
+        "midrange": 18,
+        "reanimator": 7,
+        "aggro": 12,
+        "sneak": 5,
+        "storm": 3,
+        "ramp": 4,
+        "artifacts": 4,
+        "oath": 1
+      },
+      "sideboardCount": 6
+    },
+    "Brazen Borrower // Petty Theft": {
+      "pickCount": 100,
+      "totalAppearances": 1333,
+      "avgPickPosition": 30,
+      "wheelCount": 533,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "oath": 2,
+        "aggro": 4,
+        "midrange": 12,
+        "sneak": 6,
+        "control": 2,
+        "artifacts": 3,
+        "tempo": 3,
+        "storm": 1,
+        "reanimator": 2,
+        "ramp": 2
+      },
+      "sideboardCount": 63
+    },
+    "Breeding Pool": {
+      "pickCount": 100,
+      "totalAppearances": 1180,
+      "avgPickPosition": 25.8,
+      "wheelCount": 381,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "artifacts": 5,
+        "midrange": 22,
+        "oath": 8,
+        "ramp": 3,
+        "sneak": 17,
+        "reanimator": 11,
+        "control": 6,
+        "storm": 5,
+        "tempo": 13,
+        "aggro": 3
+      },
+      "sideboardCount": 7
+    },
+    "Bristly Bill, Spine Sower": {
+      "pickCount": 100,
+      "totalAppearances": 1063,
+      "avgPickPosition": 26.1,
+      "wheelCount": 276,
+      "wheelOpportunities": 694,
+      "archetypeBreakdown": {
+        "aggro": 7,
+        "tempo": 7,
+        "sneak": 10,
+        "midrange": 15,
+        "ramp": 2,
+        "reanimator": 8,
+        "oath": 2,
+        "artifacts": 4,
+        "storm": 2,
+        "control": 2
+      },
+      "sideboardCount": 41
+    },
+    "Broadside Bombardiers": {
+      "pickCount": 100,
+      "totalAppearances": 504,
+      "avgPickPosition": 22.1,
+      "wheelCount": 5,
+      "wheelOpportunities": 488,
+      "archetypeBreakdown": {
+        "sneak": 9,
+        "ramp": 1,
+        "midrange": 21,
+        "control": 3,
+        "aggro": 22,
+        "artifacts": 5,
+        "tempo": 5,
+        "reanimator": 2,
+        "oath": 1,
+        "storm": 1
+      },
+      "sideboardCount": 30
+    },
+    "Burst Lightning": {
+      "pickCount": 100,
+      "totalAppearances": 1076,
+      "avgPickPosition": 26.7,
+      "wheelCount": 286,
+      "wheelOpportunities": 696,
+      "archetypeBreakdown": {
+        "ramp": 6,
+        "artifacts": 3,
+        "aggro": 6,
+        "midrange": 6,
+        "reanimator": 5,
+        "tempo": 4,
+        "storm": 2,
+        "sneak": 11,
+        "oath": 2,
+        "control": 1
+      },
+      "sideboardCount": 54
+    },
+    "Cabal Ritual": {
+      "pickCount": 100,
+      "totalAppearances": 550,
+      "avgPickPosition": 19.3,
+      "wheelCount": 19,
+      "wheelOpportunities": 517,
+      "archetypeBreakdown": {
+        "midrange": 14,
+        "storm": 13,
+        "reanimator": 4,
+        "tempo": 10,
+        "sneak": 9,
+        "control": 2,
+        "ramp": 4,
+        "artifacts": 3,
+        "aggro": 4
+      },
+      "sideboardCount": 37
+    },
+    "Candelabra of Tawnos": {
+      "pickCount": 100,
+      "totalAppearances": 574,
+      "avgPickPosition": 20.4,
+      "wheelCount": 8,
+      "wheelOpportunities": 549,
+      "archetypeBreakdown": {
+        "artifacts": 9,
+        "ramp": 6,
+        "reanimator": 11,
+        "sneak": 19,
+        "midrange": 24,
+        "tempo": 9,
+        "control": 5,
+        "storm": 3,
+        "oath": 5,
+        "aggro": 9
+      },
+      "sideboardCount": 0
+    },
+    "Cathar Commando": {
+      "pickCount": 100,
+      "totalAppearances": 1451,
+      "avgPickPosition": 30,
+      "wheelCount": 651,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "aggro": 4,
+        "sneak": 2,
+        "reanimator": 2,
+        "midrange": 1,
+        "artifacts": 1
+      },
+      "sideboardCount": 90
+    },
+    "Caves of Chaos Adventurer": {
+      "pickCount": 100,
+      "totalAppearances": 652,
+      "avgPickPosition": 21.4,
+      "wheelCount": 34,
+      "wheelOpportunities": 583,
+      "archetypeBreakdown": {
+        "ramp": 2,
+        "sneak": 11,
+        "oath": 2,
+        "reanimator": 5,
+        "midrange": 12,
+        "control": 4,
+        "aggro": 8,
+        "tempo": 6,
+        "artifacts": 4,
+        "storm": 1
+      },
+      "sideboardCount": 45
+    },
+    "Chain Lightning": {
+      "pickCount": 100,
+      "totalAppearances": 532,
+      "avgPickPosition": 21.5,
+      "wheelCount": 5,
+      "wheelOpportunities": 516,
+      "archetypeBreakdown": {
+        "artifacts": 5,
+        "midrange": 11,
+        "sneak": 10,
+        "aggro": 26,
+        "storm": 2,
+        "reanimator": 4,
+        "tempo": 5,
+        "ramp": 3,
+        "oath": 1,
+        "control": 1
+      },
+      "sideboardCount": 32
+    },
+    "Chandra, Torch of Defiance": {
+      "pickCount": 100,
+      "totalAppearances": 1179,
+      "avgPickPosition": 27.7,
+      "wheelCount": 379,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "midrange": 9,
+        "aggro": 2,
+        "control": 2,
+        "storm": 3,
+        "sneak": 14,
+        "ramp": 2,
+        "reanimator": 2,
+        "oath": 1,
+        "tempo": 1
+      },
+      "sideboardCount": 64
+    },
+    "Channel": {
+      "pickCount": 100,
+      "totalAppearances": 407,
+      "avgPickPosition": 17,
+      "wheelCount": 0,
+      "wheelOpportunities": 407,
+      "archetypeBreakdown": {
+        "sneak": 34,
+        "oath": 8,
+        "ramp": 11,
+        "artifacts": 5,
+        "midrange": 12,
+        "storm": 2,
+        "reanimator": 6,
+        "tempo": 5,
+        "control": 4
+      },
+      "sideboardCount": 13
+    },
+    "Chaos Defiler": {
+      "pickCount": 100,
+      "totalAppearances": 1368,
+      "avgPickPosition": 29.6,
+      "wheelCount": 568,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "artifacts": 3,
+        "reanimator": 5,
+        "sneak": 6,
+        "oath": 2,
+        "storm": 1
+      },
+      "sideboardCount": 83
+    },
+    "Chromatic Star": {
+      "pickCount": 100,
+      "totalAppearances": 397,
+      "avgPickPosition": 19.6,
+      "wheelCount": 0,
+      "wheelOpportunities": 395,
+      "archetypeBreakdown": {
+        "midrange": 19,
+        "artifacts": 12,
+        "oath": 6,
+        "storm": 4,
+        "control": 3,
+        "ramp": 10,
+        "sneak": 28,
+        "tempo": 9,
+        "aggro": 4,
+        "reanimator": 5
+      },
+      "sideboardCount": 0
+    },
+    "Chrome Mox": {
+      "pickCount": 100,
+      "totalAppearances": 171,
+      "avgPickPosition": 18.2,
+      "wheelCount": 0,
+      "wheelOpportunities": 171,
+      "archetypeBreakdown": {
+        "midrange": 22,
+        "ramp": 6,
+        "reanimator": 8,
+        "control": 5,
+        "tempo": 10,
+        "artifacts": 8,
+        "sneak": 14,
+        "storm": 7,
+        "oath": 5,
+        "aggro": 15
+      },
+      "sideboardCount": 0
+    },
+    "City of Brass": {
+      "pickCount": 100,
+      "totalAppearances": 638,
+      "avgPickPosition": 21.1,
+      "wheelCount": 21,
+      "wheelOpportunities": 591,
+      "archetypeBreakdown": {
+        "sneak": 23,
+        "ramp": 9,
+        "reanimator": 13,
+        "midrange": 23,
+        "tempo": 8,
+        "artifacts": 7,
+        "oath": 8,
+        "control": 4,
+        "storm": 2,
+        "aggro": 3
+      },
+      "sideboardCount": 0
+    },
+    "City of Traitors": {
+      "pickCount": 100,
+      "totalAppearances": 1229,
+      "avgPickPosition": 28.3,
+      "wheelCount": 429,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "oath": 6,
+        "control": 11,
+        "aggro": 12,
+        "tempo": 11,
+        "ramp": 5,
+        "midrange": 20,
+        "storm": 1,
+        "sneak": 19,
+        "artifacts": 3,
+        "reanimator": 12
+      },
+      "sideboardCount": 0
+    },
+    "Coalition Relic": {
+      "pickCount": 100,
+      "totalAppearances": 530,
+      "avgPickPosition": 19,
+      "wheelCount": 5,
+      "wheelOpportunities": 514,
+      "archetypeBreakdown": {
+        "artifacts": 15,
+        "sneak": 29,
+        "control": 7,
+        "ramp": 5,
+        "aggro": 7,
+        "midrange": 16,
+        "storm": 2,
+        "tempo": 8,
+        "reanimator": 9,
+        "oath": 2
+      },
+      "sideboardCount": 0
+    },
+    "Collective Brutality": {
+      "pickCount": 100,
+      "totalAppearances": 436,
+      "avgPickPosition": 20.9,
+      "wheelCount": 0,
+      "wheelOpportunities": 433,
+      "archetypeBreakdown": {
+        "midrange": 30,
+        "oath": 5,
+        "reanimator": 14,
+        "sneak": 18,
+        "aggro": 3,
+        "storm": 2,
+        "ramp": 2,
+        "tempo": 2,
+        "artifacts": 3,
+        "control": 1
+      },
+      "sideboardCount": 20
+    },
+    "Comet, Stellar Pup": {
+      "pickCount": 100,
+      "totalAppearances": 471,
+      "avgPickPosition": 19.1,
+      "wheelCount": 6,
+      "wheelOpportunities": 459,
+      "archetypeBreakdown": {
+        "aggro": 11,
+        "control": 4,
+        "ramp": 4,
+        "reanimator": 1,
+        "midrange": 8,
+        "tempo": 8,
+        "storm": 3,
+        "sneak": 4,
+        "artifacts": 1
+      },
+      "sideboardCount": 56
+    },
+    "Commercial District": {
+      "pickCount": 100,
+      "totalAppearances": 1389,
+      "avgPickPosition": 28.1,
+      "wheelCount": 589,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "midrange": 15,
+        "ramp": 5,
+        "aggro": 17,
+        "reanimator": 7,
+        "sneak": 20,
+        "tempo": 6,
+        "control": 5,
+        "oath": 4,
+        "artifacts": 4,
+        "storm": 2
+      },
+      "sideboardCount": 15
+    },
+    "Containment Priest": {
+      "pickCount": 100,
+      "totalAppearances": 1447,
+      "avgPickPosition": 30.4,
+      "wheelCount": 647,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "ramp": 3,
+        "sneak": 5,
+        "midrange": 5,
+        "oath": 1,
+        "aggro": 4
+      },
+      "sideboardCount": 82
+    },
+    "Cori-Steel Cutter": {
+      "pickCount": 100,
+      "totalAppearances": 399,
+      "avgPickPosition": 18.2,
+      "wheelCount": 0,
+      "wheelOpportunities": 397,
+      "archetypeBreakdown": {
+        "tempo": 7,
+        "sneak": 17,
+        "midrange": 9,
+        "aggro": 17,
+        "artifacts": 3,
+        "ramp": 3,
+        "reanimator": 7,
+        "storm": 1,
+        "oath": 1,
+        "control": 1
+      },
+      "sideboardCount": 34
+    },
+    "Council's Judgment": {
+      "pickCount": 100,
+      "totalAppearances": 1328,
+      "avgPickPosition": 30.1,
+      "wheelCount": 528,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "oath": 3,
+        "sneak": 9,
+        "reanimator": 2,
+        "storm": 3,
+        "ramp": 2,
+        "midrange": 7,
+        "aggro": 1,
+        "tempo": 1,
+        "artifacts": 1
+      },
+      "sideboardCount": 71
+    },
+    "Counterspell": {
+      "pickCount": 100,
+      "totalAppearances": 239,
+      "avgPickPosition": 16.9,
+      "wheelCount": 0,
+      "wheelOpportunities": 239,
+      "archetypeBreakdown": {
+        "oath": 3,
+        "control": 23,
+        "aggro": 9,
+        "reanimator": 8,
+        "sneak": 6,
+        "tempo": 19,
+        "midrange": 14,
+        "storm": 4,
+        "artifacts": 1
+      },
+      "sideboardCount": 13
+    },
+    "Coveted Jewel": {
+      "pickCount": 100,
+      "totalAppearances": 771,
+      "avgPickPosition": 23.2,
+      "wheelCount": 84,
+      "wheelOpportunities": 635,
+      "archetypeBreakdown": {
+        "artifacts": 12,
+        "sneak": 34,
+        "control": 2,
+        "reanimator": 18,
+        "ramp": 9,
+        "midrange": 14,
+        "oath": 6,
+        "storm": 2,
+        "tempo": 2,
+        "aggro": 1
+      },
+      "sideboardCount": 0
+    },
+    "Craterhoof Behemoth": {
+      "pickCount": 100,
+      "totalAppearances": 174,
+      "avgPickPosition": 16.1,
+      "wheelCount": 0,
+      "wheelOpportunities": 174,
+      "archetypeBreakdown": {
+        "midrange": 9,
+        "aggro": 4,
+        "artifacts": 6,
+        "ramp": 14,
+        "sneak": 28,
+        "storm": 3,
+        "reanimator": 21,
+        "oath": 6,
+        "tempo": 3,
+        "control": 1
+      },
+      "sideboardCount": 5
+    },
+    "Crop Rotation": {
+      "pickCount": 100,
+      "totalAppearances": 1399,
+      "avgPickPosition": 29,
+      "wheelCount": 599,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "oath": 1,
+        "sneak": 4,
+        "reanimator": 3,
+        "ramp": 2,
+        "midrange": 2,
+        "aggro": 2,
+        "control": 1
+      },
+      "sideboardCount": 85
+    },
+    "Crucible of Worlds": {
+      "pickCount": 100,
+      "totalAppearances": 979,
+      "avgPickPosition": 24.8,
+      "wheelCount": 195,
+      "wheelOpportunities": 697,
+      "archetypeBreakdown": {
+        "artifacts": 12,
+        "aggro": 11,
+        "control": 9,
+        "reanimator": 6,
+        "midrange": 13,
+        "sneak": 24,
+        "ramp": 8,
+        "oath": 3,
+        "storm": 4,
+        "tempo": 8
+      },
+      "sideboardCount": 2
+    },
+    "Currency Converter": {
+      "pickCount": 100,
+      "totalAppearances": 468,
+      "avgPickPosition": 19.5,
+      "wheelCount": 2,
+      "wheelOpportunities": 461,
+      "archetypeBreakdown": {
+        "artifacts": 6,
+        "control": 6,
+        "midrange": 18,
+        "tempo": 12,
+        "reanimator": 7,
+        "sneak": 20,
+        "oath": 7,
+        "ramp": 6,
+        "aggro": 12,
+        "storm": 6
+      },
+      "sideboardCount": 0
+    },
+    "Dack Fayden": {
+      "pickCount": 100,
+      "totalAppearances": 865,
+      "avgPickPosition": 24.3,
+      "wheelCount": 111,
+      "wheelOpportunities": 683,
+      "archetypeBreakdown": {
+        "reanimator": 2,
+        "midrange": 11,
+        "aggro": 4,
+        "storm": 3,
+        "oath": 3,
+        "control": 8,
+        "tempo": 6,
+        "sneak": 5,
+        "artifacts": 2
+      },
+      "sideboardCount": 56
+    },
+    "Damn": {
+      "pickCount": 100,
+      "totalAppearances": 1450,
+      "avgPickPosition": 28.2,
+      "wheelCount": 650,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "oath": 1,
+        "sneak": 2,
+        "storm": 2
+      },
+      "sideboardCount": 95
+    },
+    "Damnation": {
+      "pickCount": 100,
+      "totalAppearances": 1214,
+      "avgPickPosition": 24.7,
+      "wheelCount": 417,
+      "wheelOpportunities": 698,
+      "archetypeBreakdown": {
+        "midrange": 12,
+        "control": 9,
+        "reanimator": 4,
+        "tempo": 6,
+        "oath": 3,
+        "sneak": 10,
+        "storm": 4,
+        "aggro": 2,
+        "ramp": 3,
+        "artifacts": 2
+      },
+      "sideboardCount": 45
+    },
+    "Dark Confidant": {
+      "pickCount": 100,
+      "totalAppearances": 745,
+      "avgPickPosition": 21,
+      "wheelCount": 78,
+      "wheelOpportunities": 618,
+      "archetypeBreakdown": {
+        "midrange": 44,
+        "control": 1,
+        "tempo": 5,
+        "sneak": 11,
+        "aggro": 7,
+        "artifacts": 4,
+        "oath": 2,
+        "reanimator": 8,
+        "storm": 1
+      },
+      "sideboardCount": 17
+    },
+    "Dark Ritual": {
+      "pickCount": 100,
+      "totalAppearances": 309,
+      "avgPickPosition": 19.6,
+      "wheelCount": 0,
+      "wheelOpportunities": 309,
+      "archetypeBreakdown": {
+        "oath": 2,
+        "midrange": 18,
+        "ramp": 2,
+        "tempo": 10,
+        "sneak": 10,
+        "aggro": 5,
+        "storm": 7,
+        "reanimator": 3,
+        "control": 4,
+        "artifacts": 1
+      },
+      "sideboardCount": 38
+    },
+    "Dauthi Voidwalker": {
+      "pickCount": 100,
+      "totalAppearances": 1321,
+      "avgPickPosition": 31.2,
+      "wheelCount": 521,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "midrange": 8,
+        "control": 2,
+        "storm": 1,
+        "ramp": 2,
+        "reanimator": 2,
+        "tempo": 4,
+        "aggro": 3,
+        "sneak": 3,
+        "oath": 1
+      },
+      "sideboardCount": 74
+    },
+    "Daze": {
+      "pickCount": 100,
+      "totalAppearances": 350,
+      "avgPickPosition": 18.8,
+      "wheelCount": 0,
+      "wheelOpportunities": 349,
+      "archetypeBreakdown": {
+        "control": 8,
+        "tempo": 36,
+        "midrange": 22,
+        "ramp": 2,
+        "sneak": 5,
+        "oath": 3,
+        "reanimator": 4,
+        "storm": 5,
+        "artifacts": 1,
+        "aggro": 5
+      },
+      "sideboardCount": 9
+    },
+    "Deathrite Shaman": {
+      "pickCount": 100,
+      "totalAppearances": 512,
+      "avgPickPosition": 19.2,
+      "wheelCount": 8,
+      "wheelOpportunities": 489,
+      "archetypeBreakdown": {
+        "midrange": 29,
+        "aggro": 3,
+        "artifacts": 4,
+        "ramp": 3,
+        "reanimator": 9,
+        "sneak": 9,
+        "storm": 2,
+        "oath": 1,
+        "tempo": 1
+      },
+      "sideboardCount": 39
+    },
+    "Deep-Cavern Bat": {
+      "pickCount": 100,
+      "totalAppearances": 878,
+      "avgPickPosition": 25,
+      "wheelCount": 128,
+      "wheelOpportunities": 680,
+      "archetypeBreakdown": {
+        "sneak": 6,
+        "midrange": 21,
+        "tempo": 10,
+        "reanimator": 6,
+        "aggro": 10,
+        "control": 3,
+        "artifacts": 2,
+        "storm": 4
+      },
+      "sideboardCount": 38
+    },
+    "Delighted Halfling": {
+      "pickCount": 100,
+      "totalAppearances": 865,
+      "avgPickPosition": 23.7,
+      "wheelCount": 117,
+      "wheelOpportunities": 677,
+      "archetypeBreakdown": {
+        "sneak": 19,
+        "artifacts": 7,
+        "ramp": 9,
+        "oath": 3,
+        "storm": 2,
+        "reanimator": 10,
+        "midrange": 12,
+        "aggro": 3,
+        "tempo": 6,
+        "control": 5
+      },
+      "sideboardCount": 24
+    },
+    "Demonic Tutor": {
+      "pickCount": 100,
+      "totalAppearances": 421,
+      "avgPickPosition": 19.2,
+      "wheelCount": 0,
+      "wheelOpportunities": 420,
+      "archetypeBreakdown": {
+        "midrange": 26,
+        "sneak": 7,
+        "ramp": 4,
+        "aggro": 9,
+        "reanimator": 5,
+        "artifacts": 3,
+        "tempo": 4,
+        "storm": 2,
+        "control": 2,
+        "oath": 5
+      },
+      "sideboardCount": 33
+    },
+    "Dismember": {
+      "pickCount": 100,
+      "totalAppearances": 681,
+      "avgPickPosition": 22,
+      "wheelCount": 37,
+      "wheelOpportunities": 603,
+      "archetypeBreakdown": {
+        "artifacts": 5,
+        "sneak": 27,
+        "reanimator": 12,
+        "ramp": 3,
+        "midrange": 18,
+        "tempo": 3,
+        "aggro": 5,
+        "oath": 3
+      },
+      "sideboardCount": 24
+    },
+    "Displacer Kitten": {
+      "pickCount": 100,
+      "totalAppearances": 984,
+      "avgPickPosition": 23.5,
+      "wheelCount": 207,
+      "wheelOpportunities": 691,
+      "archetypeBreakdown": {
+        "midrange": 16,
+        "control": 8,
+        "reanimator": 9,
+        "ramp": 3,
+        "oath": 4,
+        "tempo": 8,
+        "sneak": 13,
+        "artifacts": 3,
+        "aggro": 4
+      },
+      "sideboardCount": 32
+    },
+    "Doomsday": {
+      "pickCount": 100,
+      "totalAppearances": 1363,
+      "avgPickPosition": 29.4,
+      "wheelCount": 563,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "reanimator": 5,
+        "sneak": 7,
+        "midrange": 8,
+        "tempo": 2,
+        "artifacts": 2,
+        "aggro": 1,
+        "oath": 3,
+        "ramp": 2,
+        "control": 1
+      },
+      "sideboardCount": 69
+    },
+    "Dragon's Rage Channeler": {
+      "pickCount": 100,
+      "totalAppearances": 569,
+      "avgPickPosition": 19.9,
+      "wheelCount": 9,
+      "wheelOpportunities": 540,
+      "archetypeBreakdown": {
+        "tempo": 8,
+        "artifacts": 2,
+        "sneak": 8,
+        "aggro": 38,
+        "midrange": 9,
+        "ramp": 1,
+        "reanimator": 4,
+        "storm": 2,
+        "control": 2
+      },
+      "sideboardCount": 26
+    },
+    "Duress": {
+      "pickCount": 100,
+      "totalAppearances": 989,
+      "avgPickPosition": 25.3,
+      "wheelCount": 214,
+      "wheelOpportunities": 690,
+      "archetypeBreakdown": {
+        "control": 4,
+        "reanimator": 9,
+        "midrange": 16,
+        "sneak": 18,
+        "oath": 2,
+        "aggro": 5,
+        "tempo": 3,
+        "ramp": 2,
+        "artifacts": 2,
+        "storm": 2
+      },
+      "sideboardCount": 37
+    },
+    "Echo of Eons": {
+      "pickCount": 100,
+      "totalAppearances": 541,
+      "avgPickPosition": 21.3,
+      "wheelCount": 6,
+      "wheelOpportunities": 522,
+      "archetypeBreakdown": {
+        "sneak": 9,
+        "midrange": 27,
+        "ramp": 6,
+        "control": 9,
+        "aggro": 2,
+        "reanimator": 8,
+        "storm": 9,
+        "oath": 3,
+        "artifacts": 2,
+        "tempo": 8
+      },
+      "sideboardCount": 17
+    },
+    "Elegant Parlor": {
+      "pickCount": 100,
+      "totalAppearances": 1301,
+      "avgPickPosition": 27.6,
+      "wheelCount": 501,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "artifacts": 3,
+        "aggro": 11,
+        "tempo": 8,
+        "sneak": 17,
+        "ramp": 5,
+        "oath": 6,
+        "reanimator": 9,
+        "control": 6,
+        "storm": 2,
+        "midrange": 14
+      },
+      "sideboardCount": 19
+    },
+    "Elite Spellbinder": {
+      "pickCount": 100,
+      "totalAppearances": 1229,
+      "avgPickPosition": 27.1,
+      "wheelCount": 429,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "tempo": 16,
+        "midrange": 18,
+        "artifacts": 1,
+        "aggro": 11,
+        "control": 6,
+        "storm": 4,
+        "reanimator": 1,
+        "sneak": 1
+      },
+      "sideboardCount": 42
+    },
+    "Elvish Mystic": {
+      "pickCount": 100,
+      "totalAppearances": 1439,
+      "avgPickPosition": 29.4,
+      "wheelCount": 639,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "sneak": 3,
+        "reanimator": 4,
+        "midrange": 2,
+        "oath": 1,
+        "control": 2,
+        "aggro": 1,
+        "ramp": 2,
+        "tempo": 1
+      },
+      "sideboardCount": 84
+    },
+    "Embereth Shieldbreaker // Battle Display": {
+      "pickCount": 100,
+      "totalAppearances": 1479,
+      "avgPickPosition": 28.7,
+      "wheelCount": 679,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "aggro": 4,
+        "storm": 1,
+        "reanimator": 1,
+        "midrange": 1,
+        "sneak": 3
+      },
+      "sideboardCount": 90
+    },
+    "Emperor of Bones": {
+      "pickCount": 100,
+      "totalAppearances": 1021,
+      "avgPickPosition": 25.1,
+      "wheelCount": 226,
+      "wheelOpportunities": 699,
+      "archetypeBreakdown": {
+        "aggro": 12,
+        "midrange": 20,
+        "sneak": 5,
+        "tempo": 8,
+        "reanimator": 7,
+        "artifacts": 4,
+        "storm": 1,
+        "ramp": 1
+      },
+      "sideboardCount": 42
+    },
+    "Emrakul, the Aeons Torn": {
+      "pickCount": 100,
+      "totalAppearances": 155,
+      "avgPickPosition": 16.1,
+      "wheelCount": 0,
+      "wheelOpportunities": 155,
+      "archetypeBreakdown": {
+        "sneak": 46,
+        "midrange": 9,
+        "ramp": 7,
+        "reanimator": 17,
+        "control": 2,
+        "oath": 9,
+        "storm": 3,
+        "artifacts": 1,
+        "aggro": 3,
+        "tempo": 3
+      },
+      "sideboardCount": 0
+    },
+    "Endurance": {
+      "pickCount": 100,
+      "totalAppearances": 1454,
+      "avgPickPosition": 30.9,
+      "wheelCount": 654,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "sneak": 5,
+        "midrange": 4,
+        "aggro": 1,
+        "reanimator": 1
+      },
+      "sideboardCount": 89
+    },
+    "Enlightened Tutor": {
+      "pickCount": 100,
+      "totalAppearances": 1395,
+      "avgPickPosition": 28.8,
+      "wheelCount": 595,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "midrange": 5,
+        "ramp": 3,
+        "sneak": 4,
+        "oath": 1,
+        "storm": 1,
+        "reanimator": 1,
+        "tempo": 2,
+        "aggro": 1,
+        "control": 3
+      },
+      "sideboardCount": 79
+    },
+    "Entomb": {
+      "pickCount": 100,
+      "totalAppearances": 329,
+      "avgPickPosition": 17.5,
+      "wheelCount": 0,
+      "wheelOpportunities": 328,
+      "archetypeBreakdown": {
+        "aggro": 2,
+        "reanimator": 28,
+        "sneak": 26,
+        "midrange": 11,
+        "oath": 3,
+        "ramp": 2,
+        "storm": 3,
+        "tempo": 1,
+        "artifacts": 5,
+        "control": 1
+      },
+      "sideboardCount": 18
+    },
+    "Ephemerate": {
+      "pickCount": 100,
+      "totalAppearances": 1377,
+      "avgPickPosition": 30.7,
+      "wheelCount": 577,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "ramp": 2,
+        "sneak": 5,
+        "reanimator": 3,
+        "oath": 1,
+        "midrange": 3,
+        "storm": 2,
+        "tempo": 2,
+        "artifacts": 1,
+        "aggro": 2,
+        "control": 3
+      },
+      "sideboardCount": 76
+    },
+    "Esper Sentinel": {
+      "pickCount": 100,
+      "totalAppearances": 529,
+      "avgPickPosition": 21.3,
+      "wheelCount": 9,
+      "wheelOpportunities": 512,
+      "archetypeBreakdown": {
+        "tempo": 9,
+        "midrange": 18,
+        "storm": 2,
+        "artifacts": 5,
+        "control": 5,
+        "aggro": 23,
+        "ramp": 2,
+        "sneak": 4,
+        "reanimator": 3
+      },
+      "sideboardCount": 29
+    },
+    "Eternal Witness": {
+      "pickCount": 100,
+      "totalAppearances": 1337,
+      "avgPickPosition": 26,
+      "wheelCount": 537,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "sneak": 7,
+        "tempo": 3,
+        "midrange": 9,
+        "reanimator": 3,
+        "artifacts": 2,
+        "aggro": 2,
+        "storm": 1,
+        "control": 1
+      },
+      "sideboardCount": 72
+    },
+    "Exhume": {
+      "pickCount": 100,
+      "totalAppearances": 519,
+      "avgPickPosition": 20.9,
+      "wheelCount": 6,
+      "wheelOpportunities": 502,
+      "archetypeBreakdown": {
+        "midrange": 9,
+        "sneak": 25,
+        "reanimator": 37,
+        "artifacts": 6,
+        "oath": 3,
+        "aggro": 2,
+        "control": 2,
+        "ramp": 1
+      },
+      "sideboardCount": 15
+    },
+    "Expedition Map": {
+      "pickCount": 100,
+      "totalAppearances": 1095,
+      "avgPickPosition": 28.5,
+      "wheelCount": 299,
+      "wheelOpportunities": 699,
+      "archetypeBreakdown": {
+        "midrange": 14,
+        "sneak": 23,
+        "ramp": 7,
+        "oath": 8,
+        "artifacts": 6,
+        "aggro": 5,
+        "reanimator": 10,
+        "control": 4,
+        "tempo": 6,
+        "storm": 2
+      },
+      "sideboardCount": 15
+    },
+    "Exploration": {
+      "pickCount": 100,
+      "totalAppearances": 1153,
+      "avgPickPosition": 26.4,
+      "wheelCount": 353,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "sneak": 13,
+        "tempo": 5,
+        "artifacts": 2,
+        "oath": 4,
+        "reanimator": 4,
+        "ramp": 4,
+        "control": 4,
+        "midrange": 3,
+        "storm": 1,
+        "aggro": 3
+      },
+      "sideboardCount": 57
+    },
+    "Expressive Iteration": {
+      "pickCount": 100,
+      "totalAppearances": 1100,
+      "avgPickPosition": 24.8,
+      "wheelCount": 302,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "midrange": 9,
+        "sneak": 6,
+        "control": 2,
+        "storm": 3,
+        "reanimator": 1,
+        "tempo": 1,
+        "aggro": 2,
+        "ramp": 1
+      },
+      "sideboardCount": 75
+    },
+    "Faithless Looting": {
+      "pickCount": 100,
+      "totalAppearances": 461,
+      "avgPickPosition": 19.5,
+      "wheelCount": 3,
+      "wheelOpportunities": 454,
+      "archetypeBreakdown": {
+        "sneak": 27,
+        "midrange": 10,
+        "artifacts": 4,
+        "oath": 2,
+        "storm": 2,
+        "reanimator": 7,
+        "aggro": 6,
+        "tempo": 3,
+        "ramp": 3,
+        "control": 2
+      },
+      "sideboardCount": 34
+    },
+    "Fastbond": {
+      "pickCount": 100,
+      "totalAppearances": 828,
+      "avgPickPosition": 23.4,
+      "wheelCount": 100,
+      "wheelOpportunities": 663,
+      "archetypeBreakdown": {
+        "midrange": 14,
+        "aggro": 4,
+        "control": 2,
+        "ramp": 6,
+        "sneak": 12,
+        "reanimator": 11,
+        "oath": 6,
+        "storm": 2,
+        "artifacts": 3,
+        "tempo": 4
+      },
+      "sideboardCount": 36
+    },
+    "Fatal Push": {
+      "pickCount": 100,
+      "totalAppearances": 568,
+      "avgPickPosition": 20.7,
+      "wheelCount": 17,
+      "wheelOpportunities": 526,
+      "archetypeBreakdown": {
+        "midrange": 27,
+        "aggro": 7,
+        "reanimator": 7,
+        "sneak": 16,
+        "artifacts": 5,
+        "tempo": 6,
+        "control": 2,
+        "storm": 2,
+        "oath": 3
+      },
+      "sideboardCount": 25
+    },
+    "Fear of Missing Out": {
+      "pickCount": 100,
+      "totalAppearances": 838,
+      "avgPickPosition": 23.2,
+      "wheelCount": 105,
+      "wheelOpportunities": 667,
+      "archetypeBreakdown": {
+        "aggro": 23,
+        "ramp": 3,
+        "sneak": 5,
+        "midrange": 12,
+        "storm": 9,
+        "tempo": 8,
+        "control": 2,
+        "reanimator": 2,
+        "artifacts": 3
+      },
+      "sideboardCount": 33
+    },
+    "Fiery Confluence": {
+      "pickCount": 100,
+      "totalAppearances": 1039,
+      "avgPickPosition": 25.8,
+      "wheelCount": 250,
+      "wheelOpportunities": 695,
+      "archetypeBreakdown": {
+        "control": 6,
+        "oath": 1,
+        "midrange": 11,
+        "aggro": 3,
+        "sneak": 14,
+        "reanimator": 5,
+        "tempo": 9,
+        "artifacts": 2,
+        "storm": 3,
+        "ramp": 2
+      },
+      "sideboardCount": 44
+    },
+    "Fire Covenant": {
+      "pickCount": 100,
+      "totalAppearances": 1090,
+      "avgPickPosition": 26.5,
+      "wheelCount": 294,
+      "wheelOpportunities": 698,
+      "archetypeBreakdown": {
+        "midrange": 7,
+        "oath": 2,
+        "sneak": 11,
+        "storm": 1,
+        "reanimator": 2,
+        "tempo": 1,
+        "aggro": 2,
+        "ramp": 1
+      },
+      "sideboardCount": 73
+    },
+    "Fireblast": {
+      "pickCount": 100,
+      "totalAppearances": 1152,
+      "avgPickPosition": 28.2,
+      "wheelCount": 367,
+      "wheelOpportunities": 692,
+      "archetypeBreakdown": {
+        "sneak": 17,
+        "tempo": 3,
+        "midrange": 10,
+        "ramp": 1,
+        "reanimator": 9,
+        "aggro": 25,
+        "control": 3,
+        "oath": 1,
+        "storm": 4,
+        "artifacts": 1
+      },
+      "sideboardCount": 26
+    },
+    "Firebolt": {
+      "pickCount": 100,
+      "totalAppearances": 1283,
+      "avgPickPosition": 28.7,
+      "wheelCount": 485,
+      "wheelOpportunities": 699,
+      "archetypeBreakdown": {
+        "aggro": 3,
+        "control": 2,
+        "midrange": 8,
+        "artifacts": 1,
+        "sneak": 4,
+        "tempo": 3,
+        "storm": 1,
+        "reanimator": 2,
+        "ramp": 2
+      },
+      "sideboardCount": 74
+    },
+    "Flame Slash": {
+      "pickCount": 100,
+      "totalAppearances": 1038,
+      "avgPickPosition": 25.2,
+      "wheelCount": 254,
+      "wheelOpportunities": 693,
+      "archetypeBreakdown": {
+        "sneak": 15,
+        "midrange": 6,
+        "oath": 3,
+        "aggro": 6,
+        "reanimator": 6,
+        "artifacts": 1,
+        "storm": 3,
+        "tempo": 10,
+        "control": 4,
+        "ramp": 3
+      },
+      "sideboardCount": 43
+    },
+    "Flash": {
+      "pickCount": 100,
+      "totalAppearances": 265,
+      "avgPickPosition": 17.7,
+      "wheelCount": 0,
+      "wheelOpportunities": 265,
+      "archetypeBreakdown": {
+        "aggro": 8,
+        "ramp": 3,
+        "sneak": 24,
+        "midrange": 12,
+        "artifacts": 3,
+        "storm": 3,
+        "reanimator": 4,
+        "control": 7,
+        "oath": 3,
+        "tempo": 3
+      },
+      "sideboardCount": 30
+    },
+    "Flickerwisp": {
+      "pickCount": 100,
+      "totalAppearances": 1385,
+      "avgPickPosition": 28.6,
+      "wheelCount": 585,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "aggro": 5,
+        "tempo": 8,
+        "storm": 3,
+        "midrange": 10,
+        "control": 2,
+        "ramp": 2,
+        "reanimator": 3
+      },
+      "sideboardCount": 67
+    },
+    "Flooded Strand": {
+      "pickCount": 100,
+      "totalAppearances": 603,
+      "avgPickPosition": 22.8,
+      "wheelCount": 15,
+      "wheelOpportunities": 561,
+      "archetypeBreakdown": {
+        "midrange": 21,
+        "tempo": 7,
+        "control": 8,
+        "aggro": 10,
+        "reanimator": 7,
+        "artifacts": 5,
+        "ramp": 3,
+        "storm": 5,
+        "oath": 6,
+        "sneak": 18
+      },
+      "sideboardCount": 10
+    },
+    "Force of Negation": {
+      "pickCount": 100,
+      "totalAppearances": 381,
+      "avgPickPosition": 17.8,
+      "wheelCount": 3,
+      "wheelOpportunities": 374,
+      "archetypeBreakdown": {
+        "midrange": 16,
+        "ramp": 3,
+        "tempo": 14,
+        "sneak": 15,
+        "aggro": 11,
+        "oath": 5,
+        "control": 11,
+        "reanimator": 3,
+        "artifacts": 3,
+        "storm": 4
+      },
+      "sideboardCount": 15
+    },
+    "Force of Will": {
+      "pickCount": 100,
+      "totalAppearances": 288,
+      "avgPickPosition": 19.5,
+      "wheelCount": 1,
+      "wheelOpportunities": 286,
+      "archetypeBreakdown": {
+        "oath": 11,
+        "ramp": 5,
+        "control": 20,
+        "tempo": 4,
+        "sneak": 21,
+        "reanimator": 5,
+        "storm": 1,
+        "midrange": 15,
+        "artifacts": 3,
+        "aggro": 2
+      },
+      "sideboardCount": 13
+    },
+    "Forth Eorlingas!": {
+      "pickCount": 100,
+      "totalAppearances": 379,
+      "avgPickPosition": 19.1,
+      "wheelCount": 3,
+      "wheelOpportunities": 374,
+      "archetypeBreakdown": {
+        "sneak": 5,
+        "ramp": 3,
+        "midrange": 5,
+        "control": 3,
+        "aggro": 14,
+        "tempo": 3,
+        "storm": 2,
+        "reanimator": 4,
+        "oath": 1
+      },
+      "sideboardCount": 60
+    },
+    "Fractured Identity": {
+      "pickCount": 100,
+      "totalAppearances": 1242,
+      "avgPickPosition": 27.1,
+      "wheelCount": 442,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "midrange": 2,
+        "ramp": 1,
+        "sneak": 5,
+        "storm": 2,
+        "tempo": 1,
+        "reanimator": 1,
+        "artifacts": 1,
+        "oath": 1,
+        "control": 1
+      },
+      "sideboardCount": 85
+    },
+    "Frantic Search": {
+      "pickCount": 100,
+      "totalAppearances": 1039,
+      "avgPickPosition": 25.1,
+      "wheelCount": 252,
+      "wheelOpportunities": 694,
+      "archetypeBreakdown": {
+        "reanimator": 6,
+        "midrange": 14,
+        "tempo": 6,
+        "oath": 2,
+        "aggro": 8,
+        "sneak": 14,
+        "storm": 4,
+        "control": 4,
+        "artifacts": 2,
+        "ramp": 1
+      },
+      "sideboardCount": 39
+    },
+    "Fury": {
+      "pickCount": 100,
+      "totalAppearances": 1018,
+      "avgPickPosition": 24.3,
+      "wheelCount": 244,
+      "wheelOpportunities": 686,
+      "archetypeBreakdown": {
+        "sneak": 14,
+        "midrange": 12,
+        "oath": 6,
+        "ramp": 6,
+        "reanimator": 9,
+        "artifacts": 4,
+        "storm": 2,
+        "tempo": 2,
+        "control": 1
+      },
+      "sideboardCount": 44
+    },
+    "Gaea's Cradle": {
+      "pickCount": 100,
+      "totalAppearances": 937,
+      "avgPickPosition": 23.8,
+      "wheelCount": 170,
+      "wheelOpportunities": 686,
+      "archetypeBreakdown": {
+        "sneak": 10,
+        "artifacts": 4,
+        "ramp": 7,
+        "midrange": 10,
+        "tempo": 5,
+        "oath": 10,
+        "reanimator": 3,
+        "aggro": 3,
+        "control": 4,
+        "storm": 1
+      },
+      "sideboardCount": 43
+    },
+    "Galvanic Discharge": {
+      "pickCount": 100,
+      "totalAppearances": 1075,
+      "avgPickPosition": 25.9,
+      "wheelCount": 283,
+      "wheelOpportunities": 696,
+      "archetypeBreakdown": {
+        "midrange": 15,
+        "ramp": 2,
+        "sneak": 10,
+        "artifacts": 3,
+        "control": 1,
+        "storm": 2,
+        "reanimator": 7,
+        "tempo": 6,
+        "aggro": 2,
+        "oath": 1
+      },
+      "sideboardCount": 51
+    },
+    "Gitaxian Probe": {
+      "pickCount": 100,
+      "totalAppearances": 360,
+      "avgPickPosition": 18.2,
+      "wheelCount": 1,
+      "wheelOpportunities": 358,
+      "archetypeBreakdown": {
+        "sneak": 5,
+        "control": 5,
+        "aggro": 14,
+        "ramp": 4,
+        "tempo": 13,
+        "midrange": 18,
+        "storm": 8,
+        "oath": 2,
+        "reanimator": 3,
+        "artifacts": 2
+      },
+      "sideboardCount": 26
+    },
+    "Giver of Runes": {
+      "pickCount": 100,
+      "totalAppearances": 1245,
+      "avgPickPosition": 29.4,
+      "wheelCount": 445,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "oath": 1,
+        "aggro": 16,
+        "tempo": 6,
+        "midrange": 6,
+        "sneak": 5,
+        "control": 4,
+        "reanimator": 6,
+        "artifacts": 2,
+        "storm": 2
+      },
+      "sideboardCount": 52
+    },
+    "Goblin Engineer": {
+      "pickCount": 100,
+      "totalAppearances": 1385,
+      "avgPickPosition": 29.8,
+      "wheelCount": 585,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "aggro": 6,
+        "ramp": 1,
+        "sneak": 4,
+        "artifacts": 1,
+        "storm": 1,
+        "midrange": 6,
+        "reanimator": 1,
+        "tempo": 1
+      },
+      "sideboardCount": 79
+    },
+    "Goblin Rabblemaster": {
+      "pickCount": 100,
+      "totalAppearances": 1134,
+      "avgPickPosition": 25.9,
+      "wheelCount": 338,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "ramp": 2,
+        "tempo": 6,
+        "control": 2,
+        "midrange": 11,
+        "aggro": 22,
+        "sneak": 9,
+        "storm": 2,
+        "reanimator": 2,
+        "artifacts": 1
+      },
+      "sideboardCount": 43
+    },
+    "Goblin Welder": {
+      "pickCount": 100,
+      "totalAppearances": 552,
+      "avgPickPosition": 21.6,
+      "wheelCount": 15,
+      "wheelOpportunities": 521,
+      "archetypeBreakdown": {
+        "artifacts": 16,
+        "sneak": 14,
+        "midrange": 14,
+        "aggro": 17,
+        "tempo": 5,
+        "storm": 2,
+        "control": 1,
+        "ramp": 1,
+        "reanimator": 1,
+        "oath": 2
+      },
+      "sideboardCount": 27
+    },
+    "Godless Shrine": {
+      "pickCount": 100,
+      "totalAppearances": 1305,
+      "avgPickPosition": 29.7,
+      "wheelCount": 505,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "midrange": 25,
+        "ramp": 2,
+        "control": 9,
+        "reanimator": 8,
+        "aggro": 7,
+        "sneak": 18,
+        "oath": 6,
+        "storm": 5,
+        "artifacts": 2,
+        "tempo": 6
+      },
+      "sideboardCount": 12
+    },
+    "Golos, Tireless Pilgrim": {
+      "pickCount": 100,
+      "totalAppearances": 1407,
+      "avgPickPosition": 29.1,
+      "wheelCount": 607,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {},
+      "sideboardCount": 100
+    },
+    "Green Sun's Zenith": {
+      "pickCount": 100,
+      "totalAppearances": 1212,
+      "avgPickPosition": 27.1,
+      "wheelCount": 412,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "sneak": 6,
+        "tempo": 3,
+        "reanimator": 2,
+        "artifacts": 2,
+        "oath": 4,
+        "midrange": 6,
+        "storm": 3,
+        "ramp": 4,
+        "aggro": 2
+      },
+      "sideboardCount": 68
+    },
+    "Grief": {
+      "pickCount": 100,
+      "totalAppearances": 792,
+      "avgPickPosition": 22.8,
+      "wheelCount": 77,
+      "wheelOpportunities": 655,
+      "archetypeBreakdown": {
+        "midrange": 28,
+        "sneak": 14,
+        "storm": 3,
+        "control": 4,
+        "reanimator": 10,
+        "artifacts": 4,
+        "tempo": 8,
+        "ramp": 1,
+        "oath": 4,
+        "aggro": 2
+      },
+      "sideboardCount": 22
+    },
+    "Grim Monolith": {
+      "pickCount": 100,
+      "totalAppearances": 394,
+      "avgPickPosition": 19.5,
+      "wheelCount": 0,
+      "wheelOpportunities": 390,
+      "archetypeBreakdown": {
+        "artifacts": 13,
+        "aggro": 13,
+        "midrange": 15,
+        "reanimator": 10,
+        "tempo": 13,
+        "sneak": 16,
+        "ramp": 5,
+        "oath": 6,
+        "storm": 3,
+        "control": 6
+      },
+      "sideboardCount": 0
+    },
+    "Griselbrand": {
+      "pickCount": 100,
+      "totalAppearances": 149,
+      "avgPickPosition": 18.9,
+      "wheelCount": 0,
+      "wheelOpportunities": 149,
+      "archetypeBreakdown": {
+        "oath": 7,
+        "midrange": 11,
+        "sneak": 47,
+        "reanimator": 16,
+        "ramp": 8,
+        "artifacts": 6,
+        "storm": 2,
+        "control": 1
+      },
+      "sideboardCount": 2
+    },
+    "Grist, the Hunger Tide": {
+      "pickCount": 100,
+      "totalAppearances": 735,
+      "avgPickPosition": 23.1,
+      "wheelCount": 58,
+      "wheelOpportunities": 625,
+      "archetypeBreakdown": {
+        "midrange": 30,
+        "aggro": 2,
+        "artifacts": 3,
+        "oath": 5,
+        "sneak": 12,
+        "tempo": 1,
+        "reanimator": 7,
+        "control": 1,
+        "ramp": 1
+      },
+      "sideboardCount": 38
+    },
+    "Guide of Souls": {
+      "pickCount": 100,
+      "totalAppearances": 708,
+      "avgPickPosition": 22.8,
+      "wheelCount": 44,
+      "wheelOpportunities": 623,
+      "archetypeBreakdown": {
+        "aggro": 17,
+        "midrange": 6,
+        "sneak": 11,
+        "artifacts": 7,
+        "storm": 8,
+        "tempo": 16,
+        "control": 4,
+        "reanimator": 4,
+        "oath": 1
+      },
+      "sideboardCount": 26
+    },
+    "Gut, True Soul Zealot": {
+      "pickCount": 100,
+      "totalAppearances": 676,
+      "avgPickPosition": 20.4,
+      "wheelCount": 34,
+      "wheelOpportunities": 610,
+      "archetypeBreakdown": {
+        "artifacts": 4,
+        "tempo": 14,
+        "sneak": 8,
+        "storm": 5,
+        "midrange": 7,
+        "reanimator": 2,
+        "control": 6,
+        "aggro": 10
+      },
+      "sideboardCount": 44
+    },
+    "Hallowed Fountain": {
+      "pickCount": 100,
+      "totalAppearances": 1252,
+      "avgPickPosition": 23.9,
+      "wheelCount": 452,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "sneak": 19,
+        "control": 6,
+        "midrange": 23,
+        "ramp": 3,
+        "reanimator": 5,
+        "storm": 7,
+        "artifacts": 6,
+        "tempo": 7,
+        "oath": 3,
+        "aggro": 5
+      },
+      "sideboardCount": 16
+    },
+    "Headliner Scarlett": {
+      "pickCount": 100,
+      "totalAppearances": 804,
+      "avgPickPosition": 22.7,
+      "wheelCount": 85,
+      "wheelOpportunities": 662,
+      "archetypeBreakdown": {
+        "sneak": 12,
+        "reanimator": 5,
+        "ramp": 5,
+        "midrange": 9,
+        "aggro": 18,
+        "tempo": 5,
+        "control": 3,
+        "storm": 3,
+        "oath": 1,
+        "artifacts": 1
+      },
+      "sideboardCount": 38
+    },
+    "Hedge Maze": {
+      "pickCount": 100,
+      "totalAppearances": 1336,
+      "avgPickPosition": 26.4,
+      "wheelCount": 536,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "aggro": 10,
+        "artifacts": 4,
+        "midrange": 20,
+        "tempo": 15,
+        "sneak": 25,
+        "control": 11,
+        "reanimator": 3,
+        "storm": 1,
+        "ramp": 5,
+        "oath": 3
+      },
+      "sideboardCount": 3
+    },
+    "Hexdrinker": {
+      "pickCount": 100,
+      "totalAppearances": 667,
+      "avgPickPosition": 21.1,
+      "wheelCount": 38,
+      "wheelOpportunities": 591,
+      "archetypeBreakdown": {
+        "midrange": 40,
+        "aggro": 7,
+        "sneak": 14,
+        "artifacts": 5,
+        "reanimator": 3,
+        "oath": 2,
+        "storm": 2,
+        "ramp": 1,
+        "tempo": 1
+      },
+      "sideboardCount": 25
+    },
+    "Hullbreacher": {
+      "pickCount": 100,
+      "totalAppearances": 260,
+      "avgPickPosition": 18.2,
+      "wheelCount": 0,
+      "wheelOpportunities": 260,
+      "archetypeBreakdown": {
+        "tempo": 21,
+        "sneak": 12,
+        "aggro": 13,
+        "ramp": 4,
+        "control": 7,
+        "midrange": 16,
+        "oath": 3,
+        "artifacts": 4,
+        "reanimator": 3,
+        "storm": 1
+      },
+      "sideboardCount": 16
+    },
+    "Hymn to Tourach": {
+      "pickCount": 100,
+      "totalAppearances": 1123,
+      "avgPickPosition": 27.7,
+      "wheelCount": 328,
+      "wheelOpportunities": 699,
+      "archetypeBreakdown": {
+        "midrange": 9,
+        "reanimator": 6,
+        "artifacts": 2,
+        "tempo": 4,
+        "sneak": 16,
+        "oath": 5,
+        "ramp": 4,
+        "aggro": 3,
+        "storm": 3,
+        "control": 2
+      },
+      "sideboardCount": 46
+    },
+    "Icetill Explorer": {
+      "pickCount": 100,
+      "totalAppearances": 803,
+      "avgPickPosition": 20.9,
+      "wheelCount": 88,
+      "wheelOpportunities": 659,
+      "archetypeBreakdown": {
+        "midrange": 21,
+        "sneak": 19,
+        "ramp": 4,
+        "artifacts": 3,
+        "storm": 5,
+        "reanimator": 14,
+        "control": 1,
+        "oath": 5,
+        "aggro": 1,
+        "tempo": 3
+      },
+      "sideboardCount": 24
+    },
+    "Ignoble Hierarch": {
+      "pickCount": 100,
+      "totalAppearances": 1012,
+      "avgPickPosition": 25.1,
+      "wheelCount": 229,
+      "wheelOpportunities": 692,
+      "archetypeBreakdown": {
+        "midrange": 2,
+        "sneak": 3,
+        "artifacts": 1,
+        "aggro": 2
+      },
+      "sideboardCount": 92
+    },
+    "Imperial Recruiter": {
+      "pickCount": 100,
+      "totalAppearances": 1477,
+      "avgPickPosition": 31.9,
+      "wheelCount": 677,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "midrange": 1,
+        "storm": 2,
+        "tempo": 2,
+        "reanimator": 1
+      },
+      "sideboardCount": 94
+    },
+    "Imperial Seal": {
+      "pickCount": 100,
+      "totalAppearances": 1009,
+      "avgPickPosition": 25.2,
+      "wheelCount": 229,
+      "wheelOpportunities": 693,
+      "archetypeBreakdown": {
+        "midrange": 14,
+        "sneak": 24,
+        "reanimator": 7,
+        "oath": 1,
+        "ramp": 4,
+        "control": 1,
+        "artifacts": 3,
+        "tempo": 2,
+        "aggro": 5,
+        "storm": 1
+      },
+      "sideboardCount": 38
+    },
+    "Incinerate": {
+      "pickCount": 100,
+      "totalAppearances": 1041,
+      "avgPickPosition": 25.3,
+      "wheelCount": 248,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "midrange": 8,
+        "aggro": 5,
+        "control": 2,
+        "sneak": 8,
+        "oath": 3,
+        "ramp": 2,
+        "reanimator": 2,
+        "tempo": 4
+      },
+      "sideboardCount": 66
+    },
+    "Indatha Triome": {
+      "pickCount": 100,
+      "totalAppearances": 1040,
+      "avgPickPosition": 28,
+      "wheelCount": 254,
+      "wheelOpportunities": 695,
+      "archetypeBreakdown": {
+        "artifacts": 1,
+        "ramp": 8,
+        "midrange": 20,
+        "sneak": 18,
+        "tempo": 14,
+        "control": 5,
+        "aggro": 14,
+        "reanimator": 6,
+        "oath": 4,
+        "storm": 10
+      },
+      "sideboardCount": 0
+    },
+    "Inferno Titan": {
+      "pickCount": 100,
+      "totalAppearances": 1138,
+      "avgPickPosition": 25.5,
+      "wheelCount": 344,
+      "wheelOpportunities": 698,
+      "archetypeBreakdown": {
+        "sneak": 28,
+        "ramp": 10,
+        "artifacts": 8,
+        "oath": 7,
+        "reanimator": 6,
+        "midrange": 4,
+        "tempo": 1
+      },
+      "sideboardCount": 36
+    },
+    "Inquisition of Kozilek": {
+      "pickCount": 100,
+      "totalAppearances": 425,
+      "avgPickPosition": 15.8,
+      "wheelCount": 1,
+      "wheelOpportunities": 419,
+      "archetypeBreakdown": {
+        "midrange": 51,
+        "reanimator": 6,
+        "ramp": 1,
+        "sneak": 11,
+        "artifacts": 2,
+        "aggro": 3,
+        "control": 3,
+        "storm": 1,
+        "tempo": 3,
+        "oath": 1
+      },
+      "sideboardCount": 18
+    },
+    "Inti, Seneschal of the Sun": {
+      "pickCount": 100,
+      "totalAppearances": 943,
+      "avgPickPosition": 23.2,
+      "wheelCount": 175,
+      "wheelOpportunities": 685,
+      "archetypeBreakdown": {
+        "aggro": 20,
+        "midrange": 16,
+        "tempo": 12,
+        "sneak": 4,
+        "oath": 1,
+        "storm": 5,
+        "artifacts": 2,
+        "reanimator": 3,
+        "control": 1
+      },
+      "sideboardCount": 36
+    },
+    "Jace, the Mind Sculptor": {
+      "pickCount": 100,
+      "totalAppearances": 248,
+      "avgPickPosition": 14.6,
+      "wheelCount": 0,
+      "wheelOpportunities": 247,
+      "archetypeBreakdown": {
+        "oath": 4,
+        "control": 26,
+        "reanimator": 5,
+        "ramp": 2,
+        "tempo": 14,
+        "midrange": 19,
+        "storm": 5,
+        "sneak": 7,
+        "artifacts": 3,
+        "aggro": 7
+      },
+      "sideboardCount": 8
+    },
+    "Jacked Rabbit": {
+      "pickCount": 100,
+      "totalAppearances": 840,
+      "avgPickPosition": 20,
+      "wheelCount": 93,
+      "wheelOpportunities": 675,
+      "archetypeBreakdown": {
+        "aggro": 22,
+        "control": 3,
+        "tempo": 16,
+        "reanimator": 3,
+        "midrange": 16,
+        "sneak": 8,
+        "ramp": 2,
+        "storm": 7,
+        "oath": 1
+      },
+      "sideboardCount": 22
+    },
+    "Jetmir's Garden": {
+      "pickCount": 100,
+      "totalAppearances": 928,
+      "avgPickPosition": 25.5,
+      "wheelCount": 164,
+      "wheelOpportunities": 686,
+      "archetypeBreakdown": {
+        "midrange": 20,
+        "artifacts": 2,
+        "storm": 13,
+        "sneak": 19,
+        "control": 8,
+        "ramp": 4,
+        "tempo": 12,
+        "reanimator": 7,
+        "aggro": 8,
+        "oath": 4
+      },
+      "sideboardCount": 3
+    },
+    "Kaldra Compleat": {
+      "pickCount": 100,
+      "totalAppearances": 1003,
+      "avgPickPosition": 24.7,
+      "wheelCount": 221,
+      "wheelOpportunities": 694,
+      "archetypeBreakdown": {
+        "artifacts": 18,
+        "ramp": 10,
+        "sneak": 24,
+        "midrange": 17,
+        "aggro": 8,
+        "oath": 5,
+        "reanimator": 9,
+        "storm": 2,
+        "control": 2,
+        "tempo": 1
+      },
+      "sideboardCount": 4
+    },
+    "Kappa Cannoneer": {
+      "pickCount": 100,
+      "totalAppearances": 695,
+      "avgPickPosition": 23.9,
+      "wheelCount": 47,
+      "wheelOpportunities": 606,
+      "archetypeBreakdown": {
+        "sneak": 27,
+        "ramp": 10,
+        "artifacts": 6,
+        "midrange": 7,
+        "reanimator": 6,
+        "storm": 2,
+        "control": 3,
+        "oath": 2,
+        "aggro": 1
+      },
+      "sideboardCount": 36
+    },
+    "Karakas": {
+      "pickCount": 100,
+      "totalAppearances": 334,
+      "avgPickPosition": 19.7,
+      "wheelCount": 0,
+      "wheelOpportunities": 333,
+      "archetypeBreakdown": {
+        "tempo": 14,
+        "aggro": 10,
+        "midrange": 13,
+        "control": 8,
+        "ramp": 3,
+        "oath": 1,
+        "sneak": 7,
+        "artifacts": 3,
+        "storm": 2,
+        "reanimator": 2
+      },
+      "sideboardCount": 37
+    },
+    "Ketria Triome": {
+      "pickCount": 100,
+      "totalAppearances": 732,
+      "avgPickPosition": 21.4,
+      "wheelCount": 54,
+      "wheelOpportunities": 629,
+      "archetypeBreakdown": {
+        "aggro": 16,
+        "control": 5,
+        "midrange": 21,
+        "storm": 4,
+        "artifacts": 6,
+        "tempo": 11,
+        "sneak": 18,
+        "oath": 2,
+        "ramp": 10,
+        "reanimator": 6
+      },
+      "sideboardCount": 1
+    },
+    "Laelia, the Blade Reforged": {
+      "pickCount": 100,
+      "totalAppearances": 906,
+      "avgPickPosition": 24.8,
+      "wheelCount": 146,
+      "wheelOpportunities": 684,
+      "archetypeBreakdown": {
+        "artifacts": 4,
+        "sneak": 12,
+        "aggro": 17,
+        "ramp": 1,
+        "midrange": 20,
+        "tempo": 8,
+        "control": 2,
+        "reanimator": 1,
+        "oath": 1,
+        "storm": 2
+      },
+      "sideboardCount": 32
+    },
+    "Library of Alexandria": {
+      "pickCount": 100,
+      "totalAppearances": 363,
+      "avgPickPosition": 19.2,
+      "wheelCount": 0,
+      "wheelOpportunities": 362,
+      "archetypeBreakdown": {
+        "tempo": 15,
+        "sneak": 14,
+        "control": 5,
+        "ramp": 8,
+        "artifacts": 5,
+        "reanimator": 10,
+        "midrange": 25,
+        "oath": 4,
+        "aggro": 8,
+        "storm": 6
+      },
+      "sideboardCount": 0
+    },
+    "Life // Death": {
+      "pickCount": 100,
+      "totalAppearances": 493,
+      "avgPickPosition": 20.1,
+      "wheelCount": 10,
+      "wheelOpportunities": 471,
+      "archetypeBreakdown": {
+        "sneak": 20,
+        "oath": 7,
+        "reanimator": 24,
+        "ramp": 3,
+        "control": 2,
+        "artifacts": 2,
+        "midrange": 3,
+        "aggro": 1,
+        "storm": 2
+      },
+      "sideboardCount": 36
+    },
+    "Lightning Bolt": {
+      "pickCount": 100,
+      "totalAppearances": 209,
+      "avgPickPosition": 17.2,
+      "wheelCount": 0,
+      "wheelOpportunities": 209,
+      "archetypeBreakdown": {
+        "aggro": 27,
+        "ramp": 2,
+        "tempo": 7,
+        "midrange": 11,
+        "oath": 2,
+        "sneak": 10,
+        "control": 3,
+        "artifacts": 4,
+        "storm": 2,
+        "reanimator": 4
+      },
+      "sideboardCount": 28
+    },
+    "Lightning Greaves": {
+      "pickCount": 100,
+      "totalAppearances": 720,
+      "avgPickPosition": 23,
+      "wheelCount": 50,
+      "wheelOpportunities": 627,
+      "archetypeBreakdown": {
+        "aggro": 27,
+        "midrange": 16,
+        "sneak": 17,
+        "control": 10,
+        "tempo": 7,
+        "ramp": 3,
+        "reanimator": 8,
+        "artifacts": 7,
+        "oath": 3,
+        "storm": 1
+      },
+      "sideboardCount": 1
+    },
+    "Liliana of the Veil": {
+      "pickCount": 100,
+      "totalAppearances": 480,
+      "avgPickPosition": 19.2,
+      "wheelCount": 2,
+      "wheelOpportunities": 470,
+      "archetypeBreakdown": {
+        "midrange": 45,
+        "control": 2,
+        "reanimator": 7,
+        "sneak": 15,
+        "artifacts": 2,
+        "aggro": 2,
+        "oath": 5,
+        "storm": 3
+      },
+      "sideboardCount": 19
+    },
+    "Lingering Souls": {
+      "pickCount": 100,
+      "totalAppearances": 1364,
+      "avgPickPosition": 28.3,
+      "wheelCount": 564,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "midrange": 3,
+        "reanimator": 3,
+        "sneak": 3,
+        "artifacts": 1
+      },
+      "sideboardCount": 90
+    },
+    "Lion Sash": {
+      "pickCount": 100,
+      "totalAppearances": 1177,
+      "avgPickPosition": 26.5,
+      "wheelCount": 380,
+      "wheelOpportunities": 699,
+      "archetypeBreakdown": {
+        "aggro": 22,
+        "artifacts": 10,
+        "tempo": 7,
+        "ramp": 2,
+        "sneak": 6,
+        "midrange": 7,
+        "reanimator": 5
+      },
+      "sideboardCount": 41
+    },
+    "Lion's Eye Diamond": {
+      "pickCount": 100,
+      "totalAppearances": 167,
+      "avgPickPosition": 19.2,
+      "wheelCount": 0,
+      "wheelOpportunities": 167,
+      "archetypeBreakdown": {
+        "artifacts": 6,
+        "ramp": 7,
+        "midrange": 23,
+        "sneak": 12,
+        "control": 9,
+        "tempo": 15,
+        "storm": 8,
+        "aggro": 11,
+        "reanimator": 9
+      },
+      "sideboardCount": 0
+    },
+    "Llanowar Elves": {
+      "pickCount": 100,
+      "totalAppearances": 779,
+      "avgPickPosition": 24.4,
+      "wheelCount": 70,
+      "wheelOpportunities": 646,
+      "archetypeBreakdown": {
+        "midrange": 19,
+        "ramp": 10,
+        "artifacts": 8,
+        "sneak": 15,
+        "oath": 4,
+        "reanimator": 8,
+        "control": 4,
+        "aggro": 5,
+        "tempo": 4,
+        "storm": 1
+      },
+      "sideboardCount": 22
+    },
+    "Loran of the Third Path": {
+      "pickCount": 100,
+      "totalAppearances": 1494,
+      "avgPickPosition": 29.9,
+      "wheelCount": 694,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "storm": 1,
+        "control": 1,
+        "sneak": 3,
+        "aggro": 1,
+        "midrange": 1
+      },
+      "sideboardCount": 93
+    },
+    "Lórien Revealed": {
+      "pickCount": 100,
+      "totalAppearances": 1317,
+      "avgPickPosition": 27.1,
+      "wheelCount": 517,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "ramp": 8,
+        "sneak": 12,
+        "midrange": 8,
+        "oath": 4,
+        "storm": 1,
+        "artifacts": 2,
+        "reanimator": 2,
+        "tempo": 1
+      },
+      "sideboardCount": 62
+    },
+    "Lose Focus": {
+      "pickCount": 100,
+      "totalAppearances": 557,
+      "avgPickPosition": 20.3,
+      "wheelCount": 16,
+      "wheelOpportunities": 519,
+      "archetypeBreakdown": {
+        "aggro": 14,
+        "control": 12,
+        "tempo": 18,
+        "ramp": 1,
+        "sneak": 10,
+        "midrange": 15,
+        "oath": 3,
+        "storm": 5,
+        "artifacts": 5
+      },
+      "sideboardCount": 17
+    },
+    "Lotus Cobra": {
+      "pickCount": 100,
+      "totalAppearances": 836,
+      "avgPickPosition": 21.7,
+      "wheelCount": 98,
+      "wheelOpportunities": 671,
+      "archetypeBreakdown": {
+        "sneak": 20,
+        "midrange": 18,
+        "ramp": 10,
+        "artifacts": 3,
+        "reanimator": 8,
+        "tempo": 6,
+        "control": 2,
+        "oath": 2,
+        "aggro": 3
+      },
+      "sideboardCount": 28
+    },
+    "Lotus Petal": {
+      "pickCount": 100,
+      "totalAppearances": 179,
+      "avgPickPosition": 17.5,
+      "wheelCount": 0,
+      "wheelOpportunities": 179,
+      "archetypeBreakdown": {
+        "artifacts": 6,
+        "midrange": 29,
+        "ramp": 4,
+        "sneak": 15,
+        "aggro": 8,
+        "tempo": 19,
+        "storm": 8,
+        "control": 5,
+        "reanimator": 4,
+        "oath": 2
+      },
+      "sideboardCount": 0
+    },
+    "Luminarch Aspirant": {
+      "pickCount": 100,
+      "totalAppearances": 1176,
+      "avgPickPosition": 28.3,
+      "wheelCount": 381,
+      "wheelOpportunities": 697,
+      "archetypeBreakdown": {
+        "aggro": 20,
+        "storm": 5,
+        "midrange": 7,
+        "sneak": 4,
+        "control": 1,
+        "artifacts": 2,
+        "tempo": 10,
+        "reanimator": 2,
+        "ramp": 2
+      },
+      "sideboardCount": 47
+    },
+    "Lurrus of the Dream-Den": {
+      "pickCount": 100,
+      "totalAppearances": 1182,
+      "avgPickPosition": 27,
+      "wheelCount": 383,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "midrange": 18,
+        "storm": 5,
+        "reanimator": 2,
+        "aggro": 3,
+        "sneak": 5,
+        "artifacts": 1,
+        "ramp": 1,
+        "tempo": 3
+      },
+      "sideboardCount": 62
+    },
+    "Lush Portico": {
+      "pickCount": 100,
+      "totalAppearances": 1441,
+      "avgPickPosition": 29.7,
+      "wheelCount": 641,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "oath": 6,
+        "midrange": 21,
+        "control": 5,
+        "tempo": 2,
+        "reanimator": 11,
+        "aggro": 9,
+        "storm": 2,
+        "sneak": 19,
+        "ramp": 4,
+        "artifacts": 4
+      },
+      "sideboardCount": 17
+    },
+    "Lutri, the Spellchaser": {
+      "pickCount": 100,
+      "totalAppearances": 1000,
+      "avgPickPosition": 24.1,
+      "wheelCount": 224,
+      "wheelOpportunities": 687,
+      "archetypeBreakdown": {
+        "tempo": 7,
+        "midrange": 16,
+        "control": 5,
+        "sneak": 7,
+        "storm": 3,
+        "artifacts": 2,
+        "reanimator": 2,
+        "aggro": 5,
+        "ramp": 1
+      },
+      "sideboardCount": 52
+    },
+    "Malevolent Rumble": {
+      "pickCount": 100,
+      "totalAppearances": 1011,
+      "avgPickPosition": 24.8,
+      "wheelCount": 234,
+      "wheelOpportunities": 691,
+      "archetypeBreakdown": {
+        "sneak": 17,
+        "midrange": 12,
+        "ramp": 3,
+        "aggro": 3,
+        "reanimator": 9,
+        "oath": 6,
+        "artifacts": 2,
+        "tempo": 1,
+        "control": 3
+      },
+      "sideboardCount": 44
+    },
+    "Mana Confluence": {
+      "pickCount": 100,
+      "totalAppearances": 557,
+      "avgPickPosition": 21.5,
+      "wheelCount": 10,
+      "wheelOpportunities": 534,
+      "archetypeBreakdown": {
+        "oath": 8,
+        "sneak": 32,
+        "ramp": 9,
+        "midrange": 21,
+        "reanimator": 10,
+        "control": 2,
+        "storm": 4,
+        "aggro": 5,
+        "artifacts": 4,
+        "tempo": 5
+      },
+      "sideboardCount": 0
+    },
+    "Mana Crypt": {
+      "pickCount": 100,
+      "totalAppearances": 172,
+      "avgPickPosition": 16.3,
+      "wheelCount": 0,
+      "wheelOpportunities": 172,
+      "archetypeBreakdown": {
+        "artifacts": 7,
+        "sneak": 21,
+        "midrange": 22,
+        "tempo": 12,
+        "ramp": 5,
+        "control": 6,
+        "reanimator": 4,
+        "aggro": 16,
+        "storm": 4,
+        "oath": 3
+      },
+      "sideboardCount": 0
+    },
+    "Mana Drain": {
+      "pickCount": 100,
+      "totalAppearances": 127,
+      "avgPickPosition": 17.8,
+      "wheelCount": 0,
+      "wheelOpportunities": 127,
+      "archetypeBreakdown": {
+        "aggro": 10,
+        "control": 16,
+        "storm": 4,
+        "reanimator": 5,
+        "midrange": 12,
+        "tempo": 15,
+        "oath": 8,
+        "sneak": 12,
+        "ramp": 3,
+        "artifacts": 1
+      },
+      "sideboardCount": 14
+    },
+    "Mana Leak": {
+      "pickCount": 100,
+      "totalAppearances": 386,
+      "avgPickPosition": 18.6,
+      "wheelCount": 1,
+      "wheelOpportunities": 384,
+      "archetypeBreakdown": {
+        "midrange": 18,
+        "control": 14,
+        "reanimator": 2,
+        "tempo": 19,
+        "sneak": 9,
+        "aggro": 13,
+        "artifacts": 4,
+        "storm": 2,
+        "oath": 3,
+        "ramp": 1
+      },
+      "sideboardCount": 15
+    },
+    "Mana Vault": {
+      "pickCount": 100,
+      "totalAppearances": 215,
+      "avgPickPosition": 20.9,
+      "wheelCount": 0,
+      "wheelOpportunities": 215,
+      "archetypeBreakdown": {
+        "sneak": 21,
+        "midrange": 32,
+        "storm": 6,
+        "ramp": 3,
+        "reanimator": 4,
+        "aggro": 14,
+        "oath": 4,
+        "tempo": 13,
+        "control": 1,
+        "artifacts": 2
+      },
+      "sideboardCount": 0
+    },
+    "Marsh Flats": {
+      "pickCount": 100,
+      "totalAppearances": 796,
+      "avgPickPosition": 23.4,
+      "wheelCount": 92,
+      "wheelOpportunities": 646,
+      "archetypeBreakdown": {
+        "sneak": 24,
+        "midrange": 24,
+        "ramp": 8,
+        "aggro": 6,
+        "artifacts": 3,
+        "reanimator": 13,
+        "tempo": 5,
+        "storm": 5,
+        "oath": 2
+      },
+      "sideboardCount": 10
+    },
+    "Mawloc": {
+      "pickCount": 100,
+      "totalAppearances": 804,
+      "avgPickPosition": 24.4,
+      "wheelCount": 77,
+      "wheelOpportunities": 663,
+      "archetypeBreakdown": {
+        "sneak": 4,
+        "artifacts": 1,
+        "tempo": 5,
+        "reanimator": 1,
+        "aggro": 5,
+        "midrange": 4
+      },
+      "sideboardCount": 80
+    },
+    "Memory Jar": {
+      "pickCount": 100,
+      "totalAppearances": 1324,
+      "avgPickPosition": 30,
+      "wheelCount": 524,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "sneak": 26,
+        "reanimator": 8,
+        "ramp": 4,
+        "midrange": 8,
+        "storm": 1,
+        "control": 1,
+        "artifacts": 5,
+        "oath": 3
+      },
+      "sideboardCount": 44
+    },
+    "Memory Lapse": {
+      "pickCount": 100,
+      "totalAppearances": 382,
+      "avgPickPosition": 19.9,
+      "wheelCount": 1,
+      "wheelOpportunities": 380,
+      "archetypeBreakdown": {
+        "sneak": 11,
+        "artifacts": 7,
+        "aggro": 11,
+        "tempo": 28,
+        "control": 12,
+        "midrange": 14,
+        "reanimator": 3,
+        "storm": 2,
+        "oath": 2,
+        "ramp": 1
+      },
+      "sideboardCount": 9
+    },
+    "Metamorphosis Fanatic": {
+      "pickCount": 100,
+      "totalAppearances": 906,
+      "avgPickPosition": 22,
+      "wheelCount": 155,
+      "wheelOpportunities": 675,
+      "archetypeBreakdown": {
+        "sneak": 28,
+        "oath": 7,
+        "reanimator": 16,
+        "midrange": 6,
+        "storm": 2,
+        "ramp": 9,
+        "artifacts": 6,
+        "control": 1,
+        "tempo": 2,
+        "aggro": 1
+      },
+      "sideboardCount": 22
+    },
+    "Meticulous Archive": {
+      "pickCount": 100,
+      "totalAppearances": 1255,
+      "avgPickPosition": 24.3,
+      "wheelCount": 455,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "tempo": 17,
+        "ramp": 4,
+        "aggro": 10,
+        "control": 4,
+        "reanimator": 4,
+        "sneak": 26,
+        "artifacts": 2,
+        "oath": 6,
+        "midrange": 10,
+        "storm": 2
+      },
+      "sideboardCount": 15
+    },
+    "Mind Twist": {
+      "pickCount": 100,
+      "totalAppearances": 887,
+      "avgPickPosition": 22.8,
+      "wheelCount": 129,
+      "wheelOpportunities": 682,
+      "archetypeBreakdown": {
+        "sneak": 18,
+        "oath": 8,
+        "midrange": 11,
+        "tempo": 4,
+        "reanimator": 12,
+        "control": 5,
+        "ramp": 2,
+        "aggro": 3,
+        "artifacts": 1
+      },
+      "sideboardCount": 36
+    },
+    "Minsc & Boo, Timeless Heroes": {
+      "pickCount": 100,
+      "totalAppearances": 354,
+      "avgPickPosition": 18.1,
+      "wheelCount": 0,
+      "wheelOpportunities": 353,
+      "archetypeBreakdown": {
+        "midrange": 6,
+        "oath": 3,
+        "ramp": 3,
+        "tempo": 1,
+        "sneak": 7,
+        "storm": 1,
+        "control": 1,
+        "aggro": 6,
+        "artifacts": 2,
+        "reanimator": 2
+      },
+      "sideboardCount": 68
+    },
+    "Miscalculation": {
+      "pickCount": 100,
+      "totalAppearances": 268,
+      "avgPickPosition": 17.7,
+      "wheelCount": 0,
+      "wheelOpportunities": 268,
+      "archetypeBreakdown": {
+        "aggro": 9,
+        "control": 8,
+        "reanimator": 6,
+        "midrange": 22,
+        "tempo": 19,
+        "storm": 4,
+        "ramp": 2,
+        "sneak": 11,
+        "artifacts": 2,
+        "oath": 3
+      },
+      "sideboardCount": 14
+    },
+    "Mishra's Bauble": {
+      "pickCount": 100,
+      "totalAppearances": 440,
+      "avgPickPosition": 20.5,
+      "wheelCount": 0,
+      "wheelOpportunities": 436,
+      "archetypeBreakdown": {
+        "midrange": 28,
+        "artifacts": 7,
+        "ramp": 7,
+        "sneak": 18,
+        "reanimator": 5,
+        "storm": 11,
+        "control": 5,
+        "aggro": 11,
+        "tempo": 5,
+        "oath": 3
+      },
+      "sideboardCount": 0
+    },
+    "Mishra's Workshop": {
+      "pickCount": 100,
+      "totalAppearances": 580,
+      "avgPickPosition": 20.2,
+      "wheelCount": 8,
+      "wheelOpportunities": 552,
+      "archetypeBreakdown": {
+        "oath": 7,
+        "sneak": 29,
+        "ramp": 11,
+        "control": 4,
+        "reanimator": 16,
+        "tempo": 4,
+        "artifacts": 13,
+        "storm": 4,
+        "midrange": 7,
+        "aggro": 5
+      },
+      "sideboardCount": 0
+    },
+    "Misty Rainforest": {
+      "pickCount": 100,
+      "totalAppearances": 595,
+      "avgPickPosition": 20.7,
+      "wheelCount": 20,
+      "wheelOpportunities": 553,
+      "archetypeBreakdown": {
+        "midrange": 18,
+        "aggro": 8,
+        "artifacts": 5,
+        "sneak": 29,
+        "ramp": 1,
+        "storm": 3,
+        "oath": 5,
+        "tempo": 9,
+        "reanimator": 8,
+        "control": 5
+      },
+      "sideboardCount": 9
+    },
+    "Monastery Mentor": {
+      "pickCount": 100,
+      "totalAppearances": 1443,
+      "avgPickPosition": 28.5,
+      "wheelCount": 643,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "ramp": 1,
+        "control": 2,
+        "storm": 2,
+        "oath": 2,
+        "reanimator": 2,
+        "midrange": 3,
+        "sneak": 1,
+        "aggro": 2
+      },
+      "sideboardCount": 85
+    },
+    "Mother of Runes": {
+      "pickCount": 100,
+      "totalAppearances": 1004,
+      "avgPickPosition": 22.5,
+      "wheelCount": 221,
+      "wheelOpportunities": 693,
+      "archetypeBreakdown": {
+        "aggro": 26,
+        "storm": 5,
+        "midrange": 10,
+        "tempo": 10,
+        "sneak": 5,
+        "control": 2,
+        "artifacts": 4,
+        "oath": 2,
+        "reanimator": 1
+      },
+      "sideboardCount": 35
+    },
+    "Mox Diamond": {
+      "pickCount": 100,
+      "totalAppearances": 132,
+      "avgPickPosition": 16.8,
+      "wheelCount": 0,
+      "wheelOpportunities": 132,
+      "archetypeBreakdown": {
+        "artifacts": 2,
+        "control": 8,
+        "tempo": 8,
+        "ramp": 9,
+        "midrange": 26,
+        "sneak": 20,
+        "reanimator": 7,
+        "aggro": 13,
+        "oath": 3,
+        "storm": 4
+      },
+      "sideboardCount": 0
+    },
+    "Mox Emerald": {
+      "pickCount": 100,
+      "totalAppearances": 168,
+      "avgPickPosition": 15.2,
+      "wheelCount": 0,
+      "wheelOpportunities": 168,
+      "archetypeBreakdown": {
+        "ramp": 5,
+        "oath": 4,
+        "sneak": 9,
+        "control": 2,
+        "midrange": 27,
+        "artifacts": 2,
+        "tempo": 6,
+        "reanimator": 4,
+        "aggro": 2
+      },
+      "sideboardCount": 39
+    },
+    "Mox Jet": {
+      "pickCount": 100,
+      "totalAppearances": 139,
+      "avgPickPosition": 14.3,
+      "wheelCount": 0,
+      "wheelOpportunities": 139,
+      "archetypeBreakdown": {
+        "midrange": 18,
+        "sneak": 13,
+        "reanimator": 3,
+        "storm": 3,
+        "control": 3,
+        "aggro": 8,
+        "tempo": 6,
+        "artifacts": 1,
+        "ramp": 3,
+        "oath": 1
+      },
+      "sideboardCount": 41
+    },
+    "Mox Opal": {
+      "pickCount": 100,
+      "totalAppearances": 325,
+      "avgPickPosition": 17.8,
+      "wheelCount": 0,
+      "wheelOpportunities": 325,
+      "archetypeBreakdown": {
+        "oath": 5,
+        "control": 5,
+        "midrange": 16,
+        "ramp": 10,
+        "sneak": 27,
+        "storm": 3,
+        "artifacts": 11,
+        "reanimator": 7,
+        "aggro": 11,
+        "tempo": 5
+      },
+      "sideboardCount": 0
+    },
+    "Mox Pearl": {
+      "pickCount": 100,
+      "totalAppearances": 169,
+      "avgPickPosition": 17.4,
+      "wheelCount": 0,
+      "wheelOpportunities": 169,
+      "archetypeBreakdown": {
+        "control": 5,
+        "sneak": 8,
+        "artifacts": 5,
+        "ramp": 3,
+        "aggro": 13,
+        "midrange": 8,
+        "reanimator": 3,
+        "storm": 6,
+        "tempo": 8,
+        "oath": 1
+      },
+      "sideboardCount": 40
+    },
+    "Mox Ruby": {
+      "pickCount": 100,
+      "totalAppearances": 142,
+      "avgPickPosition": 15.4,
+      "wheelCount": 0,
+      "wheelOpportunities": 142,
+      "archetypeBreakdown": {
+        "aggro": 13,
+        "ramp": 4,
+        "reanimator": 6,
+        "midrange": 9,
+        "artifacts": 4,
+        "sneak": 6,
+        "tempo": 4,
+        "oath": 1,
+        "control": 1
+      },
+      "sideboardCount": 52
+    },
+    "Mox Sapphire": {
+      "pickCount": 100,
+      "totalAppearances": 115,
+      "avgPickPosition": 12.9,
+      "wheelCount": 0,
+      "wheelOpportunities": 115,
+      "archetypeBreakdown": {
+        "midrange": 23,
+        "artifacts": 2,
+        "control": 9,
+        "ramp": 4,
+        "sneak": 5,
+        "aggro": 6,
+        "oath": 3,
+        "reanimator": 8,
+        "tempo": 9,
+        "storm": 1
+      },
+      "sideboardCount": 30
+    },
+    "Myr Battlesphere": {
+      "pickCount": 100,
+      "totalAppearances": 214,
+      "avgPickPosition": 15,
+      "wheelCount": 0,
+      "wheelOpportunities": 214,
+      "archetypeBreakdown": {
+        "sneak": 27,
+        "artifacts": 17,
+        "control": 4,
+        "ramp": 7,
+        "oath": 6,
+        "reanimator": 18,
+        "midrange": 12,
+        "aggro": 5,
+        "tempo": 3,
+        "storm": 1
+      },
+      "sideboardCount": 0
+    },
+    "Mystic Confluence": {
+      "pickCount": 100,
+      "totalAppearances": 613,
+      "avgPickPosition": 21,
+      "wheelCount": 23,
+      "wheelOpportunities": 566,
+      "archetypeBreakdown": {
+        "oath": 5,
+        "control": 18,
+        "midrange": 22,
+        "tempo": 19,
+        "reanimator": 6,
+        "ramp": 2,
+        "storm": 4,
+        "aggro": 3,
+        "sneak": 14,
+        "artifacts": 2
+      },
+      "sideboardCount": 5
+    },
+    "Mystical Tutor": {
+      "pickCount": 100,
+      "totalAppearances": 862,
+      "avgPickPosition": 23.5,
+      "wheelCount": 120,
+      "wheelOpportunities": 674,
+      "archetypeBreakdown": {
+        "sneak": 16,
+        "storm": 4,
+        "control": 6,
+        "tempo": 15,
+        "midrange": 15,
+        "oath": 4,
+        "aggro": 5,
+        "reanimator": 5,
+        "artifacts": 3
+      },
+      "sideboardCount": 27
+    },
+    "Nadu, Winged Wisdom": {
+      "pickCount": 100,
+      "totalAppearances": 657,
+      "avgPickPosition": 20.2,
+      "wheelCount": 23,
+      "wheelOpportunities": 605,
+      "archetypeBreakdown": {
+        "ramp": 2,
+        "midrange": 11,
+        "aggro": 2,
+        "artifacts": 1,
+        "oath": 3,
+        "tempo": 9,
+        "reanimator": 4,
+        "control": 4,
+        "storm": 1,
+        "sneak": 2
+      },
+      "sideboardCount": 61
+    },
+    "Narset, Parter of Veils": {
+      "pickCount": 100,
+      "totalAppearances": 770,
+      "avgPickPosition": 22.3,
+      "wheelCount": 63,
+      "wheelOpportunities": 656,
+      "archetypeBreakdown": {
+        "sneak": 19,
+        "control": 12,
+        "reanimator": 7,
+        "tempo": 13,
+        "midrange": 15,
+        "storm": 5,
+        "aggro": 6,
+        "artifacts": 2,
+        "oath": 3,
+        "ramp": 1
+      },
+      "sideboardCount": 17
+    },
+    "Natural Order": {
+      "pickCount": 100,
+      "totalAppearances": 317,
+      "avgPickPosition": 19.7,
+      "wheelCount": 0,
+      "wheelOpportunities": 317,
+      "archetypeBreakdown": {
+        "midrange": 14,
+        "sneak": 35,
+        "control": 4,
+        "oath": 4,
+        "storm": 3,
+        "ramp": 3,
+        "reanimator": 8,
+        "artifacts": 5,
+        "aggro": 4,
+        "tempo": 4
+      },
+      "sideboardCount": 16
+    },
+    "Necromancy": {
+      "pickCount": 100,
+      "totalAppearances": 385,
+      "avgPickPosition": 18.3,
+      "wheelCount": 0,
+      "wheelOpportunities": 381,
+      "archetypeBreakdown": {
+        "midrange": 10,
+        "aggro": 3,
+        "ramp": 2,
+        "reanimator": 35,
+        "sneak": 18,
+        "tempo": 6,
+        "control": 4,
+        "oath": 5,
+        "artifacts": 2,
+        "storm": 2
+      },
+      "sideboardCount": 13
+    },
+    "Night's Whisper": {
+      "pickCount": 100,
+      "totalAppearances": 869,
+      "avgPickPosition": 23.5,
+      "wheelCount": 116,
+      "wheelOpportunities": 680,
+      "archetypeBreakdown": {
+        "midrange": 16,
+        "reanimator": 5,
+        "sneak": 16,
+        "tempo": 7,
+        "storm": 7,
+        "artifacts": 3,
+        "control": 2,
+        "aggro": 5,
+        "oath": 3,
+        "ramp": 3
+      },
+      "sideboardCount": 33
+    },
+    "Nissa, Who Shakes the World": {
+      "pickCount": 100,
+      "totalAppearances": 929,
+      "avgPickPosition": 25,
+      "wheelCount": 162,
+      "wheelOpportunities": 687,
+      "archetypeBreakdown": {
+        "control": 3,
+        "ramp": 14,
+        "sneak": 35,
+        "reanimator": 12,
+        "midrange": 6,
+        "artifacts": 5,
+        "oath": 5,
+        "storm": 2,
+        "aggro": 5
+      },
+      "sideboardCount": 13
+    },
+    "Noble Hierarch": {
+      "pickCount": 100,
+      "totalAppearances": 580,
+      "avgPickPosition": 20.8,
+      "wheelCount": 15,
+      "wheelOpportunities": 543,
+      "archetypeBreakdown": {
+        "control": 1,
+        "ramp": 3,
+        "midrange": 1,
+        "artifacts": 2,
+        "sneak": 2,
+        "tempo": 3,
+        "oath": 1
+      },
+      "sideboardCount": 87
+    },
+    "Oath of Druids": {
+      "pickCount": 100,
+      "totalAppearances": 713,
+      "avgPickPosition": 22.4,
+      "wheelCount": 58,
+      "wheelOpportunities": 611,
+      "archetypeBreakdown": {
+        "oath": 26,
+        "midrange": 2,
+        "reanimator": 9,
+        "sneak": 29,
+        "artifacts": 3,
+        "tempo": 2,
+        "storm": 2,
+        "control": 2
+      },
+      "sideboardCount": 25
+    },
+    "Ocelot Pride": {
+      "pickCount": 100,
+      "totalAppearances": 703,
+      "avgPickPosition": 21.6,
+      "wheelCount": 38,
+      "wheelOpportunities": 624,
+      "archetypeBreakdown": {
+        "aggro": 29,
+        "tempo": 7,
+        "sneak": 7,
+        "artifacts": 3,
+        "control": 4,
+        "reanimator": 3,
+        "ramp": 1,
+        "midrange": 13,
+        "storm": 4,
+        "oath": 1
+      },
+      "sideboardCount": 28
+    },
+    "Oko, Thief of Crowns": {
+      "pickCount": 100,
+      "totalAppearances": 215,
+      "avgPickPosition": 17.9,
+      "wheelCount": 0,
+      "wheelOpportunities": 215,
+      "archetypeBreakdown": {
+        "midrange": 24,
+        "aggro": 5,
+        "oath": 2,
+        "sneak": 5,
+        "artifacts": 2,
+        "storm": 1,
+        "control": 1,
+        "reanimator": 1,
+        "tempo": 1
+      },
+      "sideboardCount": 58
+    },
+    "Oliphaunt": {
+      "pickCount": 100,
+      "totalAppearances": 982,
+      "avgPickPosition": 22,
+      "wheelCount": 206,
+      "wheelOpportunities": 694,
+      "archetypeBreakdown": {
+        "sneak": 26,
+        "ramp": 9,
+        "oath": 3,
+        "reanimator": 4,
+        "artifacts": 3,
+        "midrange": 6,
+        "tempo": 1,
+        "aggro": 1
+      },
+      "sideboardCount": 47
+    },
+    "Once Upon a Time": {
+      "pickCount": 100,
+      "totalAppearances": 1122,
+      "avgPickPosition": 26.4,
+      "wheelCount": 323,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "sneak": 9,
+        "ramp": 5,
+        "reanimator": 4,
+        "artifacts": 3,
+        "oath": 6,
+        "midrange": 9,
+        "control": 3,
+        "tempo": 5,
+        "storm": 1,
+        "aggro": 2
+      },
+      "sideboardCount": 53
+    },
+    "Orcish Bowmasters": {
+      "pickCount": 100,
+      "totalAppearances": 308,
+      "avgPickPosition": 17.2,
+      "wheelCount": 0,
+      "wheelOpportunities": 308,
+      "archetypeBreakdown": {
+        "midrange": 22,
+        "aggro": 8,
+        "storm": 3,
+        "tempo": 6,
+        "sneak": 11,
+        "reanimator": 5,
+        "artifacts": 4,
+        "ramp": 4,
+        "oath": 2,
+        "control": 2
+      },
+      "sideboardCount": 33
+    },
+    "Orcish Lumberjack": {
+      "pickCount": 100,
+      "totalAppearances": 1022,
+      "avgPickPosition": 24.2,
+      "wheelCount": 240,
+      "wheelOpportunities": 692,
+      "archetypeBreakdown": {
+        "ramp": 4,
+        "artifacts": 7,
+        "oath": 1,
+        "reanimator": 3,
+        "sneak": 11,
+        "midrange": 4,
+        "aggro": 5,
+        "tempo": 1
+      },
+      "sideboardCount": 64
+    },
+    "Oust": {
+      "pickCount": 100,
+      "totalAppearances": 1155,
+      "avgPickPosition": 25.4,
+      "wheelCount": 357,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "sneak": 16,
+        "tempo": 4,
+        "control": 3,
+        "ramp": 4,
+        "artifacts": 1,
+        "reanimator": 4,
+        "midrange": 6,
+        "aggro": 2,
+        "oath": 1
+      },
+      "sideboardCount": 59
+    },
+    "Overgrown Tomb": {
+      "pickCount": 100,
+      "totalAppearances": 1365,
+      "avgPickPosition": 26.1,
+      "wheelCount": 565,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "midrange": 12,
+        "sneak": 20,
+        "ramp": 11,
+        "artifacts": 6,
+        "aggro": 6,
+        "oath": 3,
+        "reanimator": 3,
+        "tempo": 9,
+        "storm": 4,
+        "control": 4
+      },
+      "sideboardCount": 22
+    },
+    "Palace Jailer": {
+      "pickCount": 100,
+      "totalAppearances": 874,
+      "avgPickPosition": 21.3,
+      "wheelCount": 133,
+      "wheelOpportunities": 668,
+      "archetypeBreakdown": {
+        "sneak": 19,
+        "aggro": 8,
+        "artifacts": 5,
+        "tempo": 6,
+        "midrange": 13,
+        "reanimator": 8,
+        "oath": 3,
+        "control": 6,
+        "storm": 1,
+        "ramp": 2
+      },
+      "sideboardCount": 29
+    },
+    "Parallax Wave": {
+      "pickCount": 100,
+      "totalAppearances": 1019,
+      "avgPickPosition": 27.1,
+      "wheelCount": 226,
+      "wheelOpportunities": 699,
+      "archetypeBreakdown": {
+        "sneak": 15,
+        "control": 5,
+        "ramp": 6,
+        "midrange": 8,
+        "reanimator": 4,
+        "artifacts": 2,
+        "storm": 4,
+        "tempo": 9,
+        "aggro": 5
+      },
+      "sideboardCount": 42
+    },
+    "Path to Exile": {
+      "pickCount": 100,
+      "totalAppearances": 706,
+      "avgPickPosition": 21,
+      "wheelCount": 56,
+      "wheelOpportunities": 606,
+      "archetypeBreakdown": {
+        "sneak": 14,
+        "control": 5,
+        "tempo": 8,
+        "midrange": 8,
+        "ramp": 8,
+        "aggro": 9,
+        "storm": 4,
+        "reanimator": 5,
+        "oath": 5,
+        "artifacts": 2
+      },
+      "sideboardCount": 32
+    },
+    "Pest Infestation": {
+      "pickCount": 100,
+      "totalAppearances": 985,
+      "avgPickPosition": 27,
+      "wheelCount": 214,
+      "wheelOpportunities": 687,
+      "archetypeBreakdown": {
+        "ramp": 3,
+        "aggro": 3,
+        "midrange": 10,
+        "sneak": 17,
+        "oath": 4,
+        "control": 3,
+        "reanimator": 10,
+        "tempo": 4,
+        "artifacts": 3,
+        "storm": 1
+      },
+      "sideboardCount": 42
+    },
+    "Phelia, Exuberant Shepherd": {
+      "pickCount": 100,
+      "totalAppearances": 901,
+      "avgPickPosition": 24.5,
+      "wheelCount": 143,
+      "wheelOpportunities": 682,
+      "archetypeBreakdown": {
+        "artifacts": 4,
+        "aggro": 17,
+        "tempo": 15,
+        "sneak": 10,
+        "midrange": 11,
+        "ramp": 3,
+        "control": 5,
+        "oath": 2,
+        "reanimator": 4,
+        "storm": 1
+      },
+      "sideboardCount": 28
+    },
+    "Phlage, Titan of Fire's Fury": {
+      "pickCount": 100,
+      "totalAppearances": 1186,
+      "avgPickPosition": 25.8,
+      "wheelCount": 390,
+      "wheelOpportunities": 698,
+      "archetypeBreakdown": {
+        "aggro": 5,
+        "control": 2,
+        "sneak": 2,
+        "reanimator": 1,
+        "storm": 2,
+        "midrange": 4,
+        "tempo": 2
+      },
+      "sideboardCount": 82
+    },
+    "Phyrexian Metamorph": {
+      "pickCount": 100,
+      "totalAppearances": 952,
+      "avgPickPosition": 26.3,
+      "wheelCount": 176,
+      "wheelOpportunities": 689,
+      "archetypeBreakdown": {
+        "sneak": 17,
+        "control": 5,
+        "tempo": 9,
+        "artifacts": 7,
+        "midrange": 15,
+        "oath": 3,
+        "storm": 3,
+        "reanimator": 6,
+        "ramp": 3,
+        "aggro": 4
+      },
+      "sideboardCount": 28
+    },
+    "Phyrexian Revoker": {
+      "pickCount": 100,
+      "totalAppearances": 1359,
+      "avgPickPosition": 29.5,
+      "wheelCount": 559,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "tempo": 3,
+        "ramp": 6,
+        "midrange": 9,
+        "oath": 3,
+        "reanimator": 4,
+        "storm": 2,
+        "sneak": 8,
+        "artifacts": 2,
+        "control": 4
+      },
+      "sideboardCount": 59
+    },
+    "Plateau": {
+      "pickCount": 100,
+      "totalAppearances": 927,
+      "avgPickPosition": 23.4,
+      "wheelCount": 167,
+      "wheelOpportunities": 680,
+      "archetypeBreakdown": {
+        "sneak": 24,
+        "tempo": 5,
+        "control": 10,
+        "midrange": 13,
+        "oath": 3,
+        "reanimator": 7,
+        "artifacts": 8,
+        "aggro": 11,
+        "ramp": 2
+      },
+      "sideboardCount": 17
+    },
+    "Polluted Delta": {
+      "pickCount": 100,
+      "totalAppearances": 644,
+      "avgPickPosition": 20.8,
+      "wheelCount": 26,
+      "wheelOpportunities": 587,
+      "archetypeBreakdown": {
+        "artifacts": 6,
+        "midrange": 21,
+        "reanimator": 9,
+        "ramp": 6,
+        "tempo": 10,
+        "aggro": 14,
+        "sneak": 21,
+        "oath": 5,
+        "storm": 1,
+        "control": 4
+      },
+      "sideboardCount": 3
+    },
+    "Ponder": {
+      "pickCount": 100,
+      "totalAppearances": 342,
+      "avgPickPosition": 16.8,
+      "wheelCount": 0,
+      "wheelOpportunities": 341,
+      "archetypeBreakdown": {
+        "control": 10,
+        "midrange": 24,
+        "reanimator": 5,
+        "aggro": 10,
+        "ramp": 2,
+        "tempo": 23,
+        "artifacts": 3,
+        "storm": 4,
+        "sneak": 4
+      },
+      "sideboardCount": 15
+    },
+    "Porcelain Legionnaire": {
+      "pickCount": 100,
+      "totalAppearances": 1249,
+      "avgPickPosition": 29,
+      "wheelCount": 449,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "control": 5,
+        "midrange": 16,
+        "reanimator": 3,
+        "sneak": 6,
+        "aggro": 9,
+        "artifacts": 3,
+        "storm": 2,
+        "ramp": 3,
+        "tempo": 4
+      },
+      "sideboardCount": 49
+    },
+    "Portable Hole": {
+      "pickCount": 100,
+      "totalAppearances": 1080,
+      "avgPickPosition": 26.6,
+      "wheelCount": 284,
+      "wheelOpportunities": 698,
+      "archetypeBreakdown": {
+        "oath": 5,
+        "sneak": 8,
+        "control": 4,
+        "storm": 1,
+        "artifacts": 6,
+        "tempo": 3,
+        "aggro": 4,
+        "reanimator": 3,
+        "ramp": 6,
+        "midrange": 16
+      },
+      "sideboardCount": 44
+    },
+    "Portal to Phyrexia": {
+      "pickCount": 100,
+      "totalAppearances": 1299,
+      "avgPickPosition": 25.9,
+      "wheelCount": 499,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "control": 4,
+        "ramp": 4,
+        "artifacts": 7,
+        "reanimator": 6,
+        "sneak": 22,
+        "oath": 8,
+        "storm": 2,
+        "midrange": 5,
+        "tempo": 1,
+        "aggro": 1
+      },
+      "sideboardCount": 40
+    },
+    "Preordain": {
+      "pickCount": 100,
+      "totalAppearances": 378,
+      "avgPickPosition": 19.5,
+      "wheelCount": 0,
+      "wheelOpportunities": 377,
+      "archetypeBreakdown": {
+        "tempo": 16,
+        "midrange": 17,
+        "reanimator": 2,
+        "aggro": 14,
+        "sneak": 8,
+        "control": 7,
+        "oath": 6,
+        "artifacts": 2,
+        "storm": 3,
+        "ramp": 1
+      },
+      "sideboardCount": 24
+    },
+    "Primeval Titan": {
+      "pickCount": 100,
+      "totalAppearances": 556,
+      "avgPickPosition": 22.5,
+      "wheelCount": 16,
+      "wheelOpportunities": 519,
+      "archetypeBreakdown": {
+        "sneak": 41,
+        "ramp": 16,
+        "oath": 11,
+        "artifacts": 3,
+        "reanimator": 10,
+        "midrange": 4,
+        "control": 2,
+        "storm": 1
+      },
+      "sideboardCount": 12
+    },
+    "Prismatic Ending": {
+      "pickCount": 100,
+      "totalAppearances": 1210,
+      "avgPickPosition": 26.1,
+      "wheelCount": 410,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "sneak": 16,
+        "ramp": 4,
+        "midrange": 8,
+        "tempo": 4,
+        "oath": 2,
+        "reanimator": 4,
+        "aggro": 3
+      },
+      "sideboardCount": 59
+    },
+    "Prismatic Vista": {
+      "pickCount": 100,
+      "totalAppearances": 651,
+      "avgPickPosition": 21.5,
+      "wheelCount": 32,
+      "wheelOpportunities": 587,
+      "archetypeBreakdown": {
+        "aggro": 10,
+        "ramp": 11,
+        "midrange": 22,
+        "tempo": 8,
+        "sneak": 21,
+        "artifacts": 3,
+        "control": 5,
+        "storm": 5,
+        "reanimator": 9,
+        "oath": 6
+      },
+      "sideboardCount": 0
+    },
+    "Psychic Frog": {
+      "pickCount": 100,
+      "totalAppearances": 371,
+      "avgPickPosition": 21.3,
+      "wheelCount": 0,
+      "wheelOpportunities": 371,
+      "archetypeBreakdown": {
+        "artifacts": 3,
+        "midrange": 18,
+        "tempo": 11,
+        "reanimator": 3,
+        "control": 2,
+        "ramp": 2,
+        "storm": 5,
+        "aggro": 1
+      },
+      "sideboardCount": 55
+    },
+    "Pyrogoyf": {
+      "pickCount": 100,
+      "totalAppearances": 553,
+      "avgPickPosition": 20.8,
+      "wheelCount": 12,
+      "wheelOpportunities": 519,
+      "archetypeBreakdown": {
+        "artifacts": 3,
+        "tempo": 4,
+        "control": 3,
+        "midrange": 12,
+        "sneak": 12,
+        "aggro": 13,
+        "storm": 2,
+        "reanimator": 4,
+        "oath": 2,
+        "ramp": 2
+      },
+      "sideboardCount": 43
+    },
+    "Pyrokinesis": {
+      "pickCount": 100,
+      "totalAppearances": 1480,
+      "avgPickPosition": 27.9,
+      "wheelCount": 680,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "midrange": 2,
+        "tempo": 1,
+        "sneak": 1,
+        "artifacts": 1,
+        "reanimator": 1,
+        "control": 1,
+        "ramp": 2,
+        "aggro": 2
+      },
+      "sideboardCount": 89
+    },
+    "Questing Beast": {
+      "pickCount": 100,
+      "totalAppearances": 622,
+      "avgPickPosition": 22.1,
+      "wheelCount": 28,
+      "wheelOpportunities": 565,
+      "archetypeBreakdown": {
+        "midrange": 37,
+        "ramp": 3,
+        "oath": 1,
+        "reanimator": 8,
+        "sneak": 16,
+        "aggro": 5,
+        "artifacts": 1,
+        "tempo": 3,
+        "storm": 1,
+        "control": 1
+      },
+      "sideboardCount": 24
+    },
+    "Raffine's Tower": {
+      "pickCount": 100,
+      "totalAppearances": 822,
+      "avgPickPosition": 22.5,
+      "wheelCount": 90,
+      "wheelOpportunities": 667,
+      "archetypeBreakdown": {
+        "midrange": 27,
+        "control": 7,
+        "reanimator": 10,
+        "tempo": 12,
+        "sneak": 13,
+        "oath": 4,
+        "aggro": 6,
+        "storm": 11,
+        "ramp": 6,
+        "artifacts": 4
+      },
+      "sideboardCount": 0
+    },
+    "Ragavan, Nimble Pilferer": {
+      "pickCount": 100,
+      "totalAppearances": 200,
+      "avgPickPosition": 14.3,
+      "wheelCount": 0,
+      "wheelOpportunities": 200,
+      "archetypeBreakdown": {
+        "aggro": 31,
+        "sneak": 10,
+        "control": 5,
+        "midrange": 11,
+        "artifacts": 2,
+        "storm": 4,
+        "tempo": 5,
+        "ramp": 1
+      },
+      "sideboardCount": 31
+    },
+    "Ramunap Excavator": {
+      "pickCount": 100,
+      "totalAppearances": 1283,
+      "avgPickPosition": 29.3,
+      "wheelCount": 483,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "midrange": 15,
+        "ramp": 2,
+        "storm": 4,
+        "reanimator": 2,
+        "sneak": 10,
+        "artifacts": 2,
+        "oath": 1,
+        "tempo": 2,
+        "aggro": 1,
+        "control": 2
+      },
+      "sideboardCount": 59
+    },
+    "Raucous Theater": {
+      "pickCount": 100,
+      "totalAppearances": 1279,
+      "avgPickPosition": 28.1,
+      "wheelCount": 481,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "artifacts": 3,
+        "control": 9,
+        "reanimator": 5,
+        "sneak": 23,
+        "midrange": 19,
+        "storm": 7,
+        "aggro": 11,
+        "oath": 3,
+        "tempo": 5,
+        "ramp": 1
+      },
+      "sideboardCount": 14
+    },
+    "Raugrin Triome": {
+      "pickCount": 100,
+      "totalAppearances": 728,
+      "avgPickPosition": 23.8,
+      "wheelCount": 49,
+      "wheelOpportunities": 629,
+      "archetypeBreakdown": {
+        "midrange": 23,
+        "control": 14,
+        "ramp": 5,
+        "sneak": 18,
+        "tempo": 10,
+        "storm": 9,
+        "reanimator": 8,
+        "aggro": 7,
+        "oath": 4,
+        "artifacts": 2
+      },
+      "sideboardCount": 0
+    },
+    "Reanimate": {
+      "pickCount": 100,
+      "totalAppearances": 246,
+      "avgPickPosition": 18.4,
+      "wheelCount": 0,
+      "wheelOpportunities": 246,
+      "archetypeBreakdown": {
+        "sneak": 14,
+        "reanimator": 33,
+        "storm": 4,
+        "midrange": 11,
+        "aggro": 8,
+        "tempo": 3,
+        "control": 1,
+        "oath": 2,
+        "artifacts": 2,
+        "ramp": 2
+      },
+      "sideboardCount": 20
+    },
+    "Recruiter of the Guard": {
+      "pickCount": 100,
+      "totalAppearances": 1481,
+      "avgPickPosition": 27.9,
+      "wheelCount": 681,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "reanimator": 1,
+        "sneak": 3,
+        "tempo": 1,
+        "midrange": 3,
+        "ramp": 2
+      },
+      "sideboardCount": 90
+    },
+    "Recurring Nightmare": {
+      "pickCount": 100,
+      "totalAppearances": 675,
+      "avgPickPosition": 19.5,
+      "wheelCount": 30,
+      "wheelOpportunities": 614,
+      "archetypeBreakdown": {
+        "midrange": 12,
+        "storm": 2,
+        "control": 5,
+        "sneak": 9,
+        "tempo": 13,
+        "aggro": 4,
+        "reanimator": 4,
+        "ramp": 1,
+        "artifacts": 3
+      },
+      "sideboardCount": 47
+    },
+    "Remand": {
+      "pickCount": 100,
+      "totalAppearances": 234,
+      "avgPickPosition": 18.5,
+      "wheelCount": 0,
+      "wheelOpportunities": 234,
+      "archetypeBreakdown": {
+        "tempo": 25,
+        "control": 21,
+        "reanimator": 4,
+        "ramp": 2,
+        "midrange": 16,
+        "aggro": 8,
+        "oath": 1,
+        "sneak": 5,
+        "artifacts": 1,
+        "storm": 4
+      },
+      "sideboardCount": 13
+    },
+    "Reprieve": {
+      "pickCount": 100,
+      "totalAppearances": 459,
+      "avgPickPosition": 21.4,
+      "wheelCount": 5,
+      "wheelOpportunities": 447,
+      "archetypeBreakdown": {
+        "aggro": 13,
+        "artifacts": 4,
+        "tempo": 17,
+        "sneak": 7,
+        "midrange": 16,
+        "storm": 8,
+        "ramp": 2,
+        "control": 4
+      },
+      "sideboardCount": 29
+    },
+    "Restoration Angel": {
+      "pickCount": 100,
+      "totalAppearances": 1383,
+      "avgPickPosition": 28.1,
+      "wheelCount": 583,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "tempo": 1,
+        "sneak": 7,
+        "oath": 3,
+        "reanimator": 3,
+        "midrange": 3,
+        "ramp": 3,
+        "storm": 1,
+        "aggro": 1
+      },
+      "sideboardCount": 78
+    },
+    "Retrofitter Foundry": {
+      "pickCount": 100,
+      "totalAppearances": 616,
+      "avgPickPosition": 20.1,
+      "wheelCount": 15,
+      "wheelOpportunities": 579,
+      "archetypeBreakdown": {
+        "sneak": 23,
+        "oath": 8,
+        "ramp": 3,
+        "control": 9,
+        "tempo": 8,
+        "midrange": 29,
+        "reanimator": 6,
+        "aggro": 7,
+        "storm": 2,
+        "artifacts": 5
+      },
+      "sideboardCount": 0
+    },
+    "Robber of the Rich": {
+      "pickCount": 100,
+      "totalAppearances": 1377,
+      "avgPickPosition": 28.8,
+      "wheelCount": 577,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "midrange": 3,
+        "storm": 1,
+        "tempo": 2,
+        "sneak": 4,
+        "control": 1,
+        "aggro": 6,
+        "ramp": 2,
+        "artifacts": 1
+      },
+      "sideboardCount": 80
+    },
+    "Rofellos, Llanowar Emissary": {
+      "pickCount": 100,
+      "totalAppearances": 622,
+      "avgPickPosition": 19.3,
+      "wheelCount": 27,
+      "wheelOpportunities": 566,
+      "archetypeBreakdown": {
+        "midrange": 18,
+        "sneak": 25,
+        "control": 4,
+        "ramp": 8,
+        "oath": 4,
+        "reanimator": 12,
+        "storm": 3,
+        "artifacts": 8,
+        "tempo": 4,
+        "aggro": 3
+      },
+      "sideboardCount": 11
+    },
+    "Sacred Foundry": {
+      "pickCount": 100,
+      "totalAppearances": 1189,
+      "avgPickPosition": 28.1,
+      "wheelCount": 389,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "sneak": 15,
+        "midrange": 22,
+        "control": 5,
+        "tempo": 4,
+        "aggro": 11,
+        "ramp": 4,
+        "artifacts": 9,
+        "storm": 5,
+        "oath": 3,
+        "reanimator": 5
+      },
+      "sideboardCount": 17
+    },
+    "Savai Triome": {
+      "pickCount": 100,
+      "totalAppearances": 940,
+      "avgPickPosition": 27.3,
+      "wheelCount": 176,
+      "wheelOpportunities": 686,
+      "archetypeBreakdown": {
+        "oath": 2,
+        "ramp": 4,
+        "midrange": 16,
+        "sneak": 15,
+        "control": 10,
+        "reanimator": 10,
+        "storm": 8,
+        "artifacts": 3,
+        "tempo": 12,
+        "aggro": 20
+      },
+      "sideboardCount": 0
+    },
+    "Savannah": {
+      "pickCount": 100,
+      "totalAppearances": 1165,
+      "avgPickPosition": 26.7,
+      "wheelCount": 367,
+      "wheelOpportunities": 699,
+      "archetypeBreakdown": {
+        "sneak": 26,
+        "control": 7,
+        "storm": 4,
+        "ramp": 4,
+        "reanimator": 9,
+        "artifacts": 6,
+        "aggro": 13,
+        "oath": 6,
+        "midrange": 17,
+        "tempo": 3
+      },
+      "sideboardCount": 5
+    },
+    "Scalding Tarn": {
+      "pickCount": 100,
+      "totalAppearances": 600,
+      "avgPickPosition": 20.6,
+      "wheelCount": 20,
+      "wheelOpportunities": 548,
+      "archetypeBreakdown": {
+        "oath": 3,
+        "reanimator": 9,
+        "sneak": 18,
+        "midrange": 13,
+        "ramp": 7,
+        "aggro": 10,
+        "tempo": 9,
+        "artifacts": 5,
+        "control": 7,
+        "storm": 1
+      },
+      "sideboardCount": 18
+    },
+    "Scapeshift": {
+      "pickCount": 100,
+      "totalAppearances": 1429,
+      "avgPickPosition": 29,
+      "wheelCount": 629,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "ramp": 1,
+        "midrange": 2,
+        "sneak": 4,
+        "control": 2,
+        "oath": 3,
+        "reanimator": 1,
+        "tempo": 2,
+        "aggro": 2
+      },
+      "sideboardCount": 83
+    },
+    "Scavenging Ooze": {
+      "pickCount": 100,
+      "totalAppearances": 1011,
+      "avgPickPosition": 25.7,
+      "wheelCount": 244,
+      "wheelOpportunities": 686,
+      "archetypeBreakdown": {
+        "midrange": 35,
+        "tempo": 5,
+        "sneak": 11,
+        "reanimator": 4,
+        "aggro": 4,
+        "artifacts": 2,
+        "storm": 1,
+        "control": 2,
+        "oath": 1
+      },
+      "sideboardCount": 35
+    },
+    "Scrawling Crawler": {
+      "pickCount": 100,
+      "totalAppearances": 1175,
+      "avgPickPosition": 27.5,
+      "wheelCount": 377,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "tempo": 7,
+        "artifacts": 12,
+        "storm": 3,
+        "midrange": 23,
+        "ramp": 2,
+        "sneak": 13,
+        "oath": 2,
+        "control": 2,
+        "aggro": 5,
+        "reanimator": 2
+      },
+      "sideboardCount": 29
+    },
+    "Scrubland": {
+      "pickCount": 100,
+      "totalAppearances": 1280,
+      "avgPickPosition": 29.6,
+      "wheelCount": 480,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "sneak": 17,
+        "midrange": 27,
+        "reanimator": 12,
+        "storm": 5,
+        "control": 8,
+        "artifacts": 2,
+        "tempo": 8,
+        "oath": 8,
+        "aggro": 6,
+        "ramp": 4
+      },
+      "sideboardCount": 3
+    },
+    "Scythecat Cub": {
+      "pickCount": 100,
+      "totalAppearances": 1105,
+      "avgPickPosition": 25,
+      "wheelCount": 309,
+      "wheelOpportunities": 699,
+      "archetypeBreakdown": {
+        "midrange": 21,
+        "ramp": 3,
+        "tempo": 7,
+        "sneak": 8,
+        "reanimator": 5,
+        "storm": 2,
+        "artifacts": 3,
+        "aggro": 5
+      },
+      "sideboardCount": 46
+    },
+    "Seasoned Dungeoneer": {
+      "pickCount": 100,
+      "totalAppearances": 571,
+      "avgPickPosition": 19.8,
+      "wheelCount": 14,
+      "wheelOpportunities": 535,
+      "archetypeBreakdown": {
+        "tempo": 9,
+        "ramp": 4,
+        "control": 5,
+        "sneak": 15,
+        "midrange": 14,
+        "aggro": 7,
+        "storm": 3,
+        "reanimator": 5,
+        "artifacts": 1,
+        "oath": 1
+      },
+      "sideboardCount": 36
+    },
+    "Seasoned Pyromancer": {
+      "pickCount": 100,
+      "totalAppearances": 1438,
+      "avgPickPosition": 29.2,
+      "wheelCount": 638,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "midrange": 4,
+        "sneak": 3,
+        "storm": 1,
+        "tempo": 1,
+        "reanimator": 3,
+        "oath": 1,
+        "aggro": 1
+      },
+      "sideboardCount": 86
+    },
+    "Seething Song": {
+      "pickCount": 100,
+      "totalAppearances": 1354,
+      "avgPickPosition": 31.1,
+      "wheelCount": 554,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "sneak": 7,
+        "midrange": 4,
+        "aggro": 3,
+        "storm": 2,
+        "ramp": 2,
+        "reanimator": 1,
+        "tempo": 1,
+        "artifacts": 1,
+        "oath": 2
+      },
+      "sideboardCount": 77
+    },
+    "Sensei's Divining Top": {
+      "pickCount": 100,
+      "totalAppearances": 408,
+      "avgPickPosition": 20.1,
+      "wheelCount": 1,
+      "wheelOpportunities": 404,
+      "archetypeBreakdown": {
+        "midrange": 22,
+        "sneak": 18,
+        "ramp": 8,
+        "tempo": 15,
+        "reanimator": 6,
+        "aggro": 12,
+        "artifacts": 3,
+        "oath": 7,
+        "control": 6,
+        "storm": 3
+      },
+      "sideboardCount": 0
+    },
+    "Sentinel of the Nameless City": {
+      "pickCount": 100,
+      "totalAppearances": 1422,
+      "avgPickPosition": 29.8,
+      "wheelCount": 622,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "tempo": 3,
+        "sneak": 3,
+        "midrange": 3,
+        "aggro": 1,
+        "reanimator": 1
+      },
+      "sideboardCount": 89
+    },
+    "Shadowy Backstreet": {
+      "pickCount": 100,
+      "totalAppearances": 1384,
+      "avgPickPosition": 27.5,
+      "wheelCount": 584,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "tempo": 9,
+        "aggro": 10,
+        "oath": 6,
+        "ramp": 9,
+        "sneak": 19,
+        "reanimator": 12,
+        "storm": 5,
+        "midrange": 19,
+        "control": 3,
+        "artifacts": 2
+      },
+      "sideboardCount": 6
+    },
+    "Shallow Grave": {
+      "pickCount": 100,
+      "totalAppearances": 461,
+      "avgPickPosition": 18.4,
+      "wheelCount": 1,
+      "wheelOpportunities": 458,
+      "archetypeBreakdown": {
+        "sneak": 25,
+        "oath": 4,
+        "reanimator": 27,
+        "midrange": 13,
+        "ramp": 2,
+        "artifacts": 3,
+        "control": 1,
+        "aggro": 3,
+        "storm": 1
+      },
+      "sideboardCount": 21
+    },
+    "Shelldock Isle": {
+      "pickCount": 100,
+      "totalAppearances": 763,
+      "avgPickPosition": 22.6,
+      "wheelCount": 60,
+      "wheelOpportunities": 650,
+      "archetypeBreakdown": {
+        "sneak": 21,
+        "control": 6,
+        "ramp": 4,
+        "aggro": 3,
+        "midrange": 7,
+        "reanimator": 4,
+        "storm": 2,
+        "oath": 4,
+        "tempo": 7,
+        "artifacts": 3
+      },
+      "sideboardCount": 39
+    },
+    "Sheoldred, the Apocalypse": {
+      "pickCount": 100,
+      "totalAppearances": 466,
+      "avgPickPosition": 19.5,
+      "wheelCount": 1,
+      "wheelOpportunities": 458,
+      "archetypeBreakdown": {
+        "control": 2,
+        "midrange": 31,
+        "reanimator": 7,
+        "sneak": 19,
+        "tempo": 5,
+        "aggro": 5,
+        "artifacts": 5,
+        "storm": 1,
+        "ramp": 2,
+        "oath": 2
+      },
+      "sideboardCount": 21
+    },
+    "Sheoldred's Edict": {
+      "pickCount": 100,
+      "totalAppearances": 1106,
+      "avgPickPosition": 25.9,
+      "wheelCount": 309,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "oath": 3,
+        "midrange": 8,
+        "tempo": 4,
+        "sneak": 10,
+        "storm": 4,
+        "ramp": 4,
+        "artifacts": 3,
+        "reanimator": 8,
+        "aggro": 4,
+        "control": 2
+      },
+      "sideboardCount": 50
+    },
+    "Show and Tell": {
+      "pickCount": 100,
+      "totalAppearances": 305,
+      "avgPickPosition": 17.6,
+      "wheelCount": 0,
+      "wheelOpportunities": 305,
+      "archetypeBreakdown": {
+        "sneak": 41,
+        "artifacts": 3,
+        "control": 6,
+        "tempo": 4,
+        "midrange": 12,
+        "aggro": 3,
+        "reanimator": 2,
+        "storm": 1
+      },
+      "sideboardCount": 28
+    },
+    "Six": {
+      "pickCount": 100,
+      "totalAppearances": 1368,
+      "avgPickPosition": 27.9,
+      "wheelCount": 568,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "ramp": 3,
+        "midrange": 10,
+        "sneak": 5,
+        "reanimator": 2,
+        "tempo": 2,
+        "oath": 1,
+        "storm": 1
+      },
+      "sideboardCount": 76
+    },
+    "Skullclamp": {
+      "pickCount": 100,
+      "totalAppearances": 302,
+      "avgPickPosition": 18.5,
+      "wheelCount": 0,
+      "wheelOpportunities": 302,
+      "archetypeBreakdown": {
+        "oath": 7,
+        "midrange": 20,
+        "artifacts": 8,
+        "ramp": 7,
+        "control": 8,
+        "sneak": 17,
+        "aggro": 8,
+        "reanimator": 8,
+        "tempo": 14,
+        "storm": 3
+      },
+      "sideboardCount": 0
+    },
+    "Skyclave Apparition": {
+      "pickCount": 100,
+      "totalAppearances": 1424,
+      "avgPickPosition": 32.7,
+      "wheelCount": 624,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "tempo": 1,
+        "ramp": 2,
+        "midrange": 7,
+        "oath": 1,
+        "sneak": 3,
+        "control": 1
+      },
+      "sideboardCount": 85
+    },
+    "Snap": {
+      "pickCount": 100,
+      "totalAppearances": 799,
+      "avgPickPosition": 22.1,
+      "wheelCount": 79,
+      "wheelOpportunities": 658,
+      "archetypeBreakdown": {
+        "sneak": 7,
+        "control": 13,
+        "reanimator": 4,
+        "tempo": 28,
+        "midrange": 16,
+        "ramp": 1,
+        "aggro": 12,
+        "storm": 5,
+        "oath": 1,
+        "artifacts": 1
+      },
+      "sideboardCount": 12
+    },
+    "Snapcaster Mage": {
+      "pickCount": 100,
+      "totalAppearances": 338,
+      "avgPickPosition": 18.4,
+      "wheelCount": 0,
+      "wheelOpportunities": 338,
+      "archetypeBreakdown": {
+        "midrange": 21,
+        "control": 15,
+        "tempo": 25,
+        "aggro": 14,
+        "reanimator": 4,
+        "storm": 3,
+        "ramp": 1,
+        "oath": 3,
+        "artifacts": 2,
+        "sneak": 1
+      },
+      "sideboardCount": 11
+    },
+    "Sneak Attack": {
+      "pickCount": 100,
+      "totalAppearances": 342,
+      "avgPickPosition": 18.9,
+      "wheelCount": 0,
+      "wheelOpportunities": 341,
+      "archetypeBreakdown": {
+        "sneak": 45,
+        "artifacts": 5,
+        "reanimator": 1,
+        "aggro": 3,
+        "midrange": 7,
+        "tempo": 2,
+        "control": 1
+      },
+      "sideboardCount": 36
+    },
+    "Snuff Out": {
+      "pickCount": 100,
+      "totalAppearances": 866,
+      "avgPickPosition": 23.8,
+      "wheelCount": 119,
+      "wheelOpportunities": 680,
+      "archetypeBreakdown": {
+        "reanimator": 12,
+        "sneak": 14,
+        "midrange": 18,
+        "storm": 5,
+        "oath": 4,
+        "aggro": 3,
+        "ramp": 5,
+        "tempo": 6,
+        "artifacts": 2,
+        "control": 2
+      },
+      "sideboardCount": 29
+    },
+    "Sol Ring": {
+      "pickCount": 100,
+      "totalAppearances": 136,
+      "avgPickPosition": 16.5,
+      "wheelCount": 0,
+      "wheelOpportunities": 136,
+      "archetypeBreakdown": {
+        "sneak": 14,
+        "midrange": 24,
+        "artifacts": 9,
+        "tempo": 15,
+        "aggro": 10,
+        "ramp": 5,
+        "reanimator": 9,
+        "storm": 5,
+        "oath": 2,
+        "control": 7
+      },
+      "sideboardCount": 0
+    },
+    "Solitude": {
+      "pickCount": 100,
+      "totalAppearances": 1021,
+      "avgPickPosition": 25.4,
+      "wheelCount": 247,
+      "wheelOpportunities": 686,
+      "archetypeBreakdown": {
+        "sneak": 20,
+        "oath": 4,
+        "storm": 2,
+        "reanimator": 11,
+        "artifacts": 3,
+        "midrange": 8,
+        "ramp": 7,
+        "control": 1
+      },
+      "sideboardCount": 44
+    },
+    "Spara's Headquarters": {
+      "pickCount": 100,
+      "totalAppearances": 871,
+      "avgPickPosition": 23.3,
+      "wheelCount": 137,
+      "wheelOpportunities": 663,
+      "archetypeBreakdown": {
+        "tempo": 12,
+        "control": 10,
+        "midrange": 22,
+        "ramp": 5,
+        "artifacts": 4,
+        "sneak": 11,
+        "reanimator": 7,
+        "storm": 11,
+        "aggro": 12,
+        "oath": 6
+      },
+      "sideboardCount": 0
+    },
+    "Spell Pierce": {
+      "pickCount": 100,
+      "totalAppearances": 497,
+      "avgPickPosition": 20.7,
+      "wheelCount": 3,
+      "wheelOpportunities": 488,
+      "archetypeBreakdown": {
+        "aggro": 12,
+        "control": 9,
+        "midrange": 14,
+        "tempo": 30,
+        "sneak": 7,
+        "storm": 5,
+        "oath": 3,
+        "reanimator": 3,
+        "artifacts": 4,
+        "ramp": 2
+      },
+      "sideboardCount": 11
+    },
+    "Spellseeker": {
+      "pickCount": 100,
+      "totalAppearances": 1284,
+      "avgPickPosition": 27.5,
+      "wheelCount": 484,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "ramp": 3,
+        "midrange": 9,
+        "sneak": 4,
+        "storm": 1,
+        "reanimator": 3,
+        "tempo": 5,
+        "aggro": 1,
+        "control": 1
+      },
+      "sideboardCount": 73
+    },
+    "Springheart Nantuko": {
+      "pickCount": 100,
+      "totalAppearances": 1223,
+      "avgPickPosition": 27.7,
+      "wheelCount": 423,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "midrange": 18,
+        "aggro": 3,
+        "artifacts": 2,
+        "oath": 1,
+        "ramp": 1,
+        "sneak": 5,
+        "reanimator": 4,
+        "tempo": 3,
+        "storm": 1
+      },
+      "sideboardCount": 62
+    },
+    "Staff of the Storyteller": {
+      "pickCount": 100,
+      "totalAppearances": 612,
+      "avgPickPosition": 21.3,
+      "wheelCount": 19,
+      "wheelOpportunities": 570,
+      "archetypeBreakdown": {
+        "midrange": 11,
+        "artifacts": 5,
+        "ramp": 7,
+        "sneak": 8,
+        "tempo": 12,
+        "control": 9,
+        "aggro": 9,
+        "storm": 4,
+        "reanimator": 4,
+        "oath": 1
+      },
+      "sideboardCount": 30
+    },
+    "Starting Town": {
+      "pickCount": 100,
+      "totalAppearances": 507,
+      "avgPickPosition": 20.1,
+      "wheelCount": 6,
+      "wheelOpportunities": 488,
+      "archetypeBreakdown": {
+        "sneak": 34,
+        "ramp": 10,
+        "midrange": 17,
+        "artifacts": 6,
+        "reanimator": 12,
+        "control": 3,
+        "tempo": 7,
+        "oath": 2,
+        "storm": 4,
+        "aggro": 5
+      },
+      "sideboardCount": 0
+    },
+    "Steam Vents": {
+      "pickCount": 100,
+      "totalAppearances": 951,
+      "avgPickPosition": 25,
+      "wheelCount": 178,
+      "wheelOpportunities": 687,
+      "archetypeBreakdown": {
+        "sneak": 17,
+        "midrange": 19,
+        "tempo": 8,
+        "ramp": 3,
+        "artifacts": 5,
+        "aggro": 12,
+        "storm": 4,
+        "reanimator": 8,
+        "oath": 3,
+        "control": 10
+      },
+      "sideboardCount": 11
+    },
+    "Stock Up": {
+      "pickCount": 100,
+      "totalAppearances": 531,
+      "avgPickPosition": 21.7,
+      "wheelCount": 2,
+      "wheelOpportunities": 516,
+      "archetypeBreakdown": {
+        "tempo": 11,
+        "ramp": 5,
+        "aggro": 8,
+        "control": 10,
+        "reanimator": 3,
+        "midrange": 18,
+        "storm": 3,
+        "sneak": 12,
+        "oath": 3,
+        "artifacts": 3
+      },
+      "sideboardCount": 24
+    },
+    "Stomping Ground": {
+      "pickCount": 100,
+      "totalAppearances": 1236,
+      "avgPickPosition": 26.9,
+      "wheelCount": 436,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "sneak": 30,
+        "ramp": 3,
+        "midrange": 13,
+        "storm": 4,
+        "control": 7,
+        "oath": 3,
+        "reanimator": 6,
+        "tempo": 11,
+        "aggro": 5,
+        "artifacts": 2
+      },
+      "sideboardCount": 16
+    },
+    "Stoneforge Mystic": {
+      "pickCount": 100,
+      "totalAppearances": 1071,
+      "avgPickPosition": 25.7,
+      "wheelCount": 278,
+      "wheelOpportunities": 698,
+      "archetypeBreakdown": {
+        "aggro": 20,
+        "control": 5,
+        "tempo": 15,
+        "midrange": 13,
+        "sneak": 11,
+        "storm": 2,
+        "artifacts": 3,
+        "reanimator": 4
+      },
+      "sideboardCount": 27
+    },
+    "Strip Mine": {
+      "pickCount": 100,
+      "totalAppearances": 452,
+      "avgPickPosition": 20.4,
+      "wheelCount": 2,
+      "wheelOpportunities": 446,
+      "archetypeBreakdown": {
+        "midrange": 22,
+        "control": 7,
+        "tempo": 6,
+        "ramp": 8,
+        "sneak": 20,
+        "oath": 7,
+        "aggro": 15,
+        "reanimator": 9,
+        "artifacts": 3,
+        "storm": 3
+      },
+      "sideboardCount": 0
+    },
+    "Subtlety": {
+      "pickCount": 100,
+      "totalAppearances": 546,
+      "avgPickPosition": 23.9,
+      "wheelCount": 9,
+      "wheelOpportunities": 522,
+      "archetypeBreakdown": {
+        "aggro": 26,
+        "artifacts": 3,
+        "tempo": 24,
+        "reanimator": 1,
+        "midrange": 17,
+        "oath": 3,
+        "sneak": 7,
+        "control": 9,
+        "storm": 1
+      },
+      "sideboardCount": 9
+    },
+    "Survival of the Fittest": {
+      "pickCount": 100,
+      "totalAppearances": 1241,
+      "avgPickPosition": 26.5,
+      "wheelCount": 441,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "midrange": 6,
+        "ramp": 2,
+        "sneak": 5,
+        "reanimator": 7,
+        "tempo": 3,
+        "aggro": 1,
+        "control": 1,
+        "oath": 1
+      },
+      "sideboardCount": 74
+    },
+    "Swords to Plowshares": {
+      "pickCount": 100,
+      "totalAppearances": 526,
+      "avgPickPosition": 20.6,
+      "wheelCount": 4,
+      "wheelOpportunities": 506,
+      "archetypeBreakdown": {
+        "sneak": 16,
+        "aggro": 16,
+        "tempo": 7,
+        "midrange": 13,
+        "artifacts": 3,
+        "reanimator": 3,
+        "ramp": 2,
+        "control": 4,
+        "oath": 3,
+        "storm": 4
+      },
+      "sideboardCount": 29
+    },
+    "Sylvan Library": {
+      "pickCount": 100,
+      "totalAppearances": 670,
+      "avgPickPosition": 23.1,
+      "wheelCount": 23,
+      "wheelOpportunities": 611,
+      "archetypeBreakdown": {
+        "sneak": 9,
+        "artifacts": 2,
+        "midrange": 12,
+        "aggro": 7,
+        "storm": 5,
+        "reanimator": 5,
+        "ramp": 6,
+        "tempo": 3,
+        "control": 1,
+        "oath": 1
+      },
+      "sideboardCount": 49
+    },
+    "Taiga": {
+      "pickCount": 100,
+      "totalAppearances": 1137,
+      "avgPickPosition": 25.9,
+      "wheelCount": 343,
+      "wheelOpportunities": 697,
+      "archetypeBreakdown": {
+        "sneak": 31,
+        "reanimator": 15,
+        "midrange": 11,
+        "tempo": 4,
+        "artifacts": 1,
+        "aggro": 10,
+        "oath": 4,
+        "control": 2,
+        "ramp": 4,
+        "storm": 5
+      },
+      "sideboardCount": 13
+    },
+    "Teferi, Time Raveler": {
+      "pickCount": 100,
+      "totalAppearances": 476,
+      "avgPickPosition": 20.2,
+      "wheelCount": 1,
+      "wheelOpportunities": 468,
+      "archetypeBreakdown": {
+        "control": 8,
+        "tempo": 15,
+        "midrange": 12,
+        "storm": 5,
+        "oath": 2,
+        "aggro": 6,
+        "artifacts": 2,
+        "reanimator": 3,
+        "ramp": 1,
+        "sneak": 3
+      },
+      "sideboardCount": 43
+    },
+    "Temple Garden": {
+      "pickCount": 100,
+      "totalAppearances": 1342,
+      "avgPickPosition": 26.9,
+      "wheelCount": 542,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "aggro": 7,
+        "control": 8,
+        "ramp": 4,
+        "midrange": 17,
+        "artifacts": 4,
+        "sneak": 20,
+        "oath": 2,
+        "storm": 3,
+        "reanimator": 9,
+        "tempo": 12
+      },
+      "sideboardCount": 14
+    },
+    "Tezzeret, Cruel Captain": {
+      "pickCount": 100,
+      "totalAppearances": 802,
+      "avgPickPosition": 23.3,
+      "wheelCount": 84,
+      "wheelOpportunities": 653,
+      "archetypeBreakdown": {
+        "artifacts": 3,
+        "sneak": 20,
+        "control": 10,
+        "storm": 6,
+        "reanimator": 14,
+        "ramp": 6,
+        "aggro": 9,
+        "oath": 5,
+        "tempo": 8,
+        "midrange": 19
+      },
+      "sideboardCount": 0
+    },
+    "Thalia, Guardian of Thraben": {
+      "pickCount": 100,
+      "totalAppearances": 1315,
+      "avgPickPosition": 27,
+      "wheelCount": 515,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "tempo": 6,
+        "midrange": 7,
+        "ramp": 3,
+        "control": 1,
+        "artifacts": 3,
+        "aggro": 8,
+        "reanimator": 3,
+        "sneak": 1
+      },
+      "sideboardCount": 68
+    },
+    "Thassa's Oracle": {
+      "pickCount": 100,
+      "totalAppearances": 1251,
+      "avgPickPosition": 27.8,
+      "wheelCount": 451,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "ramp": 3,
+        "aggro": 3,
+        "tempo": 5,
+        "midrange": 10,
+        "sneak": 5,
+        "storm": 2,
+        "artifacts": 1,
+        "control": 2,
+        "reanimator": 6,
+        "oath": 1
+      },
+      "sideboardCount": 62
+    },
+    "The One Ring": {
+      "pickCount": 100,
+      "totalAppearances": 211,
+      "avgPickPosition": 16.1,
+      "wheelCount": 0,
+      "wheelOpportunities": 211,
+      "archetypeBreakdown": {
+        "sneak": 23,
+        "midrange": 26,
+        "oath": 3,
+        "aggro": 13,
+        "ramp": 4,
+        "artifacts": 3,
+        "reanimator": 11,
+        "tempo": 8,
+        "control": 6,
+        "storm": 3
+      },
+      "sideboardCount": 0
+    },
+    "The Wandering Emperor": {
+      "pickCount": 100,
+      "totalAppearances": 626,
+      "avgPickPosition": 22.9,
+      "wheelCount": 25,
+      "wheelOpportunities": 575,
+      "archetypeBreakdown": {
+        "oath": 8,
+        "control": 24,
+        "tempo": 10,
+        "midrange": 8,
+        "sneak": 10,
+        "storm": 4,
+        "reanimator": 6,
+        "aggro": 11,
+        "ramp": 1,
+        "artifacts": 3
+      },
+      "sideboardCount": 15
+    },
+    "Thoughtseize": {
+      "pickCount": 100,
+      "totalAppearances": 234,
+      "avgPickPosition": 16.9,
+      "wheelCount": 0,
+      "wheelOpportunities": 234,
+      "archetypeBreakdown": {
+        "control": 1,
+        "midrange": 38,
+        "sneak": 11,
+        "tempo": 4,
+        "aggro": 6,
+        "artifacts": 3,
+        "reanimator": 7,
+        "oath": 3,
+        "storm": 2,
+        "ramp": 1
+      },
+      "sideboardCount": 24
+    },
+    "Thraben Inspector": {
+      "pickCount": 100,
+      "totalAppearances": 894,
+      "avgPickPosition": 25.4,
+      "wheelCount": 150,
+      "wheelOpportunities": 670,
+      "archetypeBreakdown": {
+        "control": 7,
+        "midrange": 13,
+        "storm": 9,
+        "sneak": 5,
+        "aggro": 23,
+        "oath": 1,
+        "tempo": 8,
+        "reanimator": 2,
+        "artifacts": 3,
+        "ramp": 2
+      },
+      "sideboardCount": 27
+    },
+    "Through the Breach": {
+      "pickCount": 100,
+      "totalAppearances": 583,
+      "avgPickPosition": 19.2,
+      "wheelCount": 17,
+      "wheelOpportunities": 541,
+      "archetypeBreakdown": {
+        "sneak": 49,
+        "artifacts": 4,
+        "tempo": 2,
+        "midrange": 2,
+        "aggro": 2,
+        "storm": 1,
+        "reanimator": 4,
+        "ramp": 1,
+        "control": 1
+      },
+      "sideboardCount": 34
+    },
+    "Thundering Falls": {
+      "pickCount": 100,
+      "totalAppearances": 1092,
+      "avgPickPosition": 26.7,
+      "wheelCount": 295,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "tempo": 7,
+        "artifacts": 6,
+        "midrange": 14,
+        "control": 11,
+        "ramp": 3,
+        "reanimator": 7,
+        "oath": 5,
+        "aggro": 9,
+        "sneak": 22,
+        "storm": 3
+      },
+      "sideboardCount": 13
+    },
+    "Time Spiral": {
+      "pickCount": 100,
+      "totalAppearances": 467,
+      "avgPickPosition": 19.8,
+      "wheelCount": 4,
+      "wheelOpportunities": 453,
+      "archetypeBreakdown": {
+        "tempo": 16,
+        "sneak": 13,
+        "midrange": 22,
+        "storm": 10,
+        "oath": 7,
+        "aggro": 8,
+        "control": 8,
+        "reanimator": 3,
+        "ramp": 3,
+        "artifacts": 2
+      },
+      "sideboardCount": 8
+    },
+    "Time Walk": {
+      "pickCount": 100,
+      "totalAppearances": 183,
+      "avgPickPosition": 15.8,
+      "wheelCount": 0,
+      "wheelOpportunities": 183,
+      "archetypeBreakdown": {
+        "midrange": 24,
+        "control": 9,
+        "tempo": 11,
+        "sneak": 13,
+        "ramp": 3,
+        "storm": 1,
+        "aggro": 13,
+        "reanimator": 4,
+        "artifacts": 1,
+        "oath": 1
+      },
+      "sideboardCount": 20
+    },
+    "Timetwister": {
+      "pickCount": 100,
+      "totalAppearances": 225,
+      "avgPickPosition": 17.3,
+      "wheelCount": 0,
+      "wheelOpportunities": 225,
+      "archetypeBreakdown": {
+        "ramp": 3,
+        "midrange": 21,
+        "storm": 11,
+        "control": 4,
+        "tempo": 18,
+        "reanimator": 1,
+        "aggro": 11,
+        "oath": 3,
+        "sneak": 8,
+        "artifacts": 1
+      },
+      "sideboardCount": 19
+    },
+    "Tinker": {
+      "pickCount": 100,
+      "totalAppearances": 241,
+      "avgPickPosition": 17.9,
+      "wheelCount": 0,
+      "wheelOpportunities": 241,
+      "archetypeBreakdown": {
+        "artifacts": 17,
+        "control": 5,
+        "tempo": 8,
+        "ramp": 6,
+        "reanimator": 2,
+        "aggro": 7,
+        "sneak": 6,
+        "midrange": 16,
+        "storm": 2,
+        "oath": 1
+      },
+      "sideboardCount": 30
+    },
+    "Tireless Tracker": {
+      "pickCount": 100,
+      "totalAppearances": 769,
+      "avgPickPosition": 24.5,
+      "wheelCount": 71,
+      "wheelOpportunities": 638,
+      "archetypeBreakdown": {
+        "midrange": 39,
+        "oath": 3,
+        "artifacts": 2,
+        "storm": 3,
+        "reanimator": 5,
+        "sneak": 12,
+        "aggro": 5
+      },
+      "sideboardCount": 31
+    },
+    "Tishana's Tidebinder": {
+      "pickCount": 100,
+      "totalAppearances": 1452,
+      "avgPickPosition": 30.9,
+      "wheelCount": 652,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "sneak": 3,
+        "ramp": 1,
+        "reanimator": 1,
+        "midrange": 4,
+        "tempo": 1,
+        "control": 1,
+        "aggro": 2,
+        "storm": 1
+      },
+      "sideboardCount": 86
+    },
+    "Titania, Protector of Argoth": {
+      "pickCount": 100,
+      "totalAppearances": 1389,
+      "avgPickPosition": 32.3,
+      "wheelCount": 589,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "oath": 2,
+        "midrange": 2,
+        "control": 2,
+        "sneak": 10,
+        "ramp": 3,
+        "reanimator": 6
+      },
+      "sideboardCount": 75
+    },
+    "Tolarian Academy": {
+      "pickCount": 100,
+      "totalAppearances": 214,
+      "avgPickPosition": 18.3,
+      "wheelCount": 0,
+      "wheelOpportunities": 214,
+      "archetypeBreakdown": {
+        "sneak": 12,
+        "midrange": 15,
+        "aggro": 7,
+        "oath": 2,
+        "artifacts": 9,
+        "ramp": 3,
+        "control": 7,
+        "tempo": 10,
+        "reanimator": 3
+      },
+      "sideboardCount": 32
+    },
+    "Torsten, Founder of Benalia": {
+      "pickCount": 100,
+      "totalAppearances": 352,
+      "avgPickPosition": 17.6,
+      "wheelCount": 0,
+      "wheelOpportunities": 352,
+      "archetypeBreakdown": {
+        "sneak": 10,
+        "midrange": 6,
+        "ramp": 7,
+        "reanimator": 11,
+        "artifacts": 1,
+        "storm": 2,
+        "oath": 2
+      },
+      "sideboardCount": 61
+    },
+    "Toxic Deluge": {
+      "pickCount": 100,
+      "totalAppearances": 1029,
+      "avgPickPosition": 23.8,
+      "wheelCount": 238,
+      "wheelOpportunities": 697,
+      "archetypeBreakdown": {
+        "oath": 4,
+        "sneak": 23,
+        "reanimator": 8,
+        "tempo": 3,
+        "ramp": 4,
+        "midrange": 11,
+        "control": 2,
+        "aggro": 1
+      },
+      "sideboardCount": 44
+    },
+    "Triplicate Titan": {
+      "pickCount": 100,
+      "totalAppearances": 280,
+      "avgPickPosition": 18.6,
+      "wheelCount": 0,
+      "wheelOpportunities": 280,
+      "archetypeBreakdown": {
+        "oath": 13,
+        "sneak": 42,
+        "ramp": 7,
+        "artifacts": 9,
+        "reanimator": 13,
+        "midrange": 8,
+        "control": 4,
+        "tempo": 3,
+        "storm": 1
+      },
+      "sideboardCount": 0
+    },
+    "Troll of Khazad-dûm": {
+      "pickCount": 100,
+      "totalAppearances": 786,
+      "avgPickPosition": 22.4,
+      "wheelCount": 81,
+      "wheelOpportunities": 646,
+      "archetypeBreakdown": {
+        "artifacts": 7,
+        "ramp": 7,
+        "sneak": 30,
+        "oath": 5,
+        "midrange": 8,
+        "storm": 2,
+        "reanimator": 13,
+        "tempo": 1
+      },
+      "sideboardCount": 27
+    },
+    "Tropical Island": {
+      "pickCount": 100,
+      "totalAppearances": 855,
+      "avgPickPosition": 21.6,
+      "wheelCount": 111,
+      "wheelOpportunities": 673,
+      "archetypeBreakdown": {
+        "oath": 9,
+        "control": 4,
+        "sneak": 29,
+        "artifacts": 5,
+        "reanimator": 14,
+        "midrange": 14,
+        "aggro": 7,
+        "tempo": 11,
+        "ramp": 4
+      },
+      "sideboardCount": 3
+    },
+    "True-Name Nemesis": {
+      "pickCount": 100,
+      "totalAppearances": 580,
+      "avgPickPosition": 22.3,
+      "wheelCount": 13,
+      "wheelOpportunities": 547,
+      "archetypeBreakdown": {
+        "tempo": 37,
+        "artifacts": 6,
+        "reanimator": 4,
+        "aggro": 10,
+        "midrange": 19,
+        "control": 10,
+        "ramp": 1,
+        "sneak": 3,
+        "storm": 4
+      },
+      "sideboardCount": 6
+    },
+    "Tundra": {
+      "pickCount": 100,
+      "totalAppearances": 851,
+      "avgPickPosition": 21.6,
+      "wheelCount": 107,
+      "wheelOpportunities": 675,
+      "archetypeBreakdown": {
+        "artifacts": 3,
+        "control": 7,
+        "ramp": 4,
+        "midrange": 21,
+        "aggro": 7,
+        "reanimator": 5,
+        "tempo": 11,
+        "sneak": 15,
+        "storm": 5,
+        "oath": 4
+      },
+      "sideboardCount": 18
+    },
+    "Ugin, Eye of the Storms": {
+      "pickCount": 100,
+      "totalAppearances": 764,
+      "avgPickPosition": 23.4,
+      "wheelCount": 77,
+      "wheelOpportunities": 645,
+      "archetypeBreakdown": {
+        "oath": 12,
+        "sneak": 37,
+        "ramp": 8,
+        "artifacts": 8,
+        "reanimator": 17,
+        "midrange": 12,
+        "control": 5
+      },
+      "sideboardCount": 1
+    },
+    "Umezawa's Jitte": {
+      "pickCount": 100,
+      "totalAppearances": 729,
+      "avgPickPosition": 23,
+      "wheelCount": 45,
+      "wheelOpportunities": 637,
+      "archetypeBreakdown": {
+        "artifacts": 14,
+        "sneak": 16,
+        "midrange": 14,
+        "ramp": 4,
+        "oath": 9,
+        "tempo": 17,
+        "aggro": 14,
+        "reanimator": 7,
+        "control": 5
+      },
+      "sideboardCount": 0
+    },
+    "Undercity Sewers": {
+      "pickCount": 100,
+      "totalAppearances": 1134,
+      "avgPickPosition": 25.6,
+      "wheelCount": 335,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "oath": 3,
+        "control": 9,
+        "midrange": 23,
+        "sneak": 20,
+        "reanimator": 12,
+        "aggro": 7,
+        "ramp": 4,
+        "artifacts": 4,
+        "storm": 4,
+        "tempo": 8
+      },
+      "sideboardCount": 6
+    },
+    "Underground Mortuary": {
+      "pickCount": 100,
+      "totalAppearances": 1332,
+      "avgPickPosition": 25.2,
+      "wheelCount": 532,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "midrange": 12,
+        "ramp": 6,
+        "sneak": 24,
+        "tempo": 12,
+        "artifacts": 6,
+        "aggro": 6,
+        "control": 3,
+        "storm": 7,
+        "reanimator": 8,
+        "oath": 2
+      },
+      "sideboardCount": 14
+    },
+    "Underground Sea": {
+      "pickCount": 100,
+      "totalAppearances": 748,
+      "avgPickPosition": 21.6,
+      "wheelCount": 68,
+      "wheelOpportunities": 625,
+      "archetypeBreakdown": {
+        "oath": 8,
+        "midrange": 20,
+        "reanimator": 12,
+        "tempo": 7,
+        "artifacts": 6,
+        "sneak": 23,
+        "storm": 3,
+        "aggro": 9,
+        "control": 6
+      },
+      "sideboardCount": 6
+    },
+    "Undermountain Adventurer": {
+      "pickCount": 100,
+      "totalAppearances": 744,
+      "avgPickPosition": 22.4,
+      "wheelCount": 46,
+      "wheelOpportunities": 651,
+      "archetypeBreakdown": {
+        "midrange": 19,
+        "tempo": 5,
+        "sneak": 15,
+        "oath": 5,
+        "artifacts": 2,
+        "aggro": 6,
+        "ramp": 3,
+        "reanimator": 7,
+        "control": 2,
+        "storm": 1
+      },
+      "sideboardCount": 35
+    },
+    "Underworld Breach": {
+      "pickCount": 100,
+      "totalAppearances": 270,
+      "avgPickPosition": 18.2,
+      "wheelCount": 0,
+      "wheelOpportunities": 270,
+      "archetypeBreakdown": {
+        "aggro": 15,
+        "oath": 3,
+        "reanimator": 6,
+        "sneak": 11,
+        "midrange": 14,
+        "storm": 8,
+        "artifacts": 2,
+        "control": 7,
+        "ramp": 2,
+        "tempo": 3
+      },
+      "sideboardCount": 29
+    },
+    "Unholy Heat": {
+      "pickCount": 100,
+      "totalAppearances": 1188,
+      "avgPickPosition": 25.5,
+      "wheelCount": 389,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "tempo": 3,
+        "midrange": 10,
+        "aggro": 2,
+        "control": 2,
+        "ramp": 1,
+        "sneak": 13,
+        "reanimator": 2
+      },
+      "sideboardCount": 67
+    },
+    "Upheaval": {
+      "pickCount": 100,
+      "totalAppearances": 1467,
+      "avgPickPosition": 32.1,
+      "wheelCount": 667,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "sneak": 5,
+        "aggro": 1,
+        "reanimator": 4,
+        "storm": 1,
+        "artifacts": 1,
+        "midrange": 1,
+        "oath": 1
+      },
+      "sideboardCount": 86
+    },
+    "Uro, Titan of Nature's Wrath": {
+      "pickCount": 100,
+      "totalAppearances": 565,
+      "avgPickPosition": 22.6,
+      "wheelCount": 15,
+      "wheelOpportunities": 532,
+      "archetypeBreakdown": {
+        "midrange": 24,
+        "control": 3,
+        "oath": 2,
+        "sneak": 6,
+        "storm": 2,
+        "artifacts": 2,
+        "reanimator": 3,
+        "tempo": 1,
+        "aggro": 1
+      },
+      "sideboardCount": 56
+    },
+    "Urza, Lord High Artificer": {
+      "pickCount": 100,
+      "totalAppearances": 199,
+      "avgPickPosition": 18.6,
+      "wheelCount": 0,
+      "wheelOpportunities": 199,
+      "archetypeBreakdown": {
+        "tempo": 12,
+        "artifacts": 12,
+        "reanimator": 2,
+        "control": 4,
+        "midrange": 17,
+        "ramp": 2,
+        "sneak": 17,
+        "oath": 3,
+        "aggro": 4,
+        "storm": 1
+      },
+      "sideboardCount": 26
+    },
+    "Urza's Bauble": {
+      "pickCount": 100,
+      "totalAppearances": 453,
+      "avgPickPosition": 19.5,
+      "wheelCount": 2,
+      "wheelOpportunities": 443,
+      "archetypeBreakdown": {
+        "oath": 6,
+        "ramp": 7,
+        "midrange": 18,
+        "artifacts": 7,
+        "aggro": 17,
+        "tempo": 10,
+        "storm": 9,
+        "control": 7,
+        "reanimator": 7,
+        "sneak": 12
+      },
+      "sideboardCount": 0
+    },
+    "Urza's Saga": {
+      "pickCount": 100,
+      "totalAppearances": 216,
+      "avgPickPosition": 15.5,
+      "wheelCount": 0,
+      "wheelOpportunities": 216,
+      "archetypeBreakdown": {},
+      "sideboardCount": 100
+    },
+    "Vampiric Tutor": {
+      "pickCount": 100,
+      "totalAppearances": 662,
+      "avgPickPosition": 21.2,
+      "wheelCount": 30,
+      "wheelOpportunities": 603,
+      "archetypeBreakdown": {
+        "artifacts": 4,
+        "midrange": 23,
+        "sneak": 20,
+        "tempo": 6,
+        "oath": 3,
+        "reanimator": 8,
+        "storm": 2,
+        "ramp": 2,
+        "control": 4,
+        "aggro": 2
+      },
+      "sideboardCount": 26
+    },
+    "Vaultborn Tyrant": {
+      "pickCount": 100,
+      "totalAppearances": 306,
+      "avgPickPosition": 16,
+      "wheelCount": 0,
+      "wheelOpportunities": 305,
+      "archetypeBreakdown": {
+        "sneak": 38,
+        "oath": 9,
+        "ramp": 9,
+        "reanimator": 9,
+        "midrange": 7,
+        "storm": 1,
+        "control": 2,
+        "tempo": 2,
+        "artifacts": 2,
+        "aggro": 1
+      },
+      "sideboardCount": 20
+    },
+    "Verdant Catacombs": {
+      "pickCount": 100,
+      "totalAppearances": 647,
+      "avgPickPosition": 21.9,
+      "wheelCount": 37,
+      "wheelOpportunities": 573,
+      "archetypeBreakdown": {
+        "sneak": 30,
+        "oath": 5,
+        "ramp": 6,
+        "reanimator": 11,
+        "midrange": 19,
+        "control": 6,
+        "aggro": 2,
+        "artifacts": 3,
+        "tempo": 4,
+        "storm": 2
+      },
+      "sideboardCount": 12
+    },
+    "Vindicate": {
+      "pickCount": 100,
+      "totalAppearances": 1452,
+      "avgPickPosition": 29.8,
+      "wheelCount": 652,
+      "wheelOpportunities": 700,
+      "archetypeBreakdown": {
+        "midrange": 2,
+        "oath": 1,
+        "sneak": 1,
+        "reanimator": 1,
+        "aggro": 1
+      },
+      "sideboardCount": 94
+    },
+    "Vivi Ornitier": {
+      "pickCount": 100,
+      "totalAppearances": 721,
+      "avgPickPosition": 21.9,
+      "wheelCount": 44,
+      "wheelOpportunities": 632,
+      "archetypeBreakdown": {
+        "artifacts": 2,
+        "midrange": 9,
+        "sneak": 4,
+        "aggro": 4,
+        "storm": 1,
+        "ramp": 2,
+        "tempo": 2,
+        "reanimator": 1
+      },
+      "sideboardCount": 75
+    },
+    "Voice of Victory": {
+      "pickCount": 100,
+      "totalAppearances": 990,
+      "avgPickPosition": 23.9,
+      "wheelCount": 213,
+      "wheelOpportunities": 692,
+      "archetypeBreakdown": {
+        "midrange": 14,
+        "aggro": 25,
+        "tempo": 7,
+        "sneak": 9,
+        "storm": 6,
+        "ramp": 1,
+        "artifacts": 3,
+        "control": 1,
+        "reanimator": 4
+      },
+      "sideboardCount": 30
+    },
+    "Volcanic Island": {
+      "pickCount": 100,
+      "totalAppearances": 681,
+      "avgPickPosition": 21.8,
+      "wheelCount": 38,
+      "wheelOpportunities": 603,
+      "archetypeBreakdown": {
+        "sneak": 16,
+        "control": 8,
+        "oath": 2,
+        "ramp": 4,
+        "aggro": 14,
+        "reanimator": 4,
+        "storm": 6,
+        "midrange": 19,
+        "tempo": 9,
+        "artifacts": 6
+      },
+      "sideboardCount": 12
+    },
+    "Walking Ballista": {
+      "pickCount": 100,
+      "totalAppearances": 1096,
+      "avgPickPosition": 25.5,
+      "wheelCount": 305,
+      "wheelOpportunities": 694,
+      "archetypeBreakdown": {
+        "artifacts": 9,
+        "control": 6,
+        "reanimator": 5,
+        "storm": 4,
+        "sneak": 13,
+        "tempo": 16,
+        "ramp": 4,
+        "aggro": 14,
+        "midrange": 16,
+        "oath": 2
+      },
+      "sideboardCount": 11
+    },
+    "Wan Shi Tong, Librarian": {
+      "pickCount": 100,
+      "totalAppearances": 687,
+      "avgPickPosition": 21.7,
+      "wheelCount": 34,
+      "wheelOpportunities": 617,
+      "archetypeBreakdown": {
+        "artifacts": 4,
+        "reanimator": 10,
+        "tempo": 29,
+        "control": 5,
+        "midrange": 13,
+        "oath": 2,
+        "aggro": 13,
+        "sneak": 6,
+        "ramp": 2,
+        "storm": 10
+      },
+      "sideboardCount": 6
+    },
+    "Wasteland": {
+      "pickCount": 100,
+      "totalAppearances": 819,
+      "avgPickPosition": 21.2,
+      "wheelCount": 100,
+      "wheelOpportunities": 654,
+      "archetypeBreakdown": {
+        "midrange": 22,
+        "artifacts": 3,
+        "aggro": 9,
+        "storm": 4,
+        "ramp": 6,
+        "sneak": 20,
+        "reanimator": 15,
+        "control": 6,
+        "oath": 5,
+        "tempo": 10
+      },
+      "sideboardCount": 0
+    },
+    "Watery Grave": {
+      "pickCount": 100,
+      "totalAppearances": 977,
+      "avgPickPosition": 24.5,
+      "wheelCount": 200,
+      "wheelOpportunities": 690,
+      "archetypeBreakdown": {
+        "aggro": 9,
+        "control": 5,
+        "ramp": 4,
+        "sneak": 25,
+        "midrange": 29,
+        "tempo": 8,
+        "oath": 6,
+        "reanimator": 4,
+        "artifacts": 5,
+        "storm": 3
+      },
+      "sideboardCount": 2
+    },
+    "Wheel of Fortune": {
+      "pickCount": 100,
+      "totalAppearances": 246,
+      "avgPickPosition": 16.1,
+      "wheelCount": 0,
+      "wheelOpportunities": 246,
+      "archetypeBreakdown": {
+        "midrange": 19,
+        "control": 6,
+        "sneak": 12,
+        "ramp": 5,
+        "storm": 7,
+        "reanimator": 2,
+        "tempo": 7,
+        "aggro": 5,
+        "artifacts": 2
+      },
+      "sideboardCount": 35
+    },
+    "White Plume Adventurer": {
+      "pickCount": 100,
+      "totalAppearances": 665,
+      "avgPickPosition": 21.2,
+      "wheelCount": 47,
+      "wheelOpportunities": 575,
+      "archetypeBreakdown": {
+        "midrange": 25,
+        "artifacts": 2,
+        "aggro": 13,
+        "tempo": 7,
+        "ramp": 4,
+        "reanimator": 4,
+        "control": 5,
+        "sneak": 7,
+        "storm": 2,
+        "oath": 1
+      },
+      "sideboardCount": 30
+    },
+    "Windswept Heath": {
+      "pickCount": 100,
+      "totalAppearances": 757,
+      "avgPickPosition": 21.4,
+      "wheelCount": 63,
+      "wheelOpportunities": 638,
+      "archetypeBreakdown": {
+        "sneak": 17,
+        "control": 9,
+        "midrange": 21,
+        "reanimator": 12,
+        "storm": 6,
+        "tempo": 8,
+        "artifacts": 3,
+        "oath": 3,
+        "aggro": 10,
+        "ramp": 4
+      },
+      "sideboardCount": 7
+    },
+    "Winter Orb": {
+      "pickCount": 100,
+      "totalAppearances": 880,
+      "avgPickPosition": 24.3,
+      "wheelCount": 135,
+      "wheelOpportunities": 669,
+      "archetypeBreakdown": {
+        "tempo": 9,
+        "sneak": 34,
+        "control": 7,
+        "ramp": 6,
+        "midrange": 17,
+        "oath": 5,
+        "aggro": 7,
+        "reanimator": 6,
+        "storm": 4,
+        "artifacts": 5
+      },
+      "sideboardCount": 0
+    },
+    "Wooded Foothills": {
+      "pickCount": 100,
+      "totalAppearances": 648,
+      "avgPickPosition": 21,
+      "wheelCount": 29,
+      "wheelOpportunities": 591,
+      "archetypeBreakdown": {
+        "tempo": 14,
+        "midrange": 14,
+        "ramp": 8,
+        "control": 4,
+        "aggro": 15,
+        "sneak": 21,
+        "artifacts": 4,
+        "reanimator": 4,
+        "storm": 2,
+        "oath": 3
+      },
+      "sideboardCount": 11
+    },
+    "Woodfall Primus": {
+      "pickCount": 100,
+      "totalAppearances": 277,
+      "avgPickPosition": 17.5,
+      "wheelCount": 0,
+      "wheelOpportunities": 277,
+      "archetypeBreakdown": {
+        "sneak": 42,
+        "midrange": 10,
+        "ramp": 6,
+        "oath": 13,
+        "reanimator": 17,
+        "tempo": 1,
+        "artifacts": 3,
+        "control": 2
+      },
+      "sideboardCount": 6
+    },
+    "Worldspine Wurm": {
+      "pickCount": 100,
+      "totalAppearances": 269,
+      "avgPickPosition": 15.3,
+      "wheelCount": 0,
+      "wheelOpportunities": 269,
+      "archetypeBreakdown": {
+        "sneak": 46,
+        "ramp": 7,
+        "oath": 9,
+        "artifacts": 5,
+        "storm": 3,
+        "midrange": 6,
+        "reanimator": 14,
+        "tempo": 1,
+        "control": 3
+      },
+      "sideboardCount": 6
+    },
+    "Wrath of God": {
+      "pickCount": 100,
+      "totalAppearances": 798,
+      "avgPickPosition": 24.3,
+      "wheelCount": 89,
+      "wheelOpportunities": 650,
+      "archetypeBreakdown": {
+        "control": 29,
+        "midrange": 13,
+        "sneak": 10,
+        "reanimator": 5,
+        "oath": 3,
+        "tempo": 8,
+        "aggro": 7,
+        "artifacts": 2,
+        "storm": 3,
+        "ramp": 1
+      },
+      "sideboardCount": 19
+    },
+    "Wrenn and Six": {
+      "pickCount": 100,
+      "totalAppearances": 972,
+      "avgPickPosition": 23.5,
+      "wheelCount": 204,
+      "wheelOpportunities": 682,
+      "archetypeBreakdown": {
+        "ramp": 2,
+        "artifacts": 1,
+        "sneak": 11,
+        "reanimator": 3,
+        "tempo": 4,
+        "midrange": 7,
+        "aggro": 1
+      },
+      "sideboardCount": 71
+    },
+    "Wurmcoil Engine": {
+      "pickCount": 100,
+      "totalAppearances": 454,
+      "avgPickPosition": 16.7,
+      "wheelCount": 0,
+      "wheelOpportunities": 451,
+      "archetypeBreakdown": {
+        "artifacts": 30,
+        "ramp": 14,
+        "reanimator": 15,
+        "sneak": 24,
+        "storm": 2,
+        "tempo": 3,
+        "midrange": 6,
+        "aggro": 2,
+        "oath": 2,
+        "control": 2
+      },
+      "sideboardCount": 0
+    },
+    "Xander's Lounge": {
+      "pickCount": 100,
+      "totalAppearances": 746,
+      "avgPickPosition": 24.7,
+      "wheelCount": 59,
+      "wheelOpportunities": 637,
+      "archetypeBreakdown": {
+        "midrange": 29,
+        "control": 5,
+        "ramp": 5,
+        "storm": 13,
+        "sneak": 13,
+        "aggro": 10,
+        "tempo": 9,
+        "oath": 3,
+        "reanimator": 10,
+        "artifacts": 3
+      },
+      "sideboardCount": 0
+    },
+    "Yawgmoth's Will": {
+      "pickCount": 100,
+      "totalAppearances": 380,
+      "avgPickPosition": 19.3,
+      "wheelCount": 0,
+      "wheelOpportunities": 378,
+      "archetypeBreakdown": {
+        "midrange": 18,
+        "aggro": 8,
+        "storm": 11,
+        "artifacts": 2,
+        "tempo": 5,
+        "reanimator": 6,
+        "sneak": 9,
+        "control": 2,
+        "ramp": 2,
+        "oath": 1
+      },
+      "sideboardCount": 36
+    },
+    "Zagoth Triome": {
+      "pickCount": 100,
+      "totalAppearances": 805,
+      "avgPickPosition": 24.7,
+      "wheelCount": 79,
+      "wheelOpportunities": 665,
+      "archetypeBreakdown": {
+        "sneak": 21,
+        "control": 2,
+        "midrange": 25,
+        "ramp": 10,
+        "reanimator": 6,
+        "tempo": 13,
+        "aggro": 8,
+        "storm": 7,
+        "artifacts": 4,
+        "oath": 3
+      },
+      "sideboardCount": 1
+    },
+    "Ziatora's Proving Ground": {
+      "pickCount": 100,
+      "totalAppearances": 985,
+      "avgPickPosition": 25.2,
+      "wheelCount": 201,
+      "wheelOpportunities": 697,
+      "archetypeBreakdown": {
+        "midrange": 19,
+        "ramp": 9,
+        "reanimator": 10,
+        "artifacts": 8,
+        "sneak": 8,
+        "control": 5,
+        "aggro": 10,
+        "storm": 13,
+        "oath": 5,
+        "tempo": 10
+      },
+      "sideboardCount": 3
+    },
+    "Zuran Orb": {
+      "pickCount": 100,
+      "totalAppearances": 880,
+      "avgPickPosition": 22.3,
+      "wheelCount": 116,
+      "wheelOpportunities": 683,
+      "archetypeBreakdown": {
+        "oath": 3,
+        "artifacts": 12,
+        "ramp": 6,
+        "control": 7,
+        "midrange": 24,
+        "sneak": 19,
+        "aggro": 5,
+        "tempo": 10,
+        "reanimator": 11,
+        "storm": 3
+      },
+      "sideboardCount": 0
+    }
+  },
+  "colorDistribution": {
+    "W": 451,
+    "U": 547,
+    "B": 489,
+    "R": 415,
+    "G": 452
+  },
+  "colorPairDistribution": {
+    "BUW": 104,
+    "RUW": 110,
+    "GRW": 35,
+    "BGW": 63,
+    "BRU": 66,
+    "GUW": 79,
+    "GRU": 64,
+    "BGR": 86,
+    "UW": 10,
+    "BGU": 103,
+    "BU": 5,
+    "BRW": 44,
+    "GR": 2,
+    "BG": 17,
+    "RU": 3,
+    "RW": 5,
+    "BW": 1,
+    "GU": 3
+  },
+  "deckProfiles": {
+    "creatures": {
+      "mean": 8.78,
+      "stdDev": 2.73,
+      "min": 2,
+      "max": 17
+    },
+    "removal": {
+      "mean": 4.13,
+      "stdDev": 1.92,
+      "min": 0,
+      "max": 11
+    },
+    "cardDraw": {
+      "mean": 4.94,
+      "stdDev": 2.27,
+      "min": 0,
+      "max": 13
+    },
+    "avgCmc": {
+      "mean": 2.79,
+      "stdDev": 0.72,
+      "min": 1.4,
+      "max": 5.6
+    },
+    "deckQuality": {
+      "mean": 1885.74,
+      "stdDev": 95.1,
+      "min": 1552,
+      "max": 2220
+    }
+  },
+  "consistentWheelers": [
+    "Loran of the Third Path",
+    "Recruiter of the Guard",
+    "Pyrokinesis",
+    "Embereth Shieldbreaker // Battle Display",
+    "Imperial Recruiter",
+    "Upheaval",
+    "Endurance",
+    "Tishana's Tidebinder",
+    "Vindicate",
+    "Cathar Commando",
+    "Damn",
+    "Containment Priest",
+    "Monastery Mentor",
+    "Lush Portico",
+    "Elvish Mystic",
+    "Seasoned Pyromancer",
+    "Scapeshift",
+    "Skyclave Apparition",
+    "Sentinel of the Nameless City",
+    "Bolas's Citadel",
+    "Golos, Tireless Pilgrim",
+    "Crop Rotation",
+    "Enlightened Tutor",
+    "Arbor Elf",
+    "Commercial District",
+    "Titania, Protector of Argoth",
+    "Flickerwisp",
+    "Goblin Engineer",
+    "Shadowy Backstreet",
+    "Restoration Angel",
+    "Ephemerate",
+    "Robber of the Rich",
+    "Chaos Defiler",
+    "Six",
+    "Overgrown Tomb",
+    "Lingering Souls",
+    "Doomsday"
+  ],
+  "neverWheelers": [
+    "Mox Sapphire",
+    "Blightsteel Colossus",
+    "Mox Jet",
+    "Ragavan, Nimble Pilferer",
+    "Jace, the Mind Sculptor",
+    "Myr Battlesphere",
+    "Mox Emerald",
+    "Worldspine Wurm",
+    "Mox Ruby",
+    "Urza's Saga",
+    "Inquisition of Kozilek",
+    "Time Walk",
+    "Archon of Cruelty",
+    "Vaultborn Tyrant",
+    "Craterhoof Behemoth",
+    "Emrakul, the Aeons Torn",
+    "The One Ring",
+    "Wheel of Fortune",
+    "Mana Crypt",
+    "Ancestral Recall",
+    "Sol Ring",
+    "Wurmcoil Engine",
+    "Mox Diamond",
+    "Ponder",
+    "Counterspell",
+    "Thoughtseize",
+    "Channel",
+    "Atraxa, Grand Unifier",
+    "Black Lotus",
+    "Lightning Bolt",
+    "Orcish Bowmasters",
+    "Timetwister",
+    "Mox Pearl",
+    "Entomb",
+    "Lotus Petal",
+    "Woodfall Primus",
+    "Show and Tell",
+    "Torsten, Founder of Benalia",
+    "Flash",
+    "Miscalculation",
+    "Force of Negation",
+    "Mana Drain",
+    "Mox Opal",
+    "Oko, Thief of Crowns",
+    "Tinker",
+    "Minsc & Boo, Timeless Heroes",
+    "Chrome Mox",
+    "Cori-Steel Cutter",
+    "Gitaxian Probe",
+    "Hullbreacher",
+    "Underworld Breach",
+    "Necromancy",
+    "Tolarian Academy",
+    "Reanimate",
+    "Shallow Grave",
+    "Snapcaster Mage",
+    "Remand",
+    "Skullclamp",
+    "Mana Leak",
+    "Triplicate Titan",
+    "Urza, Lord High Artificer",
+    "Daze",
+    "Brainstorm",
+    "Griselbrand",
+    "Sneak Attack",
+    "Coalition Relic",
+    "Comet, Stellar Pup",
+    "Forth Eorlingas!",
+    "Deathrite Shaman",
+    "Demonic Tutor",
+    "Library of Alexandria",
+    "Liliana of the Veil",
+    "Lion's Eye Diamond",
+    "Through the Breach",
+    "Cabal Ritual",
+    "Rofellos, Llanowar Emissary",
+    "Yawgmoth's Will",
+    "Baleful Strix",
+    "Currency Converter",
+    "Faithless Looting",
+    "Force of Will",
+    "Grim Monolith",
+    "Preordain",
+    "Recurring Nightmare",
+    "Sheoldred, the Apocalypse",
+    "Urza's Bauble",
+    "Chromatic Star",
+    "Dark Ritual",
+    "Brain Freeze",
+    "Karakas",
+    "Natural Order",
+    "Seasoned Dungeoneer",
+    "Time Spiral",
+    "Dragon's Rage Channeler",
+    "Memory Lapse",
+    "Life // Death",
+    "Retrofitter Foundry",
+    "Sensei's Divining Top",
+    "Starting Town",
+    "Mishra's Workshop",
+    "Nadu, Winged Wisdom",
+    "Teferi, Time Raveler",
+    "Lose Focus",
+    "Candelabra of Tawnos",
+    "Strip Mine",
+    "Mishra's Bauble",
+    "Animate Dead",
+    "Scalding Tarn",
+    "Swords to Plowshares",
+    "Fatal Push",
+    "Misty Rainforest",
+    "Spell Pierce",
+    "Noble Hierarch",
+    "Polluted Delta",
+    "Pyrogoyf",
+    "Collective Brutality",
+    "Exhume",
+    "Mana Vault",
+    "Mystic Confluence",
+    "Wooded Foothills",
+    "Birds of Paradise",
+    "City of Brass",
+    "Vampiric Tutor",
+    "Echo of Eons",
+    "Esper Sentinel",
+    "Psychic Frog",
+    "Staff of the Storyteller",
+    "Badgermole Cub",
+    "Reprieve",
+    "Chain Lightning",
+    "Mana Confluence",
+    "Goblin Welder",
+    "Stock Up",
+    "Broadside Bombardiers",
+    "Questing Beast",
+    "True-Name Nemesis",
+    "Primeval Titan",
+    "Uro, Titan of Nature's Wrath",
+    "Flooded Strand",
+    "The Wandering Emperor",
+    "Sylvan Library",
+    "Subtlety"
+  ],
+  "consistentSideboards": [
+    "Boseiju, Who Endures",
+    "Golos, Tireless Pilgrim",
+    "Urza's Saga",
+    "Damn",
+    "Imperial Recruiter",
+    "Vindicate",
+    "Loran of the Third Path",
+    "Ignoble Hierarch",
+    "Atraxa, Grand Unifier",
+    "Cathar Commando",
+    "Embereth Shieldbreaker // Battle Display",
+    "Lingering Souls",
+    "Recruiter of the Guard",
+    "Endurance",
+    "Pyrokinesis",
+    "Sentinel of the Nameless City",
+    "Noble Hierarch",
+    "Seasoned Pyromancer",
+    "Tishana's Tidebinder",
+    "Upheaval",
+    "Crop Rotation",
+    "Fractured Identity",
+    "Monastery Mentor",
+    "Skyclave Apparition",
+    "Elvish Mystic",
+    "Chaos Defiler",
+    "Scapeshift",
+    "Arbor Elf",
+    "Containment Priest",
+    "Phlage, Titan of Fire's Fury",
+    "Mawloc",
+    "Robber of the Rich",
+    "Enlightened Tutor",
+    "Goblin Engineer",
+    "Restoration Angel",
+    "Bonecrusher Giant // Stomp",
+    "Seething Song",
+    "Ephemerate",
+    "Six",
+    "Expressive Iteration",
+    "Titania, Protector of Argoth",
+    "Vivi Ornitier",
+    "Dauthi Voidwalker",
+    "Firebolt",
+    "Survival of the Fittest",
+    "Fire Covenant",
+    "Spellseeker",
+    "Bolas's Citadel",
+    "Eternal Witness",
+    "Council's Judgment",
+    "Wrenn and Six",
+    "Doomsday",
+    "Green Sun's Zenith",
+    "Minsc & Boo, Timeless Heroes",
+    "Thalia, Guardian of Thraben",
+    "Flickerwisp",
+    "Unholy Heat",
+    "Incinerate",
+    "Chandra, Torch of Defiance",
+    "Orcish Lumberjack",
+    "Brazen Borrower // Petty Theft",
+    "Lórien Revealed",
+    "Lurrus of the Dream-Den",
+    "Springheart Nantuko",
+    "Thassa's Oracle",
+    "Nadu, Winged Wisdom",
+    "Torsten, Founder of Benalia",
+    "Forth Eorlingas!",
+    "Oust",
+    "Phyrexian Revoker",
+    "Prismatic Ending",
+    "Ramunap Excavator",
+    "Oko, Thief of Crowns",
+    "Exploration",
+    "Abrade",
+    "Comet, Stellar Pup",
+    "Dack Fayden",
+    "Uro, Titan of Nature's Wrath",
+    "Psychic Frog",
+    "Burst Lightning",
+    "Baleful Strix",
+    "Once Upon a Time",
+    "Giver of Runes",
+    "Lutri, the Spellchaser",
+    "Mox Ruby",
+    "Galvanic Discharge",
+    "Sheoldred's Edict"
+  ],
+  "colorImbalances": [],
+  "insufficientPoolCount": 64,
+  "sanityChecks": {
+    "allDecks40Cards": true,
+    "allDecks17Lands": true,
+    "noDuplicatesInDraft": true,
+    "allCardsPickedAtLeastOnce": true,
+    "archetyesDiverse": true
+  },
+  "playerCount": 8,
+  "cardsPerDraft": 360
+}

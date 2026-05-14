@@ -29,6 +29,28 @@ export interface DraftHistoryEntry {
   mainColors: string[];
   totalPicks: number;
   topPicks: { name: string; elo: number }[];
+  // Enhanced tendency tracking
+  tendencyData?: {
+    avgPickCmc: number;
+    creatureCount: number;
+    spellCount: number;
+    colorDistribution: Record<string, number>;
+    passedHighValueCount: number;        // Cards with ELO > 1700 that were passed
+    passedHighValueCards: string[];      // Names of top 3 high-value cards passed
+    archetypesDrafted: string[];         // Detected archetypes (e.g., "Aggro", "Control")
+    pickTimingPattern: 'early-aggro' | 'late-value' | 'balanced';
+    colorCommitmentPick: number;         // Pick # when second color was committed
+    rarePickRate: number;                // % of rares/mythics picked when available
+    signalIgnoreCount: number;           // Times a late-pack signal was ignored
+  };
+}
+
+export interface TendencyInsights {
+  colorBias: { color: string; frequency: number }[];
+  avgCmcTrend: number[];                 // Last N drafts' avg CMC
+  passHighValueTrend: number[];          // Trend of passing good cards
+  archetypePreferences: { archetype: string; count: number }[];
+  insights: string[];                    // Human-readable insights
 }
 
 export interface DraftStats {

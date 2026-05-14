@@ -30,6 +30,8 @@ interface Config {
   seed?: number;
   showSamples: boolean;
   sampleCount: number;
+  playerCount: number;
+  outputSuffix: string;
 }
 
 function parseArgs(): Config {
@@ -39,6 +41,8 @@ function parseArgs(): Config {
     seed: undefined,
     showSamples: true,
     sampleCount: 5,
+    playerCount: 8,
+    outputSuffix: '',
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -47,6 +51,12 @@ function parseArgs(): Config {
       i++;
     } else if (args[i] === '--seed' && args[i + 1]) {
       config.seed = parseInt(args[i + 1], 10);
+      i++;
+    } else if (args[i] === '--players' && args[i + 1]) {
+      config.playerCount = parseInt(args[i + 1], 10);
+      i++;
+    } else if (args[i] === '--output' && args[i + 1]) {
+      config.outputSuffix = args[i + 1];
       i++;
     } else if (args[i] === '--no-samples') {
       config.showSamples = false;
@@ -62,18 +72,25 @@ Usage:
 
 Options:
   --count N       Number of drafts to simulate (default: 1000)
+  --players N     Number of players per draft (default: 8)
   --seed N        Random seed for reproducibility
+  --output NAME   Suffix for output files (e.g., "6p" -> simulation-data-6p.json)
   --no-samples    Don't display sample decks
   --samples N     Number of sample drafts to display (default: 5)
   --help          Show this help message
 
 Examples:
   npx tsx scripts/simulate-drafts.ts --count 100
+  npx tsx scripts/simulate-drafts.ts --count 1000 --players 6 --output 6p
   npx tsx scripts/simulate-drafts.ts --count 1000 --seed 42
-  npx tsx scripts/simulate-drafts.ts --count 100 --no-samples
 `);
       process.exit(0);
     }
+  }
+
+  // Auto-generate output suffix if using non-standard player count
+  if (config.playerCount !== 8 && !config.outputSuffix) {
+    config.outputSuffix = `${config.playerCount}p`;
   }
 
   return config;
@@ -93,25 +110,34 @@ async function main(): Promise<void> {
 
   // Load cube
   const cube = cubeData as CubeCard[];
+  const cardsPerDraft = config.playerCount * 3 * 15; // players × packs × cards
+  const undraftedCards = cube.length - cardsPerDraft;
+
   console.log(`Cube size: ${cube.length} cards`);
   console.log(`Drafts to simulate: ${config.draftCount}`);
+  console.log(`Players per draft: ${config.playerCount}`);
+  console.log(`Cards used per draft: ${cardsPerDraft} (${undraftedCards} undrafted)`);
   if (config.seed !== undefined) {
     console.log(`Seed: ${config.seed}`);
+  }
+  if (config.outputSuffix) {
+    console.log(`Output suffix: ${config.outputSuffix}`);
   }
   console.log('');
 
   // Validate cube size
-  if (cube.length !== 360) {
-    console.warn(`⚠️  Warning: Cube has ${cube.length} cards, expected 360 for standard draft.`);
-    console.warn(`   Simulation will proceed but may have issues with pack generation.`);
-    console.log('');
+  if (cube.length < cardsPerDraft) {
+    console.error(`❌ Error: Cube has ${cube.length} cards, need ${cardsPerDraft} for ${config.playerCount}-player draft.`);
+    process.exit(1);
   }
 
   // Run simulation
   console.log('Running simulation...');
   const startTime = Date.now();
 
-  const results = simulateMultipleDrafts(cube, config.draftCount, config.seed);
+  const results = simulateMultipleDrafts(cube, config.draftCount, config.seed, {
+    drafterCount: config.playerCount,
+  });
 
   const draftTime = Date.now() - startTime;
   console.log(`  Draft simulation completed in ${(draftTime / 1000).toFixed(2)}s`);
@@ -188,7 +214,10 @@ async function main(): Promise<void> {
   }
 
   // Generate reports
-  generateReport(analysis, __dirname);
+  generateReport(analysis, __dirname, {
+    outputSuffix: config.outputSuffix,
+    playerCount: config.playerCount,
+  });
 
   // Final timing
   const totalTime = Date.now() - startTime;

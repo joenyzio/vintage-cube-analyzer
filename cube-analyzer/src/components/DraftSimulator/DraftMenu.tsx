@@ -5,7 +5,7 @@
  */
 
 // React is used for JSX
-import { Play, Users, Package, Target, Zap, TrendingUp, Award, History, HelpCircle } from 'lucide-react';
+import { Play, Users, Package, Target, Zap, TrendingUp, Award, History, HelpCircle, Brain, AlertTriangle, Sparkles } from 'lucide-react';
 import type { CubeCard } from '../../types/card';
 import type { DraftStats, DraftHistoryEntry } from '../../types/draftSimulator';
 import { getCardImage } from '../../services/scryfall';
@@ -46,6 +46,11 @@ export function DraftMenu({
           draftStats={draftStats}
           unlockedAchievements={unlockedAchievements}
         />
+      )}
+
+      {/* Tendency Analysis */}
+      {draftHistory.length >= 3 && (
+        <TendencyAnalysis draftHistory={draftHistory} />
       )}
 
       {/* Recent Drafts */}
@@ -305,6 +310,192 @@ function RecentDrafts({ draftHistory }: RecentDraftsProps) {
       </div>
     </div>
   );
+}
+
+interface TendencyAnalysisProps {
+  draftHistory: DraftHistoryEntry[];
+}
+
+function TendencyAnalysis({ draftHistory }: TendencyAnalysisProps) {
+  // Only analyze entries with tendency data
+  const entriesWithData = draftHistory.filter(e => e.tendencyData);
+  if (entriesWithData.length < 3) return null;
+
+  // Calculate insights
+  const insights: { type: 'positive' | 'negative' | 'neutral'; text: string }[] = [];
+
+  // Color preference analysis
+  const colorCounts: Record<string, number> = {};
+  entriesWithData.forEach(e => {
+    e.mainColors.forEach(c => {
+      colorCounts[c] = (colorCounts[c] || 0) + 1;
+    });
+  });
+  const sortedColors = Object.entries(colorCounts).sort((a, b) => b[1] - a[1]);
+  if (sortedColors.length > 0) {
+    const topColor = sortedColors[0];
+    const topColorPercent = Math.round((topColor[1] / entriesWithData.length) * 100);
+    if (topColorPercent > 70) {
+      insights.push({
+        type: 'neutral',
+        text: `You draft ${getColorName(topColor[0])} ${topColorPercent}% of the time. Consider exploring other colors.`,
+      });
+    }
+  }
+
+  // CMC trend
+  const recentCmcs = entriesWithData.slice(0, 5).map(e => e.tendencyData?.avgPickCmc || 0);
+  const avgCmc = recentCmcs.reduce((a, b) => a + b, 0) / recentCmcs.length;
+  if (avgCmc > 3.5) {
+    insights.push({
+      type: 'negative',
+      text: `Your avg CMC is ${avgCmc.toFixed(1)}. Try drafting lower-curve decks for more consistency.`,
+    });
+  } else if (avgCmc < 2.2) {
+    insights.push({
+      type: 'positive',
+      text: `Your avg CMC is ${avgCmc.toFixed(1)}. You prefer aggressive builds.`,
+    });
+  }
+
+  // Passing high value cards
+  const totalHighValuePassed = entriesWithData.slice(0, 5).reduce((sum, e) =>
+    sum + (e.tendencyData?.passedHighValueCount || 0), 0
+  );
+  if (totalHighValuePassed > 15) {
+    insights.push({
+      type: 'negative',
+      text: `You passed ${totalHighValuePassed} high-ELO cards in recent drafts. Consider value over synergy early.`,
+    });
+  }
+
+  // Color commitment timing
+  const avgCommitment = entriesWithData.slice(0, 5).reduce((sum, e) =>
+    sum + (e.tendencyData?.colorCommitmentPick || 45), 0
+  ) / Math.min(5, entriesWithData.length);
+  if (avgCommitment < 8) {
+    insights.push({
+      type: 'neutral',
+      text: `You commit to colors by pick ${Math.round(avgCommitment)}. Stay open longer for flexibility.`,
+    });
+  } else if (avgCommitment > 20) {
+    insights.push({
+      type: 'negative',
+      text: `You commit to colors late (pick ${Math.round(avgCommitment)}). Try committing earlier for focus.`,
+    });
+  }
+
+  // Rare picking tendency
+  const avgRareRate = entriesWithData.slice(0, 5).reduce((sum, e) =>
+    sum + (e.tendencyData?.rarePickRate || 0), 0
+  ) / Math.min(5, entriesWithData.length);
+  if (avgRareRate > 80) {
+    insights.push({
+      type: 'neutral',
+      text: `You pick rares ${Math.round(avgRareRate)}% of the time. Commons can be better in context.`,
+    });
+  }
+
+  // Signal reading
+  const avgSignalIgnore = entriesWithData.slice(0, 5).reduce((sum, e) =>
+    sum + (e.tendencyData?.signalIgnoreCount || 0), 0
+  ) / Math.min(5, entriesWithData.length);
+  if (avgSignalIgnore > 5) {
+    insights.push({
+      type: 'negative',
+      text: `You ignore signals often. Pay attention to late-pack on-color cards.`,
+    });
+  }
+
+  // Archetype preferences
+  const archetypeCounts: Record<string, number> = {};
+  entriesWithData.forEach(e => {
+    e.tendencyData?.archetypesDrafted.forEach(a => {
+      archetypeCounts[a] = (archetypeCounts[a] || 0) + 1;
+    });
+  });
+  const topArchetype = Object.entries(archetypeCounts).sort((a, b) => b[1] - a[1])[0];
+  if (topArchetype && topArchetype[1] >= 3) {
+    insights.push({
+      type: 'positive',
+      text: `You successfully draft ${topArchetype[0]} decks frequently.`,
+    });
+  }
+
+  // Improvement trend
+  const recentOptimal = entriesWithData.slice(0, 3).reduce((sum, e) => sum + e.optimalRate, 0) / 3;
+  const olderOptimal = entriesWithData.slice(3, 6).length > 0
+    ? entriesWithData.slice(3, 6).reduce((sum, e) => sum + e.optimalRate, 0) / entriesWithData.slice(3, 6).length
+    : recentOptimal;
+  if (recentOptimal > olderOptimal + 5) {
+    insights.push({
+      type: 'positive',
+      text: `Your optimal pick rate improved by ${Math.round(recentOptimal - olderOptimal)}%!`,
+    });
+  }
+
+  if (insights.length === 0) {
+    insights.push({
+      type: 'neutral',
+      text: 'Keep drafting to unlock more insights about your tendencies.',
+    });
+  }
+
+  return (
+    <div className="bg-black border border-white/[0.06] rounded-xl p-5">
+      <div className="flex items-center gap-2 mb-4">
+        <Brain className="w-4 h-4 text-cyan-400" />
+        <h3 className="text-sm font-medium text-white/60 uppercase tracking-wide">Your Tendencies</h3>
+      </div>
+
+      <div className="space-y-3">
+        {insights.slice(0, 4).map((insight, i) => (
+          <div
+            key={i}
+            className={`flex items-start gap-3 p-3 rounded-lg ${
+              insight.type === 'positive' ? 'bg-emerald-500/10' :
+              insight.type === 'negative' ? 'bg-amber-500/10' :
+              'bg-white/[0.03]'
+            }`}
+          >
+            {insight.type === 'positive' && <Sparkles className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />}
+            {insight.type === 'negative' && <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />}
+            {insight.type === 'neutral' && <TrendingUp className="w-4 h-4 text-cyan-400 flex-shrink-0 mt-0.5" />}
+            <span className={`text-sm ${
+              insight.type === 'positive' ? 'text-emerald-400' :
+              insight.type === 'negative' ? 'text-amber-400' :
+              'text-white/60'
+            }`}>
+              {insight.text}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* Quick stats row */}
+      <div className="mt-4 pt-4 border-t border-white/[0.06] grid grid-cols-3 gap-4 text-center">
+        <div>
+          <div className="text-lg font-bold text-white">{avgCmc.toFixed(1)}</div>
+          <div className="text-[10px] text-white/40">Avg CMC</div>
+        </div>
+        <div>
+          <div className="text-lg font-bold text-white">
+            {sortedColors.length > 0 ? sortedColors[0][0] : '-'}
+          </div>
+          <div className="text-[10px] text-white/40">Fav Color</div>
+        </div>
+        <div>
+          <div className="text-lg font-bold text-white">{Math.round(avgCommitment)}</div>
+          <div className="text-[10px] text-white/40">Commit Pick</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function getColorName(color: string): string {
+  const names: Record<string, string> = { W: 'White', U: 'Blue', B: 'Black', R: 'Red', G: 'Green' };
+  return names[color] || color;
 }
 
 interface FeaturedCardsPreviewProps {

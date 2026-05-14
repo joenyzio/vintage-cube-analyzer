@@ -115,7 +115,9 @@ export const EXPLICIT_AFFINITIES: CardAffinity[] = [
   // Verified in cube
   { cardName: 'Show and Tell', archetypeId: 'sneak', weight: 1.0, role: 'enabler' },
   { cardName: 'Sneak Attack', archetypeId: 'sneak', weight: 0.95, role: 'enabler' },
+  { cardName: 'Flash', archetypeId: 'sneak', weight: 0.95, role: 'enabler' },  // Flash-Hulk combo
   { cardName: 'Through the Breach', archetypeId: 'sneak', weight: 0.85, role: 'enabler' },
+  { cardName: 'Protean Hulk', archetypeId: 'sneak', weight: 0.9, role: 'payoff' },  // Flash-Hulk combo
   { cardName: 'Emrakul, the Aeons Torn', archetypeId: 'sneak', weight: 1.0, role: 'payoff' },
   { cardName: 'Griselbrand', archetypeId: 'sneak', weight: 0.9, role: 'payoff' },
   { cardName: 'Worldspine Wurm', archetypeId: 'sneak', weight: 0.8, role: 'payoff' },

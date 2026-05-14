@@ -356,10 +356,330 @@ function calculateDeckStats(picks: CubeCard[]): DeckStats {
 // Rating Functions (UI-compatible output)
 // ============================================
 
+// ============================================
+// Functional Combo Deck Classification
+// ============================================
+
 /**
- * Get the dominant archetype based on ENABLERS in picked cards.
- * Enablers are more important than payoffs for archetype identification.
- * Having big creatures doesn't make you reanimator - having Reanimate does.
+ * Card lists for functional combo deck classification.
+ * A deck must have BOTH enablers AND payoffs to qualify as that archetype.
+ */
+const COMBO_REQUIREMENTS = {
+  storm: {
+    // Cards that actually kill with storm count
+    payoffs: [
+      'Tendrils of Agony',
+      'Brain Freeze',
+      'Empty the Warrens',  // if in cube
+      'Grapeshot',          // if in cube
+    ],
+    // Cards that generate mana/cards to chain into storm
+    enablers: [
+      // Rituals (high weight)
+      { card: 'Dark Ritual', weight: 1.0 },
+      { card: 'Cabal Ritual', weight: 1.0 },
+      { card: "Lion's Eye Diamond", weight: 1.0 },
+      { card: 'Lotus Petal', weight: 0.7 },
+      // Draw engines that chain
+      { card: "Yawgmoth's Will", weight: 1.5 },  // Extra weight - this IS storm
+      { card: 'Underworld Breach', weight: 1.2 },
+      { card: 'Wheel of Fortune', weight: 0.8 },
+      { card: 'Timetwister', weight: 0.8 },
+      { card: 'Echo of Eons', weight: 0.7 },
+      { card: 'Time Spiral', weight: 0.8 },
+      { card: 'Windfall', weight: 0.5 },
+      // Fast mana
+      { card: 'Black Lotus', weight: 0.5 },
+      { card: 'Mana Crypt', weight: 0.3 },
+      { card: 'Sol Ring', weight: 0.3 },
+      { card: 'Mana Vault', weight: 0.3 },
+      // Cantrips (low weight - they're in every blue deck)
+      { card: 'Brainstorm', weight: 0.15 },
+      { card: 'Ponder', weight: 0.15 },
+      { card: 'Preordain', weight: 0.15 },
+      { card: 'Gitaxian Probe', weight: 0.2 },
+    ],
+    minEnablerScore: 3.0,  // Need ~3 real enablers
+    requiredColors: ['B'],  // Tendrils needs black; Brain Freeze needs blue but we check payoff colors
+  },
+  reanimator: {
+    // Spells that reanimate
+    enablers: [
+      { card: 'Reanimate', weight: 1.5 },
+      { card: 'Animate Dead', weight: 1.2 },
+      { card: 'Necromancy', weight: 1.0 },
+      { card: 'Exhume', weight: 1.0 },
+      { card: 'Life // Death', weight: 0.8 },
+      { card: 'Shallow Grave', weight: 0.7 },
+      // Ways to get creatures in graveyard
+      { card: 'Entomb', weight: 1.0 },
+      { card: 'Buried Alive', weight: 0.8 },
+      { card: 'Faithless Looting', weight: 0.5 },
+      { card: 'Careful Study', weight: 0.4 },
+      { card: 'Collective Brutality', weight: 0.3 },
+      { card: 'Chart a Course', weight: 0.2 },
+    ],
+    // Creatures worth reanimating
+    payoffs: [
+      'Griselbrand',
+      'Archon of Cruelty',
+      'Atraxa, Grand Unifier',
+      'Emrakul, the Aeons Torn',
+      'Blightsteel Colossus',
+      'Craterhoof Behemoth',
+      'Woodfall Primus',
+      'Grave Titan',
+      'Sheoldred, Whispering One',
+      'Ink-Eyes, Servant of Oni',
+      'Massacre Wurm',
+      'Sundering Titan',
+      'Sphinx of the Steel Wind',
+      'Iona, Shield of Emeria',
+      'Elesh Norn, Grand Cenobite',
+      'Ashen Rider',
+      'Angel of Despair',
+      'Worldspine Wurm',
+      'Protean Hulk',
+    ],
+    minEnablerScore: 2.5,  // Need reanimate spell + way to fill graveyard
+    requiredColors: ['B'],  // All good reanimate spells are black
+  },
+  sneak: {
+    // Sneak & Show requires MULTIPLE enablers or strong support
+    // One Sneak Attack is a value pick, not an archetype
+    enablers: [
+      // Title cards - each worth 1.0 (need 2+ to be a real Sneak deck)
+      { card: 'Sneak Attack', weight: 1.0, color: 'R' },
+      { card: 'Show and Tell', weight: 1.0, color: 'U' },
+      { card: 'Through the Breach', weight: 1.0, color: 'R' },
+      // Secondary enablers - worth less, add up with title cards
+      { card: 'Flash', weight: 0.7, color: 'U' },  // Flash-Hulk
+      { card: 'Eureka', weight: 0.7, color: 'G' },
+      // Support pieces that help the archetype function
+      { card: 'Defense Grid', weight: 0.3 },
+      { card: 'Boseiju, Who Shelters All', weight: 0.3 },
+      { card: 'City of Traitors', weight: 0.2 },
+      { card: 'Ancient Tomb', weight: 0.2 },
+      { card: 'Crystal Vein', weight: 0.2 },
+    ],
+    payoffs: [
+      'Emrakul, the Aeons Torn',
+      'Griselbrand',
+      'Blightsteel Colossus',
+      'Worldspine Wurm',
+      'Atraxa, Grand Unifier',
+      'Archon of Cruelty',
+      'Protean Hulk',  // For Flash-Hulk
+    ],
+    minEnablerScore: 2.0,  // Need 2 title cards OR 1 title + significant support
+    requiredColors: [],  // Checked per-enabler below
+  },
+  oath: {
+    enablers: [
+      { card: 'Oath of Druids', weight: 2.0 },  // THE card
+    ],
+    payoffs: [
+      'Emrakul, the Aeons Torn',
+      'Griselbrand',
+      'Blightsteel Colossus',
+      'Atraxa, Grand Unifier',
+      'Craterhoof Behemoth',
+      'Archon of Cruelty',
+      'Woodfall Primus',
+    ],
+    minEnablerScore: 2.0,  // Must have Oath itself
+    requiredColors: ['G'],  // Oath is green
+  },
+  artifacts: {
+    enablers: [
+      { card: 'Tinker', weight: 1.5 },
+      { card: 'Goblin Welder', weight: 1.0 },
+      { card: 'Daretti, Scrap Savant', weight: 0.8 },
+      { card: 'Goblin Engineer', weight: 0.7 },
+      { card: 'Urza, Lord High Artificer', weight: 1.2 },
+      { card: 'Tolarian Academy', weight: 1.0 },
+      { card: 'Mishra\'s Workshop', weight: 1.0 },
+      // Mana rocks count but at lower weight
+      { card: 'Sol Ring', weight: 0.3 },
+      { card: 'Mana Crypt', weight: 0.3 },
+      { card: 'Mana Vault', weight: 0.3 },
+      { card: 'Grim Monolith', weight: 0.3 },
+      { card: 'Mox Diamond', weight: 0.2 },
+      { card: 'Chrome Mox', weight: 0.2 },
+    ],
+    payoffs: [
+      'Blightsteel Colossus',
+      'Myr Battlesphere',
+      'Wurmcoil Engine',
+      'Sundering Titan',
+      'Inkwell Leviathan',
+      'Metalwork Colossus',
+      'Kuldotha Forgemaster',
+    ],
+    minEnablerScore: 2.0,  // Need Tinker/Welder + rocks
+    requiredColors: [],  // Artifacts are colorless
+  },
+};
+
+/**
+ * Check if a deck functionally qualifies as a combo archetype.
+ * Returns the strength of the classification (0 = doesn't qualify, higher = stronger).
+ */
+function checkComboArchetype(
+  archetypeId: string,
+  picks: CubeCard[],
+  deckColors: string[]
+): number {
+  const reqs = COMBO_REQUIREMENTS[archetypeId as keyof typeof COMBO_REQUIREMENTS];
+  if (!reqs) return 0;
+
+  const cardNames = new Set(picks.map(c => c.name));
+
+  // Check for payoffs
+  const hasPayoff = reqs.payoffs.some(p => cardNames.has(p));
+  if (!hasPayoff) return 0;  // No payoff = not this archetype
+
+  // Calculate enabler score, checking color requirements per-enabler for Sneak
+  let enablerScore = 0;
+  for (const enabler of reqs.enablers) {
+    if (cardNames.has(enabler.card)) {
+      // For Sneak, check that the deck can cast this specific enabler
+      const enablerColor = (enabler as any).color;
+      if (archetypeId === 'sneak' && enablerColor) {
+        // Check if deck has this color
+        const hasColor = deckColors.includes(enablerColor) || picks.some(c => {
+          const colors = c.color_identity || [];
+          return colors.includes(enablerColor);
+        });
+        if (!hasColor) continue;  // Can't cast this enabler, don't count it
+      }
+      enablerScore += enabler.weight;
+    }
+  }
+
+  if (enablerScore < reqs.minEnablerScore) return 0;  // Not enough enablers
+
+  // Check global color requirements (for non-Sneak archetypes)
+  for (const reqColor of reqs.requiredColors) {
+    if (!deckColors.includes(reqColor)) {
+      // Check if any picked card can produce this color
+      const hasColorSource = picks.some(c => {
+        const colors = c.color_identity || [];
+        return colors.includes(reqColor);
+      });
+      if (!hasColorSource) return 0;  // Can't cast the key spells
+    }
+  }
+
+  // Calculate strength based on how much over the minimum we are
+  const strength = Math.min(1, enablerScore / (reqs.minEnablerScore * 2));
+  return strength;
+}
+
+/**
+ * Calculate fair archetype scores (non-combo).
+ * These don't require specific card combinations, just enough relevant cards.
+ */
+function calculateFairArchetypeScores(picks: CubeCard[]): Record<string, number> {
+  const scores: Record<string, number> = {
+    aggro: 0,
+    control: 0,
+    midrange: 0,
+    tempo: 0,
+    ramp: 0,
+  };
+
+  for (const card of picks) {
+    const cmc = card.cmc ?? 0;
+    const typeLine = card.type_line?.toLowerCase() || '';
+    const oracleText = card.oracle_text?.toLowerCase() || '';
+    const colors = card.color_identity || [];
+
+    // Aggro: cheap creatures, burn, haste
+    if (typeLine.includes('creature') && cmc <= 2) {
+      scores.aggro += 0.3;
+    }
+    if (oracleText.includes('haste')) {
+      scores.aggro += 0.2;
+    }
+    if (oracleText.includes('damage') && !typeLine.includes('creature') && cmc <= 3) {
+      scores.aggro += 0.25;
+    }
+    if (cmc >= 5) {
+      scores.aggro -= 0.3;  // Expensive cards hurt aggro
+    }
+
+    // Control: counterspells, sweepers, card draw, planeswalkers
+    if (oracleText.includes('counter target spell')) {
+      scores.control += 0.4;
+    }
+    if (oracleText.includes('destroy all') || oracleText.includes('exile all')) {
+      scores.control += 0.5;
+    }
+    if (typeLine.includes('planeswalker')) {
+      scores.control += 0.3;
+    }
+    if (oracleText.includes('draw') && cmc >= 3) {
+      scores.control += 0.2;
+    }
+
+    // Midrange: efficient threats, disruption, value
+    if (typeLine.includes('creature') && cmc >= 3 && cmc <= 5) {
+      scores.midrange += 0.25;
+    }
+    if (oracleText.includes('discard') && oracleText.includes('target')) {
+      scores.midrange += 0.35;
+    }
+    if (typeLine.includes('planeswalker') && cmc <= 4) {
+      scores.midrange += 0.3;
+    }
+
+    // Tempo: cheap interaction + efficient threats
+    if (oracleText.includes('counter') && cmc <= 2) {
+      scores.tempo += 0.35;
+    }
+    if (oracleText.includes('return') && oracleText.includes('to') && cmc <= 2) {
+      scores.tempo += 0.25;
+    }
+    if (typeLine.includes('creature') && cmc <= 3 && colors.includes('U')) {
+      scores.tempo += 0.2;
+    }
+
+    // Ramp: mana dorks, ramp spells, expensive payoffs
+    if (oracleText.includes('add') && oracleText.includes('mana') && typeLine.includes('creature')) {
+      scores.ramp += 0.4;
+    }
+    if (oracleText.includes('search') && oracleText.includes('land')) {
+      scores.ramp += 0.35;
+    }
+    if (cmc >= 6 && typeLine.includes('creature')) {
+      scores.ramp += 0.3;
+    }
+  }
+
+  // Also add explicit affinity contributions
+  for (const card of picks) {
+    const explicits = EXPLICIT_AFFINITIES.filter(a =>
+      a.cardName === card.name &&
+      ['aggro', 'control', 'midrange', 'tempo', 'ramp'].includes(a.archetypeId)
+    );
+    for (const aff of explicits) {
+      scores[aff.archetypeId] = (scores[aff.archetypeId] || 0) + aff.weight * 0.5;
+    }
+  }
+
+  return scores;
+}
+
+/**
+ * Get the dominant archetype based on FUNCTIONAL deck classification.
+ *
+ * Combo archetypes (storm, reanimator, sneak, oath, artifacts) require
+ * BOTH enablers AND payoffs to be present. A deck with just Yawgmoth's Will
+ * but no Tendrils is not a Storm deck - it's a blue control deck.
+ *
+ * Fair archetypes (aggro, control, midrange, tempo, ramp) are determined
+ * by card composition and don't require specific combinations.
  */
 export function getDominantArchetype(preferences: number[], picks?: CubeCard[]): { id: string; name: string; strength: number } | null {
   if (!picks || picks.length === 0) {
@@ -379,66 +699,65 @@ export function getDominantArchetype(preferences: number[], picks?: CubeCard[]):
     return null;
   }
 
-  // Count explicit affinity cards for each archetype, weighting ENABLERS heavily
-  const archetypeScores: Record<string, { enablers: number; payoffs: number; support: number }> = {};
-
+  // Determine deck colors from picks
+  const colorCounts: Record<string, number> = {};
   for (const card of picks) {
-    // Check explicit affinities with role
-    const explicits = EXPLICIT_AFFINITIES.filter(a => a.cardName === card.name && a.weight > 0.5);
-    for (const affinity of explicits) {
-      if (!archetypeScores[affinity.archetypeId]) {
-        archetypeScores[affinity.archetypeId] = { enablers: 0, payoffs: 0, support: 0 };
-      }
-      // Weight by role: enablers are critical, payoffs are secondary
-      if (affinity.role === 'enabler') {
-        archetypeScores[affinity.archetypeId].enablers += affinity.weight;
-      } else if (affinity.role === 'payoff') {
-        archetypeScores[affinity.archetypeId].payoffs += affinity.weight * 0.3;  // Payoffs count less
-      } else {
-        archetypeScores[affinity.archetypeId].support += affinity.weight * 0.2;
-      }
+    for (const color of card.color_identity || []) {
+      colorCounts[color] = (colorCounts[color] || 0) + 1;
     }
+  }
+  const deckColors = Object.entries(colorCounts)
+    .filter(([_, count]) => count >= 3)
+    .map(([color, _]) => color);
 
-    // Also check KEY cards from archetype definitions (these are always important)
-    for (const arch of VINTAGE_CUBE_ARCHETYPES) {
-      if (arch.keyCards.includes(card.name)) {
-        if (!archetypeScores[arch.id]) {
-          archetypeScores[arch.id] = { enablers: 0, payoffs: 0, support: 0 };
-        }
-        archetypeScores[arch.id].enablers += 1.0;  // Key cards are treated as enablers
-      }
+  // Check combo archetypes first (they have specific requirements)
+  const comboArchetypes = ['storm', 'reanimator', 'sneak', 'oath', 'artifacts'];
+  let bestComboArch: string | null = null;
+  let bestComboStrength = 0;
+
+  for (const archId of comboArchetypes) {
+    const strength = checkComboArchetype(archId, picks, deckColors);
+    if (strength > bestComboStrength) {
+      bestComboStrength = strength;
+      bestComboArch = archId;
     }
   }
 
-  // Calculate total score for each archetype
-  // Require at least 1 enabler to be considered for combo archetypes
-  const comboArchetypes = ['reanimator', 'storm', 'sneak', 'oath', 'artifacts'];
-
-  let bestArchetype: string | null = null;
-  let bestScore = 0;
-
-  for (const [archId, scores] of Object.entries(archetypeScores)) {
-    const totalScore = scores.enablers + scores.payoffs + scores.support;
-
-    // Combo archetypes need MULTIPLE enablers to be viable
-    // Having one Reanimate doesn't make you a reanimator deck
-    if (comboArchetypes.includes(archId) && scores.enablers < 1.5) {
-      continue;  // Skip if fewer than ~2 enablers
-    }
-
-    // Fair archetypes (midrange, aggro, control, tempo, ramp) just need enough cards
-    if (totalScore > bestScore) {
-      bestScore = totalScore;
-      bestArchetype = archId;
-    }
-  }
-
-  if (bestArchetype && bestScore >= 0.5) {
-    const arch = VINTAGE_CUBE_ARCHETYPES.find(a => a.id === bestArchetype);
+  // If we have a strong combo classification, use it
+  if (bestComboArch && bestComboStrength >= 0.4) {
+    const arch = VINTAGE_CUBE_ARCHETYPES.find(a => a.id === bestComboArch);
     if (arch) {
-      // Normalize strength to 0-1 range
-      const strength = Math.min(1, bestScore / 3);
+      return { id: arch.id, name: arch.name, strength: bestComboStrength };
+    }
+  }
+
+  // Otherwise, classify as a fair archetype
+  const fairScores = calculateFairArchetypeScores(picks);
+
+  let bestFairArch: string | null = null;
+  let bestFairScore = 0;
+
+  for (const [archId, score] of Object.entries(fairScores)) {
+    if (score > bestFairScore) {
+      bestFairScore = score;
+      bestFairArch = archId;
+    }
+  }
+
+  // Require a minimum score to classify
+  if (bestFairArch && bestFairScore >= 2.0) {
+    const arch = VINTAGE_CUBE_ARCHETYPES.find(a => a.id === bestFairArch);
+    if (arch) {
+      const strength = Math.min(1, bestFairScore / 5);
       return { id: arch.id, name: arch.name, strength };
+    }
+  }
+
+  // If nothing qualifies, return midrange as default (the "good stuff" deck)
+  if (picks.length >= 15) {
+    const arch = VINTAGE_CUBE_ARCHETYPES.find(a => a.id === 'midrange');
+    if (arch) {
+      return { id: arch.id, name: arch.name, strength: 0.3 };
     }
   }
 

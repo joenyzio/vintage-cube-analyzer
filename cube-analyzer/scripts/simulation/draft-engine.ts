@@ -16,10 +16,15 @@ import {
 } from '../../src/services/cardRating';
 import { buildDeck } from './deck-builder';
 
-const DRAFTER_COUNT = 8;
+// Defaults - can be overridden via options
+const DEFAULT_DRAFTER_COUNT = 8;
 const PACKS_PER_DRAFTER = 3;
 const CARDS_PER_PACK = 15;
 const TOTAL_PICKS = PACKS_PER_DRAFTER * CARDS_PER_PACK;  // 45
+
+export interface SimulationOptions {
+  drafterCount?: number;
+}
 
 // ============================================
 // Seeded Random Number Generator
@@ -49,16 +54,16 @@ function shuffleArray<T>(array: T[], rng: () => number): T[] {
 // Pack Generation
 // ============================================
 
-function generatePacks(cube: CubeCard[], seed: number): PackState[][] {
+function generatePacks(cube: CubeCard[], seed: number, drafterCount: number): PackState[][] {
   const rng = createRng(seed);
   const shuffled = shuffleArray(cube, rng);
 
-  // Create 3 rounds of packs, 8 packs per round
+  // Create 3 rounds of packs, N packs per round (where N = drafterCount)
   const packs: PackState[][] = [[], [], []];
 
   for (let round = 0; round < PACKS_PER_DRAFTER; round++) {
-    for (let drafter = 0; drafter < DRAFTER_COUNT; drafter++) {
-      const startIdx = (round * DRAFTER_COUNT + drafter) * CARDS_PER_PACK;
+    for (let drafter = 0; drafter < drafterCount; drafter++) {
+      const startIdx = (round * drafterCount + drafter) * CARDS_PER_PACK;
       const packCards = shuffled.slice(startIdx, startIdx + CARDS_PER_PACK);
       packs[round].push({
         cards: packCards,
@@ -75,15 +80,18 @@ function generatePacks(cube: CubeCard[], seed: number): PackState[][] {
 // Draft Simulation
 // ============================================
 
-export function simulateDraft(cube: CubeCard[], seed: number): DraftResult {
+export function simulateDraft(cube: CubeCard[], seed: number, options?: SimulationOptions): DraftResult {
+  const drafterCount = options?.drafterCount ?? DEFAULT_DRAFTER_COUNT;
+  const totalCardsNeeded = drafterCount * PACKS_PER_DRAFTER * CARDS_PER_PACK;
+
   // Validate cube size
-  if (cube.length !== 360) {
-    console.warn(`Warning: Cube has ${cube.length} cards, expected 360`);
+  if (cube.length < totalCardsNeeded) {
+    console.warn(`Warning: Cube has ${cube.length} cards, need ${totalCardsNeeded} for ${drafterCount}-player draft`);
   }
 
   // Initialize drafters
   const drafters: DrafterState[] = [];
-  for (let i = 0; i < DRAFTER_COUNT; i++) {
+  for (let i = 0; i < drafterCount; i++) {
     drafters.push({
       id: i,
       pool: [],
@@ -92,7 +100,7 @@ export function simulateDraft(cube: CubeCard[], seed: number): DraftResult {
   }
 
   // Generate packs
-  const allPacks = generatePacks(cube, seed);
+  const allPacks = generatePacks(cube, seed, drafterCount);
 
   // Pick log for analysis
   const pickLog: PickLogEntry[] = [];
@@ -108,7 +116,7 @@ export function simulateDraft(cube: CubeCard[], seed: number): DraftResult {
     // 15 picks per round
     for (let pick = 0; pick < CARDS_PER_PACK; pick++) {
       // Each drafter picks from their current pack
-      for (let drafterId = 0; drafterId < DRAFTER_COUNT; drafterId++) {
+      for (let drafterId = 0; drafterId < drafterCount; drafterId++) {
         const drafter = drafters[drafterId];
         const pack = currentPacks[drafterId];
 
@@ -155,19 +163,19 @@ export function simulateDraft(cube: CubeCard[], seed: number): DraftResult {
 
       // Rotate packs
       if (direction === 1) {
-        // Pass left: player 0 gets from player 7, player 1 gets from player 0, etc.
-        const lastPack = currentPacks[DRAFTER_COUNT - 1];
-        for (let i = DRAFTER_COUNT - 1; i > 0; i--) {
+        // Pass left: player 0 gets from player N-1, player 1 gets from player 0, etc.
+        const lastPack = currentPacks[drafterCount - 1];
+        for (let i = drafterCount - 1; i > 0; i--) {
           currentPacks[i] = currentPacks[i - 1];
         }
         currentPacks[0] = lastPack;
       } else {
-        // Pass right: player 0 gets from player 1, player 7 gets from player 0, etc.
+        // Pass right: player 0 gets from player 1, player N-1 gets from player 0, etc.
         const firstPack = currentPacks[0];
-        for (let i = 0; i < DRAFTER_COUNT - 1; i++) {
+        for (let i = 0; i < drafterCount - 1; i++) {
           currentPacks[i] = currentPacks[i + 1];
         }
-        currentPacks[DRAFTER_COUNT - 1] = firstPack;
+        currentPacks[drafterCount - 1] = firstPack;
       }
     }
   }
@@ -191,19 +199,21 @@ export function simulateDraft(cube: CubeCard[], seed: number): DraftResult {
 export function simulateMultipleDrafts(
   cube: CubeCard[],
   count: number,
-  baseSeed?: number
+  baseSeed?: number,
+  options?: SimulationOptions
 ): DraftResult[] {
   const results: DraftResult[] = [];
   const startSeed = baseSeed ?? Date.now();
+  const drafterCount = options?.drafterCount ?? DEFAULT_DRAFTER_COUNT;
 
   for (let i = 0; i < count; i++) {
     const seed = startSeed + i;
-    const result = simulateDraft(cube, seed);
+    const result = simulateDraft(cube, seed, options);
     results.push(result);
 
     // Progress indicator
     if ((i + 1) % 100 === 0) {
-      console.log(`  Completed ${i + 1}/${count} drafts...`);
+      console.log(`  Completed ${i + 1}/${count} drafts (${drafterCount} players)...`);
     }
   }
 

@@ -1,9 +1,21 @@
 # Draft Simulation Report
 
-Generated: 2026-05-14T12:16:32.415Z
+Generated: 2026-05-14T21:26:07.688Z
 
-**Drafts Simulated:** 500
-**Total Decks Built:** 4000
+**Players per Draft:** 8
+**Drafts Simulated:** 10000
+**Total Decks Built:** 80000
+
+## Classification Methodology
+
+Combo archetypes use **functional classification** - a deck must have both enablers AND payoffs:
+
+- **Storm**: Requires a payoff (Tendrils/Brain Freeze) + 3+ enablers (rituals, draw engines)
+- **Reanimator**: Requires reanimate spell + graveyard enabler + fatty target
+- **Sneak & Show**: Requires Sneak Attack/Show and Tell/Through the Breach + target
+- **Oath**: Requires Oath of Druids + creature payoff
+
+Fair archetypes (Midrange, Aggro, Control, Tempo, Ramp) are classified by card composition.
 
 ## Sanity Checks
 
@@ -19,16 +31,16 @@ Generated: 2026-05-14T12:16:32.415Z
 
 | Archetype | Decks | % | Avg Commitment | Avg Deck Quality |
 |-----------|-------|---|----------------|------------------|
-| reanimator | 984 | 24.6% | 1.00 | 1905 |
-| storm | 810 | 20.3% | 1.00 | 1867 |
-| midrange | 426 | 10.7% | 1.00 | 1866 |
-| artifacts | 392 | 9.8% | 1.00 | 1879 |
-| sneak | 376 | 9.4% | 0.99 | 1904 |
-| ramp | 319 | 8.0% | 1.00 | 1906 |
-| control | 273 | 6.8% | 0.99 | 1885 |
-| aggro | 149 | 3.7% | 0.99 | 1860 |
-| oath | 127 | 3.2% | 0.99 | 1928 |
-| tempo | 127 | 3.2% | 0.99 | 1871 |
+| midrange | 20439 | 25.5% | 1.00 | 1861 |
+| aggro | 10091 | 12.6% | 1.00 | 1859 |
+| reanimator | 9830 | 12.3% | 1.00 | 1929 |
+| tempo | 9311 | 11.6% | 1.00 | 1881 |
+| ramp | 8211 | 10.3% | 1.00 | 1910 |
+| control | 5452 | 6.8% | 1.00 | 1889 |
+| artifacts | 5157 | 6.4% | 1.00 | 1912 |
+| oath | 5008 | 6.3% | 1.00 | 1937 |
+| sneak | 3683 | 4.6% | 1.00 | 1921 |
+| storm | 2818 | 3.5% | 1.00 | 1868 |
 
 ## Color Distribution
 
@@ -36,41 +48,41 @@ Generated: 2026-05-14T12:16:32.415Z
 
 | Color | Appearances | % of Decks |
 |-------|-------------|------------|
-| White (W) | 2281 | 57.0% |
-| Blue (U) | 2723 | 68.1% |
-| Black (B) | 2502 | 62.5% |
-| Red (R) | 2045 | 51.1% |
-| Green (G) | 2254 | 56.4% |
+| White (W) | 45180 | 56.5% |
+| Blue (U) | 54920 | 68.7% |
+| Black (B) | 49917 | 62.4% |
+| Red (R) | 40801 | 51.0% |
+| Green (G) | 45186 | 56.5% |
 
 ### Color Combinations
 
 | Colors | Count | % |
 |--------|-------|---|
-| RUW | 586 | 14.6% |
-| BGU | 575 | 14.4% |
-| BUW | 543 | 13.6% |
-| BGR | 409 | 10.2% |
-| BGW | 357 | 8.9% |
-| GUW | 330 | 8.3% |
-| BRU | 321 | 8.0% |
-| GRU | 277 | 6.9% |
-| GRW | 208 | 5.2% |
-| BRW | 199 | 5.0% |
-| BG | 65 | 1.6% |
-| UW | 41 | 1.0% |
-| BU | 21 | 0.5% |
-| GU | 16 | 0.4% |
-| RU | 13 | 0.3% |
+| RUW | 11869 | 14.8% |
+| BGU | 11850 | 14.8% |
+| BUW | 10767 | 13.5% |
+| BGR | 8159 | 10.2% |
+| BGW | 6814 | 8.5% |
+| GUW | 6680 | 8.3% |
+| BRU | 6318 | 7.9% |
+| GRU | 5667 | 7.1% |
+| BRW | 3989 | 5.0% |
+| GRW | 3891 | 4.9% |
+| BG | 1464 | 1.8% |
+| UW | 797 | 1.0% |
+| BU | 368 | 0.5% |
+| GU | 318 | 0.4% |
+| RU | 286 | 0.4% |
 
 ## Average Deck Profile
 
 | Metric | Mean | Std Dev | Min | Max |
 |--------|------|---------|-----|-----|
-| Creatures | 8.75 | 2.7 | 0 | 19 |
-| Removal | 4.13 | 1.93 | 0 | 11 |
-| Card Draw | 4.96 | 2.34 | 0 | 15 |
-| Avg CMC | 2.78 | 0.74 | 1.3 | 5.4 |
-| Deck Quality | 1886.69 | 98.02 | 1566 | 2314 |
+| Creatures | 8.77 | 2.69 | 0 | 20 |
+| Removal | 4.11 | 1.95 | 0 | 14 |
+| Card Draw | 4.95 | 2.32 | 0 | 15 |
+| Avg CMC | 2.78 | 0.73 | 1.2 | 6.1 |
+| Deck Quality | 1889.54 | 97.36 | 1480 | 2389 |
 
 ## Most Picked Cards
 
@@ -78,26 +90,26 @@ Generated: 2026-05-14T12:16:32.415Z
 
 | Rank | Card | Avg Pick Position | Times Picked |
 |------|------|-------------------|--------------|
-| 1 | Black Lotus | 15.7 | 500 |
-| 2 | Emrakul, the Aeons Torn | 15.8 | 500 |
-| 3 | Mana Drain | 15.8 | 500 |
-| 4 | Mox Pearl | 15.9 | 500 |
-| 5 | The One Ring | 15.9 | 500 |
-| 6 | Mox Sapphire | 16 | 500 |
-| 7 | Urza, Lord High Artificer | 16 | 500 |
-| 8 | Archon of Cruelty | 16.2 | 500 |
-| 9 | Mox Diamond | 16.2 | 500 |
-| 10 | Ragavan, Nimble Pilferer | 16.2 | 500 |
-| 11 | Sol Ring | 16.4 | 500 |
-| 12 | Griselbrand | 16.5 | 500 |
-| 13 | Mana Crypt | 16.6 | 500 |
-| 14 | Mox Ruby | 16.6 | 500 |
-| 15 | Time Walk | 16.6 | 500 |
-| 16 | Ancestral Recall | 16.7 | 500 |
-| 17 | Blightsteel Colossus | 16.7 | 500 |
-| 18 | Lion's Eye Diamond | 16.7 | 500 |
-| 19 | Lotus Petal | 16.7 | 500 |
-| 20 | Myr Battlesphere | 16.7 | 500 |
+| 1 | Black Lotus | 16.1 | 10000 |
+| 2 | Mox Sapphire | 16.2 | 10000 |
+| 3 | Ancestral Recall | 16.3 | 10000 |
+| 4 | Blightsteel Colossus | 16.3 | 10000 |
+| 5 | Lion's Eye Diamond | 16.4 | 10000 |
+| 6 | Mox Diamond | 16.4 | 10000 |
+| 7 | Sol Ring | 16.4 | 10000 |
+| 8 | Chrome Mox | 16.5 | 10000 |
+| 9 | Emrakul, the Aeons Torn | 16.5 | 10000 |
+| 10 | Mana Drain | 16.5 | 10000 |
+| 11 | Mox Jet | 16.5 | 10000 |
+| 12 | Mox Pearl | 16.5 | 10000 |
+| 13 | Atraxa, Grand Unifier | 16.6 | 10000 |
+| 14 | Griselbrand | 16.6 | 10000 |
+| 15 | Mox Emerald | 16.7 | 10000 |
+| 16 | Mox Ruby | 16.7 | 10000 |
+| 17 | Time Walk | 16.8 | 10000 |
+| 18 | Craterhoof Behemoth | 16.9 | 10000 |
+| 19 | Lotus Petal | 16.9 | 10000 |
+| 20 | Mana Crypt | 16.9 | 10000 |
 
 ## Wheel Analysis
 
@@ -105,41 +117,41 @@ Generated: 2026-05-14T12:16:32.415Z
 
 | Card | Wheel Rate | Opportunities |
 |------|------------|---------------|
-| Loran of the Third Path | 99.1% | 3500 |
-| Recruiter of the Guard | 96.9% | 3500 |
-| Pyrokinesis | 96.7% | 3500 |
-| Imperial Recruiter | 96.0% | 3500 |
-| Embereth Shieldbreaker // Battle Display | 95.8% | 3500 |
-| Upheaval | 95.1% | 3500 |
-| Endurance | 94.3% | 3500 |
-| Cathar Commando | 93.1% | 3500 |
-| Elvish Mystic | 92.6% | 3500 |
-| Damn | 92.3% | 3500 |
-| Vindicate | 92.3% | 3500 |
-| Monastery Mentor | 92.2% | 3500 |
-| Lush Portico | 91.9% | 3500 |
-| Tishana's Tidebinder | 91.4% | 3500 |
-| Containment Priest | 91.3% | 3500 |
+| Loran of the Third Path | 98.9% | 70000 |
+| Recruiter of the Guard | 97.0% | 70000 |
+| Pyrokinesis | 96.9% | 70000 |
+| Imperial Recruiter | 96.0% | 70000 |
+| Embereth Shieldbreaker // Battle Display | 95.9% | 70000 |
+| Endurance | 94.9% | 70000 |
+| Upheaval | 94.4% | 70000 |
+| Cathar Commando | 92.9% | 70000 |
+| Vindicate | 92.8% | 70000 |
+| Monastery Mentor | 92.3% | 70000 |
+| Elvish Mystic | 92.1% | 70000 |
+| Damn | 92.0% | 70000 |
+| Tishana's Tidebinder | 91.8% | 70000 |
+| Containment Priest | 91.5% | 70000 |
+| Lush Portico | 91.3% | 70000 |
 
 ### Never Wheelers (wheel < 5% of opportunities)
 
 | Card | Avg Pick Position |
 |------|-------------------|
-| Black Lotus | 15.7 |
-| Emrakul, the Aeons Torn | 15.8 |
-| Mana Drain | 15.8 |
-| Mox Pearl | 15.9 |
-| The One Ring | 15.9 |
-| Mox Sapphire | 16 |
-| Urza, Lord High Artificer | 16 |
-| Archon of Cruelty | 16.2 |
-| Mox Diamond | 16.2 |
-| Ragavan, Nimble Pilferer | 16.2 |
+| Black Lotus | 16.1 |
+| Mox Sapphire | 16.2 |
+| Ancestral Recall | 16.3 |
+| Blightsteel Colossus | 16.3 |
+| Lion's Eye Diamond | 16.4 |
+| Mox Diamond | 16.4 |
 | Sol Ring | 16.4 |
-| Griselbrand | 16.5 |
-| Mana Crypt | 16.6 |
-| Mox Ruby | 16.6 |
-| Time Walk | 16.6 |
+| Chrome Mox | 16.5 |
+| Emrakul, the Aeons Torn | 16.5 |
+| Mana Drain | 16.5 |
+| Mox Jet | 16.5 |
+| Mox Pearl | 16.5 |
+| Atraxa, Grand Unifier | 16.6 |
+| Griselbrand | 16.6 |
+| Mox Emerald | 16.7 |
 
 ## Sideboard Analysis
 
@@ -147,24 +159,102 @@ Generated: 2026-05-14T12:16:32.415Z
 
 | Card | Sideboard Rate | Times Picked |
 |------|----------------|--------------|
-| Boseiju, Who Endures | 100.0% | 500 |
-| Golos, Tireless Pilgrim | 100.0% | 500 |
-| Urza's Saga | 100.0% | 500 |
-| Ignoble Hierarch | 94.8% | 500 |
-| Imperial Recruiter | 94.2% | 500 |
-| Loran of the Third Path | 93.8% | 500 |
-| Damn | 92.4% | 500 |
-| Vindicate | 92.0% | 500 |
-| Recruiter of the Guard | 90.4% | 500 |
-| Embereth Shieldbreaker // Battle Display | 90.2% | 500 |
-| Pyrokinesis | 89.4% | 500 |
-| Elvish Mystic | 89.0% | 500 |
-| Monastery Mentor | 88.6% | 500 |
-| Cathar Commando | 88.4% | 500 |
-| Lingering Souls | 88.4% | 500 |
+| Boseiju, Who Endures | 100.0% | 10000 |
+| Golos, Tireless Pilgrim | 100.0% | 10000 |
+| Urza's Saga | 100.0% | 10000 |
+| Ignoble Hierarch | 94.1% | 10000 |
+| Imperial Recruiter | 93.1% | 10000 |
+| Damn | 92.9% | 10000 |
+| Vindicate | 92.8% | 10000 |
+| Loran of the Third Path | 92.7% | 10000 |
+| Recruiter of the Guard | 92.0% | 10000 |
+| Elvish Mystic | 90.1% | 10000 |
+| Embereth Shieldbreaker // Battle Display | 89.9% | 10000 |
+| Pyrokinesis | 89.7% | 10000 |
+| Monastery Mentor | 89.6% | 10000 |
+| Lingering Souls | 88.5% | 10000 |
+| Seasoned Pyromancer | 88.0% | 10000 |
 
 ## Anomalies
 
-### Insufficient Pool Depth: 294 decks
+### Insufficient Pool Depth: 5729 decks
 
-7.3% of decks had fewer than 23 castable non-land cards in their chosen colors.
+7.2% of decks had fewer than 23 castable non-land cards in their chosen colors.
+
+## Algorithm Gap Analysis
+
+The algorithm doesn't model competition between drafters. Each drafter optimizes
+for archetype fit independently. Real drafts have 8 drafters competing for limited
+cards in each archetype. This creates predictable gaps between simulation results
+and what the cube can actually support.
+
+### Card Count vs Simulation Results
+
+| Archetype | Cards in Cube | Sim Result | Gap | Interpretation |
+|-----------|---------------|------------|-----|----------------|
+| midrange | 26 (13%) | 25.5% | +12.5% | Algorithm over-commits; heavily contested in real drafts |
+| aggro | 27 (13.5%) | 12.6% | -0.9% | Roughly matches card support |
+| reanimator | 17 (8.5%) | 12.3% | +3.8% | Roughly matches card support |
+| tempo | 21 (10.5%) | 11.6% | +1.1% | Roughly matches card support |
+| ramp | 16 (8%) | 10.3% | +2.3% | Roughly matches card support |
+| control | 30 (15%) | 6.8% | -8.2% | Algorithm under-values; likely open in real drafts |
+| artifacts | 46 (23%) | 6.4% | -16.6% | Algorithm under-values; likely open in real drafts |
+| oath | 1 (0.5%) | 6.3% | +5.8% | Algorithm over-commits; heavily contested in real drafts |
+| sneak | 7 (3.5%) | 4.6% | +1.1% | Roughly matches card support |
+| storm | 9 (4.5%) | 3.5% | -1.0% | Roughly matches card support |
+
+### Combo Over-Representation
+
+The algorithm pushes drafters toward combo archetypes whose card pools can't
+support that many drafters:
+
+- **storm**: 9 cards → 3.5% of decks (only 1-2 drafters can realistically build this)
+- **reanimator**: 17 cards → 12.3% of decks (only 1-2 drafters can realistically build this)
+- **sneak**: 7 cards → 4.6% of decks (only 1-2 drafters can realistically build this)
+
+### Linear Under-Representation
+
+The algorithm scatters these cards across other strategies as "value picks"
+rather than recognizing them as coherent archetypes:
+
+- **artifacts**: 46 cards → 6.4% of decks (structurally deep, likely open)
+- **aggro**: 27 cards → 12.6% of decks (structurally deep, likely open)
+- **tempo**: 21 cards → 11.6% of decks (structurally deep, likely open)
+- **control**: 30 cards → 6.8% of decks (structurally deep, likely open)
+
+## Drafting Implications
+
+For real drafts of this cube, use this gap analysis:
+
+**Heavily Contested (proceed with caution):**
+- Storm has only 9 cards — if you see others taking rituals, bail out
+- Reanimator has 17 cards — can support 1-2 drafters maximum
+- Sneak/Show has 7 cards — commit hard early or stay away entirely
+
+**Likely Open (look for signals):**
+- Artifacts is the deepest archetype (46 cards) but rarely drafted as a deck
+- Aggro is structurally supported (27 cards) but routinely underdrafted
+- Tempo has real support (21 cards) that gets scattered across other decks
+
+**The Key Insight:**
+
+The algorithm tells you what optimal independent drafting looks like.
+The cube tells you what's actually supported.
+The gap tells you where the value is.
+
+## Color Balance
+
+Average color appearance: 59.0%
+
+- White: 56.5% (-2.5% from average)
+- Blue: 68.7% (+9.6% from average)
+- Black: 62.4% (+3.4% from average)
+- Red: 51.0% (-8.0% from average)
+- Green: 56.5% (-2.5% from average)
+
+## Summary
+
+- **10000** drafts simulated, **80000** decks built
+- Top archetype by algorithm: **midrange** (25.5%)
+- Most played color: **U** (68.7%)
+- Avg deck quality: **1890** ELO
