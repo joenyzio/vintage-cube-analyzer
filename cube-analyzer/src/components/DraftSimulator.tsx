@@ -1865,7 +1865,6 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
   // displayedCard is computed synchronously - either current hover or last seen
   const displayedCard = hoveredCard || lastHoveredCardRef.current;
   const [mobileSelectedCard, setMobileSelectedCard] = useState<CubeCard | null>(null);
-  const [mobileDrawerTab, setMobileDrawerTab] = useState<'details' | 'picks'>('details');
   const [showMobileDeck, setShowMobileDeck] = useState(false);
   const [expandedPlayerIdx, setExpandedPlayerIdx] = useState<number | null>(null);
 
@@ -4579,9 +4578,35 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
       </div>
 
       {/* Main Content - Cards (center panel, scrollable) */}
-      <div className="flex-1 min-w-0 flex flex-col overflow-y-auto p-6 gap-6">
-        {/* Header */}
-        <div className="flex items-center justify-between flex-shrink-0">
+      <div className="flex-1 min-w-0 flex flex-col overflow-y-auto p-4 sm:p-6 gap-4 sm:gap-6">
+        {/* Mobile Header - Clean and compact */}
+        <div className="flex items-center justify-between flex-shrink-0 sm:hidden">
+          <div className="flex items-center gap-3">
+            <h2 className="text-xl font-bold text-white">
+              P{draftState.packNumber}P{draftState.pickNumber}
+            </h2>
+            <span className="text-sm text-white/40 font-mono">{draftState.picks.length}/45</span>
+          </div>
+          <div className="flex items-center gap-2">
+            {/* Mobile Picks Button */}
+            <button
+              onClick={() => setShowMobileDeck(true)}
+              className="flex items-center gap-1.5 px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-sm font-medium text-white active:scale-95 transition-transform"
+            >
+              <Package className="w-4 h-4" />
+              <span>{draftState.picks.length}</span>
+            </button>
+            <button
+              onClick={returnToMenu}
+              className="p-2 bg-white/5 border border-white/10 rounded-lg text-white/60 active:scale-95 transition-transform"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Desktop Header */}
+        <div className="hidden sm:flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-6">
             <div>
               <h2 className="text-3xl font-bold text-white tracking-tight">
@@ -4592,42 +4617,9 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                 <span>Passing {draftState.direction}</span>
               </div>
             </div>
-
-            {/* Color counts - visible on smaller screens */}
-            <div className="flex gap-1.5 lg:hidden">
-              {['W', 'U', 'B', 'R', 'G'].map(c => {
-                const count = colorCounts[c] || 0;
-                if (count === 0) return null;
-                return (
-                  <div
-                    key={c}
-                    className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold shadow-sm
-                      ${c === 'W' ? 'bg-gradient-to-br from-amber-100 to-amber-200 text-amber-900' : ''}
-                      ${c === 'U' ? 'bg-gradient-to-br from-blue-400 to-blue-600 text-white' : ''}
-                      ${c === 'B' ? 'bg-gradient-to-br from-neutral-500 to-neutral-700 text-white' : ''}
-                      ${c === 'R' ? 'bg-gradient-to-br from-red-400 to-red-600 text-white' : ''}
-                      ${c === 'G' ? 'bg-gradient-to-br from-green-500 to-green-700 text-white' : ''}
-                    `}
-                  >
-                    {count}
-                  </div>
-                );
-              })}
-            </div>
           </div>
 
           <div className="flex items-center gap-4">
-            {/* Progress - visible on smaller screens */}
-            <div className="flex items-center gap-3 lg:hidden">
-              <div className="w-20 h-2 bg-white/[0.06] rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-white/50 rounded-full transition-all duration-300"
-                  style={{ width: `${progress * 100}%` }}
-                />
-              </div>
-              <span className="text-xs text-white/40 font-mono tabular-nums">{draftState.picks.length}/45</span>
-            </div>
-
             {/* View Picks Toggle */}
             <button
               onClick={() => setViewingPicks(!viewingPicks)}
@@ -4650,7 +4642,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
               <button
                 onClick={() => setCoachMode(!coachMode)}
                 className={`
-                  hidden lg:flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all
+                  flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all
                   ${coachMode
                     ? 'bg-amber-500/20 border border-amber-500/30 text-amber-400'
                     : 'bg-white/5 border border-white/10 text-white/40 hover:text-white/60'
@@ -4699,9 +4691,9 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
           </div>
         </div>
 
-        {/* Pack ELO Summary - only in coach mode */}
+        {/* Pack ELO Summary - only in coach mode, hidden on mobile */}
         {coachMode && packEloStats && (
-          <div className="flex items-center gap-4 px-3 py-2 bg-white/[0.02] border border-white/[0.06] rounded-xl text-xs">
+          <div className="hidden sm:flex items-center gap-4 px-3 py-2 bg-white/[0.02] border border-white/[0.06] rounded-xl text-xs">
             <div className="flex items-center gap-1.5 text-white/50">
               <TrendingUp className="w-3.5 h-3.5" />
               <span>Pack ELO: <span className="font-mono text-white">{packEloStats.avgElo}</span></span>
@@ -5349,7 +5341,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
         </div>
       </div>
 
-      {/* Mobile Card Drawer - Enhanced with full details */}
+      {/* Mobile Card Drawer - Compact, at-a-glance design */}
       {mobileSelectedCard && (
         <div className="fixed inset-0 z-50 sm:hidden">
           {/* Backdrop */}
@@ -5358,376 +5350,79 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
             onClick={() => setMobileSelectedCard(null)}
           />
 
-          {/* Drawer - Full screen style */}
-          <div className="absolute bottom-0 left-0 right-0 top-4 bg-black border-t border-white/10 rounded-t-3xl animate-in slide-in-from-bottom duration-200 flex flex-col">
+          {/* Drawer - Compact sheet */}
+          <div className="absolute bottom-0 left-0 right-0 bg-[#0a0a0a] border-t border-white/10 rounded-t-2xl animate-in slide-in-from-bottom duration-200 flex flex-col max-h-[85vh]">
             {/* Drag handle */}
-            <div className="flex justify-center py-2">
+            <div className="flex justify-center py-2 flex-shrink-0">
               <div className="w-10 h-1 bg-white/20 rounded-full" />
             </div>
 
-            {/* Tab Bar */}
-            <div className="flex px-4 gap-2 mb-2">
-              <button
-                onClick={() => setMobileDrawerTab('details')}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                  mobileDrawerTab === 'details'
-                    ? 'bg-white text-black'
-                    : 'bg-white/10 text-white/60'
-                }`}
-              >
-                Card Details
-              </button>
-              <button
-                onClick={() => setMobileDrawerTab('picks')}
-                className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                  mobileDrawerTab === 'picks'
-                    ? 'bg-white text-black'
-                    : 'bg-white/10 text-white/60'
-                }`}
-              >
-                My Picks ({draftState?.picks.length || 0})
-              </button>
-            </div>
-
-            {/* Tab Content */}
+            {/* Content - No tabs, just card info */}
             <div className="flex-1 overflow-y-auto px-4 pb-2">
-              {mobileDrawerTab === 'details' ? (
-                /* Details Tab */
-                <div className="space-y-3">
-                  {/* Card Image - Smaller to fit more content */}
-                  <div className="flex justify-center">
-                    <img
-                      src={getCardImage(mobileSelectedCard)}
-                      alt={mobileSelectedCard.name}
-                      className="h-[45vh] w-auto rounded-xl shadow-2xl"
-                    />
-                  </div>
+              <div className="flex gap-4">
+                {/* Card Image - Compact */}
+                <div className="w-28 flex-shrink-0">
+                  <img
+                    src={getCardImage(mobileSelectedCard)}
+                    alt={mobileSelectedCard.name}
+                    className="w-full rounded-lg shadow-xl"
+                  />
+                </div>
 
-                  {/* Name, Grade, Type */}
+                {/* Card Info - Right side */}
+                <div className="flex-1 min-w-0 py-1">
                   {(() => {
                     const grade = draftState ? getContextualGrade(mobileSelectedCard, draftState.picks, currentPack) : null;
+                    const eloData = getEloData(mobileSelectedCard.name);
+                    const synergyData = draftState ? getSynergyAdjustedElo(mobileSelectedCard, draftState.picks, currentPack) : null;
+                    const hasAdjustment = synergyData && Math.abs(synergyData.adjustment) >= 10;
+
                     return (
-                      <div className="bg-white/5 rounded-xl p-3">
-                        <div className="flex items-center justify-between mb-1">
-                          <div className="text-lg font-semibold text-white">{mobileSelectedCard.name}</div>
+                      <>
+                        {/* Name + Grade */}
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <h3 className="text-base font-semibold text-white leading-tight">{mobileSelectedCard.name}</h3>
                           {grade && (
-                            <span className={`text-xl font-bold ${
+                            <span className={`text-lg font-bold flex-shrink-0 ${
                               grade.grade === 'A+' ? 'text-emerald-400' :
                               grade.grade === 'A' ? 'text-emerald-500' :
-                              grade.grade === 'B+' ? 'text-sky-400' :
-                              grade.grade === 'B' ? 'text-sky-500' :
-                              'text-white/60'
+                              grade.grade.startsWith('B') ? 'text-sky-400' :
+                              grade.grade.startsWith('C') ? 'text-amber-400' :
+                              'text-white/40'
                             }`}>
                               {grade.grade}
                             </span>
                           )}
                         </div>
-                        <div className="text-sm text-white/50">{mobileSelectedCard.type_line?.split('—')[0]}</div>
-                        {grade && (
-                          <div className="text-xs text-white/40 mt-2 italic">{grade.reason}</div>
-                        )}
-                      </div>
-                    );
-                  })()}
 
-                  {/* ELO with Synergy Adjustments */}
-                  {(() => {
-                    const eloData = getEloData(mobileSelectedCard.name);
-                    if (!eloData) return null;
-                    const wheelLikelihood = getWheelLikelihood(mobileSelectedCard.name);
-                    const synergyData = draftState ? getSynergyAdjustedElo(mobileSelectedCard, draftState.picks, currentPack) : null;
-                    const hasAdjustment = synergyData && synergyData.adjustment !== 0;
-
-                    return (
-                      <div className="bg-white/5 rounded-xl p-3 space-y-3">
-                        {/* ELO Header */}
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-white/40 uppercase tracking-wider">ELO Rating</span>
-                          <span className={`text-xs px-2 py-0.5 rounded ${
-                            wheelLikelihood === 'likely' ? 'bg-white/5 text-white/50' :
-                            wheelLikelihood === 'maybe' ? 'bg-amber-500/10 text-amber-400' :
-                            'bg-red-500/10 text-red-400'
-                          }`}>
-                            {wheelLikelihood === 'likely' ? 'Likely wheels' :
-                             wheelLikelihood === 'maybe' ? 'May wheel' :
-                             'Take now'}
-                          </span>
-                        </div>
-
-                        {/* ELO Values */}
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-3xl font-bold text-white font-mono">
-                            {Math.round(eloData.elo)}
-                          </span>
-                          {hasAdjustment && (
-                            <>
-                              <span className={`text-lg font-bold ${
-                                synergyData.adjustment > 0 ? 'text-emerald-400' : 'text-red-400'
-                              }`}>
-                                {synergyData.adjustment > 0 ? '+' : ''}{synergyData.adjustment}
+                        {/* ELO - Large and clear */}
+                        {eloData && (
+                          <div className="mb-2">
+                            <div className="flex items-baseline gap-1.5">
+                              <span className="text-2xl font-bold text-white font-mono">
+                                {Math.round(eloData.elo)}
                               </span>
-                              <span className="text-lg text-white/30">→</span>
-                              <span className="text-2xl font-bold text-white">
-                                {Math.round(synergyData.adjustedElo)}
-                              </span>
-                            </>
-                          )}
-                        </div>
-
-                        {/* Adjustment Reasons */}
-                        {hasAdjustment && synergyData.reasons.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 pt-2 border-t border-white/10">
-                            {synergyData.reasons.map((reason, i) => (
-                              <span key={i} className={`text-xs px-2 py-1 rounded ${
-                                reason.startsWith('+') ? 'bg-emerald-500/10 text-emerald-400' :
-                                reason.startsWith('-') ? 'bg-red-500/10 text-red-400' :
-                                'bg-white/5 text-white/60'
-                              }`}>
-                                {reason}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })()}
-
-                  {/* Trajectory Sparkline */}
-                  {(() => {
-                    const history = draftState?.cardEloHistory?.get(mobileSelectedCard.id);
-                    if (!history || history.history.length <= 1) {
-                      return (
-                        <div className="bg-white/5 rounded-xl p-3">
-                          <div className="text-xs text-white/40">
-                            {!history || history.history.length === 0
-                              ? 'No trajectory data yet'
-                              : 'Just saw this card'}
-                          </div>
-                        </div>
-                      );
-                    }
-
-                    const points = history.history;
-                    const currentElo = points[points.length - 1].adjustedElo;
-                    const startElo = points[0].adjustedElo;
-                    const trend = currentElo - startElo;
-                    const velocity = trend / (points.length - 1);
-                    const remainingPicks = Math.max(0, 45 - (draftState?.picks.length || 0));
-                    const projectPicks = Math.min(5, remainingPicks);
-                    const projectedElo = currentElo + (velocity * projectPicks);
-                    const momentum = velocity > 8 ? 'rising-fast' :
-                                     velocity > 3 ? 'rising' :
-                                     velocity < -8 ? 'falling-fast' :
-                                     velocity < -3 ? 'falling' : 'stable';
-
-                    const allValues = [...points.map(p => p.adjustedElo), projectedElo];
-                    const minElo = Math.min(...allValues);
-                    const maxElo = Math.max(...allValues);
-                    const range = maxElo - minElo || 1;
-                    const width = 300;
-                    const height = 60;
-                    const padding = 8;
-                    const drawWidth = width - padding;
-                    const historyWidth = drawWidth * 0.8;
-
-                    return (
-                      <div className="bg-white/5 rounded-xl p-3 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-white/40 uppercase tracking-wider">Trajectory</span>
-                            {momentum === 'rising-fast' && <span className="text-sm">🚀</span>}
-                            {momentum === 'falling-fast' && <span className="text-sm">📉</span>}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className={`text-sm font-bold ${trend > 0 ? 'text-emerald-400' : trend < 0 ? 'text-red-400' : 'text-white/40'}`}>
-                              {trend > 0 ? '+' : ''}{Math.round(trend)}
-                            </span>
-                            {projectPicks > 0 && Math.abs(velocity) > 2 && (
-                              <span className={`text-sm ${velocity > 0 ? 'text-emerald-400/70' : 'text-red-400/70'}`}>
-                                → {Math.round(projectedElo)}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Sparkline SVG */}
-                        <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-14">
-                          <line x1="0" y1={height/2} x2={width} y2={height/2} stroke="white" strokeOpacity="0.05" strokeDasharray="4,4" />
-                          {points.length > 1 && (
-                            <polyline
-                              fill="none"
-                              stroke={trend >= 0 ? '#4ade80' : '#f87171'}
-                              strokeWidth="2.5"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              points={points.map((p, i) => {
-                                const x = (i / Math.max(1, points.length - 1)) * historyWidth;
-                                const y = height - ((p.adjustedElo - minElo) / range) * (height - 8) - 4;
-                                return `${x},${y}`;
-                              }).join(' ')}
-                            />
-                          )}
-                          {projectPicks > 0 && Math.abs(velocity) > 2 && (
-                            <line
-                              x1={historyWidth}
-                              y1={height - ((currentElo - minElo) / range) * (height - 8) - 4}
-                              x2={drawWidth}
-                              y2={height - ((projectedElo - minElo) / range) * (height - 8) - 4}
-                              stroke={velocity > 0 ? '#4ade80' : '#f87171'}
-                              strokeWidth="2.5"
-                              strokeLinecap="round"
-                              strokeDasharray="6,4"
-                              opacity="0.6"
-                            />
-                          )}
-                          {points.map((p, i) => {
-                            const x = points.length === 1 ? historyWidth / 2 : (i / Math.max(1, points.length - 1)) * historyWidth;
-                            const y = height - ((p.adjustedElo - minElo) / range) * (height - 8) - 4;
-                            return (
-                              <circle key={i} cx={x} cy={y} r="4" fill={trend >= 0 ? '#4ade80' : '#f87171'} />
-                            );
-                          })}
-                          {projectPicks > 0 && Math.abs(velocity) > 2 && (
-                            <circle
-                              cx={drawWidth}
-                              cy={height - ((projectedElo - minElo) / range) * (height - 8) - 4}
-                              r="5"
-                              fill="none"
-                              stroke={velocity > 0 ? '#4ade80' : '#f87171'}
-                              strokeWidth="2"
-                              opacity="0.6"
-                            />
-                          )}
-                        </svg>
-
-                        {Math.abs(velocity) > 3 && (
-                          <div className={`text-xs font-medium ${velocity > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                            {velocity > 0 ? '↑' : '↓'} {Math.abs(Math.round(velocity))} ELO per pick
-                            {momentum === 'rising-fast' && ' · Perfect fit!'}
-                            {momentum === 'falling-fast' && ' · Wrong direction'}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })()}
-
-                  {/* Archetype Tags */}
-                  {(() => {
-                    const archetypes = getCardArchetypes(mobileSelectedCard);
-                    if (archetypes.length === 0) return null;
-                    const universalTags = archetypes.filter(a => a.isUniversal);
-                    const archetypeTags = archetypes.filter(a => !a.isUniversal);
-                    return (
-                      <div className="bg-white/5 rounded-xl p-3 space-y-2">
-                        {universalTags.length > 0 && (
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-xs text-amber-400">★</span>
-                            {universalTags.map(tag => (
-                              <span key={tag.id} className="text-xs px-2 py-1 rounded bg-amber-500/20 text-amber-300">
-                                {tag.shortName}
-                              </span>
-                            ))}
-                            <span className="text-[10px] text-white/30 ml-1">Goes in everything</span>
-                          </div>
-                        )}
-                        {archetypeTags.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5">
-                            <span className="text-xs text-white/40">Best in:</span>
-                            {archetypeTags.map(arch => {
-                              const isBuilding = buildingToward?.id === arch.id;
-                              return (
-                                <span
-                                  key={arch.id}
-                                  className={`text-xs px-2 py-1 rounded ${
-                                    isBuilding
-                                      ? 'bg-purple-500/30 text-purple-300 ring-1 ring-purple-500/50'
-                                      : 'bg-white/10 text-white/60'
-                                  }`}
-                                >
-                                  {arch.shortName}
+                              {hasAdjustment && (
+                                <span className={`text-sm font-bold ${
+                                  synergyData.adjustment > 0 ? 'text-emerald-400' : 'text-red-400'
+                                }`}>
+                                  {synergyData.adjustment > 0 ? '+' : ''}{synergyData.adjustment}
                                 </span>
-                              );
-                            })}
+                              )}
+                            </div>
+                            <div className="text-[10px] text-white/40 uppercase tracking-wide">ELO Rating</div>
                           </div>
                         )}
-                      </div>
+
+                        {/* Quick reason if available */}
+                        {grade && grade.reason && (
+                          <p className="text-xs text-white/50 line-clamp-2">{grade.reason}</p>
+                        )}
+                      </>
                     );
                   })()}
                 </div>
-              ) : (
-                /* Picks Tab - Show deck overview */
-                <div className="space-y-3">
-                  {/* Color Summary */}
-                  <div className="flex gap-2 justify-center py-2">
-                    {['W', 'U', 'B', 'R', 'G', 'C'].map(c => {
-                      const count = c === 'C'
-                        ? (draftState?.picks.filter(p => !p.color_identity || p.color_identity.length === 0).length || 0)
-                        : (colorCounts[c] || 0);
-                      return (
-                        <div
-                          key={c}
-                          className={`w-11 h-11 rounded-lg flex flex-col items-center justify-center text-sm font-bold
-                            ${count === 0 ? 'opacity-30' : ''}
-                            ${c === 'W' ? 'bg-amber-100 text-amber-900' : ''}
-                            ${c === 'U' ? 'bg-blue-500 text-white' : ''}
-                            ${c === 'B' ? 'bg-neutral-600 text-white' : ''}
-                            ${c === 'R' ? 'bg-red-500 text-white' : ''}
-                            ${c === 'G' ? 'bg-green-600 text-white' : ''}
-                            ${c === 'C' ? 'bg-gray-400 text-gray-900' : ''}
-                          `}
-                        >
-                          <span>{count}</span>
-                          <span className="text-[8px] opacity-70">{c}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* Deck Stats */}
-                  {deckStats && (
-                    <div className="grid grid-cols-4 gap-2 text-center">
-                      <div className="bg-white/5 rounded-lg p-2">
-                        <div className="text-white font-mono text-lg">{deckStats.creatures}</div>
-                        <div className="text-[10px] text-white/40">Creatures</div>
-                      </div>
-                      <div className="bg-white/5 rounded-lg p-2">
-                        <div className="text-white font-mono text-lg">{deckStats.spells}</div>
-                        <div className="text-[10px] text-white/40">Spells</div>
-                      </div>
-                      <div className="bg-white/5 rounded-lg p-2">
-                        <div className="text-white font-mono text-lg">{deckStats.avgCmc.toFixed(1)}</div>
-                        <div className="text-[10px] text-white/40">Avg CMC</div>
-                      </div>
-                      <div className="bg-white/5 rounded-lg p-2">
-                        <div className="text-white font-mono text-lg">{Math.round(calculateDeckElo((draftState?.picks || []).map(c => c.name)).normalized)}</div>
-                        <div className="text-[10px] text-white/40">Deck ELO</div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Cards Grid */}
-                  {draftState && draftState.picks.length > 0 ? (
-                    <div className="grid grid-cols-4 gap-1.5">
-                      {draftState.picks.map((card, idx) => (
-                        <div
-                          key={`${card.id}-${idx}`}
-                          className={`relative aspect-[488/680] rounded-lg overflow-hidden active:scale-95 transition-transform ${
-                            card.id === mobileSelectedCard.id ? 'ring-2 ring-white' : ''
-                          }`}
-                          onClick={() => {
-                            setMobileSelectedCard(card);
-                            setMobileDrawerTab('details');
-                          }}
-                        >
-                          <img src={getCardImage(card)} alt={card.name} className="w-full h-full object-cover" />
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-center text-white/40 py-8">No cards drafted yet</p>
-                  )}
-                </div>
-              )}
+              </div>
             </div>
 
             {/* Fixed Action Buttons at Bottom */}
@@ -5769,17 +5464,6 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
         </div>
       )}
 
-      {/* Mobile Floating Deck Button */}
-      {mode === 'draft' && draftState && !draftState.isComplete && !mobileSelectedCard && (
-        <button
-          onClick={() => setShowMobileDeck(true)}
-          className="fixed bottom-6 left-4 z-40 sm:hidden flex items-center gap-2 px-4 py-3 bg-black border border-white/20 rounded-full shadow-lg active:scale-95 transition-transform"
-        >
-          <Package className="w-5 h-5 text-white/70" />
-          <span className="text-sm font-medium text-white">{draftState.picks.length}</span>
-          <span className="text-xs text-white/50">picks</span>
-        </button>
-      )}
 
       {/* Mobile Deck Drawer */}
       {showMobileDeck && draftState && (
