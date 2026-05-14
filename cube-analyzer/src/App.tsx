@@ -286,25 +286,27 @@ function App() {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 relative">
-        {/* Top Bar */}
-        <header className="bg-[#0a0a0a]/80 backdrop-blur-xl border-b border-white/[0.06] flex items-center px-4 lg:px-6 sticky top-0 z-30 flex-shrink-0 safe-area-header min-h-16">
-          <button
-            onClick={() => setMobileMenuOpen(true)}
-            className="lg:hidden p-2.5 -ml-2 text-white/60 hover:text-white hover:bg-white/[0.04] rounded-xl transition-colors"
-          >
-            <Menu className="w-5 h-5" />
-          </button>
-          <div className="flex items-center gap-3 lg:ml-0 ml-2">
-            {activeNavItem && (
-              <>
-                <div className="w-8 h-8 rounded-lg bg-white/[0.04] flex items-center justify-center">
-                  <activeNavItem.icon className="w-4 h-4 text-white/50" />
-                </div>
-                <span className="text-sm font-medium text-white tracking-tight">{activeNavItem.label}</span>
-              </>
-            )}
-          </div>
-        </header>
+        {/* Top Bar - Hidden for Draft Simulator */}
+        {activeTab !== 'draft' && (
+          <header className="bg-[#0a0a0a]/80 backdrop-blur-xl border-b border-white/[0.06] flex items-center px-4 lg:px-6 sticky top-0 z-30 flex-shrink-0 safe-area-header min-h-16">
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="lg:hidden p-2.5 -ml-2 text-white/60 hover:text-white hover:bg-white/[0.04] rounded-xl transition-colors"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <div className="flex items-center gap-3 lg:ml-0 ml-2">
+              {activeNavItem && (
+                <>
+                  <div className="w-8 h-8 rounded-lg bg-white/[0.04] flex items-center justify-center">
+                    <activeNavItem.icon className="w-4 h-4 text-white/50" />
+                  </div>
+                  <span className="text-sm font-medium text-white tracking-tight">{activeNavItem.label}</span>
+                </>
+              )}
+            </div>
+          </header>
+        )}
 
         {/* Content */}
         <main ref={mainRef} className="flex-1 overflow-auto">
@@ -320,18 +322,20 @@ function App() {
           )}
         </main>
 
-        {/* Footer */}
-        <footer className="border-t border-white/[0.04] flex-shrink-0 bg-black/50 safe-bottom">
-          <div className="max-w-6xl mx-auto px-4 lg:px-8 py-5">
-            <p className="text-white/30 text-xs">
-              Data from{' '}
-              <a href="https://scryfall.com" className="text-white/50 hover:text-white/70 transition-colors" target="_blank" rel="noopener noreferrer">
-                Scryfall
-              </a>
-              {' '}· Not affiliated with Wizards of the Coast
-            </p>
-          </div>
-        </footer>
+        {/* Footer - Hidden for Draft Simulator */}
+        {activeTab !== 'draft' && (
+          <footer className="border-t border-white/[0.04] flex-shrink-0 bg-black/50 safe-bottom">
+            <div className="max-w-6xl mx-auto px-4 lg:px-8 py-5">
+              <p className="text-white/30 text-xs">
+                Data from{' '}
+                <a href="https://scryfall.com" className="text-white/50 hover:text-white/70 transition-colors" target="_blank" rel="noopener noreferrer">
+                  Scryfall
+                </a>
+                {' '}· Not affiliated with Wizards of the Coast
+              </p>
+            </div>
+          </footer>
+        )}
       </div>
     </div>
   );

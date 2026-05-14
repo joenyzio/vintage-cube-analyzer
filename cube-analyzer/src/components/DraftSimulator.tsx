@@ -4235,7 +4235,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
   const recommendedCard = getRecommendedPick;
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] -mx-4 lg:-mx-8 -my-8">
+    <div className="flex h-screen">
       {/* Achievement Popup */}
       {newAchievement && (
         <div className="fixed top-4 right-4 z-50 animate-pulse">
@@ -4579,15 +4579,15 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
       </div>
 
       {/* Main Content - Cards (center panel, scrollable) */}
-      <div className="flex-1 min-w-0 flex flex-col overflow-y-auto p-6">
+      <div className="flex-1 min-w-0 flex flex-col overflow-y-auto p-6 gap-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-5">
+        <div className="flex items-center justify-between flex-shrink-0">
+          <div className="flex items-center gap-6">
             <div>
-              <h2 className="text-2xl font-bold text-white tracking-tight">
+              <h2 className="text-3xl font-bold text-white tracking-tight">
                 P{draftState.packNumber}P{draftState.pickNumber}
               </h2>
-              <div className="flex items-center gap-1.5 text-xs text-white/40 mt-0.5">
+              <div className="flex items-center gap-2 text-sm text-white/40 mt-1">
                 {draftState.direction === 'left' ? <ArrowLeft className="w-3.5 h-3.5" /> : <ArrowRight className="w-3.5 h-3.5" />}
                 <span>Passing {draftState.direction}</span>
               </div>
@@ -5035,105 +5035,101 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
       </div>
 
       {/* Right Panel - Card Details (full-height panel with background) */}
-      <div className="w-[320px] flex-shrink-0 hidden lg:flex flex-col bg-white/[0.02] border-l border-white/[0.08]">
-        <div className="flex-1 overflow-y-auto p-5">
+      <div className="w-[300px] flex-shrink-0 hidden lg:flex flex-col bg-white/[0.02] border-l border-white/[0.08]">
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {displayedCard ? (
-            <div className="bg-black border border-white/[0.08] rounded-xl">
-              {/* Card Image - Large */}
-              <div className="p-3">
-                <img src={getCardImage(displayedCard)} alt={displayedCard.name} className="w-full rounded-lg shadow-lg" />
+            <>
+              {/* Card Image - Compact */}
+              <img src={getCardImage(displayedCard)} alt={displayedCard.name} className="w-full rounded-lg shadow-lg" />
+
+              {/* Name & Grade */}
+              <div className="flex items-center justify-between">
+                <div className="text-base font-semibold text-white truncate pr-2">{displayedCard.name}</div>
+                {draftState && draftState.picks.length >= 0 && (() => {
+                  const grade = getContextualGrade(displayedCard, draftState.picks, currentPack);
+                  return (
+                    <span className={`text-lg font-bold flex-shrink-0 ${
+                      grade.grade === 'A+' ? 'text-emerald-400' :
+                      grade.grade === 'A' ? 'text-emerald-500' :
+                      grade.grade === 'B+' ? 'text-sky-400' :
+                      grade.grade === 'B' ? 'text-sky-500' :
+                      'text-white/60'
+                    }`}>
+                      {grade.grade}
+                    </span>
+                  );
+                })()}
               </div>
 
-              {/* Card Info */}
-              <div className="px-3 pb-3 space-y-3">
-                {/* Name & Grade */}
-                <div className="flex items-center justify-between">
-                  <div className="text-base font-semibold text-white">{displayedCard.name}</div>
-                  {draftState && draftState.picks.length >= 0 && (() => {
-                    const grade = getContextualGrade(displayedCard, draftState.picks, currentPack);
-                    return (
-                      <span className={`text-lg font-bold ${
-                        grade.grade === 'A+' ? 'text-emerald-400' :
-                        grade.grade === 'A' ? 'text-emerald-500' :
-                        grade.grade === 'B+' ? 'text-sky-400' :
-                        grade.grade === 'B' ? 'text-sky-500' :
-                        'text-white/60'
-                      }`}>
-                        {grade.grade}
-                      </span>
-                    );
-                  })()}
-                </div>
+              {/* Type Line */}
+              <div className="text-sm text-white/50">{displayedCard.type_line?.split('—')[0]}</div>
 
-                {/* Type Line */}
-                <div className="text-sm text-white/50">{displayedCard.type_line?.split('—')[0]}</div>
+              {/* ELO & Stats Section */}
+              {(() => {
+                const eloData = getEloData(displayedCard.name);
+                if (!eloData) return null;
+                const wheelLikelihood = getWheelLikelihood(displayedCard.name);
+                const synergyData = draftState ? getSynergyAdjustedElo(displayedCard, draftState.picks, currentPack) : null;
+                const hasAdjustment = synergyData && synergyData.adjustment !== 0;
+                const cardGrade = draftState && draftState.picks.length >= 0 ? getContextualGrade(displayedCard, draftState.picks, currentPack) : null;
+                return (
+                  <div className="space-y-2 pt-2 border-t border-white/[0.08]">
+                    {/* Grade reason */}
+                    {cardGrade && (
+                      <div className="text-xs text-white/50 italic">{cardGrade.reason}</div>
+                    )}
 
-                {/* ELO & Stats Section */}
-                {(() => {
-                  const eloData = getEloData(displayedCard.name);
-                  if (!eloData) return null;
-                  const wheelLikelihood = getWheelLikelihood(displayedCard.name);
-                  const synergyData = draftState ? getSynergyAdjustedElo(displayedCard, draftState.picks, currentPack) : null;
-                  const hasAdjustment = synergyData && synergyData.adjustment !== 0;
-                  const cardGrade = draftState && draftState.picks.length >= 0 ? getContextualGrade(displayedCard, draftState.picks, currentPack) : null;
-                  return (
-                    <div className="space-y-3 pt-3 border-t border-white/[0.08]">
-                      {/* Grade reason */}
-                      {cardGrade && (
-                        <div className="text-xs text-white/50 italic leading-relaxed">{cardGrade.reason}</div>
-                      )}
+                    {/* ELO Section */}
+                    <div className="bg-white/[0.04] rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs text-white/40 uppercase tracking-wider">ELO Rating</span>
+                        <span className={`text-xs px-2 py-0.5 rounded font-medium ${
+                          wheelLikelihood === 'likely' ? 'bg-white/5 text-white/50' :
+                          wheelLikelihood === 'maybe' ? 'bg-amber-500/10 text-amber-400' :
+                          'bg-red-500/15 text-red-400'
+                        }`}>
+                          {wheelLikelihood === 'likely' ? 'Likely wheels' :
+                           wheelLikelihood === 'maybe' ? 'May wheel' :
+                           'Take now'}
+                        </span>
+                      </div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-2xl font-bold text-white font-mono">
+                          {Math.round(eloData.elo)}
+                        </span>
+                        {hasAdjustment && (
+                          <>
+                            <span className={`text-sm font-bold ${
+                              synergyData.adjustment > 0 ? 'text-emerald-400' : 'text-red-400'
+                            }`}>
+                              {synergyData.adjustment > 0 ? '+' : ''}{synergyData.adjustment}
+                            </span>
+                            <span className="text-sm text-white/30">→</span>
+                            <span className="text-lg font-bold text-white">
+                              {Math.round(synergyData.adjustedElo)}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </div>
 
-                      {/* ELO Section */}
-                      <div className="bg-white/[0.03] rounded-lg p-2.5">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs text-white/40">ELO Rating</span>
-                          <span className={`text-xs px-2 py-0.5 rounded ${
-                            wheelLikelihood === 'likely' ? 'bg-white/5 text-white/50' :
-                            wheelLikelihood === 'maybe' ? 'bg-white/5 text-white/40' :
-                            'bg-red-500/10 text-red-400'
-                          }`}>
-                            {wheelLikelihood === 'likely' ? 'Likely wheels' :
-                             wheelLikelihood === 'maybe' ? 'May wheel' :
-                             'Take now'}
-                          </span>
-                        </div>
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-2xl font-bold text-white font-mono">
-                            {Math.round(eloData.elo)}
-                          </span>
-                          {hasAdjustment && (
-                            <>
-                              <span className={`text-sm font-bold ${
-                                synergyData.adjustment > 0 ? 'text-emerald-400' : 'text-red-400'
-                              }`}>
-                                {synergyData.adjustment > 0 ? '+' : ''}{synergyData.adjustment}
-                              </span>
-                              <span className="text-sm text-white/30">→</span>
-                              <span className="text-lg font-bold text-white">
-                                {Math.round(synergyData.adjustedElo)}
-                              </span>
-                            </>
-                          )}
+                    {/* Adjustment Reasons */}
+                    {hasAdjustment && synergyData.reasons.length > 0 && (
+                      <div className="space-y-1.5">
+                        <div className="text-xs text-white/40 uppercase tracking-wider">Why this adjustment:</div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {synergyData.reasons.map((reason, i) => (
+                            <span key={i} className={`text-xs px-2 py-1 rounded font-medium ${
+                              reason.startsWith('+') ? 'bg-emerald-500/15 text-emerald-400' :
+                              reason.startsWith('-') ? 'bg-red-500/15 text-red-400' :
+                              'bg-white/5 text-white/60'
+                            }`}>
+                              {reason}
+                            </span>
+                          ))}
                         </div>
                       </div>
-
-                      {/* Adjustment Reasons */}
-                      {hasAdjustment && synergyData.reasons.length > 0 && (
-                        <div className="space-y-1.5">
-                          <div className="text-xs text-white/40">Why this adjustment:</div>
-                          <div className="flex flex-wrap gap-1.5">
-                            {synergyData.reasons.map((reason, i) => (
-                              <span key={i} className={`text-xs px-2 py-1 rounded ${
-                                reason.startsWith('+') ? 'bg-emerald-500/10 text-emerald-400' :
-                                reason.startsWith('-') ? 'bg-red-500/10 text-red-400' :
-                                'bg-white/5 text-white/60'
-                              }`}>
-                                {reason}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+                    )}
                     {/* Sparkline with PROJECTED TRAJECTORY - Simple direct lookup */}
                     {(() => {
                       // Direct lookup - simple and reliable
@@ -5142,8 +5138,8 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                       // Show message if no history
                       if (!historyPoints || historyPoints.length === 0) {
                         return (
-                          <div className="pt-3 border-t border-white/[0.06]">
-                            <div className="text-xs text-white/30">No trajectory data yet</div>
+                          <div className="pt-2 border-t border-white/[0.06]">
+                            <div className="text-[10px] text-white/30">No trajectory data yet</div>
                           </div>
                         );
                       }
@@ -5151,10 +5147,10 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                       // With 2+ points (baseline + initial), we can always show the sparkline
                       if (historyPoints.length === 1) {
                         return (
-                          <div className="pt-3 border-t border-white/[0.06]">
+                          <div className="pt-2 border-t border-white/[0.06]">
                             <div className="flex items-center justify-between">
-                              <span className="text-xs text-white/40">Trajectory</span>
-                              <span className="text-xs text-white/30">Just saw this card</span>
+                              <span className="text-[10px] text-white/40">Trajectory</span>
+                              <span className="text-[10px] text-white/30">Just saw this card</span>
                             </div>
                           </div>
                         );
@@ -5184,27 +5180,27 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                       const minElo = Math.min(...allValues);
                       const maxElo = Math.max(...allValues);
                       const range = maxElo - minElo || 1;
-                      const padding = 8; // Padding for endpoint circle
-                      const width = 280; // Full width of wider panel (w-80 = 320px minus padding)
-                      const height = 60; // Much taller for better visibility
-                      const drawWidth = width - padding; // Leave room for endpoint circle
-                      const historyWidth = drawWidth * 0.8; // 80% for history, 20% for projection
+                      const padding = 6;
+                      const width = 260;
+                      const height = 40;
+                      const drawWidth = width - padding;
+                      const historyWidth = drawWidth * 0.8;
 
                       return (
-                        <div className="pt-3 mt-3 border-t border-white/[0.08]">
+                        <div className="pt-2 mt-2 border-t border-white/[0.08]">
                           {/* Header with momentum indicator */}
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs text-white/50 font-medium">Trajectory</span>
-                              {momentum === 'rising-fast' && <span className="text-sm">🚀</span>}
-                              {momentum === 'falling-fast' && <span className="text-sm">📉</span>}
+                          <div className="flex items-center justify-between mb-1">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[10px] text-white/40">Trajectory</span>
+                              {momentum === 'rising-fast' && <span className="text-xs">🚀</span>}
+                              {momentum === 'falling-fast' && <span className="text-xs">📉</span>}
                             </div>
-                            <div className="flex items-center gap-3">
-                              <span className={`text-sm font-bold ${trend > 0 ? 'text-emerald-400' : trend < 0 ? 'text-red-400' : 'text-white/40'}`}>
+                            <div className="flex items-center gap-2">
+                              <span className={`text-xs font-bold ${trend > 0 ? 'text-emerald-400' : trend < 0 ? 'text-red-400' : 'text-white/40'}`}>
                                 {trend > 0 ? '+' : ''}{Math.round(trend)}
                               </span>
                               {projectPicks > 0 && Math.abs(velocity) > 2 && (
-                                <span className={`text-sm font-medium ${velocity > 0 ? 'text-emerald-400/70' : 'text-red-400/70'}`}>
+                                <span className={`text-xs ${velocity > 0 ? 'text-emerald-400/70' : 'text-red-400/70'}`}>
                                   → {Math.round(projectedElo)}
                                 </span>
                               )}
@@ -5336,19 +5332,18 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                   </div>
                 );
               })()}
-              </div>
-            </div>
+            </>
           ) : (
-            /* No card hovered state */
-            <div className="bg-black border border-white/[0.08] rounded-xl p-6 text-center">
-              <div className="text-white/20 mb-2">
-                <svg className="w-12 h-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            /* No card hovered state - centered in panel */
+            <div className="flex-1 flex flex-col items-center justify-center text-center">
+              <div className="text-white/15 mb-4">
+                <svg className="w-16 h-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                 </svg>
               </div>
-              <div className="text-sm text-white/30">Hover over a card</div>
-              <div className="text-xs text-white/20 mt-1">to see details</div>
+              <div className="text-base text-white/40">Hover over a card</div>
+              <div className="text-sm text-white/25 mt-1">to see details</div>
             </div>
           )}
         </div>
