@@ -47,7 +47,7 @@ export function rateCard(
   const reasons: string[] = [];
 
   // 1. Calculate color multiplier (MULTIPLICATIVE - applied first)
-  const { multiplier: colorMultiplier, reason: colorReason } = calculateColorMultiplier(card, context);
+  const { multiplier: colorMultiplier } = calculateColorMultiplier(card, context);
   const colorAdjustedElo = baseElo * colorMultiplier;
 
   if (colorMultiplier < 0.95) {
