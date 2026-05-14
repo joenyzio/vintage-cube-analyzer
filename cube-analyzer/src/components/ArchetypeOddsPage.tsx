@@ -286,7 +286,7 @@ export function ArchetypeOddsPage({ cards }: Props) {
     }
   }, []);
 
-  const selectedStat = stats.find(s => s.archetype.id === selectedArchetype);
+  const selectedStat = stats.find(s => s.meta.id === selectedArchetype);
 
   const getDifficultyColor = (diff: string) => {
     switch (diff) {
@@ -492,8 +492,8 @@ export function ArchetypeOddsPage({ cards }: Props) {
         <div className="bg-white/5 border-2 border-white/30 rounded-xl p-4 animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="flex items-start justify-between mb-4">
             <div>
-              <h2 className="text-xl font-bold text-white">{selectedStat.archetype.name}</h2>
-              <p className="text-white/50">{selectedStat.archetype.description}</p>
+              <h2 className="text-xl font-bold text-white">{selectedStat.meta.name}</h2>
+              <p className="text-white/50">{selectedStat.meta.description}</p>
             </div>
             <button
               onClick={() => setSelectedArchetype(null)}
@@ -512,8 +512,8 @@ export function ArchetypeOddsPage({ cards }: Props) {
               <span className="text-white/40">Deck Quality</span>{' '}
               <span className="text-white font-medium">{selectedStat.avgDeckQuality}</span>
             </div>
-            <div className={`px-3 py-1.5 rounded-lg ${getDifficultyColor(selectedStat.archetype.difficulty)}`}>
-              {selectedStat.archetype.difficulty}
+            <div className={`px-3 py-1.5 rounded-lg ${getDifficultyColor(selectedStat.meta.difficulty)}`}>
+              {selectedStat.meta.difficulty}
             </div>
             <div className="px-3 py-1.5 rounded-lg bg-white/5">
               <span className="text-white/40">Contested</span>{' '}
@@ -527,7 +527,7 @@ export function ArchetypeOddsPage({ cards }: Props) {
 
           <div className="mb-4">
             <div className="text-xs text-white/40 uppercase tracking-wider mb-2">Strategy</div>
-            <p className="text-sm text-white/70">{selectedStat.archetype.strategy}</p>
+            <p className="text-sm text-white/70">{selectedStat.meta.strategy}</p>
           </div>
 
           <div className="mb-4">
@@ -551,19 +551,6 @@ export function ArchetypeOddsPage({ cards }: Props) {
             </div>
           </div>
 
-          {selectedStat.archetype.tips.length > 0 && (
-            <div>
-              <div className="text-xs text-white/40 uppercase tracking-wider mb-2">Tips</div>
-              <ul className="text-sm text-white/60 space-y-1">
-                {selectedStat.archetype.tips.map((tip, i) => (
-                  <li key={i} className="flex items-start gap-2">
-                    <span className="text-white/30">•</span>
-                    {tip}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
         </div>
       )}
 
@@ -598,11 +585,11 @@ export function ArchetypeOddsPage({ cards }: Props) {
                   <div className="flex items-center gap-3 mb-1">
                     <h3 className="text-lg font-semibold text-white">{stat.meta.name}</h3>
                     <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                      stat.meta.powerRating >= 9 ? 'bg-amber-400/20 text-amber-400' :
-                      stat.meta.powerRating >= 8 ? 'bg-purple-400/20 text-purple-400' :
+                      stat.avgDeckQuality >= 1920 ? 'bg-amber-400/20 text-amber-400' :
+                      stat.avgDeckQuality >= 1890 ? 'bg-purple-400/20 text-purple-400' :
                       'bg-white/10 text-white/60'
                     }`}>
-                      Power {stat.meta.powerRating}
+                      ELO {stat.avgDeckQuality}
                     </span>
                     <span className={`px-2 py-0.5 rounded text-xs font-medium ${getDifficultyColor(stat.meta.difficulty)}`}>
                       {stat.meta.difficulty}

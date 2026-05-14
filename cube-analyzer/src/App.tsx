@@ -157,7 +157,7 @@ function App() {
       case 'archetypes':
         return <ArchetypesPage archetypes={archetypes} cards={cards} />;
       case 'odds':
-        return <ArchetypeOddsPage cards={cards} archetypes={archetypes} />;
+        return <ArchetypeOddsPage cards={cards} />;
       case 'decks':
         return <SampleDecks cards={cards} />;
       case 'matchups':
