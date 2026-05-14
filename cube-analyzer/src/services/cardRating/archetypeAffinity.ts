@@ -15,7 +15,17 @@
 
 import type { CardAffinity, AffinityMap, AffinityRole } from './types';
 import type { CubeCard } from '../../types/card';
-import { ROLE_WEIGHT_MULTIPLIERS } from './tuning';
+
+/**
+ * Role weight multipliers for affinity calculations.
+ * Moved here from tuning.ts for simplicity.
+ */
+const ROLE_WEIGHT_MULTIPLIERS: Record<AffinityRole, number> = {
+  enabler: 1.2,   // Enablers (Entomb) are slightly more valuable
+  payoff: 1.1,    // Payoffs (Griselbrand) are valuable
+  support: 1.0,   // Support cards at base weight
+  utility: 0.9,   // Utility cards slightly less important
+};
 
 // ============================================
 // Explicit Card Affinities (Key Cards)
@@ -223,13 +233,17 @@ export const PROPERTY_RULES: PropertyRule[] = [
     reason: 'Cheap cantrip',
   },
 
-  // Aggro - cheap creatures
+  // Aggro - cheap creatures (RW only)
   {
     archetypeId: 'aggro',
-    check: (c) => (c.cmc ?? 0) <= 2 && Boolean(c.type_line?.toLowerCase().includes('creature')),
-    weight: 0.4,
+    check: (c) => {
+      const colors = c.color_identity || [];
+      const isRW = colors.includes('R') || colors.includes('W');
+      return (c.cmc ?? 0) <= 2 && Boolean(c.type_line?.toLowerCase().includes('creature')) && isRW;
+    },
+    weight: 0.2,  // Reduced from 0.4
     role: 'payoff',
-    reason: 'Cheap creature',
+    reason: 'Cheap RW creature',
   },
   {
     archetypeId: 'aggro',
@@ -246,27 +260,35 @@ export const PROPERTY_RULES: PropertyRule[] = [
     reason: 'Too expensive for aggro',
   },
 
-  // Control - counters and sweepers
+  // Control - counters and sweepers (UW only)
   {
     archetypeId: 'control',
-    check: (c) => Boolean(c.oracle_text?.toLowerCase().includes('counter target spell')),
-    weight: 0.35,
+    check: (c) => {
+      const colors = c.color_identity || [];
+      const isUW = colors.includes('U') || colors.includes('W');
+      return isUW && Boolean(c.oracle_text?.toLowerCase().includes('counter target spell'));
+    },
+    weight: 0.2,  // Reduced from 0.35
     role: 'support',
-    reason: 'Counterspell',
+    reason: 'UW counter',
   },
   {
     archetypeId: 'control',
     check: (c) => Boolean(c.oracle_text?.toLowerCase().includes('destroy all')),
-    weight: 0.45,
+    weight: 0.25,  // Reduced from 0.45
     role: 'support',
     reason: 'Board wipe',
   },
   {
     archetypeId: 'control',
-    check: (c) => Boolean(c.type_line?.toLowerCase().includes('planeswalker')),
-    weight: 0.3,
+    check: (c) => {
+      const colors = c.color_identity || [];
+      const isUW = colors.includes('U') || colors.includes('W');
+      return isUW && Boolean(c.type_line?.toLowerCase().includes('planeswalker'));
+    },
+    weight: 0.15,  // Reduced from 0.3
     role: 'payoff',
-    reason: 'Planeswalker',
+    reason: 'UW planeswalker',
   },
 
   // Ramp - expensive creatures and mana
@@ -303,25 +325,33 @@ export const PROPERTY_RULES: PropertyRule[] = [
     reason: 'Cheat target',
   },
 
-  // Midrange - efficient mid-curve creatures (CMC 2-4)
+  // Midrange - very low weight for generic creatures to prevent dominating
+  // Only specific midrange cards (Oko, Liliana, etc.) should push this archetype
   {
     archetypeId: 'midrange',
     check: (c) => {
       const cmc = c.cmc ?? 0;
       const isCreature = Boolean(c.type_line?.toLowerCase().includes('creature'));
-      return isCreature && cmc >= 2 && cmc <= 4;
+      // Only BG creatures get midrange bonus (traditional midrange colors)
+      const colors = c.color_identity || [];
+      const isBG = colors.includes('B') || colors.includes('G');
+      return isCreature && cmc >= 2 && cmc <= 4 && isBG;
     },
-    weight: 0.25,
+    weight: 0.1,  // Very low to prevent dominating
     role: 'payoff',
-    reason: 'Efficient creature',
+    reason: 'BG creature',
   },
 
-  // Midrange - discard effects
+  // Midrange - discard effects (only for BG)
   {
     archetypeId: 'midrange',
-    check: (c) => Boolean(c.oracle_text?.toLowerCase().includes('discard a card') ||
-                          c.oracle_text?.toLowerCase().includes('discard two')),
-    weight: 0.3,
+    check: (c) => {
+      const colors = c.color_identity || [];
+      const isBlack = colors.includes('B');
+      return isBlack && Boolean(c.oracle_text?.toLowerCase().includes('discard a card') ||
+                          c.oracle_text?.toLowerCase().includes('discard two'));
+    },
+    weight: 0.15,  // Lowered
     role: 'support',
     reason: 'Disruption',
   },
