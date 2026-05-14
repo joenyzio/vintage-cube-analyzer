@@ -80,30 +80,58 @@ export const SECONDARY_ADJUSTMENT_SCALE = {
 export const MAX_SECONDARY_ADJUSTMENT = 150;
 
 // ============================================
-// Color Fit Parameters
+// Color Fit Parameters (MULTIPLICATIVE)
 // ============================================
 
 /**
- * Color fit adjustments (additive, in ELO points).
+ * Color fit MULTIPLIERS (applied to base ELO).
+ *
+ * TUNED v3: Multiplicative penalties scale with card power.
+ * A 30% penalty on a 2000 ELO card = 600 points lost.
+ * A 30% penalty on a 1400 ELO card = 420 points lost.
+ *
+ * Key insight: The penalty for adding a 3rd color should be based on
+ * how many colors you already have, not how many the card adds.
  */
-export const COLOR_FIT_ADJUSTMENTS = {
-  colorless: 10,              // Colorless cards always slightly good
-  onColor: 60,                // Perfect color match
-  touchedColor: 25,           // Splashable (1-2 cards in color)
-  offColorPremium: -10,       // Off-color but top 5% card (worth splash)
-  offColorGood: -40,          // Off-color 85-95% card
-  offColorBad: -80,           // Off-color below 85% (wrong colors)
+export const COLOR_MULTIPLIERS = {
+  colorless: 1.03,            // Slight bonus for colorless (artifacts are flexible)
+  onColor: 1.10,              // Moderate bonus for on-color
+  touchedColor: 1.02,         // Slight bonus for extending colors you've touched
+
+  // Adding a NEW color when you have N colors:
+  // TUNED v7: Final adjustment for 25-30% 2-color target
+  addingSecondColor: 0.92,    // Going from 1→2 colors - mild penalty (expected)
+  addingThirdColor: 0.55,     // Going from 2→3 colors - moderate-strong penalty (45% reduction)
+  addingFourthPlusColor: 0.30, // Going from 3+→more - harsh penalty (70% reduction)
+};
+
+/**
+ * Premium card adjustment: top cards get lighter penalties.
+ * Added to multiplier for off-color picks.
+ */
+export const PREMIUM_MULTIPLIER_BONUS = {
+  top5Percent: 0.10,          // Top 5% cards get +10% on their multiplier
+  top15Percent: 0.05,         // 85-95% cards get +5% bonus
 };
 
 /**
  * How color penalties scale with draft progress.
- * Early draft = penalties reduced (still exploring).
- * Late draft = full penalties (committed to colors).
+ * Early picks allow some exploration, penalties ramp up.
  */
 export const COLOR_SCALE = {
-  base: 0.2,           // Minimum scale (pick 1)
-  perPick: 0.1,        // Additional scale per pick
-  max: 1.0,            // Maximum scale
+  base: 0.70,          // Start at 70% penalty strength
+  perPick: 0.06,       // Additional scale per pick
+  max: 1.0,            // Maximum scale (reached at pick 5)
+};
+
+// Legacy additive adjustments (kept for curve fit display)
+export const COLOR_FIT_ADJUSTMENTS = {
+  colorless: 20,
+  onColor: 100,
+  touchedColor: 5,
+  offColorPremium: -60,
+  offColorGood: -150,
+  offColorBad: -250,
 };
 
 // ============================================

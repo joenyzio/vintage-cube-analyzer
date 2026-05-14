@@ -16,7 +16,8 @@ import {
   AFFINITY_BOUNDS,
   SECONDARY_ADJUSTMENT_SCALE,
   MAX_SECONDARY_ADJUSTMENT,
-  COLOR_FIT_ADJUSTMENTS,
+  COLOR_MULTIPLIERS,
+  PREMIUM_MULTIPLIER_BONUS,
   CURVE_FIT_ADJUSTMENTS,
   GRADING_THRESHOLDS,
   ELO_RANGE,
@@ -31,6 +32,9 @@ import {
 
 /**
  * Rate a single card in the current draft context.
+ *
+ * Formula:
+ *   contextualScore = (baseElo * colorMultiplier) * archetypeBoost + secondaryAdjustments
  */
 export function rateCard(
   card: CubeCard,
@@ -42,18 +46,28 @@ export function rateCard(
 
   const reasons: string[] = [];
 
-  // 1. Calculate archetype affinity
+  // 1. Calculate color multiplier (MULTIPLICATIVE - applied first)
+  const { multiplier: colorMultiplier, reason: colorReason } = calculateColorMultiplier(card, context);
+  const colorAdjustedElo = baseElo * colorMultiplier;
+
+  if (colorMultiplier < 0.95) {
+    reasons.push(`×${colorMultiplier.toFixed(2)} off-color`);
+  } else if (colorMultiplier > 1.02) {
+    reasons.push(`×${colorMultiplier.toFixed(2)} on-color`);
+  }
+
+  // 2. Calculate archetype affinity
   const { totalAffinity, breakdown } = calculateCardAffinity(card, context.archetypeWeights);
 
-  // 2. Get commitment multiplier (how much to amplify archetype fit)
+  // 3. Get commitment multiplier (how much to amplify archetype fit)
   const maxCommitment = Math.max(0, ...context.archetypeWeights.values());
   const commitmentMultiplier = getCommitmentMultiplier(maxCommitment);
 
-  // 3. Calculate archetype boost (multiplicative)
+  // 4. Calculate archetype boost (multiplicative)
   const archetypeFit = clamp(totalAffinity, AFFINITY_BOUNDS.minWeight, AFFINITY_BOUNDS.maxWeight);
   const archetypeBoost = 1 + (archetypeFit * commitmentMultiplier);
   // Allow anti-synergy to reduce scores (minimum 0.5x multiplier)
-  const archetypeAdjustedElo = baseElo * clamp(archetypeBoost, 0.5, AFFINITY_BOUNDS.maxMultiplier);
+  const archetypeAdjustedElo = colorAdjustedElo * clamp(archetypeBoost, 0.5, AFFINITY_BOUNDS.maxMultiplier);
 
   if (archetypeFit > 0.1 && commitmentMultiplier > 0) {
     const topArchetype = breakdown.sort((a, b) => b.contribution - a.contribution)[0];
@@ -62,24 +76,17 @@ export function rateCard(
     }
   }
 
-  // 4. Calculate secondary adjustments (additive)
+  // 5. Calculate secondary adjustments (additive - curve and type only)
   let secondaryAdjustment = 0;
 
-  // 4a. Color fit
-  const colorFit = calculateColorFit(card, context);
-  secondaryAdjustment += colorFit * SECONDARY_ADJUSTMENT_SCALE.colorFit;
-  if (Math.abs(colorFit) >= 20) {
-    reasons.push(colorFit > 0 ? `+${colorFit} on-color` : `${colorFit} off-color`);
-  }
-
-  // 4b. Curve fit
+  // 5a. Curve fit
   const curveFit = calculateCurveFit(card, context);
   secondaryAdjustment += curveFit * SECONDARY_ADJUSTMENT_SCALE.curveFit;
   if (Math.abs(curveFit) >= 15) {
     reasons.push(curveFit > 0 ? `+${curveFit} curve need` : `${curveFit} curve glut`);
   }
 
-  // 4c. Type balance
+  // 5b. Type balance
   const typeBalance = calculateTypeBalance(card, context);
   secondaryAdjustment += typeBalance * SECONDARY_ADJUSTMENT_SCALE.typeBalance;
   if (typeBalance >= 15) {
@@ -89,17 +96,20 @@ export function rateCard(
   // Clamp secondary adjustments
   secondaryAdjustment = clamp(secondaryAdjustment, -MAX_SECONDARY_ADJUSTMENT, MAX_SECONDARY_ADJUSTMENT);
 
-  // 5. Final contextual score
+  // 6. Final contextual score
   const contextualScore = archetypeAdjustedElo + secondaryAdjustment;
 
-  // 6. Calculate grade
+  // 7. Calculate grade
   const { grade, gradeReason } = calculateGrade(contextualScore, context, pack);
 
-  // 7. Calculate contextual percentile
+  // 8. Calculate contextual percentile
   const percentile = calculateContextualPercentile(contextualScore, pack);
 
-  // 8. Determine if card is "on plan"
+  // 9. Determine if card is "on plan"
   const isOnPlan = archetypeFit > 0.2 || (context.dominantArchetype === null);
+
+  // For backwards compatibility, compute colorFit as ELO delta
+  const colorFit = Math.round((colorMultiplier - 1) * baseElo);
 
   return {
     cardName: card.name,
@@ -128,42 +138,85 @@ export function rateAllCards(
 }
 
 // ============================================
-// Secondary Adjustment Calculations
+// Color Multiplier Calculation (Multiplicative System)
 // ============================================
 
 /**
- * Calculate color fit adjustment.
+ * Calculate color fit MULTIPLIER.
+ *
+ * Key insight: The penalty for adding a new color should depend on
+ * how many colors you ALREADY have, not how many the card adds.
+ *
+ * - Going from 1→2 colors is expected (mild penalty)
+ * - Going from 2→3 colors is discouraged (harsh penalty)
+ * - Going from 3→4+ colors is strongly discouraged (extreme penalty)
  */
-function calculateColorFit(card: CubeCard, context: DraftContext): number {
+function calculateColorMultiplier(
+  card: CubeCard,
+  context: DraftContext
+): { multiplier: number; reason: string } {
   const cardColors = card.color_identity || [];
   const colorScale = getColorScale(context.totalPicks);
 
-  // Colorless cards are always slightly good
+  // Count how many distinct colors the drafter currently has
+  const currentColorCount = Object.keys(context.colorCounts).filter(
+    c => context.colorCounts[c] > 0
+  ).length;
+
+  // Colorless cards get slight bonus
   if (cardColors.length === 0) {
-    return COLOR_FIT_ADJUSTMENTS.colorless;
+    return { multiplier: COLOR_MULTIPLIERS.colorless, reason: 'colorless' };
   }
 
-  // Check if card is on-color
+  // Check if card is fully on-color (all colors are main colors with 3+ cards)
   const isOnColor = cardColors.every((c: string) => context.mainColors.includes(c));
   if (isOnColor) {
-    return COLOR_FIT_ADJUSTMENTS.onColor * colorScale;
+    return { multiplier: COLOR_MULTIPLIERS.onColor, reason: 'on-color' };
   }
 
-  // Check if card touches existing colors
-  const touchesColor = cardColors.some((c: string) => context.colorCounts[c] > 0);
-  if (touchesColor) {
-    return COLOR_FIT_ADJUSTMENTS.touchedColor * colorScale;
+  // Check if ALL card colors are touched (have at least 1 card each)
+  const allColorsTouched = cardColors.every((c: string) => context.colorCounts[c] > 0);
+  if (allColorsTouched) {
+    return { multiplier: COLOR_MULTIPLIERS.touchedColor, reason: 'touched' };
   }
 
-  // Off-color - penalty based on card quality
+  // Card introduces at least one NEW color - apply penalty based on current color count
   const percentile = getPercentile(card.name);
-  if (percentile >= 95) {
-    return COLOR_FIT_ADJUSTMENTS.offColorPremium * colorScale;
-  } else if (percentile >= 85) {
-    return COLOR_FIT_ADJUSTMENTS.offColorGood * colorScale;
+
+  // Determine base multiplier based on how many colors we already have
+  let baseMultiplier: number;
+  let reason: string;
+
+  if (currentColorCount <= 1) {
+    // Adding second color (1→2) - mild penalty
+    baseMultiplier = COLOR_MULTIPLIERS.addingSecondColor;
+    reason = 'adding 2nd color';
+  } else if (currentColorCount === 2) {
+    // Adding third color (2→3) - HARSH penalty
+    baseMultiplier = COLOR_MULTIPLIERS.addingThirdColor;
+    reason = 'adding 3rd color';
   } else {
-    return COLOR_FIT_ADJUSTMENTS.offColorBad * colorScale;
+    // Adding 4th+ color - extreme penalty
+    baseMultiplier = COLOR_MULTIPLIERS.addingFourthPlusColor;
+    reason = 'adding 4th+ color';
   }
+
+  // Premium cards get lighter penalty
+  let premiumBonus = 0;
+  if (percentile >= 95) {
+    premiumBonus = PREMIUM_MULTIPLIER_BONUS.top5Percent;
+  } else if (percentile >= 85) {
+    premiumBonus = PREMIUM_MULTIPLIER_BONUS.top15Percent;
+  }
+
+  // Apply color scale (penalties are weaker early in draft)
+  // Formula: multiplier = 1 - (1 - baseMultiplier) * colorScale + premiumBonus
+  // When colorScale = 0, multiplier = 1 (no penalty)
+  // When colorScale = 1, multiplier = baseMultiplier + premiumBonus
+  const penaltyStrength = (1 - baseMultiplier) * colorScale;
+  const multiplier = clamp(1 - penaltyStrength + premiumBonus, 0.2, 1.2);
+
+  return { multiplier, reason };
 }
 
 /**

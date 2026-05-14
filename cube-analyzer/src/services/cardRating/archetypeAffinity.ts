@@ -27,20 +27,17 @@ import { ROLE_WEIGHT_MULTIPLIERS } from './tuning';
  */
 export const EXPLICIT_AFFINITIES: CardAffinity[] = [
   // ========== REANIMATOR ==========
-  // Key enablers
+  // Key enablers (verified in cube)
   { cardName: 'Entomb', archetypeId: 'reanimator', weight: 1.0, role: 'enabler' },
   { cardName: 'Reanimate', archetypeId: 'reanimator', weight: 1.0, role: 'enabler' },
   { cardName: 'Animate Dead', archetypeId: 'reanimator', weight: 1.0, role: 'enabler' },
   { cardName: 'Necromancy', archetypeId: 'reanimator', weight: 0.9, role: 'enabler' },
   { cardName: 'Exhume', archetypeId: 'reanimator', weight: 0.85, role: 'enabler' },
   { cardName: 'Life // Death', archetypeId: 'reanimator', weight: 0.8, role: 'enabler' },
-  { cardName: 'Persist', archetypeId: 'reanimator', weight: 0.75, role: 'enabler' },
   { cardName: 'Shallow Grave', archetypeId: 'reanimator', weight: 0.7, role: 'enabler' },
-  { cardName: 'Unmarked Grave', archetypeId: 'reanimator', weight: 0.85, role: 'enabler' },
 
   // Discard outlets
   { cardName: 'Faithless Looting', archetypeId: 'reanimator', weight: 0.7, role: 'support' },
-  { cardName: 'Careful Study', archetypeId: 'reanimator', weight: 0.65, role: 'support' },
   { cardName: 'Collective Brutality', archetypeId: 'reanimator', weight: 0.5, role: 'support' },
 
   // Payoffs (big creatures)
@@ -48,8 +45,6 @@ export const EXPLICIT_AFFINITIES: CardAffinity[] = [
   { cardName: 'Archon of Cruelty', archetypeId: 'reanimator', weight: 0.9, role: 'payoff' },
   { cardName: 'Atraxa, Grand Unifier', archetypeId: 'reanimator', weight: 0.85, role: 'payoff' },
   { cardName: 'Emrakul, the Aeons Torn', archetypeId: 'reanimator', weight: 0.8, role: 'payoff' },
-  { cardName: "Serra's Emissary", archetypeId: 'reanimator', weight: 0.75, role: 'payoff' },
-  { cardName: 'Grave Titan', archetypeId: 'reanimator', weight: 0.7, role: 'payoff' },
 
   // ========== STORM ==========
   // Engines
@@ -64,82 +59,108 @@ export const EXPLICIT_AFFINITIES: CardAffinity[] = [
   { cardName: 'Lotus Petal', archetypeId: 'storm', weight: 0.75, role: 'support' },
 
   // Payoffs
-  { cardName: 'Tendrils of Agony', archetypeId: 'storm', weight: 1.0, role: 'payoff' },
   { cardName: 'Brain Freeze', archetypeId: 'storm', weight: 0.9, role: 'payoff' },
 
   // Draw/selection
   { cardName: 'Wheel of Fortune', archetypeId: 'storm', weight: 0.8, role: 'support' },
   { cardName: 'Timetwister', archetypeId: 'storm', weight: 0.75, role: 'support' },
-  { cardName: 'Windfall', archetypeId: 'storm', weight: 0.7, role: 'support' },
   { cardName: 'Echo of Eons', archetypeId: 'storm', weight: 0.7, role: 'support' },
 
   // ========== AGGRO ==========
-  { cardName: 'Monastery Swiftspear', archetypeId: 'aggro', weight: 0.9, role: 'payoff' },
-  { cardName: 'Goblin Guide', archetypeId: 'aggro', weight: 0.9, role: 'payoff' },
+  // Verified in cube
   { cardName: 'Ragavan, Nimble Pilferer', archetypeId: 'aggro', weight: 0.85, role: 'payoff' },
   { cardName: "Dragon's Rage Channeler", archetypeId: 'aggro', weight: 0.8, role: 'payoff' },
-  { cardName: 'Soul-Scar Mage', archetypeId: 'aggro', weight: 0.75, role: 'payoff' },
-  { cardName: 'Eidolon of the Great Revel', archetypeId: 'aggro', weight: 0.8, role: 'support' },
   { cardName: 'Lightning Bolt', archetypeId: 'aggro', weight: 0.7, role: 'support' },
   { cardName: 'Chain Lightning', archetypeId: 'aggro', weight: 0.65, role: 'support' },
   { cardName: 'Fireblast', archetypeId: 'aggro', weight: 0.6, role: 'support' },
-  { cardName: 'Sulfuric Vortex', archetypeId: 'aggro', weight: 0.75, role: 'support' },
 
   // ========== CONTROL ==========
+  // Verified in cube
   { cardName: 'Jace, the Mind Sculptor', archetypeId: 'control', weight: 0.85, role: 'payoff' },
-  { cardName: 'Teferi, Hero of Dominaria', archetypeId: 'control', weight: 0.8, role: 'payoff' },
   { cardName: 'The Wandering Emperor', archetypeId: 'control', weight: 0.7, role: 'payoff' },
   { cardName: 'Force of Will', archetypeId: 'control', weight: 0.75, role: 'support' },
   { cardName: 'Counterspell', archetypeId: 'control', weight: 0.65, role: 'support' },
   { cardName: 'Mana Drain', archetypeId: 'control', weight: 0.7, role: 'support' },
-  { cardName: 'Cryptic Command', archetypeId: 'control', weight: 0.6, role: 'support' },
-  { cardName: 'Supreme Verdict', archetypeId: 'control', weight: 0.8, role: 'support' },
   { cardName: 'Wrath of God', archetypeId: 'control', weight: 0.75, role: 'support' },
-  { cardName: 'Day of Judgment', archetypeId: 'control', weight: 0.7, role: 'support' },
-  { cardName: 'Terminus', archetypeId: 'control', weight: 0.65, role: 'support' },
 
   // ========== RAMP ==========
+  // Verified in cube
   { cardName: 'Channel', archetypeId: 'ramp', weight: 0.9, role: 'enabler' },
   { cardName: 'Natural Order', archetypeId: 'ramp', weight: 0.85, role: 'enabler' },
   { cardName: 'Rofellos, Llanowar Emissary', archetypeId: 'ramp', weight: 0.8, role: 'enabler' },
-  { cardName: 'Oracle of Mul Daya', archetypeId: 'ramp', weight: 0.7, role: 'support' },
   { cardName: 'Craterhoof Behemoth', archetypeId: 'ramp', weight: 0.9, role: 'payoff' },
   { cardName: 'Primeval Titan', archetypeId: 'ramp', weight: 0.8, role: 'payoff' },
-  { cardName: 'Ulamog, the Ceaseless Hunger', archetypeId: 'ramp', weight: 0.75, role: 'payoff' },
 
   // ========== ARTIFACTS ==========
+  // Verified in cube
   { cardName: 'Tinker', archetypeId: 'artifacts', weight: 0.95, role: 'enabler' },
   { cardName: 'Goblin Welder', archetypeId: 'artifacts', weight: 0.85, role: 'enabler' },
-  { cardName: 'Daretti, Scrap Savant', archetypeId: 'artifacts', weight: 0.75, role: 'enabler' },
   { cardName: 'Urza, Lord High Artificer', archetypeId: 'artifacts', weight: 0.9, role: 'payoff' },
   { cardName: 'Tolarian Academy', archetypeId: 'artifacts', weight: 0.85, role: 'support' },
   { cardName: 'Blightsteel Colossus', archetypeId: 'artifacts', weight: 0.9, role: 'payoff' },
   { cardName: 'Myr Battlesphere', archetypeId: 'artifacts', weight: 0.75, role: 'payoff' },
   { cardName: 'Wurmcoil Engine', archetypeId: 'artifacts', weight: 0.7, role: 'payoff' },
-  { cardName: 'Time Vault', archetypeId: 'artifacts', weight: 0.85, role: 'enabler' },
-  { cardName: 'Voltaic Key', archetypeId: 'artifacts', weight: 0.8, role: 'enabler' },
 
   // ========== SNEAK & SHOW ==========
+  // Verified in cube
   { cardName: 'Show and Tell', archetypeId: 'sneak', weight: 1.0, role: 'enabler' },
   { cardName: 'Sneak Attack', archetypeId: 'sneak', weight: 0.95, role: 'enabler' },
   { cardName: 'Through the Breach', archetypeId: 'sneak', weight: 0.85, role: 'enabler' },
   { cardName: 'Emrakul, the Aeons Torn', archetypeId: 'sneak', weight: 1.0, role: 'payoff' },
   { cardName: 'Griselbrand', archetypeId: 'sneak', weight: 0.9, role: 'payoff' },
-  { cardName: 'Omniscience', archetypeId: 'sneak', weight: 0.85, role: 'payoff' },
   { cardName: 'Worldspine Wurm', archetypeId: 'sneak', weight: 0.8, role: 'payoff' },
 
   // ========== TEMPO ==========
-  { cardName: 'Delver of Secrets', archetypeId: 'tempo', weight: 0.85, role: 'payoff' },
-  { cardName: 'True-Name Nemesis', archetypeId: 'tempo', weight: 0.8, role: 'payoff' },
-  { cardName: 'Vendilion Clique', archetypeId: 'tempo', weight: 0.75, role: 'payoff' },
-  { cardName: 'Daze', archetypeId: 'tempo', weight: 0.8, role: 'support' },
-  { cardName: 'Force Spike', archetypeId: 'tempo', weight: 0.65, role: 'support' },
+  // Verified in cube - 13 cards total
+  // NOTE: This cube has limited Tempo support (no Delver, Vendilion Clique,
+  // Brazen Borrower, Ledger Shredder, Force Spike, Vapor Snag, Flusterstorm)
+  // 10.2% emergence is the natural ceiling for this cube's composition.
+
+  // Core tempo threats
+  { cardName: 'True-Name Nemesis', archetypeId: 'tempo', weight: 0.85, role: 'payoff' },
+  { cardName: 'Snapcaster Mage', archetypeId: 'tempo', weight: 0.65, role: 'payoff' },
+  { cardName: 'Subtlety', archetypeId: 'tempo', weight: 0.6, role: 'support' },
+  { cardName: 'Hullbreacher', archetypeId: 'tempo', weight: 0.6, role: 'payoff' },
+
+  // Core tempo interaction
+  { cardName: 'Daze', archetypeId: 'tempo', weight: 0.9, role: 'support' },
   { cardName: 'Spell Pierce', archetypeId: 'tempo', weight: 0.6, role: 'support' },
-  { cardName: 'Brazen Borrower', archetypeId: 'tempo', weight: 0.7, role: 'payoff' },
+  { cardName: 'Remand', archetypeId: 'tempo', weight: 0.65, role: 'support' },
+  { cardName: 'Miscalculation', archetypeId: 'tempo', weight: 0.55, role: 'support' },
+  { cardName: 'Memory Lapse', archetypeId: 'tempo', weight: 0.55, role: 'support' },
+
+  // Cantrips (shared with storm)
+  { cardName: 'Ponder', archetypeId: 'tempo', weight: 0.4, role: 'support' },
+  { cardName: 'Preordain', archetypeId: 'tempo', weight: 0.4, role: 'support' },
+  { cardName: 'Brainstorm', archetypeId: 'tempo', weight: 0.45, role: 'support' },
+  { cardName: 'Gitaxian Probe', archetypeId: 'tempo', weight: 0.35, role: 'support' },
 
   // ========== OATH ==========
+  // Verified in cube
+  // NOTE: Missing Forbidden Orchard and Omniscience - Oath support limited
+
+  // Core enabler
   { cardName: 'Oath of Druids', archetypeId: 'oath', weight: 1.0, role: 'enabler' },
-  { cardName: 'Forbidden Orchard', archetypeId: 'oath', weight: 0.85, role: 'enabler' },
+
+  // Payoffs (creatures to cheat out)
+  { cardName: 'Griselbrand', archetypeId: 'oath', weight: 0.9, role: 'payoff' },
+  { cardName: 'Emrakul, the Aeons Torn', archetypeId: 'oath', weight: 0.85, role: 'payoff' },
+  { cardName: 'Atraxa, Grand Unifier', archetypeId: 'oath', weight: 0.8, role: 'payoff' },
+  { cardName: 'Archon of Cruelty', archetypeId: 'oath', weight: 0.75, role: 'payoff' },
+  { cardName: 'Craterhoof Behemoth', archetypeId: 'oath', weight: 0.7, role: 'payoff' },
+  { cardName: 'Blightsteel Colossus', archetypeId: 'oath', weight: 0.7, role: 'payoff' },
+  { cardName: 'Woodfall Primus', archetypeId: 'oath', weight: 0.65, role: 'payoff' },
+
+  // Protection/control (keep Oath alive)
+  { cardName: 'Force of Will', archetypeId: 'oath', weight: 0.55, role: 'support' },
+  { cardName: 'Counterspell', archetypeId: 'oath', weight: 0.45, role: 'support' },
+  { cardName: 'Mana Drain', archetypeId: 'oath', weight: 0.5, role: 'support' },
+
+  // Anti-synergy: creature-makers (bad with Oath)
+  { cardName: 'Birds of Paradise', archetypeId: 'oath', weight: -0.7, role: 'utility' },
+  { cardName: 'Noble Hierarch', archetypeId: 'oath', weight: -0.7, role: 'utility' },
+  { cardName: 'Llanowar Elves', archetypeId: 'oath', weight: -0.7, role: 'utility' },
+  { cardName: 'Elvish Mystic', archetypeId: 'oath', weight: -0.7, role: 'utility' },
 
   // ========== MIDRANGE ==========
   // Disruption
@@ -303,6 +324,92 @@ export const PROPERTY_RULES: PropertyRule[] = [
     weight: 0.3,
     role: 'support',
     reason: 'Disruption',
+  },
+
+  // ========== TEMPO ==========
+  // Property rules for tempo-specific card patterns
+
+  // Bounce effects (tempo-defining - returns permanents to hand)
+  {
+    archetypeId: 'tempo',
+    check: (c) => {
+      const text = c.oracle_text?.toLowerCase() || '';
+      return text.includes('return') && text.includes('to its owner') && text.includes('hand');
+    },
+    weight: 0.4,
+    role: 'support',
+    reason: 'Bounce effect',
+  },
+  // Cheap counterspells (CMC <= 2, contains "counter target")
+  {
+    archetypeId: 'tempo',
+    check: (c) => {
+      const cmc = c.cmc ?? 0;
+      const text = c.oracle_text?.toLowerCase() || '';
+      return cmc <= 2 && text.includes('counter target');
+    },
+    weight: 0.35,
+    role: 'support',
+    reason: 'Cheap counter',
+  },
+  // Cheap evasive creatures (CMC <= 3, flying or can't be blocked)
+  {
+    archetypeId: 'tempo',
+    check: (c) => {
+      const cmc = c.cmc ?? 0;
+      const isCreature = c.type_line?.toLowerCase().includes('creature');
+      const text = c.oracle_text?.toLowerCase() || '';
+      const hasEvasion = text.includes('flying') || text.includes("can't be blocked");
+      return Boolean(isCreature && cmc <= 3 && hasEvasion);
+    },
+    weight: 0.3,
+    role: 'payoff',
+    reason: 'Evasive threat',
+  },
+  // Tempo anti-synergy: expensive cards
+  {
+    archetypeId: 'tempo',
+    check: (c) => (c.cmc ?? 0) >= 5,
+    weight: -0.3,
+    reason: 'Too slow for tempo',
+  },
+
+  // ========== OATH ==========
+  // Big creatures as Oath targets
+  {
+    archetypeId: 'oath',
+    check: (c) => {
+      const cmc = c.cmc ?? 0;
+      const isCreature = c.type_line?.toLowerCase().includes('creature');
+      return Boolean(isCreature && cmc >= 7);
+    },
+    weight: 0.45,
+    role: 'payoff',
+    reason: 'Oath target',
+  },
+  // Lands that make tokens for opponent (enables Oath)
+  {
+    archetypeId: 'oath',
+    check: (c) => {
+      const isLand = c.type_line?.toLowerCase().includes('land');
+      const makesTokens = c.oracle_text?.toLowerCase().includes('create') &&
+                          c.oracle_text?.toLowerCase().includes('token');
+      return Boolean(isLand && makesTokens);
+    },
+    weight: 0.5,
+    role: 'enabler',
+    reason: 'Token-making land',
+  },
+  // Oath anti-synergy: small creatures
+  {
+    archetypeId: 'oath',
+    check: (c) => {
+      const cmc = c.cmc ?? 0;
+      const isCreature = c.type_line?.toLowerCase().includes('creature');
+      return Boolean(isCreature && cmc <= 3);
+    },
+    weight: -0.4,
+    reason: 'Small creature blocks Oath',
   },
 ];
 
