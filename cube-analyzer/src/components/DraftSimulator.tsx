@@ -4791,7 +4791,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                 No picks yet - click a card in the pack to draft it
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-4">
+              <div className="grid grid-cols-4 gap-4">
                 {draftState.picks.map((card, index) => {
                   return (
                     <div
@@ -4821,8 +4821,8 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
             )}
           </div>
         ) : (
-          /* Pack Grid - responsive columns, cards sized for readability */
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-4">
+          /* Pack Grid - 4 columns for larger cards */
+          <div className="grid grid-cols-4 gap-4">
             {currentPack.map((card, index) => {
             const isRecommended = recommendedCard?.id === card.id;
             const wheelLikelihood = getWheelLikelihood(card.name);
