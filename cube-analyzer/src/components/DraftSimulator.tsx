@@ -2028,19 +2028,45 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     );
 
     // Update ELO history for ALL seen cards (track how their value shifts with EVERY pick)
-    const newEloHistory = new Map(draftState.cardEloHistory);
+    // IMPORTANT: Create deep copies to ensure React detects state changes
+    const newEloHistory = new Map<string, CardEloHistory>();
     const newSeenCards = new Set(draftState.seenCards);
     const pickNum = newPicks.length;
 
     // Update history for ALL cards we've ever seen - this gives proper sparklines
-    newEloHistory.forEach((history, cardId) => {
+    draftState.cardEloHistory.forEach((oldHistory, cardId) => {
       // Find the card from our cube data
       const cardData = cards.find((c: CubeCard) => c.id === cardId);
       if (cardData) {
         const synergy = getSynergyAdjustedElo(cardData, newPicks);
-        history.history.push({ pick: pickNum, adjustedElo: synergy.adjustedElo, adjustment: synergy.adjustment });
+        // Create NEW history object with updated array (don't mutate old state)
+        newEloHistory.set(cardId, {
+          ...oldHistory,
+          history: [
+            ...oldHistory.history,
+            { pick: pickNum, adjustedElo: synergy.adjustedElo, adjustment: synergy.adjustment }
+          ]
+        });
+      } else {
+        // Keep old history if card not found
+        newEloHistory.set(cardId, oldHistory);
       }
     });
+
+    // IMPORTANT: Ensure the picked card is in history (may be first time seeing it in a new pack)
+    if (!newEloHistory.has(card.id)) {
+      const baseElo = getEloData(card.name)?.elo || 1500;
+      const synergy = getSynergyAdjustedElo(card, newPicks);
+      newEloHistory.set(card.id, {
+        cardId: card.id,
+        cardName: card.name,
+        baseElo,
+        history: [
+          { pick: pickNum, adjustedElo: synergy.adjustedElo, adjustment: synergy.adjustment },
+        ],
+      });
+      newSeenCards.add(card.id);
+    }
 
     let packsAfterHumanPick = draftState.tablePacks.map((pack, idx) =>
       idx === 0 ? pack.filter(c => c.id !== card.id) : pack
@@ -2086,7 +2112,14 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
           // Only add point if we don't already have one for this pick
           const lastPick = existing.history[existing.history.length - 1]?.pick;
           if (lastPick !== pickNum) {
-            existing.history.push({ pick: pickNum, adjustedElo: synergy.adjustedElo, adjustment: synergy.adjustment });
+            // Create NEW history object (don't mutate)
+            newEloHistory.set(c.id, {
+              ...existing,
+              history: [
+                ...existing.history,
+                { pick: pickNum, adjustedElo: synergy.adjustedElo, adjustment: synergy.adjustment }
+              ]
+            });
           }
         } else {
           // New card we haven't seen - start with single point at current pick
@@ -3556,7 +3589,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
   const recommendedCard = getRecommendedPick;
 
   return (
-    <div className="fixed top-0 bottom-0 right-0 left-0 lg:left-64 z-40 flex bg-black">
+    <div className="fixed top-0 bottom-0 right-0 left-0 lg:left-64 z-40 flex bg-black pt-[env(safe-area-inset-top)]">
       {/* Achievement Popup */}
       {newAchievement && (
         <div className="fixed top-4 right-4 z-50 animate-pulse">
@@ -4078,7 +4111,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                 No picks yet - click a card in the pack to draft it
               </div>
             ) : (
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-3 md:grid-cols-4 gap-3 md:gap-4">
                 {draftState.picks.map((card, index) => {
                   return (
                     <div
@@ -4108,8 +4141,8 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
             )}
           </div>
         ) : (
-          /* Pack Grid - 4 columns for larger cards */
-          <div className="grid grid-cols-4 gap-4">
+          /* Pack Grid - 3 columns on mobile, 4 on desktop */
+          <div className="grid grid-cols-3 md:grid-cols-4 gap-3 md:gap-4">
             {currentPack.map((card, index) => {
             const isRecommended = recommendedCard?.id === card.id;
             const wheelLikelihood = getWheelLikelihood(card.name);
@@ -4844,10 +4877,52 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                           </div>
                         )}
 
+                        {/* Simulation Data - Mobile */}
+                        {(() => {
+                          const wheelRate = getWheelRate(mobileSelectedCard.name);
+                          const avgPick = getAvgPickPosition(mobileSelectedCard.name);
+                          const topArchetypes = getTopArchetypesForCard(mobileSelectedCard.name, 2);
+
+                          return (
+                            <div className="mt-3 pt-2 border-t border-white/10 space-y-2">
+                              <div className="grid grid-cols-2 gap-2 text-xs">
+                                <div className="bg-white/5 rounded px-2 py-1.5">
+                                  <div className="text-white/40 text-[10px]">Avg Pick</div>
+                                  <div className="text-white font-mono font-medium">
+                                    {avgPick ? `#${Math.round(avgPick)}` : 'N/A'}
+                                  </div>
+                                </div>
+                                <div className="bg-white/5 rounded px-2 py-1.5">
+                                  <div className="text-white/40 text-[10px]">Wheel Rate</div>
+                                  <div className="text-white font-mono font-medium">
+                                    {wheelRate !== null ? `${Math.round(wheelRate)}%` : 'N/A'}
+                                  </div>
+                                </div>
+                              </div>
+                              {topArchetypes.length > 0 && (
+                                <div className="flex flex-wrap gap-1">
+                                  {topArchetypes.map(arch => (
+                                    <span
+                                      key={arch.archetypeId}
+                                      className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-white/60"
+                                    >
+                                      {arch.archetypeId} ({Math.round(arch.percentage)}%)
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
+
                         {/* Trajectory Sparkline - Mobile */}
                         {(() => {
                           const historyPoints = getSparklineHistory(mobileSelectedCard.id);
-                          if (!historyPoints || historyPoints.length === 0) return null;
+
+                          // No history at all
+                          if (!historyPoints || historyPoints.length === 0) {
+                            return null;
+                          }
 
                           const points = historyPoints;
                           const currentElo = points[points.length - 1].adjustedElo;
@@ -4855,22 +4930,27 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                           const trend = currentElo - startElo;
                           const velocity = points.length > 1 ? trend / (points.length - 1) : 0;
 
-                          const minElo = Math.min(...points.map(p => p.adjustedElo));
-                          const maxElo = Math.max(...points.map(p => p.adjustedElo));
-                          const range = maxElo - minElo || 1;
+                          // For sparkline rendering
+                          const minElo = Math.min(...points.map(p => p.adjustedElo)) - 50;
+                          const maxElo = Math.max(...points.map(p => p.adjustedElo)) + 50;
+                          const range = maxElo - minElo || 100;
                           const width = 180;
                           const height = 32;
 
                           return (
                             <div className="mt-3 pt-2 border-t border-white/10">
                               <div className="flex items-center justify-between mb-1">
-                                <span className="text-[10px] text-white/40">Trajectory ({points.length} picks)</span>
-                                <span className={`text-xs font-bold ${trend > 0 ? 'text-emerald-400' : trend < 0 ? 'text-red-400' : 'text-white/40'}`}>
-                                  {trend > 0 ? '+' : ''}{Math.round(trend)}
-                                </span>
+                                <span className="text-[10px] text-white/40">Rating Trend</span>
+                                {points.length > 1 ? (
+                                  <span className={`text-xs font-bold ${trend > 0 ? 'text-emerald-400' : trend < 0 ? 'text-red-400' : 'text-white/40'}`}>
+                                    {trend > 0 ? '+' : ''}{Math.round(trend)}
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] text-white/30">baseline</span>
+                                )}
                               </div>
                               <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-8">
-                                {/* Line */}
+                                {/* Line - only if more than 1 point */}
                                 {points.length > 1 && (
                                   <polyline
                                     fill="none"
@@ -4879,7 +4959,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                                     strokeLinecap="round"
                                     strokeLinejoin="round"
                                     points={points.map((p, i) => {
-                                      const x = points.length === 1 ? width / 2 : (i / (points.length - 1)) * width;
+                                      const x = (i / (points.length - 1)) * width;
                                       const y = height - ((p.adjustedElo - minElo) / range) * (height - 8) - 4;
                                       return `${x},${y}`;
                                     }).join(' ')}
@@ -4890,11 +4970,11 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
                                   const x = points.length === 1 ? width / 2 : (i / (points.length - 1)) * width;
                                   const y = height - ((p.adjustedElo - minElo) / range) * (height - 8) - 4;
                                   return (
-                                    <circle key={i} cx={x} cy={y} r="3" fill={trend >= 0 ? '#4ade80' : '#f87171'} />
+                                    <circle key={i} cx={x} cy={y} r="4" fill={points.length === 1 ? '#9ca3af' : (trend >= 0 ? '#4ade80' : '#f87171')} />
                                   );
                                 })}
                               </svg>
-                              {Math.abs(velocity) > 3 && (
+                              {points.length > 1 && Math.abs(velocity) > 3 && (
                                 <div className={`text-[10px] ${velocity > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                                   {velocity > 0 ? '↑' : '↓'} {Math.abs(Math.round(velocity))} ELO/pick
                                 </div>
@@ -5024,7 +5104,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
               {draftState.picks.length === 0 ? (
                 <p className="text-center text-white/40 py-8">No cards drafted yet</p>
               ) : (
-                <div className="grid grid-cols-4 gap-1.5">
+                <div className="grid grid-cols-3 gap-2">
                   {draftState.picks.map((card, idx) => (
                     <div
                       key={`${card.id}-${idx}`}
