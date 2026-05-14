@@ -1,2174 +1,2174 @@
 {
   "metadata": {
     "cubeId": "8eec0c91-6c4e-4f96-957b-1ccc5ecac8fd",
-    "fetchedAt": "2026-05-12T20:17:02.395Z",
+    "fetchedAt": "2026-05-14T02:59:30.055Z",
     "cardCount": 360,
     "eloRange": {
-      "min": 1240.4692162430647,
-      "max": 2376.9646008670497
+      "min": 1242.6970345984987,
+      "max": 2324.774403020937
     },
     "source": "CubeCobra - based on pick data from thousands of drafts"
   },
   "cards": {
     "Esper Sentinel": {
-      "elo": 1502.5405916298723,
-      "pickCount": 90464,
-      "cubeCount": 30993,
+      "elo": 1476.4980459092108,
+      "pickCount": 90533,
+      "cubeCount": 31079,
       "scryfallId": "f3537373-ef54-4578-9d05-6216420ee349"
     },
     "Giver of Runes": {
-      "elo": 1381.08386799485,
-      "pickCount": 105680,
-      "cubeCount": 29942,
+      "elo": 1393.150296521211,
+      "pickCount": 105768,
+      "cubeCount": 30004,
       "scryfallId": "4e117771-5a8b-4812-b487-32ba34b7f724"
     },
     "Guide of Souls": {
-      "elo": 1495.507553632104,
-      "pickCount": 45017,
-      "cubeCount": 9514,
+      "elo": 1526.6672081672334,
+      "pickCount": 45122,
+      "cubeCount": 9579,
       "scryfallId": "76c3cad2-1e25-4abe-878d-9194de6fcc27"
     },
     "Mother of Runes": {
-      "elo": 1488.496688046789,
-      "pickCount": 141678,
-      "cubeCount": 46243,
+      "elo": 1496.3827229481988,
+      "pickCount": 141817,
+      "cubeCount": 46336,
       "scryfallId": "0b1a46ab-95cb-4c24-924f-fc2afd4fcac7"
     },
     "Ocelot Pride": {
-      "elo": 1610.7573908350728,
-      "pickCount": 76261,
-      "cubeCount": 11365,
+      "elo": 1642.6267005575908,
+      "pickCount": 76370,
+      "cubeCount": 11425,
       "scryfallId": "859d2ff4-8b8c-410b-8636-7e6a539fd291"
     },
     "Thraben Inspector": {
-      "elo": 1356.5344585464513,
-      "pickCount": 161290,
-      "cubeCount": 64270,
+      "elo": 1363.088877956753,
+      "pickCount": 161492,
+      "cubeCount": 64425,
       "scryfallId": "d140c3b7-ca78-483d-baeb-307b624fea8b"
     },
     "Cathar Commando": {
-      "elo": 1245.0590679926065,
-      "pickCount": 100811,
-      "cubeCount": 37120,
+      "elo": 1268.2595398351277,
+      "pickCount": 100983,
+      "cubeCount": 37229,
       "scryfallId": "19cf024d-edb6-4a79-8676-73f8db0cdf1f"
     },
     "Containment Priest": {
-      "elo": 1312.0810138048334,
-      "pickCount": 75088,
-      "cubeCount": 18798,
+      "elo": 1274.3510305431255,
+      "pickCount": 75174,
+      "cubeCount": 18856,
       "scryfallId": "7bece9c5-1a2f-44e1-b7f4-9498da558bc8"
     },
     "Jacked Rabbit": {
-      "elo": 1361.4019144219837,
-      "pickCount": 33399,
-      "cubeCount": 6835,
+      "elo": 1399.5135265641743,
+      "pickCount": 33479,
+      "cubeCount": 6880,
       "scryfallId": "2c695df6-6bf2-4e6b-8500-e3116137ca27"
     },
     "Lion Sash": {
-      "elo": 1307.5125974468585,
-      "pickCount": 78055,
-      "cubeCount": 28517,
+      "elo": 1294.5544058557864,
+      "pickCount": 78177,
+      "cubeCount": 28595,
       "scryfallId": "32ecbd85-10ee-4299-8503-4adf19ba3b7f"
     },
     "Luminarch Aspirant": {
-      "elo": 1382.5580469631734,
-      "pickCount": 104333,
-      "cubeCount": 32265,
+      "elo": 1409.774426332741,
+      "pickCount": 104445,
+      "cubeCount": 32358,
       "scryfallId": "dcd27fa3-f6b6-4137-9b6c-4cba7187664c"
     },
     "Phelia, Exuberant Shepherd": {
-      "elo": 1541.9231920357147,
-      "pickCount": 86800,
-      "cubeCount": 13800,
+      "elo": 1541.2721996775672,
+      "pickCount": 86931,
+      "cubeCount": 13863,
       "scryfallId": "55707746-da6e-46e5-a5ca-7ac843fdc38e"
     },
     "Stoneforge Mystic": {
-      "elo": 1466.1179266408294,
-      "pickCount": 110283,
-      "cubeCount": 36961,
+      "elo": 1464.4792447110667,
+      "pickCount": 110380,
+      "cubeCount": 37055,
       "scryfallId": "19557351-b65f-4b04-b971-66abdc07000a"
     },
     "Thalia, Guardian of Thraben": {
-      "elo": 1282.252601920842,
-      "pickCount": 124956,
-      "cubeCount": 47623,
+      "elo": 1351.2498681727202,
+      "pickCount": 125061,
+      "cubeCount": 47738,
       "scryfallId": "824423ff-6441-4be6-b754-810adf9ca6a2"
     },
     "Voice of Victory": {
-      "elo": 1454.689343295477,
-      "pickCount": 23758,
-      "cubeCount": 7815,
+      "elo": 1495.8373847663572,
+      "pickCount": 23867,
+      "cubeCount": 7884,
       "scryfallId": "ec3de5f4-bb55-4ab9-995f-f3e0dc22c1bb"
     },
     "Adeline, Resplendent Cathar": {
-      "elo": 1379.1174654856175,
-      "pickCount": 85118,
-      "cubeCount": 28429,
+      "elo": 1404.4472152475178,
+      "pickCount": 85237,
+      "cubeCount": 28513,
       "scryfallId": "21a0e852-7855-4a6b-8eca-191a8e83023a"
     },
     "Elite Spellbinder": {
-      "elo": 1310.0808689323337,
-      "pickCount": 100986,
-      "cubeCount": 23934,
+      "elo": 1320.5612741220311,
+      "pickCount": 101080,
+      "cubeCount": 23991,
       "scryfallId": "9d3a7998-ccac-45ad-a4e9-3a2cb057f63b"
     },
     "Flickerwisp": {
-      "elo": 1263.1426304721817,
-      "pickCount": 139085,
-      "cubeCount": 50086,
+      "elo": 1251.8834025777458,
+      "pickCount": 139263,
+      "cubeCount": 50196,
       "scryfallId": "f6cccf30-2025-49bb-9b1e-240bbef03f27"
     },
     "Loran of the Third Path": {
-      "elo": 1296.032991959352,
-      "pickCount": 58423,
-      "cubeCount": 20191,
+      "elo": 1282.092215235697,
+      "pickCount": 58510,
+      "cubeCount": 20262,
       "scryfallId": "9e83a0ef-4fea-45ba-86c0-130d6687f7fe"
     },
     "Monastery Mentor": {
-      "elo": 1310.7744684579418,
-      "pickCount": 90372,
-      "cubeCount": 35491,
+      "elo": 1360.640010506778,
+      "pickCount": 90531,
+      "cubeCount": 35602,
       "scryfallId": "64c8e27f-a7eb-4247-bd3d-2d0b02ead334"
     },
     "Porcelain Legionnaire": {
-      "elo": 1310.188358331451,
-      "pickCount": 88796,
-      "cubeCount": 31155,
+      "elo": 1347.4756827211263,
+      "pickCount": 88852,
+      "cubeCount": 31242,
       "scryfallId": "2616aa0e-8413-4e63-877c-bffd5263f552"
     },
     "Recruiter of the Guard": {
-      "elo": 1287.4445471586505,
-      "pickCount": 49226,
-      "cubeCount": 19738,
+      "elo": 1322.3108610368893,
+      "pickCount": 49270,
+      "cubeCount": 19777,
       "scryfallId": "bb9ad57f-cca2-4717-a951-cbe3c7782efe"
     },
     "Skyclave Apparition": {
-      "elo": 1364.4107033992452,
-      "pickCount": 112134,
-      "cubeCount": 34767,
+      "elo": 1378.318412172753,
+      "pickCount": 112242,
+      "cubeCount": 34839,
       "scryfallId": "933fc802-9ed8-44c3-8fc1-cab966afc592"
     },
     "White Plume Adventurer": {
-      "elo": 1725.1828580563867,
-      "pickCount": 27771,
-      "cubeCount": 8130,
+      "elo": 1726.167871651883,
+      "pickCount": 27796,
+      "cubeCount": 8148,
       "scryfallId": "b256ddc8-8b12-434c-a610-1a872e948f2f"
     },
     "Palace Jailer": {
-      "elo": 1501.4424776251738,
-      "pickCount": 97483,
-      "cubeCount": 27901,
+      "elo": 1530.9039075837131,
+      "pickCount": 97540,
+      "cubeCount": 27955,
       "scryfallId": "a50ee31a-e80f-481a-b2e7-7a6c68eb1efb"
     },
     "Restoration Angel": {
-      "elo": 1325.3620844751458,
-      "pickCount": 104864,
-      "cubeCount": 46064,
+      "elo": 1304.6770858491277,
+      "pickCount": 104974,
+      "cubeCount": 46163,
       "scryfallId": "e27a8eb2-9a7d-4349-b414-0655d86836b1"
     },
     "Seasoned Dungeoneer": {
-      "elo": 1618.857760876748,
-      "pickCount": 23786,
-      "cubeCount": 6345,
+      "elo": 1650.8012935522725,
+      "pickCount": 23812,
+      "cubeCount": 6365,
       "scryfallId": "7fee3f76-20a8-4621-84fb-ddf79c955532"
     },
     "Solitude": {
-      "elo": 1622.8160949709643,
-      "pickCount": 110480,
-      "cubeCount": 25015,
+      "elo": 1630.7884654167963,
+      "pickCount": 110579,
+      "cubeCount": 25083,
       "scryfallId": "47a6234f-309f-4e03-9263-66da48b57153"
     },
     "The Wandering Emperor": {
-      "elo": 1381.6687928105189,
-      "pickCount": 67377,
-      "cubeCount": 20920,
+      "elo": 1382.9709877103608,
+      "pickCount": 67502,
+      "cubeCount": 20980,
       "scryfallId": "fab2d8a9-ab4c-4225-a570-22636293c17d"
     },
     "Enlightened Tutor": {
-      "elo": 1314.6378071693982,
-      "pickCount": 67651,
-      "cubeCount": 25768,
+      "elo": 1295.1381920480972,
+      "pickCount": 67746,
+      "cubeCount": 25831,
       "scryfallId": "cbac1d27-15e2-4e2f-82ab-625a16e096cb"
     },
     "Ephemerate": {
-      "elo": 1333.0195758871869,
-      "pickCount": 131365,
-      "cubeCount": 52571,
+      "elo": 1308.298407156061,
+      "pickCount": 131541,
+      "cubeCount": 52698,
       "scryfallId": "2da5f3f8-5eef-498f-ba2c-2f3fbc3745aa"
     },
     "Path to Exile": {
-      "elo": 1565.988994492663,
-      "pickCount": 176655,
-      "cubeCount": 69982,
+      "elo": 1595.7570826997032,
+      "pickCount": 176847,
+      "cubeCount": 70184,
       "scryfallId": "9d607a40-608a-44cd-b946-02636b5bea9f"
     },
     "Swords to Plowshares": {
-      "elo": 1701.6034888225379,
-      "pickCount": 195829,
-      "cubeCount": 79451,
+      "elo": 1713.6320053780564,
+      "pickCount": 196042,
+      "cubeCount": 79658,
       "scryfallId": "375fd2cb-443b-4be4-ad60-6d1a8e74f510"
     },
     "Reprieve": {
-      "elo": 1478.5885867651732,
-      "pickCount": 72305,
-      "cubeCount": 22254,
+      "elo": 1460.618857925095,
+      "pickCount": 72434,
+      "cubeCount": 22373,
       "scryfallId": "1bd3fa8a-6c50-4f7f-9ae3-0810eec5e3db"
     },
     "Oust": {
-      "elo": 1407.9523349988183,
-      "pickCount": 79442,
-      "cubeCount": 18524,
+      "elo": 1404.4715140693008,
+      "pickCount": 79603,
+      "cubeCount": 18582,
       "scryfallId": "07313dd3-d0dc-40ca-98a3-fa4d39e5bcae"
     },
     "Prismatic Ending": {
-      "elo": 1349.682067660555,
-      "pickCount": 87176,
-      "cubeCount": 22985,
+      "elo": 1384.4262891769272,
+      "pickCount": 87348,
+      "cubeCount": 23064,
       "scryfallId": "4eaa24a9-eece-4067-b7e2-6bc8993cea5a"
     },
     "Balance": {
-      "elo": 1472.481320249372,
-      "pickCount": 99482,
-      "cubeCount": 28518,
+      "elo": 1481.878871543355,
+      "pickCount": 99620,
+      "cubeCount": 28587,
       "scryfallId": "39a28a50-3130-485d-975c-26a0f40681a3"
     },
     "Council's Judgment": {
-      "elo": 1318.4303765771506,
-      "pickCount": 93783,
-      "cubeCount": 24401,
+      "elo": 1332.7398208863347,
+      "pickCount": 93870,
+      "cubeCount": 24446,
       "scryfallId": "4005e82f-0b30-4165-87e2-51250c00adb0"
     },
     "Armageddon": {
-      "elo": 1301.2684062142405,
-      "pickCount": 61006,
-      "cubeCount": 22582,
+      "elo": 1342.519527283626,
+      "pickCount": 61064,
+      "cubeCount": 22627,
       "scryfallId": "8949d6f8-6491-489a-916d-7007deaf0371"
     },
     "Wrath of God": {
-      "elo": 1289.828848321365,
-      "pickCount": 125330,
-      "cubeCount": 47320,
+      "elo": 1267.9383908451696,
+      "pickCount": 125465,
+      "cubeCount": 47405,
       "scryfallId": "4566f6a3-4d25-4df0-84be-fe4201138955"
     },
     "Portable Hole": {
-      "elo": 1324.3150904415672,
-      "pickCount": 70998,
-      "cubeCount": 21700,
+      "elo": 1322.1759063870845,
+      "pickCount": 71079,
+      "cubeCount": 21766,
       "scryfallId": "35a4e4b7-bd0a-48f4-be2e-c7453e3ba4d1"
     },
     "Staff of the Storyteller": {
-      "elo": 1383.295356824936,
-      "pickCount": 44787,
-      "cubeCount": 11143,
+      "elo": 1367.91961789761,
+      "pickCount": 44884,
+      "cubeCount": 11193,
       "scryfallId": "17be11f2-f2db-40c4-8fc1-2ed7173f9a1a"
     },
     "Parallax Wave": {
-      "elo": 1452.4469767428823,
-      "pickCount": 93546,
-      "cubeCount": 18203,
+      "elo": 1450.9814306632788,
+      "pickCount": 93653,
+      "cubeCount": 18247,
       "scryfallId": "90538019-58eb-4b4f-b2a5-4650e5b6ec84"
     },
     "Snapcaster Mage": {
-      "elo": 1590.9475664855652,
-      "pickCount": 121758,
-      "cubeCount": 51584,
+      "elo": 1570.875633216201,
+      "pickCount": 121944,
+      "cubeCount": 51731,
       "scryfallId": "12917e60-cea1-460b-b3f1-8d47cc24afdc"
     },
     "Thassa's Oracle": {
-      "elo": 1466.1019362183029,
-      "pickCount": 62505,
-      "cubeCount": 18910,
+      "elo": 1473.7835940146394,
+      "pickCount": 62610,
+      "cubeCount": 18950,
       "scryfallId": "726e8b29-13e9-4138-b6a9-d2a0d8188d1c"
     },
     "Wan Shi Tong, Librarian": {
-      "elo": 1419.2872436593816,
-      "pickCount": 17223,
-      "cubeCount": 3212,
+      "elo": 1419.9371333132626,
+      "pickCount": 17314,
+      "cubeCount": 3248,
       "scryfallId": "e20da6b5-1057-4a28-9e85-07de714e262f"
     },
     "Brazen Borrower": {
-      "elo": 1447.9081828180883,
-      "pickCount": 121932,
-      "cubeCount": 36851,
+      "elo": 1437.1119992630054,
+      "pickCount": 122096,
+      "cubeCount": 36950,
       "scryfallId": "c2089ec9-0665-448f-bfe9-d181de127814"
     },
     "Hullbreacher": {
-      "elo": 1728.0728347409804,
-      "pickCount": 59920,
-      "cubeCount": 16174,
+      "elo": 1742.1731949571315,
+      "pickCount": 60014,
+      "cubeCount": 16223,
       "scryfallId": "4df8aabc-7fcb-4b7b-980b-18f499e6c170"
     },
     "Spellseeker": {
-      "elo": 1449.0594928045757,
-      "pickCount": 61245,
-      "cubeCount": 18943,
+      "elo": 1444.156219862276,
+      "pickCount": 61327,
+      "cubeCount": 18983,
       "scryfallId": "a749c591-2fbe-41d8-ac5b-56ebce82d33e"
     },
     "Tishana's Tidebinder": {
-      "elo": 1373.5270044454876,
-      "pickCount": 29733,
-      "cubeCount": 10939,
+      "elo": 1360.9798013135014,
+      "pickCount": 29836,
+      "cubeCount": 10976,
       "scryfallId": "cbb0b708-ff49-407f-933a-1d042e545cbe"
     },
     "True-Name Nemesis": {
-      "elo": 1499.2093923727898,
-      "pickCount": 34848,
-      "cubeCount": 12824,
+      "elo": 1448.4987673300957,
+      "pickCount": 34905,
+      "cubeCount": 12847,
       "scryfallId": "14749e20-2f7e-4096-b113-d2d71365b960"
     },
     "Displacer Kitten": {
-      "elo": 1492.0467792710147,
-      "pickCount": 47316,
-      "cubeCount": 15257,
+      "elo": 1472.62038066254,
+      "pickCount": 47426,
+      "cubeCount": 15313,
       "scryfallId": "2b347ecf-d032-4d6c-9b4b-6e33c08a0722"
     },
     "Phyrexian Metamorph": {
-      "elo": 1435.3954043062577,
-      "pickCount": 97387,
-      "cubeCount": 37701,
+      "elo": 1386.6750018707187,
+      "pickCount": 97515,
+      "cubeCount": 37818,
       "scryfallId": "d2e27911-87cb-49a0-a34f-6afe4bddd592"
     },
     "Subtlety": {
-      "elo": 1450.7601569837782,
-      "pickCount": 63851,
-      "cubeCount": 17160,
+      "elo": 1465.1332366046788,
+      "pickCount": 63951,
+      "cubeCount": 17222,
       "scryfallId": "701256d5-1389-48b7-9581-d6037209bd06"
     },
     "Urza, Lord High Artificer": {
-      "elo": 1621.5512496422389,
-      "pickCount": 97740,
-      "cubeCount": 29352,
+      "elo": 1629.898569074497,
+      "pickCount": 97860,
+      "cubeCount": 29423,
       "scryfallId": "18b26e53-1fc2-4d07-a56f-9000ed25580d"
     },
     "Kappa Cannoneer": {
-      "elo": 1457.8851391630683,
-      "pickCount": 38886,
-      "cubeCount": 13972,
+      "elo": 1408.6112314496338,
+      "pickCount": 38987,
+      "cubeCount": 14031,
       "scryfallId": "974f71e8-2c42-4267-b0b5-5826930e4f1f"
     },
     "Narset, Parter of Veils": {
-      "elo": 1484.6464661516204,
-      "pickCount": 86223,
-      "cubeCount": 31849,
+      "elo": 1520.905593081771,
+      "pickCount": 86355,
+      "cubeCount": 31921,
       "scryfallId": "8c39f9b4-02b9-4d44-b8d6-4fd02ebbb0c5"
     },
     "Jace, the Mind Sculptor": {
-      "elo": 1592.2151210492498,
-      "pickCount": 92411,
-      "cubeCount": 32950,
+      "elo": 1585.0930762142164,
+      "pickCount": 92516,
+      "cubeCount": 33023,
       "scryfallId": "c057dc0d-4017-4e60-9c5e-45fc569a8d31"
     },
     "Ancestral Recall": {
-      "elo": 2235.2400652408705,
-      "pickCount": 99762,
-      "cubeCount": 21272,
+      "elo": 2233.9292556839073,
+      "pickCount": 99865,
+      "cubeCount": 21357,
       "scryfallId": "2398892d-28e9-4009-81ec-0d544af79d2b"
     },
     "Brainstorm": {
-      "elo": 1523.9292383642678,
-      "pickCount": 138763,
-      "cubeCount": 70673,
+      "elo": 1501.43805664979,
+      "pickCount": 139002,
+      "cubeCount": 70863,
       "scryfallId": "8d42d7aa-7f53-4cfc-842a-086aab2448d1"
     },
     "Mystical Tutor": {
-      "elo": 1512.8415421644945,
-      "pickCount": 85292,
-      "cubeCount": 29731,
+      "elo": 1517.8376247335077,
+      "pickCount": 85442,
+      "cubeCount": 29803,
       "scryfallId": "5d98101f-e32a-4a4a-a649-faa920d111ee"
     },
     "Spell Pierce": {
-      "elo": 1476.068769949667,
-      "pickCount": 107379,
-      "cubeCount": 41809,
+      "elo": 1492.237641070365,
+      "pickCount": 107582,
+      "cubeCount": 41966,
       "scryfallId": "cb3d3901-e4a6-45ab-a7b5-c65d91e1875e"
     },
     "Brain Freeze": {
-      "elo": 1587.5063594442108,
-      "pickCount": 69180,
-      "cubeCount": 21277,
+      "elo": 1568.2747303668907,
+      "pickCount": 69322,
+      "cubeCount": 21359,
       "scryfallId": "59a43ef5-08f0-44fc-802d-b6cfd56b7d1f"
     },
     "Counterspell": {
-      "elo": 1601.1478653306422,
-      "pickCount": 171812,
-      "cubeCount": 86826,
+      "elo": 1567.7621615063013,
+      "pickCount": 172085,
+      "cubeCount": 87062,
       "scryfallId": "7bd03c80-7812-4704-9e07-9cf73b49c01f"
     },
     "Daze": {
-      "elo": 1479.8987347127843,
-      "pickCount": 97529,
-      "cubeCount": 32759,
+      "elo": 1466.8309764516484,
+      "pickCount": 97753,
+      "cubeCount": 32851,
       "scryfallId": "d03bff25-0d5e-4dcf-8d75-6df846afea3b"
     },
     "Flash": {
-      "elo": 1651.1967717224409,
-      "pickCount": 70099,
-      "cubeCount": 12539,
+      "elo": 1679.8501296369304,
+      "pickCount": 70221,
+      "cubeCount": 12588,
       "scryfallId": "63af3c26-5b1f-46f6-9aa2-036c615bf5ea"
     },
     "Lose Focus": {
-      "elo": 1500.399640969102,
-      "pickCount": 59577,
-      "cubeCount": 14865,
+      "elo": 1489.067701218383,
+      "pickCount": 59733,
+      "cubeCount": 14909,
       "scryfallId": "985bdb0c-ce6c-4506-8163-76f3b2fdf5fb"
     },
     "Mana Drain": {
-      "elo": 1825.0993135222805,
-      "pickCount": 88856,
-      "cubeCount": 27771,
+      "elo": 1828.8517690724068,
+      "pickCount": 88971,
+      "cubeCount": 27836,
       "scryfallId": "e691adef-3027-4e6a-889f-9f4e2df36a7c"
     },
     "Mana Leak": {
-      "elo": 1601.5365046160323,
-      "pickCount": 154523,
-      "cubeCount": 61333,
+      "elo": 1616.6011242630188,
+      "pickCount": 154745,
+      "cubeCount": 61496,
       "scryfallId": "abcaf16d-aa02-43e2-aa38-bb1835d47a05"
     },
     "Memory Lapse": {
-      "elo": 1577.4231751009218,
-      "pickCount": 101071,
-      "cubeCount": 32476,
+      "elo": 1548.751932828919,
+      "pickCount": 101244,
+      "cubeCount": 32567,
       "scryfallId": "6c8b5df3-6153-470e-be9c-f38d3cf66081"
     },
     "Miscalculation": {
-      "elo": 1531.1505991380282,
-      "pickCount": 113028,
-      "cubeCount": 35942,
+      "elo": 1538.7107331436,
+      "pickCount": 113242,
+      "cubeCount": 36025,
       "scryfallId": "b332dda4-04d4-43da-83d4-c50484bcdcff"
     },
     "Remand": {
-      "elo": 1623.5806563103165,
-      "pickCount": 133109,
-      "cubeCount": 44227,
+      "elo": 1583.2057192691684,
+      "pickCount": 133277,
+      "cubeCount": 44347,
       "scryfallId": "36de9999-8d0a-4174-8e38-549bacdc128b"
     },
     "Snap": {
-      "elo": 1419.19885358609,
-      "pickCount": 28601,
-      "cubeCount": 18893,
+      "elo": 1388.6653695583368,
+      "pickCount": 28679,
+      "cubeCount": 18952,
       "scryfallId": "f7e0549e-2d23-4ea8-b8d1-ae21af2c9091"
     },
     "Force of Negation": {
-      "elo": 1669.8741797255407,
-      "pickCount": 97722,
-      "cubeCount": 26026,
+      "elo": 1672.3032624091768,
+      "pickCount": 97892,
+      "cubeCount": 26093,
       "scryfallId": "1825a719-1b2a-4af9-9cd2-7cb497cd0317"
     },
     "Frantic Search": {
-      "elo": 1470.2702764726644,
-      "pickCount": 104313,
-      "cubeCount": 45562,
+      "elo": 1448.0923870140218,
+      "pickCount": 104510,
+      "cubeCount": 45708,
       "scryfallId": "1904db14-6df7-424f-afa5-e3dfab31300a"
     },
     "Force of Will": {
-      "elo": 1804.3513730553361,
-      "pickCount": 111893,
-      "cubeCount": 35223,
+      "elo": 1806.1258630434397,
+      "pickCount": 112049,
+      "cubeCount": 35321,
       "scryfallId": "9a879b60-4381-447d-8a5a-8e0b6a1d49ca"
     },
     "Mystic Confluence": {
-      "elo": 1549.5092104379733,
-      "pickCount": 104201,
-      "cubeCount": 30916,
+      "elo": 1536.8500446799103,
+      "pickCount": 104317,
+      "cubeCount": 30982,
       "scryfallId": "81bbffc2-6f58-4baa-8f95-168eab106b15"
     },
     "Gitaxian Probe": {
-      "elo": 1538.4250423072963,
-      "pickCount": 101864,
-      "cubeCount": 35347,
+      "elo": 1546.343610678455,
+      "pickCount": 102021,
+      "cubeCount": 35486,
       "scryfallId": "995486ce-58bb-4753-a812-0ca73ef1a235"
     },
     "Ponder": {
-      "elo": 1559.7470940381465,
-      "pickCount": 135328,
-      "cubeCount": 66361,
+      "elo": 1596.088969153539,
+      "pickCount": 135528,
+      "cubeCount": 66532,
       "scryfallId": "9cee2eb1-f60e-4626-ba4a-b543142ca950"
     },
     "Preordain": {
-      "elo": 1532.8182196680293,
-      "pickCount": 139746,
-      "cubeCount": 66026,
+      "elo": 1534.6148137995076,
+      "pickCount": 139921,
+      "cubeCount": 66210,
       "scryfallId": "32f90bd2-6d5c-444d-a1f6-653997f3a8a6"
     },
     "Time Walk": {
-      "elo": 2197.3646939933988,
-      "pickCount": 100372,
-      "cubeCount": 20662,
+      "elo": 2207.103052006675,
+      "pickCount": 100489,
+      "cubeCount": 20739,
       "scryfallId": "70901356-3266-4bd9-aacc-f06c27271de5"
     },
     "Show and Tell": {
-      "elo": 1433.5813193798062,
-      "pickCount": 73362,
-      "cubeCount": 22352,
+      "elo": 1465.3372245932762,
+      "pickCount": 73513,
+      "cubeCount": 22416,
       "scryfallId": "4b851c17-55ed-4671-b471-dc7b34944432"
     },
     "Stock Up": {
-      "elo": 1652.3181058946377,
-      "pickCount": 25301,
-      "cubeCount": 9129,
+      "elo": 1677.7524170178494,
+      "pickCount": 25449,
+      "cubeCount": 9247,
       "scryfallId": "0a786855-6eb4-42c0-a528-4842db46809d"
     },
     "Timetwister": {
-      "elo": 1752.4536346429013,
-      "pickCount": 71771,
-      "cubeCount": 21321,
+      "elo": 1759.014413416011,
+      "pickCount": 71859,
+      "cubeCount": 21384,
       "scryfallId": "fbee1e10-0b8c-44ea-b0e5-44cdd0bfcd76"
     },
     "Tinker": {
-      "elo": 1653.032806893474,
-      "pickCount": 94942,
-      "cubeCount": 28543,
+      "elo": 1648.933595135978,
+      "pickCount": 95086,
+      "cubeCount": 28615,
       "scryfallId": "0e1374a3-0465-4edb-b63e-22c8baaad864"
     },
     "Lórien Revealed": {
-      "elo": 1544.668552396568,
-      "pickCount": 58554,
-      "cubeCount": 22225,
+      "elo": 1524.2166615893173,
+      "pickCount": 58703,
+      "cubeCount": 22313,
       "scryfallId": "0ce44270-a684-4489-9077-521456e6dfaa"
     },
     "Echo of Eons": {
-      "elo": 1517.3737495526584,
-      "pickCount": 61881,
-      "cubeCount": 15539,
+      "elo": 1537.6217358265544,
+      "pickCount": 61975,
+      "cubeCount": 15583,
       "scryfallId": "ff590af2-2d6c-4f16-a9b8-1a6dab6e9ad5"
     },
     "Time Spiral": {
-      "elo": 1533.428291813482,
-      "pickCount": 68529,
-      "cubeCount": 18440,
+      "elo": 1565.979890372954,
+      "pickCount": 68602,
+      "cubeCount": 18480,
       "scryfallId": "f3d62dbd-63db-4ac9-950f-9852627f23f2"
     },
     "Upheaval": {
-      "elo": 1359.4984016366811,
-      "pickCount": 68038,
-      "cubeCount": 21843,
+      "elo": 1411.6445904450168,
+      "pickCount": 68151,
+      "cubeCount": 21881,
       "scryfallId": "befe74b1-c487-42bb-a1a1-4d13f3a86ff7"
     },
+    "Treachery": {
+      "elo": 1441.4537287157766,
+      "pickCount": 48681,
+      "cubeCount": 15388,
+      "scryfallId": "613694aa-b169-400d-8063-2b83d8303611"
+    },
     "Dark Confidant": {
-      "elo": 1388.827358205251,
-      "pickCount": 105697,
-      "cubeCount": 40388,
+      "elo": 1379.9350638622136,
+      "pickCount": 105839,
+      "cubeCount": 40483,
       "scryfallId": "94f7a441-bf2d-46fb-a7b6-9bd6137f86d9"
     },
     "Dauthi Voidwalker": {
-      "elo": 1419.019848031,
-      "pickCount": 81245,
-      "cubeCount": 22884,
+      "elo": 1378.4775278763414,
+      "pickCount": 81315,
+      "cubeCount": 22936,
       "scryfallId": "ffc49988-f7ec-4fea-8585-d2a59a3b5891"
     },
     "Deep-Cavern Bat": {
-      "elo": 1483.4290642732549,
-      "pickCount": 69733,
-      "cubeCount": 17971,
+      "elo": 1468.8601359440388,
+      "pickCount": 69840,
+      "cubeCount": 18059,
       "scryfallId": "69c68c95-b788-43b1-9f22-1b22c5a00b25"
     },
     "Emperor of Bones": {
-      "elo": 1466.9906969020624,
-      "pickCount": 61987,
-      "cubeCount": 10356,
+      "elo": 1458.1172811808779,
+      "pickCount": 62104,
+      "cubeCount": 10417,
       "scryfallId": "df9d9075-2d1e-4848-b661-816d539e05eb"
     },
     "Orcish Bowmasters": {
-      "elo": 1837.5903254704467,
-      "pickCount": 72060,
-      "cubeCount": 17669,
+      "elo": 1826.363827893517,
+      "pickCount": 72148,
+      "cubeCount": 17738,
       "scryfallId": "7c024bae-5631-4e20-ac69-df392ac9e109"
     },
     "Barrowgoyf": {
-      "elo": 1540.3643481000859,
-      "pickCount": 62322,
-      "cubeCount": 8821,
+      "elo": 1506.040229383195,
+      "pickCount": 62446,
+      "cubeCount": 8870,
       "scryfallId": "cea3b218-0e6e-443a-84f7-380f1021e8e1"
     },
     "Grief": {
-      "elo": 1526.8375193429397,
-      "pickCount": 84992,
-      "cubeCount": 21060,
+      "elo": 1519.6942196317843,
+      "pickCount": 85068,
+      "cubeCount": 21129,
       "scryfallId": "e6befbc4-1320-4f26-bd9f-b1814fedda10"
     },
     "Sheoldred, the Apocalypse": {
-      "elo": 1724.4880890757088,
-      "pickCount": 58448,
-      "cubeCount": 19525,
+      "elo": 1712.9684199255398,
+      "pickCount": 58533,
+      "cubeCount": 19581,
       "scryfallId": "11a1cfc1-0bfc-40e8-b57f-f267bf9b6542"
     },
     "Metamorphosis Fanatic": {
-      "elo": 1363.9531069411557,
-      "pickCount": 21188,
-      "cubeCount": 5121,
+      "elo": 1398.1690791601843,
+      "pickCount": 21250,
+      "cubeCount": 5151,
       "scryfallId": "16448d95-ee21-4def-b880-26f6f159c213"
     },
     "Troll of Khazad-dûm": {
-      "elo": 1480.4182118103647,
-      "pickCount": 65399,
-      "cubeCount": 21369,
+      "elo": 1475.3793975147353,
+      "pickCount": 65514,
+      "cubeCount": 21458,
       "scryfallId": "a6539e26-b63b-4725-9407-caaf451de084"
     },
     "Archon of Cruelty": {
-      "elo": 1546.5001616945256,
-      "pickCount": 98385,
-      "cubeCount": 21327,
+      "elo": 1546.3185545178567,
+      "pickCount": 98482,
+      "cubeCount": 21388,
       "scryfallId": "78f5933b-4901-45fd-ae3f-aeae3bdf200b"
     },
     "Griselbrand": {
-      "elo": 1503.7902054739225,
-      "pickCount": 96552,
-      "cubeCount": 30525,
+      "elo": 1496.2062242274246,
+      "pickCount": 96662,
+      "cubeCount": 30598,
       "scryfallId": "b51666ae-2aef-4cb1-9cd4-44aec81530f8"
     },
     "Liliana of the Veil": {
-      "elo": 1439.6385111926227,
-      "pickCount": 104480,
-      "cubeCount": 37573,
+      "elo": 1453.2498685741336,
+      "pickCount": 104626,
+      "cubeCount": 37667,
       "scryfallId": "7125336c-4c2d-47a0-8caf-b755f4954176"
     },
     "Dark Ritual": {
-      "elo": 1504.7319372514698,
-      "pickCount": 104971,
-      "cubeCount": 49948,
+      "elo": 1501.9205664003562,
+      "pickCount": 105107,
+      "cubeCount": 50084,
       "scryfallId": "bf4708e8-2149-4990-987c-2ea55fc6c508"
     },
     "Entomb": {
-      "elo": 1500.5605742839111,
-      "pickCount": 95924,
-      "cubeCount": 32501,
+      "elo": 1505.3003262495927,
+      "pickCount": 96023,
+      "cubeCount": 32581,
       "scryfallId": "f60a2091-fb97-4f04-911b-fce9b6351044"
     },
     "Fatal Push": {
-      "elo": 1462.8422939417803,
-      "pickCount": 131751,
-      "cubeCount": 47518,
+      "elo": 1485.3994786878407,
+      "pickCount": 131940,
+      "cubeCount": 47648,
       "scryfallId": "387c9f62-6a93-4c88-bdaf-205717d91216"
     },
     "Vampiric Tutor": {
-      "elo": 1656.959934066189,
-      "pickCount": 90917,
-      "cubeCount": 29001,
+      "elo": 1633.3366353348238,
+      "pickCount": 91017,
+      "cubeCount": 29086,
       "scryfallId": "0a07cba3-2e8d-48ec-a6f8-4d2edfcd833d"
     },
     "Bitter Triumph": {
-      "elo": 1486.1694652339697,
-      "pickCount": 57462,
-      "cubeCount": 20690,
+      "elo": 1440.1784937836735,
+      "pickCount": 57645,
+      "cubeCount": 20817,
       "scryfallId": "05bdd22c-3e11-4c29-bdfa-d3dfc0e90a9f"
     },
     "Cabal Ritual": {
-      "elo": 1330.5261673488694,
-      "pickCount": 47557,
-      "cubeCount": 17322,
+      "elo": 1302.9981167074368,
+      "pickCount": 47627,
+      "cubeCount": 17375,
       "scryfallId": "5403b49d-03a7-4cc3-af3c-df098c1c9c2e"
     },
     "Shallow Grave": {
-      "elo": 1367.3427884399944,
-      "pickCount": 48987,
-      "cubeCount": 11219,
+      "elo": 1380.668398395047,
+      "pickCount": 49051,
+      "cubeCount": 11249,
       "scryfallId": "d5c782cc-c951-4c6f-a93f-774ae6c1c214"
     },
     "Sheoldred's Edict": {
-      "elo": 1404.111570887927,
-      "pickCount": 52574,
-      "cubeCount": 17602,
+      "elo": 1424.0205998284907,
+      "pickCount": 52700,
+      "cubeCount": 17679,
       "scryfallId": "a9225cc3-90f0-448f-a8d9-7c6c2796d077"
     },
     "Dismember": {
-      "elo": 1621.6148966194894,
-      "pickCount": 157396,
-      "cubeCount": 42567,
+      "elo": 1618.6938774099192,
+      "pickCount": 157613,
+      "cubeCount": 42710,
       "scryfallId": "4ccd8394-cbc9-4346-9b48-f6be447b3e08"
     },
     "Snuff Out": {
-      "elo": 1523.8322331526365,
-      "pickCount": 88592,
-      "cubeCount": 25925,
+      "elo": 1533.3164021063913,
+      "pickCount": 88753,
+      "cubeCount": 25999,
       "scryfallId": "18a3cca1-e50e-49b6-9e1a-f86640e3b177"
     },
     "Bone Shards": {
-      "elo": 1369.0123622693536,
-      "pickCount": 94277,
-      "cubeCount": 29534,
+      "elo": 1331.8696949513403,
+      "pickCount": 94437,
+      "cubeCount": 29620,
       "scryfallId": "1ee98955-4c47-4d45-9377-608dfa755337"
     },
     "Duress": {
-      "elo": 1449.9442414959965,
-      "pickCount": 149605,
-      "cubeCount": 59497,
+      "elo": 1465.7534822281484,
+      "pickCount": 149825,
+      "cubeCount": 59675,
       "scryfallId": "ca367f49-0f4a-4b7f-8104-851893fbcd8a"
     },
     "Imperial Seal": {
-      "elo": 1485.4772991528548,
-      "pickCount": 51156,
-      "cubeCount": 14312,
+      "elo": 1466.2652500472059,
+      "pickCount": 51224,
+      "cubeCount": 14342,
       "scryfallId": "e71a6bd3-7478-4c3a-8ae0-98352ce28492"
     },
     "Inquisition of Kozilek": {
-      "elo": 1492.3518878364307,
-      "pickCount": 136452,
-      "cubeCount": 43126,
+      "elo": 1529.2797269190198,
+      "pickCount": 136612,
+      "cubeCount": 43239,
       "scryfallId": "599cf02f-47a1-47b4-b67e-8f27fa65c151"
     },
     "Mind Twist": {
-      "elo": 1566.177775205213,
-      "pickCount": 55415,
-      "cubeCount": 19465,
+      "elo": 1500.124112224241,
+      "pickCount": 55456,
+      "cubeCount": 19518,
       "scryfallId": "bbb6765c-a052-46dc-a589-200b8ba8c99f"
     },
     "Reanimate": {
-      "elo": 1673.2259984211294,
-      "pickCount": 134488,
-      "cubeCount": 49905,
+      "elo": 1643.6342046507182,
+      "pickCount": 134654,
+      "cubeCount": 50020,
       "scryfallId": "ae1ef31c-8ca5-444c-8f39-e1d1827318f5"
     },
     "Thoughtseize": {
-      "elo": 1702.526362035786,
-      "pickCount": 143552,
-      "cubeCount": 47791,
+      "elo": 1718.8495072467417,
+      "pickCount": 143725,
+      "cubeCount": 47939,
       "scryfallId": "3df8c148-e87d-4043-9d8b-ec72bf8b6d5d"
     },
     "Collective Brutality": {
-      "elo": 1377.4640633658219,
-      "pickCount": 107975,
-      "cubeCount": 31387,
+      "elo": 1355.8645661808096,
+      "pickCount": 108117,
+      "cubeCount": 31473,
       "scryfallId": "cb94a02f-4660-45b6-8a39-941b710cf8f3"
     },
     "Demonic Tutor": {
-      "elo": 1780.6062207109965,
-      "pickCount": 105949,
-      "cubeCount": 36705,
+      "elo": 1785.8257476326885,
+      "pickCount": 106066,
+      "cubeCount": 36781,
       "scryfallId": "881e5922-b464-4a1a-b074-664bd6c0a7f6"
     },
     "Exhume": {
-      "elo": 1373.5103341976992,
-      "pickCount": 91033,
-      "cubeCount": 32632,
+      "elo": 1330.4658620394132,
+      "pickCount": 91141,
+      "cubeCount": 32695,
       "scryfallId": "a88b23ce-ce19-47da-b9f2-055a4d6bdc79"
     },
     "Hymn to Tourach": {
-      "elo": 1411.2699383230806,
-      "pickCount": 96556,
-      "cubeCount": 33841,
+      "elo": 1430.0968178260514,
+      "pickCount": 96656,
+      "cubeCount": 33900,
       "scryfallId": "eb9273ea-9a41-42e3-8c9c-0d50b127a818"
     },
     "Night's Whisper": {
-      "elo": 1360.5703501667556,
-      "pickCount": 100978,
-      "cubeCount": 38365,
+      "elo": 1332.805574774117,
+      "pickCount": 101116,
+      "cubeCount": 38460,
       "scryfallId": "930186b0-ac25-4ad1-9a5c-4051fa04700b"
     },
     "Doomsday": {
-      "elo": 1325.5554315046752,
-      "pickCount": 28965,
-      "cubeCount": 8138,
+      "elo": 1315.6729556123416,
+      "pickCount": 29038,
+      "cubeCount": 8168,
       "scryfallId": "5b3c6d87-9383-450b-bba5-33435b6b0d08"
     },
     "Toxic Deluge": {
-      "elo": 1458.1104320091652,
-      "pickCount": 103621,
-      "cubeCount": 34065,
+      "elo": 1453.853797371361,
+      "pickCount": 103748,
+      "cubeCount": 34143,
       "scryfallId": "5aa02b7d-db31-4924-b75e-eb02f332ca3a"
     },
     "Yawgmoth's Will": {
-      "elo": 1416.536818565917,
-      "pickCount": 56410,
-      "cubeCount": 19094,
+      "elo": 1398.9422271792596,
+      "pickCount": 56504,
+      "cubeCount": 19139,
       "scryfallId": "6d3e3c3a-d351-4d91-8884-312d4b6f540d"
     },
     "Damnation": {
-      "elo": 1345.6070032603598,
-      "pickCount": 82441,
-      "cubeCount": 32616,
+      "elo": 1304.5899532185679,
+      "pickCount": 82517,
+      "cubeCount": 32683,
       "scryfallId": "26c68473-70ca-40ba-b5c6-71ec30f88a2c"
     },
     "Bolas's Citadel": {
-      "elo": 1368.010988296309,
-      "pickCount": 70539,
-      "cubeCount": 26465,
+      "elo": 1327.7555712867734,
+      "pickCount": 70642,
+      "cubeCount": 26526,
       "scryfallId": "cb51c4f3-b1c8-4741-98a9-0fb8d39267f3"
     },
     "Animate Dead": {
-      "elo": 1556.096563416466,
-      "pickCount": 137510,
-      "cubeCount": 47668,
+      "elo": 1568.0838707392395,
+      "pickCount": 137669,
+      "cubeCount": 47786,
       "scryfallId": "cc1dc456-1f64-4f24-a646-84c57e641b3b"
     },
     "Necromancy": {
-      "elo": 1474.6298865128795,
-      "pickCount": 95695,
-      "cubeCount": 26363,
+      "elo": 1465.1178172416828,
+      "pickCount": 95824,
+      "cubeCount": 26423,
       "scryfallId": "311a6257-dd77-4bb6-81cb-c8e7862350f3"
     },
     "Recurring Nightmare": {
-      "elo": 1452.5508164808223,
-      "pickCount": 82596,
-      "cubeCount": 24591,
+      "elo": 1460.9292939929724,
+      "pickCount": 82727,
+      "cubeCount": 24641,
       "scryfallId": "c8173030-1c33-417c-b8e9-79231b6a85a7"
     },
     "Dragon's Rage Channeler": {
-      "elo": 1344.844311376299,
-      "pickCount": 116598,
-      "cubeCount": 39556,
+      "elo": 1409.4882639886414,
+      "pickCount": 116814,
+      "cubeCount": 39673,
       "scryfallId": "4ced112a-e775-4f97-97b3-74877e9dce12"
     },
     "Goblin Welder": {
-      "elo": 1366.2282636144437,
-      "pickCount": 57622,
-      "cubeCount": 24570,
+      "elo": 1356.2245199957747,
+      "pickCount": 57747,
+      "cubeCount": 24620,
       "scryfallId": "6171e136-1167-4329-acb2-6853d3a814e5"
     },
     "Orcish Lumberjack": {
-      "elo": 1288.0730917870837,
-      "pickCount": 38182,
-      "cubeCount": 12553,
+      "elo": 1329.6788313253448,
+      "pickCount": 38328,
+      "cubeCount": 12613,
       "scryfallId": "21ef13e3-658c-43a3-a290-4c5dde8e8b55"
     },
     "Ragavan, Nimble Pilferer": {
-      "elo": 1778.2467111957963,
-      "pickCount": 124852,
-      "cubeCount": 29845,
+      "elo": 1779.170831844297,
+      "pickCount": 124971,
+      "cubeCount": 29934,
       "scryfallId": "a9738cda-adb1-47fb-9f4c-ecd930228c4d"
     },
     "Embereth Shieldbreaker": {
-      "elo": 1250.2130852704363,
-      "pickCount": 78420,
-      "cubeCount": 22542,
+      "elo": 1242.6970345984987,
+      "pickCount": 78507,
+      "cubeCount": 22590,
       "scryfallId": "6cc73d16-5ed7-4104-91f6-0997a2080e2e"
     },
     "Fear of Missing Out": {
-      "elo": 1446.8611227488645,
-      "pickCount": 39009,
-      "cubeCount": 11105,
+      "elo": 1394.6015066681323,
+      "pickCount": 39122,
+      "cubeCount": 11191,
       "scryfallId": "9d48aaff-46ab-411b-9456-171d4709f951"
     },
     "Goblin Engineer": {
-      "elo": 1320.7755499936877,
-      "pickCount": 34153,
-      "cubeCount": 16436,
+      "elo": 1312.2066116959554,
+      "pickCount": 34223,
+      "cubeCount": 16478,
       "scryfallId": "a55c4d47-5252-40af-961d-c08bc688028a"
     },
     "Inti, Seneschal of the Sun": {
-      "elo": 1502.7620888313477,
-      "pickCount": 76180,
-      "cubeCount": 18261,
+      "elo": 1509.7329881477324,
+      "pickCount": 76304,
+      "cubeCount": 18345,
       "scryfallId": "b4d62b4b-a7d1-4721-91cf-814fc1a60243"
     },
     "Robber of the Rich": {
-      "elo": 1300.1635241567806,
-      "pickCount": 68443,
-      "cubeCount": 18649,
+      "elo": 1325.7441579715164,
+      "pickCount": 68513,
+      "cubeCount": 18697,
       "scryfallId": "0ecbe097-ba51-42e5-957c-382eb66c08f0"
     },
     "Bonecrusher Giant": {
-      "elo": 1424.9412956610252,
-      "pickCount": 121378,
-      "cubeCount": 39937,
+      "elo": 1407.311647463566,
+      "pickCount": 121473,
+      "cubeCount": 40024,
       "scryfallId": "09fd2d9c-1793-4beb-a3fb-7a869f660cd4"
     },
     "Broadside Bombardiers": {
-      "elo": 1756.9261523483779,
-      "pickCount": 76698,
-      "cubeCount": 10896,
+      "elo": 1744.5360474224283,
+      "pickCount": 76790,
+      "cubeCount": 10958,
       "scryfallId": "9721f8da-39ed-4ada-a571-61e08a86032b"
     },
     "Goblin Rabblemaster": {
-      "elo": 1395.6466987168874,
-      "pickCount": 92096,
-      "cubeCount": 31840,
+      "elo": 1403.9322188567548,
+      "pickCount": 92193,
+      "cubeCount": 31911,
       "scryfallId": "9962cf82-a8ed-4984-adeb-b08b7c54751b"
     },
     "Gut, True Soul Zealot": {
-      "elo": 1573.585038602796,
-      "pickCount": 76918,
-      "cubeCount": 14925,
+      "elo": 1611.4237418180985,
+      "pickCount": 77027,
+      "cubeCount": 14976,
       "scryfallId": "3d8ca18d-9099-4f1e-95c1-f04da58a26bd"
     },
     "Imperial Recruiter": {
-      "elo": 1309.4959425762056,
-      "pickCount": 44799,
-      "cubeCount": 20627,
+      "elo": 1330.3881557955106,
+      "pickCount": 44842,
+      "cubeCount": 20661,
       "scryfallId": "1c473253-3992-4cc1-8b46-5d1da308c537"
     },
     "Laelia, the Blade Reforged": {
-      "elo": 1521.872904796298,
-      "pickCount": 88980,
-      "cubeCount": 23992,
+      "elo": 1526.0589745280704,
+      "pickCount": 89063,
+      "cubeCount": 24055,
       "scryfallId": "afeb2fe4-f0ef-4366-a568-c36b538f0196"
     },
     "Seasoned Pyromancer": {
-      "elo": 1355.947403599391,
-      "pickCount": 104275,
-      "cubeCount": 28896,
+      "elo": 1370.0579307716446,
+      "pickCount": 104392,
+      "cubeCount": 28973,
       "scryfallId": "2e139ad1-1079-49e9-babd-6399c44ad333"
     },
     "Caves of Chaos Adventurer": {
-      "elo": 1617.4093597928158,
-      "pickCount": 23911,
-      "cubeCount": 6256,
+      "elo": 1633.4856011350994,
+      "pickCount": 23936,
+      "cubeCount": 6273,
       "scryfallId": "09abb6df-2aa1-4999-b550-db2892faa8c7"
     },
     "Headliner Scarlett": {
-      "elo": 1439.7727306938082,
-      "pickCount": 63238,
-      "cubeCount": 6575,
+      "elo": 1460.4065561643588,
+      "pickCount": 63314,
+      "cubeCount": 6608,
       "scryfallId": "be77b98a-dd79-477c-8ab2-7ebf5637a89e"
     },
     "Pyrogoyf": {
-      "elo": 1681.42969420045,
-      "pickCount": 73200,
-      "cubeCount": 8794,
+      "elo": 1652.2523299882062,
+      "pickCount": 73325,
+      "cubeCount": 8859,
       "scryfallId": "fa87bf1e-2062-4983-b1c4-98bffea69a4c"
     },
     "Fury": {
-      "elo": 1639.5354292501315,
-      "pickCount": 95229,
-      "cubeCount": 22299,
+      "elo": 1643.85149012956,
+      "pickCount": 95335,
+      "cubeCount": 22375,
       "scryfallId": "bd281158-8180-40b9-a5b7-03cfc712d81a"
     },
     "Inferno Titan": {
-      "elo": 1281.2191355277726,
-      "pickCount": 73149,
-      "cubeCount": 30529,
+      "elo": 1292.77787563098,
+      "pickCount": 73216,
+      "cubeCount": 30590,
       "scryfallId": "5b99f2f2-7000-401a-9201-b604238baf7a"
     },
     "Oliphaunt": {
-      "elo": 1382.2922936179841,
-      "pickCount": 54811,
-      "cubeCount": 18379,
+      "elo": 1381.3188678766876,
+      "pickCount": 54930,
+      "cubeCount": 18453,
       "scryfallId": "6989018c-37b1-4282-a4af-9cc97f160b4d"
     },
     "Chandra, Torch of Defiance": {
-      "elo": 1383.6019425059997,
-      "pickCount": 107365,
-      "cubeCount": 36406,
+      "elo": 1404.7976664345665,
+      "pickCount": 107516,
+      "cubeCount": 36490,
       "scryfallId": "ff8086cd-b868-4f4e-823e-2635ad7ebc07"
     },
     "Burst Lightning": {
-      "elo": 1445.3803537965487,
-      "pickCount": 133805,
-      "cubeCount": 43282,
+      "elo": 1444.0699671710183,
+      "pickCount": 134019,
+      "cubeCount": 43417,
       "scryfallId": "aec5d380-d354-4750-931a-6c91853e2edc"
     },
     "Galvanic Discharge": {
-      "elo": 1464.0714369764444,
-      "pickCount": 35711,
-      "cubeCount": 7755,
+      "elo": 1443.9542992058498,
+      "pickCount": 35804,
+      "cubeCount": 7792,
       "scryfallId": "32aa6e33-221f-414c-9b51-850d97a7e051"
     },
     "Lightning Bolt": {
-      "elo": 1703.0587919809652,
-      "pickCount": 208681,
-      "cubeCount": 96120,
+      "elo": 1689.1557778838012,
+      "pickCount": 208968,
+      "cubeCount": 96372,
       "scryfallId": "cb9b9a9d-ae4c-4e04-bf9d-cae48f01292c"
     },
     "Unholy Heat": {
-      "elo": 1421.2364803935607,
-      "pickCount": 72960,
-      "cubeCount": 26072,
+      "elo": 1402.3504563750266,
+      "pickCount": 73114,
+      "cubeCount": 26157,
       "scryfallId": "4e879386-b1f8-4f2a-9820-6e1291746f88"
     },
     "Abrade": {
-      "elo": 1400.3806254964622,
-      "pickCount": 179938,
-      "cubeCount": 76732,
+      "elo": 1425.7917100946024,
+      "pickCount": 180244,
+      "cubeCount": 76949,
       "scryfallId": "47f39b5e-2e85-4f31-bbab-0b0bf58f701d"
     },
     "Incinerate": {
-      "elo": 1438.595138564251,
-      "pickCount": 82622,
-      "cubeCount": 30438,
+      "elo": 1439.8627866132283,
+      "pickCount": 82707,
+      "cubeCount": 30506,
       "scryfallId": "409b2be8-5bb6-45e0-ab87-ca73b4e3a396"
     },
     "Seething Song": {
-      "elo": 1300.2690499364899,
-      "pickCount": 51376,
-      "cubeCount": 20458,
+      "elo": 1324.601786453473,
+      "pickCount": 51456,
+      "cubeCount": 20528,
       "scryfallId": "9213d580-7953-455f-abbe-99d3db2705cf"
     },
     "Through the Breach": {
-      "elo": 1382.4057602899254,
-      "pickCount": 77635,
-      "cubeCount": 20009,
+      "elo": 1356.3301734575782,
+      "pickCount": 77736,
+      "cubeCount": 20063,
       "scryfallId": "6da09e6a-2965-4855-bd41-41b41ba188fb"
     },
     "Fireblast": {
-      "elo": 1240.4692162430647,
-      "pickCount": 82963,
-      "cubeCount": 28923,
+      "elo": 1261.8268087647552,
+      "pickCount": 83102,
+      "cubeCount": 28972,
       "scryfallId": "ff45073c-5ac1-4295-833e-58b253319c9b"
     },
     "Pyrokinesis": {
-      "elo": 1412.4362761030036,
-      "pickCount": 45627,
-      "cubeCount": 11290,
+      "elo": 1388.870196321114,
+      "pickCount": 45754,
+      "cubeCount": 11334,
       "scryfallId": "db2a5e85-6cbc-43c1-9362-4056ad017ef0"
     },
     "Chain Lightning": {
-      "elo": 1498.6365963038875,
-      "pickCount": 135641,
-      "cubeCount": 45351,
+      "elo": 1499.062768992415,
+      "pickCount": 135792,
+      "cubeCount": 45446,
       "scryfallId": "b5883762-ca0a-4932-8d2a-41a45796a5f8"
     },
     "Faithless Looting": {
-      "elo": 1405.4952179550373,
-      "pickCount": 170510,
-      "cubeCount": 81130,
+      "elo": 1373.8125019509996,
+      "pickCount": 170795,
+      "cubeCount": 81338,
       "scryfallId": "dea670cd-68aa-426b-a617-387398a687a5"
     },
     "Firebolt": {
-      "elo": 1351.975016436548,
-      "pickCount": 121076,
-      "cubeCount": 41129,
+      "elo": 1355.9215845457636,
+      "pickCount": 121266,
+      "cubeCount": 41225,
       "scryfallId": "d5e45005-dd81-4d80-b043-02f719aca929"
     },
     "Flame Slash": {
-      "elo": 1496.2985583821,
-      "pickCount": 82724,
-      "cubeCount": 28597,
+      "elo": 1464.14764084713,
+      "pickCount": 82888,
+      "cubeCount": 28685,
       "scryfallId": "006d2bf1-20f7-4b09-8d98-8233d91682bd"
     },
     "Wheel of Fortune": {
-      "elo": 1638.9407625313477,
-      "pickCount": 89195,
-      "cubeCount": 28343,
+      "elo": 1650.2953816085737,
+      "pickCount": 89295,
+      "cubeCount": 28417,
       "scryfallId": "c14c07d4-6971-483a-add1-f3cdf18feae9"
     },
     "Fiery Confluence": {
-      "elo": 1490.8190536711465,
-      "pickCount": 108457,
-      "cubeCount": 26343,
+      "elo": 1462.4338653973064,
+      "pickCount": 108566,
+      "cubeCount": 26414,
       "scryfallId": "acfa3365-fcc7-4cd0-a144-509cad664f20"
     },
     "Cori-Steel Cutter": {
-      "elo": 1567.52812188734,
-      "pickCount": 22480,
-      "cubeCount": 8978,
+      "elo": 1582.5942852851288,
+      "pickCount": 22632,
+      "cubeCount": 9045,
       "scryfallId": "490eb213-9ae2-4b45-abec-6f1dfc83792a"
     },
     "Underworld Breach": {
-      "elo": 1576.3366115068402,
-      "pickCount": 70480,
-      "cubeCount": 22252,
+      "elo": 1552.6867621699942,
+      "pickCount": 70613,
+      "cubeCount": 22328,
       "scryfallId": "0e51d796-7279-4c06-87f0-37adbdaa41df"
     },
     "Sneak Attack": {
-      "elo": 1529.7703064593697,
-      "pickCount": 96918,
-      "cubeCount": 30165,
+      "elo": 1511.102054123182,
+      "pickCount": 97055,
+      "cubeCount": 30230,
       "scryfallId": "d07dc95d-82a8-4a58-8ea2-d4513bd7316d"
     },
     "Arbor Elf": {
-      "elo": 1399.2657244292398,
-      "pickCount": 80371,
-      "cubeCount": 36665,
+      "elo": 1399.4913673247484,
+      "pickCount": 80504,
+      "cubeCount": 36739,
       "scryfallId": "6d32a4ed-6b43-4473-91ec-08cd5414f2f0"
     },
     "Birds of Paradise": {
-      "elo": 1586.845030083316,
-      "pickCount": 136877,
-      "cubeCount": 63621,
+      "elo": 1591.2176989728653,
+      "pickCount": 137111,
+      "cubeCount": 63793,
       "scryfallId": "82ef6d6c-db50-4d24-8ebd-311613ddef06"
     },
     "Delighted Halfling": {
-      "elo": 1492.005181681007,
-      "pickCount": 44884,
-      "cubeCount": 14402,
+      "elo": 1464.2798593338607,
+      "pickCount": 44990,
+      "cubeCount": 14453,
       "scryfallId": "71384418-173a-4f77-adab-56e52fa23692"
     },
     "Elvish Mystic": {
-      "elo": 1449.653388162997,
-      "pickCount": 110590,
-      "cubeCount": 55321,
+      "elo": 1426.9143865305684,
+      "pickCount": 110797,
+      "cubeCount": 55461,
       "scryfallId": "75918859-c93f-41b4-9ad0-a4a96c389f0d"
     },
     "Hexdrinker": {
-      "elo": 1480.0415777842347,
-      "pickCount": 82133,
-      "cubeCount": 21539,
+      "elo": 1469.7269473298827,
+      "pickCount": 82284,
+      "cubeCount": 21582,
       "scryfallId": "89f5cc05-5d9d-4709-b3c5-a6249c294acc"
     },
     "Ignoble Hierarch": {
-      "elo": 1503.1894165524557,
-      "pickCount": 119129,
-      "cubeCount": 30646,
+      "elo": 1491.1774085943619,
+      "pickCount": 119315,
+      "cubeCount": 30728,
       "scryfallId": "fc415011-9a26-4afc-9dda-11533a50ba96"
     },
     "Llanowar Elves": {
-      "elo": 1469.6397070592889,
-      "pickCount": 153772,
-      "cubeCount": 83154,
+      "elo": 1455.5652307975665,
+      "pickCount": 154056,
+      "cubeCount": 83362,
       "scryfallId": "6a0b230b-d391-4998-a3f7-7b158a0ec2cd"
     },
     "Noble Hierarch": {
-      "elo": 1548.1525640386624,
-      "pickCount": 112005,
-      "cubeCount": 36907,
+      "elo": 1534.3603300143825,
+      "pickCount": 112185,
+      "cubeCount": 36993,
       "scryfallId": "db9a7f12-0839-49cd-bf2e-0aac68859038"
     },
     "Badgermole Cub": {
-      "elo": 1448.9697871049889,
-      "pickCount": 18420,
-      "cubeCount": 3724,
+      "elo": 1490.993002191672,
+      "pickCount": 18548,
+      "cubeCount": 3781,
       "scryfallId": "340c5799-4964-44dd-8c48-8f3f3aba5211"
     },
     "Bristly Bill, Spine Sower": {
-      "elo": 1487.6537865897205,
-      "pickCount": 60450,
-      "cubeCount": 11678,
+      "elo": 1512.0753079539659,
+      "pickCount": 60628,
+      "cubeCount": 11728,
       "scryfallId": "26df2161-e168-4ea4-8848-fae9cebf160c"
     },
     "Lotus Cobra": {
-      "elo": 1404.5178601896796,
-      "pickCount": 89655,
-      "cubeCount": 36076,
+      "elo": 1449.340125819928,
+      "pickCount": 89797,
+      "cubeCount": 36148,
       "scryfallId": "9c3f861f-0f46-4360-970e-a5cfc5ef194b"
     },
     "Rofellos, Llanowar Emissary": {
-      "elo": 1385.4006631832046,
-      "pickCount": 56129,
-      "cubeCount": 17749,
+      "elo": 1335.341591122372,
+      "pickCount": 56193,
+      "cubeCount": 17780,
       "scryfallId": "6aa5cc65-f8f1-4f6f-8b4e-2fedccbda684"
     },
     "Scavenging Ooze": {
-      "elo": 1299.3466521317634,
-      "pickCount": 109235,
-      "cubeCount": 48133,
+      "elo": 1293.2341158435775,
+      "pickCount": 109440,
+      "cubeCount": 48226,
       "scryfallId": "398ebc01-19db-4418-abda-cc401539db93"
     },
     "Scythecat Cub": {
-      "elo": 1502.7406907968527,
-      "pickCount": 19840,
-      "cubeCount": 6044,
+      "elo": 1471.003767968935,
+      "pickCount": 19944,
+      "cubeCount": 6088,
       "scryfallId": "b3dd3c7d-4685-4579-b483-14ddaaaddf5b"
     },
     "Springheart Nantuko": {
-      "elo": 1435.5602189091026,
-      "pickCount": 53019,
-      "cubeCount": 11008,
+      "elo": 1436.132080500736,
+      "pickCount": 53162,
+      "cubeCount": 11067,
       "scryfallId": "54a3ea87-005e-4985-b2a5-21711d0b71c0"
     },
     "Endurance": {
-      "elo": 1262.3016709575995,
-      "pickCount": 58475,
-      "cubeCount": 18868,
+      "elo": 1297.9380397552131,
+      "pickCount": 58662,
+      "cubeCount": 18934,
       "scryfallId": "eb0e0404-4846-4891-acfa-bd0951ecf9c6"
     },
     "Eternal Witness": {
-      "elo": 1361.9314044244497,
-      "pickCount": 143424,
-      "cubeCount": 62215,
+      "elo": 1376.1941390860493,
+      "pickCount": 143674,
+      "cubeCount": 62357,
       "scryfallId": "c7e10ca7-1e5d-4224-82cf-798a4d436d72"
     },
     "Ramunap Excavator": {
-      "elo": 1386.6673440958898,
-      "pickCount": 85040,
-      "cubeCount": 29964,
+      "elo": 1413.7632664792268,
+      "pickCount": 85145,
+      "cubeCount": 30015,
       "scryfallId": "7e098506-b69d-4ab0-8ee9-af0d8c7efb8d"
     },
     "Sentinel of the Nameless City": {
-      "elo": 1340.9451698687928,
-      "pickCount": 36253,
-      "cubeCount": 11773,
+      "elo": 1330.1881449314644,
+      "pickCount": 36389,
+      "cubeCount": 11814,
       "scryfallId": "e76b6e66-c88b-452d-930d-f8f260ba7872"
     },
     "Six": {
-      "elo": 1436.5716644758304,
-      "pickCount": 59444,
-      "cubeCount": 13059,
+      "elo": 1360.0802181936374,
+      "pickCount": 59574,
+      "cubeCount": 13113,
       "scryfallId": "de4ff685-8694-4939-8f92-d91bb7ae5b76"
     },
     "Tireless Tracker": {
-      "elo": 1377.447754017144,
-      "pickCount": 117330,
-      "cubeCount": 32792,
+      "elo": 1399.1745648155907,
+      "pickCount": 117516,
+      "cubeCount": 32897,
       "scryfallId": "66660f7c-9e1c-4e88-856a-98fab1f1364d"
     },
     "Icetill Explorer": {
-      "elo": 1384.3285584933817,
-      "pickCount": 26236,
-      "cubeCount": 6564,
+      "elo": 1503.951529337358,
+      "pickCount": 26421,
+      "cubeCount": 6638,
       "scryfallId": "d9482aab-6ddf-48e1-84fa-b13d5ff81e69"
     },
     "Questing Beast": {
-      "elo": 1307.1347204404876,
-      "pickCount": 91699,
-      "cubeCount": 26955,
+      "elo": 1323.787816179489,
+      "pickCount": 91860,
+      "cubeCount": 27026,
       "scryfallId": "f22676dc-9c00-4fe6-aa39-1fd801ad7102"
     },
     "Undermountain Adventurer": {
-      "elo": 1550.1683523323236,
-      "pickCount": 21214,
-      "cubeCount": 5980,
+      "elo": 1570.3711832677677,
+      "pickCount": 21250,
+      "cubeCount": 5998,
       "scryfallId": "541f53a3-521f-4463-a0b6-758a45d8f661"
     },
     "Titania, Protector of Argoth": {
-      "elo": 1450.9618032950552,
-      "pickCount": 73280,
-      "cubeCount": 20402,
+      "elo": 1488.617498302221,
+      "pickCount": 73478,
+      "cubeCount": 20467,
       "scryfallId": "ba7c2249-878b-428a-8670-005c6fbcb516"
     },
     "Primeval Titan": {
-      "elo": 1470.9192462443516,
-      "pickCount": 82201,
-      "cubeCount": 33570,
+      "elo": 1443.4724777740785,
+      "pickCount": 82304,
+      "cubeCount": 33645,
       "scryfallId": "eea2bf31-4320-4605-ab5b-6b32472b82fa"
     },
     "Vaultborn Tyrant": {
-      "elo": 1403.3735454853784,
-      "pickCount": 67875,
-      "cubeCount": 8226,
+      "elo": 1389.1460860775758,
+      "pickCount": 67982,
+      "cubeCount": 8264,
       "scryfallId": "62b3f560-262b-4bc3-9aef-535fd7082c28"
     },
     "Craterhoof Behemoth": {
-      "elo": 1370.8786732116353,
-      "pickCount": 67435,
-      "cubeCount": 28695,
+      "elo": 1338.4216340247945,
+      "pickCount": 67542,
+      "cubeCount": 28751,
       "scryfallId": "44afd414-cc69-4888-ba12-7ea87e60b1f7"
     },
     "Woodfall Primus": {
-      "elo": 1382.5983653848423,
-      "pickCount": 86580,
-      "cubeCount": 22911,
+      "elo": 1376.1183328168763,
+      "pickCount": 86752,
+      "cubeCount": 22945,
       "scryfallId": "c9d7acdf-1bce-4646-b3e2-7787b6d7a5f3"
     },
     "Worldspine Wurm": {
-      "elo": 1409.5304276090578,
-      "pickCount": 49317,
-      "cubeCount": 11011,
+      "elo": 1377.519742796033,
+      "pickCount": 49418,
+      "cubeCount": 11062,
       "scryfallId": "edb684f3-7787-4e54-96a2-61f95b6494a8"
     },
     "Nissa, Who Shakes the World": {
-      "elo": 1368.1051334573974,
-      "pickCount": 74038,
-      "cubeCount": 24770,
+      "elo": 1333.230419984068,
+      "pickCount": 74191,
+      "cubeCount": 24829,
       "scryfallId": "f857bbe4-5619-4733-a0c7-69700f2ef4f3"
     },
     "Crop Rotation": {
-      "elo": 1327.6547153386728,
-      "pickCount": 51708,
-      "cubeCount": 23541,
+      "elo": 1301.4391693271004,
+      "pickCount": 51807,
+      "cubeCount": 23602,
       "scryfallId": "6563f790-862c-465a-b963-7a61f2385516"
     },
     "Once Upon a Time": {
-      "elo": 1467.4152725340687,
-      "pickCount": 75206,
-      "cubeCount": 21727,
+      "elo": 1436.662590406784,
+      "pickCount": 75355,
+      "cubeCount": 21779,
       "scryfallId": "93ae52e8-fff1-4905-bf2b-f315540c511a"
     },
     "Green Sun's Zenith": {
-      "elo": 1405.0129267572763,
-      "pickCount": 84823,
-      "cubeCount": 29495,
+      "elo": 1393.2198144372142,
+      "pickCount": 84996,
+      "cubeCount": 29554,
       "scryfallId": "02335747-54e3-4827-ae19-4e362863da9b"
     },
     "Pest Infestation": {
-      "elo": 1519.357044882354,
-      "pickCount": 80887,
-      "cubeCount": 15936,
+      "elo": 1478.5026498234536,
+      "pickCount": 81057,
+      "cubeCount": 15986,
       "scryfallId": "4720b4f2-e6af-4223-9250-a0ed21ed5693"
     },
     "Channel": {
-      "elo": 1471.3044446387967,
-      "pickCount": 66920,
-      "cubeCount": 23446,
+      "elo": 1431.1456448202218,
+      "pickCount": 67034,
+      "cubeCount": 23498,
       "scryfallId": "e42eb95f-638d-410c-a830-a414fb2494ec"
     },
     "Malevolent Rumble": {
-      "elo": 1454.7868421482103,
-      "pickCount": 67572,
-      "cubeCount": 15180,
+      "elo": 1462.7645175765756,
+      "pickCount": 67780,
+      "cubeCount": 15278,
       "scryfallId": "a178cfe8-f9fa-4255-88d0-54a0bed079f5"
     },
     "Natural Order": {
-      "elo": 1494.0260515509724,
-      "pickCount": 77552,
-      "cubeCount": 25436,
+      "elo": 1511.4325339625302,
+      "pickCount": 77731,
+      "cubeCount": 25503,
       "scryfallId": "0845f0b0-9413-4ddd-861d-9607636bebc6"
     },
     "Scapeshift": {
-      "elo": 1272.0386656591727,
-      "pickCount": 12167,
-      "cubeCount": 6511,
+      "elo": 1264.201396161539,
+      "pickCount": 12178,
+      "cubeCount": 6532,
       "scryfallId": "84829605-50eb-455d-a236-ebfa11e883c5"
     },
     "Exploration": {
-      "elo": 1380.3428282330462,
-      "pickCount": 54954,
-      "cubeCount": 20459,
+      "elo": 1416.3435567675049,
+      "pickCount": 55033,
+      "cubeCount": 20514,
       "scryfallId": "2b20d3e1-62ef-44db-8109-a33d4fa3e7f1"
     },
     "Fastbond": {
-      "elo": 1599.1833575085568,
-      "pickCount": 70684,
-      "cubeCount": 19931,
+      "elo": 1542.850045727882,
+      "pickCount": 70752,
+      "cubeCount": 19980,
       "scryfallId": "c71123b5-6be5-4c3c-972a-0aad3db1a694"
     },
     "Oath of Druids": {
-      "elo": 1310.1299754115332,
-      "pickCount": 59416,
-      "cubeCount": 17712,
+      "elo": 1276.1199436490808,
+      "pickCount": 59544,
+      "cubeCount": 17764,
       "scryfallId": "cf14de50-d123-400c-862e-2c95fd2aa23f"
     },
     "Survival of the Fittest": {
-      "elo": 1387.0344378145583,
-      "pickCount": 65439,
-      "cubeCount": 20597,
+      "elo": 1362.3268422013682,
+      "pickCount": 65578,
+      "cubeCount": 20646,
       "scryfallId": "c060c178-3c0e-493f-b6f0-ead5b1d6f191"
     },
     "Sylvan Library": {
-      "elo": 1470.5019026635634,
-      "pickCount": 80652,
-      "cubeCount": 32075,
+      "elo": 1461.050280695511,
+      "pickCount": 80763,
+      "cubeCount": 32132,
       "scryfallId": "b1b337de-4c43-45b6-a0ca-262a983f3589"
     },
     "Walking Ballista": {
-      "elo": 1447.657420169074,
-      "pickCount": 109065,
-      "cubeCount": 37888,
+      "elo": 1426.3596891378652,
+      "pickCount": 109221,
+      "cubeCount": 37995,
       "scryfallId": "329a8738-3e17-403a-857a-0ba529ce8cd1"
     },
     "Phyrexian Revoker": {
-      "elo": 1284.8280892892212,
-      "pickCount": 84791,
-      "cubeCount": 28217,
+      "elo": 1287.218991986232,
+      "pickCount": 84883,
+      "cubeCount": 28267,
       "scryfallId": "7c7bec21-61b0-4e72-848b-82f38e1910e0"
     },
     "Scrawling Crawler": {
-      "elo": 1378.3318338082015,
-      "pickCount": 7977,
-      "cubeCount": 3959,
+      "elo": 1370.805308027774,
+      "pickCount": 8008,
+      "cubeCount": 3976,
       "scryfallId": "a1176dcf-40ee-4342-aa74-791b8352e99a"
     },
     "Golos, Tireless Pilgrim": {
-      "elo": 1315.1820705809976,
-      "pickCount": 80557,
-      "cubeCount": 23561,
+      "elo": 1338.6054957296328,
+      "pickCount": 80613,
+      "cubeCount": 23610,
       "scryfallId": "1fa48620-4c3d-4f75-be1f-c12c4aa59f51"
     },
     "Wurmcoil Engine": {
-      "elo": 1435.2094012769858,
-      "pickCount": 72983,
-      "cubeCount": 33341,
+      "elo": 1417.3583191381176,
+      "pickCount": 73064,
+      "cubeCount": 33421,
       "scryfallId": "33672990-4860-4aa6-ac1b-f9da66f5da59"
     },
     "Myr Battlesphere": {
-      "elo": 1310.4547892390556,
-      "pickCount": 80491,
-      "cubeCount": 34989,
+      "elo": 1377.253466656629,
+      "pickCount": 80605,
+      "cubeCount": 35065,
       "scryfallId": "79d3ab85-0de2-4a6f-8ed0-c32853025520"
     },
     "Blightsteel Colossus": {
-      "elo": 1441.985708305374,
-      "pickCount": 51119,
-      "cubeCount": 18908,
+      "elo": 1409.4227663585127,
+      "pickCount": 51202,
+      "cubeCount": 18958,
       "scryfallId": "7928bb14-7631-4830-a756-26d1ea832ba2"
     },
     "Emrakul, the Aeons Torn": {
-      "elo": 1502.7751814672572,
-      "pickCount": 70362,
-      "cubeCount": 23105,
+      "elo": 1490.3917883182269,
+      "pickCount": 70483,
+      "cubeCount": 23159,
       "scryfallId": "67600383-bbb8-411c-b8e6-2296650bc747"
     },
     "Triplicate Titan": {
-      "elo": 1378.3777632179776,
-      "pickCount": 46335,
-      "cubeCount": 11090,
+      "elo": 1365.2483406076174,
+      "pickCount": 46402,
+      "cubeCount": 11119,
       "scryfallId": "568dd5a6-86f4-4039-87d7-812120c8ab94"
     },
     "Tezzeret, Cruel Captain": {
-      "elo": 1581.4198022510082,
-      "pickCount": 5607,
-      "cubeCount": 4228,
+      "elo": 1550.3977118665946,
+      "pickCount": 5685,
+      "cubeCount": 4273,
       "scryfallId": "02e8e540-8aa3-4e6a-9a11-c3949cab5f0f"
     },
     "Ugin, Eye of the Storms": {
-      "elo": 1525.1000446113944,
-      "pickCount": 12987,
-      "cubeCount": 5095,
+      "elo": 1560.6428326049795,
+      "pickCount": 13057,
+      "cubeCount": 5137,
       "scryfallId": "64a5d494-efa1-446b-bebe-2ad36e154376"
     },
     "Black Lotus": {
-      "elo": 2376.9646008670497,
-      "pickCount": 107373,
-      "cubeCount": 24991,
+      "elo": 2324.774403020937,
+      "pickCount": 107485,
+      "cubeCount": 25059,
       "scryfallId": "bd8fa327-dd41-4737-8f19-2cf5eb1f7cdd"
     },
     "Chrome Mox": {
-      "elo": 1738.5901284118781,
-      "pickCount": 88379,
-      "cubeCount": 26475,
+      "elo": 1722.360078227701,
+      "pickCount": 88491,
+      "cubeCount": 26558,
       "scryfallId": "6a058e68-70af-4a64-859c-c881e5578368"
     },
     "Lion's Eye Diamond": {
-      "elo": 1682.4181109745698,
-      "pickCount": 62588,
-      "cubeCount": 17831,
+      "elo": 1621.9072704922862,
+      "pickCount": 62673,
+      "cubeCount": 17884,
       "scryfallId": "63bacc32-d6ba-420c-9b49-299c08e5fb39"
     },
     "Lotus Petal": {
-      "elo": 1643.627925074319,
-      "pickCount": 86163,
-      "cubeCount": 28235,
+      "elo": 1624.738686876259,
+      "pickCount": 86313,
+      "cubeCount": 28322,
       "scryfallId": "6c877da3-68fa-41d0-8a24-8c79fcd8ecc1"
     },
     "Mana Crypt": {
-      "elo": 2126.0896019129045,
-      "pickCount": 95354,
-      "cubeCount": 24090,
+      "elo": 2124.4813508210154,
+      "pickCount": 95472,
+      "cubeCount": 24158,
       "scryfallId": "160cf235-6463-4e16-a426-8b5be76b10d2"
     },
     "Mishra's Bauble": {
-      "elo": 1510.6536393479487,
-      "pickCount": 91129,
-      "cubeCount": 30549,
+      "elo": 1521.7703228898363,
+      "pickCount": 91330,
+      "cubeCount": 30676,
       "scryfallId": "b02452bb-a049-4e86-ba2c-135803caa03d"
     },
     "Mox Diamond": {
-      "elo": 1837.1670203074304,
-      "pickCount": 88065,
-      "cubeCount": 25083,
+      "elo": 1846.554380452882,
+      "pickCount": 88164,
+      "cubeCount": 25155,
       "scryfallId": "28028830-83ed-45e2-b495-3b9ad9d3e988"
     },
     "Mox Emerald": {
-      "elo": 2133.5567570406547,
-      "pickCount": 96232,
-      "cubeCount": 22465,
+      "elo": 2134.3632237786856,
+      "pickCount": 96333,
+      "cubeCount": 22538,
       "scryfallId": "aced2c55-7543-4076-bcdd-36c4d649b8ae"
     },
     "Mox Jet": {
-      "elo": 2195.794238178284,
-      "pickCount": 100743,
-      "cubeCount": 22805,
+      "elo": 2190.221699904579,
+      "pickCount": 100836,
+      "cubeCount": 22877,
       "scryfallId": "5f6927e1-c580-483a-8e2a-6e2deb74800e"
     },
     "Mox Opal": {
-      "elo": 1603.4319727451834,
-      "pickCount": 48285,
-      "cubeCount": 19559,
+      "elo": 1616.2889853357976,
+      "pickCount": 48403,
+      "cubeCount": 19636,
       "scryfallId": "6b3a20ac-1860-4513-bb73-35d23b088b04"
     },
     "Mox Pearl": {
-      "elo": 2165.9030203756884,
-      "pickCount": 100373,
-      "cubeCount": 22551,
+      "elo": 2168.059741899626,
+      "pickCount": 100475,
+      "cubeCount": 22629,
       "scryfallId": "ed0216a0-c5c9-4a99-b869-53e4d0256326"
     },
     "Mox Ruby": {
-      "elo": 2194.4138343005643,
-      "pickCount": 97099,
-      "cubeCount": 22751,
+      "elo": 2190.8480872803857,
+      "pickCount": 97192,
+      "cubeCount": 22821,
       "scryfallId": "45fd6e91-df76-497f-b642-33dc3d5f6a5a"
     },
     "Mox Sapphire": {
-      "elo": 2251.8348739462667,
-      "pickCount": 102030,
-      "cubeCount": 23101,
+      "elo": 2251.453111085811,
+      "pickCount": 102137,
+      "cubeCount": 23175,
       "scryfallId": "ea1feac0-d3a7-45eb-9719-1cdaf51ea0b6"
     },
     "Urza's Bauble": {
-      "elo": 1502.37133870581,
-      "pickCount": 48582,
-      "cubeCount": 13391,
+      "elo": 1509.2322919728754,
+      "pickCount": 48731,
+      "cubeCount": 13453,
       "scryfallId": "58c9e9a7-e170-4361-b7d5-22fc0771c489"
     },
     "Zuran Orb": {
-      "elo": 1370.2074819335974,
-      "pickCount": 49661,
-      "cubeCount": 15584,
+      "elo": 1403.6500353593829,
+      "pickCount": 49796,
+      "cubeCount": 15658,
       "scryfallId": "618c8ecc-686d-41de-b9b1-1a7ee9cc7c14"
     },
     "Chromatic Star": {
-      "elo": 1431.8289615201916,
-      "pickCount": 68133,
-      "cubeCount": 25626,
+      "elo": 1389.1578122632252,
+      "pickCount": 68287,
+      "cubeCount": 25727,
       "scryfallId": "1d7a1357-debd-49b0-9fd5-560d5b3f589e"
     },
     "Currency Converter": {
-      "elo": 1505.2616144227716,
-      "pickCount": 64253,
-      "cubeCount": 12882,
+      "elo": 1473.7901028172994,
+      "pickCount": 64379,
+      "cubeCount": 12946,
       "scryfallId": "187b6719-e5ed-4615-a00b-3313ceca055b"
     },
     "Expedition Map": {
-      "elo": 1283.826593895811,
-      "pickCount": 35424,
-      "cubeCount": 19760,
+      "elo": 1311.8999518115309,
+      "pickCount": 35512,
+      "cubeCount": 19823,
       "scryfallId": "c55bee97-593f-441f-b96c-a998d5212a55"
     },
     "Mana Vault": {
-      "elo": 1911.8085406495259,
-      "pickCount": 81887,
-      "cubeCount": 25342,
+      "elo": 1884.5572482844264,
+      "pickCount": 81974,
+      "cubeCount": 25420,
       "scryfallId": "cfdf9706-acdb-48fc-89db-93bc50b3b9ad"
     },
     "Retrofitter Foundry": {
-      "elo": 1567.6471803615857,
-      "pickCount": 81707,
-      "cubeCount": 20063,
+      "elo": 1535.9670229284125,
+      "pickCount": 81838,
+      "cubeCount": 20127,
       "scryfallId": "fcddaf73-0242-4db8-817b-d65c17119372"
     },
     "Sensei's Divining Top": {
-      "elo": 1531.705244341275,
-      "pickCount": 83679,
-      "cubeCount": 30982,
+      "elo": 1526.4108056148134,
+      "pickCount": 83813,
+      "cubeCount": 31064,
       "scryfallId": "4a08ca06-58db-4ce6-b490-be4bea8956a1"
     },
     "Skullclamp": {
-      "elo": 1685.8011343839996,
-      "pickCount": 131370,
-      "cubeCount": 45916,
+      "elo": 1671.542879257001,
+      "pickCount": 131534,
+      "cubeCount": 46069,
       "scryfallId": "a36fd6d8-66a2-49d1-b9f3-b400ebc03674"
     },
     "Sol Ring": {
-      "elo": 2197.5032237794976,
-      "pickCount": 130540,
-      "cubeCount": 43510,
+      "elo": 2193.2948997213225,
+      "pickCount": 130669,
+      "cubeCount": 43653,
       "scryfallId": "2d47121d-8b90-4d28-9ffa-0a640b9dd611"
     },
     "Grim Monolith": {
-      "elo": 1657.9517906593187,
-      "pickCount": 71257,
-      "cubeCount": 21930,
+      "elo": 1706.6882311776542,
+      "pickCount": 71366,
+      "cubeCount": 21988,
       "scryfallId": "9ddc9fe1-17c8-4e1d-aeb8-c4214e881280"
     },
     "Lightning Greaves": {
-      "elo": 1412.005702140052,
-      "pickCount": 64479,
-      "cubeCount": 29583,
+      "elo": 1380.624686834745,
+      "pickCount": 64616,
+      "cubeCount": 29660,
       "scryfallId": "61a28870-cf78-4323-9d82-cee764067764"
     },
     "Umezawa's Jitte": {
-      "elo": 1516.4556889720377,
-      "pickCount": 83330,
-      "cubeCount": 29122,
+      "elo": 1472.4802035464338,
+      "pickCount": 83395,
+      "cubeCount": 29191,
       "scryfallId": "a50b29dd-6807-4859-8425-1958b9b99428"
     },
     "Winter Orb": {
-      "elo": 1360.8266635222658,
-      "pickCount": 41729,
-      "cubeCount": 15610,
+      "elo": 1400.5847092100717,
+      "pickCount": 41781,
+      "cubeCount": 15634,
       "scryfallId": "f5c6d64b-f49c-4b41-bd25-3d29c896a9a8"
     },
     "Basalt Monolith": {
-      "elo": 1487.9860908273051,
-      "pickCount": 69915,
-      "cubeCount": 24871,
+      "elo": 1505.7114656203732,
+      "pickCount": 70047,
+      "cubeCount": 24927,
       "scryfallId": "4f0b7b8e-45b0-4947-9a95-bccc6b725a37"
     },
     "Coalition Relic": {
-      "elo": 1447.932855210851,
-      "pickCount": 79178,
-      "cubeCount": 24612,
+      "elo": 1427.6152065825968,
+      "pickCount": 79269,
+      "cubeCount": 24657,
       "scryfallId": "7a7c98b0-d64d-4d0a-b284-1187a8e7095e"
     },
     "Crucible of Worlds": {
-      "elo": 1363.2487524911555,
-      "pickCount": 79454,
-      "cubeCount": 29606,
+      "elo": 1355.0702016875468,
+      "pickCount": 79560,
+      "cubeCount": 29685,
       "scryfallId": "312a6058-de08-487d-95bd-b3c56807fdd6"
     },
     "The One Ring": {
-      "elo": 1984.510420336265,
-      "pickCount": 58046,
-      "cubeCount": 15585,
+      "elo": 1959.4957330035124,
+      "pickCount": 58123,
+      "cubeCount": 15650,
       "scryfallId": "d5806e68-1054-458e-866d-1f2470f682b2"
     },
     "Batterskull": {
-      "elo": 1323.404418985285,
-      "pickCount": 81198,
-      "cubeCount": 30095,
+      "elo": 1344.2937832214882,
+      "pickCount": 81283,
+      "cubeCount": 30170,
       "scryfallId": "cd114ec3-d286-4c70-a122-3043bc53cc88"
     },
     "Memory Jar": {
-      "elo": 1356.2362748490502,
-      "pickCount": 62018,
-      "cubeCount": 17104,
+      "elo": 1392.009582505461,
+      "pickCount": 62120,
+      "cubeCount": 17152,
       "scryfallId": "a15d33d6-7213-4482-a1be-ac0a73644af6"
     },
     "Coveted Jewel": {
-      "elo": 1408.076109815223,
-      "pickCount": 38057,
-      "cubeCount": 11866,
+      "elo": 1446.908550997123,
+      "pickCount": 38184,
+      "cubeCount": 11921,
       "scryfallId": "90617b21-821b-4945-89b5-f5d1b57ca3aa"
     },
     "Kaldra Compleat": {
-      "elo": 1353.0468781641987,
-      "pickCount": 54468,
-      "cubeCount": 16587,
+      "elo": 1339.429998573983,
+      "pickCount": 54542,
+      "cubeCount": 16652,
       "scryfallId": "c6dc22cb-74c0-443d-b22d-4277a65cc076"
     },
     "Portal to Phyrexia": {
-      "elo": 1428.7281563695217,
-      "pickCount": 37761,
-      "cubeCount": 12670,
+      "elo": 1399.5528425921277,
+      "pickCount": 37856,
+      "cubeCount": 12725,
       "scryfallId": "0bc1dbbf-73a7-4f79-b499-4668c853d958"
     },
     "Teferi, Time Raveler": {
-      "elo": 1558.1697945132294,
-      "pickCount": 89843,
-      "cubeCount": 25317,
+      "elo": 1559.0555114767803,
+      "pickCount": 89958,
+      "cubeCount": 25391,
       "scryfallId": "5cb76266-ae50-4bbc-8f96-d98f309b02d3"
     },
     "Fractured Identity": {
-      "elo": 1544.2134735369782,
-      "pickCount": 83264,
-      "cubeCount": 21919,
+      "elo": 1563.4252685590213,
+      "pickCount": 83345,
+      "cubeCount": 21975,
       "scryfallId": "ac1e9cd6-7be2-4c9a-a94f-3ea7e69e49db"
     },
     "Baleful Strix": {
-      "elo": 1425.418902633674,
-      "pickCount": 144463,
-      "cubeCount": 50414,
+      "elo": 1431.9100298292808,
+      "pickCount": 144656,
+      "cubeCount": 50549,
       "scryfallId": "679c1ac6-a015-45ec-a634-e665e377672b"
     },
     "Psychic Frog": {
-      "elo": 1670.6049684160355,
-      "pickCount": 94990,
-      "cubeCount": 12687,
+      "elo": 1661.3173655810747,
+      "pickCount": 95151,
+      "cubeCount": 12763,
       "scryfallId": "68924203-c3d9-41ce-8ca8-c6dd491eb3ca"
     },
     "Fire Covenant": {
-      "elo": 1393.8396172095147,
-      "pickCount": 65769,
-      "cubeCount": 14006,
+      "elo": 1433.2026765538756,
+      "pickCount": 65888,
+      "cubeCount": 14053,
       "scryfallId": "6a0139c2-ad86-4c71-ab6d-4840c37d5d20"
     },
     "Chaos Defiler": {
-      "elo": 1416.8923735700932,
-      "pickCount": 26460,
-      "cubeCount": 6223,
+      "elo": 1371.7265268776828,
+      "pickCount": 26507,
+      "cubeCount": 6246,
       "scryfallId": "1c0f2873-5849-4cab-855a-2fbbc41dbb6c"
     },
     "Mawloc": {
-      "elo": 1367.1506552258147,
-      "pickCount": 25968,
-      "cubeCount": 6598,
+      "elo": 1372.3820965072475,
+      "pickCount": 26037,
+      "cubeCount": 6627,
       "scryfallId": "bbec97ff-bb84-4496-9e09-d4fc1570c516"
     },
     "Wrenn and Six": {
-      "elo": 1474.797347156546,
-      "pickCount": 106244,
-      "cubeCount": 25652,
+      "elo": 1466.5125276472809,
+      "pickCount": 106354,
+      "cubeCount": 25724,
       "scryfallId": "4a706ecf-3277-40e3-871c-4ba4ead16e20"
     },
     "Minsc & Boo, Timeless Heroes": {
-      "elo": 1781.4004862364638,
-      "pickCount": 67877,
-      "cubeCount": 15519,
+      "elo": 1748.984877957196,
+      "pickCount": 67960,
+      "cubeCount": 15559,
       "scryfallId": "928036c9-11b8-493e-b9f2-8fbd3487cd19"
     },
     "Torsten, Founder of Benalia": {
-      "elo": 1318.838600291892,
-      "pickCount": 43774,
-      "cubeCount": 7171,
+      "elo": 1342.9679350396218,
+      "pickCount": 43895,
+      "cubeCount": 7205,
       "scryfallId": "0783b426-a527-42c1-9271-be28b229e1c6"
     },
     "Damn": {
-      "elo": 1287.2679349586597,
-      "pickCount": 80706,
-      "cubeCount": 22513,
+      "elo": 1250.973946089113,
+      "pickCount": 80780,
+      "cubeCount": 22576,
       "scryfallId": "e8dc408b-c857-4546-b7fc-17e771158af2"
     },
     "Lingering Souls": {
-      "elo": 1345.8632394202214,
-      "pickCount": 146151,
-      "cubeCount": 48579,
+      "elo": 1312.6191160109304,
+      "pickCount": 146330,
+      "cubeCount": 48709,
       "scryfallId": "8fcdbeda-f6cf-49c1-86cf-fa4ca2cbc201"
     },
     "Lurrus of the Dream-Den": {
-      "elo": 1451.0901604152607,
-      "pickCount": 110943,
-      "cubeCount": 32181,
+      "elo": 1460.25302034145,
+      "pickCount": 111069,
+      "cubeCount": 32281,
       "scryfallId": "5ad36fb2-c44e-4085-ba0d-54277841ad3a"
     },
     "Vindicate": {
-      "elo": 1293.8182854629536,
-      "pickCount": 114225,
-      "cubeCount": 33417,
+      "elo": 1250.4961318841576,
+      "pickCount": 114372,
+      "cubeCount": 33484,
       "scryfallId": "2a1bfefd-dae8-49e9-9d56-cc852e3dc93b"
     },
     "Expressive Iteration": {
-      "elo": 1398.1389350293364,
-      "pickCount": 91055,
-      "cubeCount": 33475,
+      "elo": 1421.408074064094,
+      "pickCount": 91209,
+      "cubeCount": 33581,
       "scryfallId": "31b770cc-09e7-4c0b-b2a4-462ab4f7200d"
     },
     "Dack Fayden": {
-      "elo": 1510.430693535116,
-      "pickCount": 79567,
-      "cubeCount": 22741,
+      "elo": 1492.136972751734,
+      "pickCount": 79676,
+      "cubeCount": 22788,
       "scryfallId": "10158a5e-5a03-41ab-85d2-0907ccf32c9b"
     },
     "Lutri, the Spellchaser": {
-      "elo": 1596.5104155406389,
-      "pickCount": 36135,
-      "cubeCount": 14869,
+      "elo": 1580.1346113494,
+      "pickCount": 36221,
+      "cubeCount": 14940,
       "scryfallId": "fb1189c9-7842-466e-8238-1e02677d8494"
     },
     "Vivi Ornitier": {
-      "elo": 1530.1468455965235,
-      "pickCount": 11480,
-      "cubeCount": 5606,
+      "elo": 1528.4942227407525,
+      "pickCount": 11554,
+      "cubeCount": 5647,
       "scryfallId": "ecc1027a-8c07-44a0-bdde-fa2844cff694"
     },
     "Deathrite Shaman": {
-      "elo": 1467.5049537294535,
-      "pickCount": 83322,
-      "cubeCount": 33783,
+      "elo": 1448.1717531555685,
+      "pickCount": 83535,
+      "cubeCount": 33884,
       "scryfallId": "d14f9fc8-e48c-473f-ba6b-9cffce94bb53"
     },
     "Grist, the Hunger Tide": {
-      "elo": 1296.226481320905,
-      "pickCount": 95534,
-      "cubeCount": 23363,
+      "elo": 1331.3534714918708,
+      "pickCount": 95690,
+      "cubeCount": 23426,
       "scryfallId": "5978405f-43eb-4dff-94f8-b928b926d4fd"
     },
     "Life // Death": {
-      "elo": 1372.1965437382964,
-      "pickCount": 67956,
-      "cubeCount": 13793,
+      "elo": 1355.698357247734,
+      "pickCount": 68080,
+      "cubeCount": 13846,
       "scryfallId": "7ab75cdb-93a1-4f78-b404-37566295c321"
     },
     "Forth Eorlingas!": {
-      "elo": 1717.5673686875743,
-      "pickCount": 74731,
-      "cubeCount": 10861,
+      "elo": 1750.064849466802,
+      "pickCount": 74810,
+      "cubeCount": 10894,
       "scryfallId": "06c053d3-028e-4961-93a5-5b7bb5a8601c"
     },
     "Phlage, Titan of Fire's Fury": {
-      "elo": 1479.0881579659938,
-      "pickCount": 63240,
-      "cubeCount": 9973,
+      "elo": 1483.3504419332928,
+      "pickCount": 63351,
+      "cubeCount": 10027,
       "scryfallId": "e419cd0b-2449-4cc5-9ead-b9e45e271700"
     },
     "Comet, Stellar Pup": {
-      "elo": 1609.3302167356821,
-      "pickCount": 24373,
-      "cubeCount": 6315,
+      "elo": 1618.6052766340483,
+      "pickCount": 24400,
+      "cubeCount": 6344,
       "scryfallId": "a76fa8d4-923d-4afc-ba47-ba10fc0fe46e"
     },
     "Nadu, Winged Wisdom": {
-      "elo": 1597.170042141986,
-      "pickCount": 57950,
-      "cubeCount": 8898,
+      "elo": 1566.7860604936664,
+      "pickCount": 58073,
+      "cubeCount": 8939,
       "scryfallId": "94b67489-5eb0-4406-9bf3-27e50dc632eb"
     },
     "Oko, Thief of Crowns": {
-      "elo": 1709.2443818442273,
-      "pickCount": 91409,
-      "cubeCount": 24489,
+      "elo": 1722.8570605172197,
+      "pickCount": 91501,
+      "cubeCount": 24542,
       "scryfallId": "058c60d2-25d1-42bf-9747-715e9ff56e0b"
     },
     "Uro, Titan of Nature's Wrath": {
-      "elo": 1451.2407594092015,
-      "pickCount": 92189,
-      "cubeCount": 28325,
+      "elo": 1484.748034448689,
+      "pickCount": 92344,
+      "cubeCount": 28391,
       "scryfallId": "e0b06619-d672-4542-a025-2ec3a62b761d"
     },
     "Atraxa, Grand Unifier": {
-      "elo": 1548.1235156655493,
-      "pickCount": 56323,
-      "cubeCount": 15124,
+      "elo": 1591.4115205118112,
+      "pickCount": 56412,
+      "cubeCount": 15197,
       "scryfallId": "e3452853-fa92-495b-86a0-08c234356460"
     },
     "Flooded Strand": {
-      "elo": 1666.1204485050075,
-      "pickCount": 184198,
-      "cubeCount": 57273,
+      "elo": 1646.624384293415,
+      "pickCount": 184468,
+      "cubeCount": 57440,
       "scryfallId": "b4e3d844-d3b4-41d8-921d-c1cb3af343f8"
     },
     "Hallowed Fountain": {
-      "elo": 1429.2863859754773,
-      "pickCount": 155651,
-      "cubeCount": 61919,
+      "elo": 1357.9572968526927,
+      "pickCount": 155876,
+      "cubeCount": 62095,
       "scryfallId": "f321aa38-7aaf-48fd-b516-18e702fbddef"
     },
     "Meticulous Archive": {
-      "elo": 1402.388937127614,
-      "pickCount": 92908,
-      "cubeCount": 17386,
+      "elo": 1389.3622034958978,
+      "pickCount": 93102,
+      "cubeCount": 17477,
       "scryfallId": "652236c2-84ef-45e4-b5fc-ed6170bc3d6c"
     },
     "Tundra": {
-      "elo": 1562.1218258955253,
-      "pickCount": 105897,
-      "cubeCount": 35656,
+      "elo": 1496.2536963475047,
+      "pickCount": 106059,
+      "cubeCount": 35756,
       "scryfallId": "9c9d5f72-e199-4d5b-ae7e-cc5b9bdfae99"
     },
     "Polluted Delta": {
-      "elo": 1700.2718762300296,
-      "pickCount": 179759,
-      "cubeCount": 57301,
+      "elo": 1628.231927738166,
+      "pickCount": 180028,
+      "cubeCount": 57467,
       "scryfallId": "0f7585c8-9e21-4eef-afc1-2852de23db2f"
     },
     "Undercity Sewers": {
-      "elo": 1450.487274142088,
-      "pickCount": 97976,
-      "cubeCount": 17849,
+      "elo": 1413.895429805626,
+      "pickCount": 98157,
+      "cubeCount": 17950,
       "scryfallId": "2b5801fb-2026-4f25-98bc-ebb2f99684b9"
     },
     "Underground Sea": {
-      "elo": 1593.9240254301055,
-      "pickCount": 104128,
-      "cubeCount": 35740,
+      "elo": 1578.9352640114384,
+      "pickCount": 104280,
+      "cubeCount": 35842,
       "scryfallId": "bc98d888-4af3-43a3-b035-40c651057b6e"
     },
     "Watery Grave": {
-      "elo": 1497.5656499413367,
-      "pickCount": 158664,
-      "cubeCount": 61781,
+      "elo": 1474.3595947192523,
+      "pickCount": 158962,
+      "cubeCount": 61959,
       "scryfallId": "67ef01b3-93f7-41e8-834d-9f6768e3b16c"
     },
     "Badlands": {
-      "elo": 1518.4965357945712,
-      "pickCount": 108964,
-      "cubeCount": 36021,
+      "elo": 1467.2001500749125,
+      "pickCount": 109112,
+      "cubeCount": 36127,
       "scryfallId": "56058359-3c0b-49db-a0ce-9ded4c3f4372"
     },
     "Blood Crypt": {
-      "elo": 1478.890019762427,
-      "pickCount": 168159,
-      "cubeCount": 62572,
+      "elo": 1405.0920096579048,
+      "pickCount": 168483,
+      "cubeCount": 62758,
       "scryfallId": "1716b4dd-9045-462b-b053-72de450a8cde"
     },
     "Bloodstained Mire": {
-      "elo": 1673.9904352147805,
-      "pickCount": 185156,
-      "cubeCount": 57553,
+      "elo": 1639.3085906912954,
+      "pickCount": 185429,
+      "cubeCount": 57725,
       "scryfallId": "68c72226-6f52-4322-8b14-18737293dfa0"
     },
     "Raucous Theater": {
-      "elo": 1354.7836382609805,
-      "pickCount": 92100,
-      "cubeCount": 17510,
+      "elo": 1355.5561278094895,
+      "pickCount": 92289,
+      "cubeCount": 17608,
       "scryfallId": "b598c93e-dae1-4d71-a9e4-917abf76d2d0"
     },
     "Commercial District": {
-      "elo": 1344.1681874820526,
-      "pickCount": 73937,
-      "cubeCount": 17187,
+      "elo": 1302.155600327452,
+      "pickCount": 74149,
+      "cubeCount": 17276,
       "scryfallId": "bf220c06-3cce-4bdd-aa58-83940c223e9c"
     },
     "Stomping Ground": {
-      "elo": 1401.538906140518,
-      "pickCount": 165039,
-      "cubeCount": 61549,
+      "elo": 1390.834136222845,
+      "pickCount": 165405,
+      "cubeCount": 61730,
       "scryfallId": "4acf970d-d2d7-413d-aba7-587ee53d8d5c"
     },
     "Taiga": {
-      "elo": 1449.195121093282,
-      "pickCount": 107738,
-      "cubeCount": 35432,
+      "elo": 1419.434606337223,
+      "pickCount": 107912,
+      "cubeCount": 35524,
       "scryfallId": "54c5c65a-a444-4e0f-ae44-a3722cdd32a1"
     },
     "Wooded Foothills": {
-      "elo": 1661.839448116203,
-      "pickCount": 183618,
-      "cubeCount": 56196,
+      "elo": 1631.9657718748483,
+      "pickCount": 183969,
+      "cubeCount": 56348,
       "scryfallId": "cdad38f7-9dfa-4f1b-9fac-41ab2b253f53"
     },
     "Lush Portico": {
-      "elo": 1270.7118356629248,
-      "pickCount": 75157,
-      "cubeCount": 16925,
+      "elo": 1254.2250729112798,
+      "pickCount": 75337,
+      "cubeCount": 17014,
       "scryfallId": "c17816e8-28b1-4295-a637-efb0e5c18873"
     },
     "Savannah": {
-      "elo": 1427.0019309385648,
-      "pickCount": 111403,
-      "cubeCount": 35241,
+      "elo": 1411.5165348490368,
+      "pickCount": 111610,
+      "cubeCount": 35331,
       "scryfallId": "5ae71290-c133-406c-8b17-9ea22b437806"
     },
     "Temple Garden": {
-      "elo": 1335.7615988029916,
-      "pickCount": 168135,
-      "cubeCount": 61082,
+      "elo": 1321.13925927554,
+      "pickCount": 168482,
+      "cubeCount": 61250,
       "scryfallId": "34a3039d-46cd-4a51-b726-6eb0b485c9c5"
     },
     "Windswept Heath": {
-      "elo": 1593.8784853209897,
-      "pickCount": 195481,
-      "cubeCount": 56292,
+      "elo": 1578.4838599911025,
+      "pickCount": 195780,
+      "cubeCount": 56452,
       "scryfallId": "7a7c5941-9c8a-4a40-9efb-a84f05c58e53"
     },
     "Godless Shrine": {
-      "elo": 1378.6436812269712,
-      "pickCount": 178706,
-      "cubeCount": 61881,
+      "elo": 1325.3325807479555,
+      "pickCount": 178999,
+      "cubeCount": 62057,
       "scryfallId": "e2c39866-98c2-4c60-98e1-eaf8e40b2d29"
     },
     "Marsh Flats": {
-      "elo": 1627.8281638902008,
-      "pickCount": 188712,
-      "cubeCount": 54494,
+      "elo": 1579.9043882269416,
+      "pickCount": 188960,
+      "cubeCount": 54650,
       "scryfallId": "45026d57-0324-4312-8b86-2e7d4f581ee9"
     },
     "Scrubland": {
-      "elo": 1433.8738476319754,
-      "pickCount": 115716,
-      "cubeCount": 35368,
+      "elo": 1351.9269215604534,
+      "pickCount": 115861,
+      "cubeCount": 35472,
       "scryfallId": "472034a2-0ba9-4876-ab7a-aa7013d603bb"
     },
     "Shadowy Backstreet": {
-      "elo": 1301.9972520577323,
-      "pickCount": 80951,
-      "cubeCount": 17337,
+      "elo": 1302.2127209939538,
+      "pickCount": 81130,
+      "cubeCount": 17422,
       "scryfallId": "69c1b656-1d67-499c-bf0f-417682a86c7d"
     },
     "Scalding Tarn": {
-      "elo": 1716.072364399462,
-      "pickCount": 172983,
-      "cubeCount": 54748,
+      "elo": 1652.8955994923072,
+      "pickCount": 173239,
+      "cubeCount": 54906,
       "scryfallId": "327cf118-cc92-4073-85d0-94d2a0a6989a"
     },
     "Steam Vents": {
-      "elo": 1539.9045871202916,
-      "pickCount": 153857,
-      "cubeCount": 62096,
+      "elo": 1476.1412112215755,
+      "pickCount": 154198,
+      "cubeCount": 62277,
       "scryfallId": "d516b248-c0be-4c49-83ab-393354c33563"
     },
     "Thundering Falls": {
-      "elo": 1432.7729059257956,
-      "pickCount": 87623,
-      "cubeCount": 17403,
+      "elo": 1429.154256035059,
+      "pickCount": 87825,
+      "cubeCount": 17502,
       "scryfallId": "17260fff-b239-4af4-9306-3236ae3fa5a5"
     },
     "Volcanic Island": {
-      "elo": 1646.9780115903714,
-      "pickCount": 107265,
-      "cubeCount": 35437,
+      "elo": 1605.9835937137577,
+      "pickCount": 107433,
+      "cubeCount": 35537,
       "scryfallId": "b12e5430-0e80-47dd-80ac-85728b656a24"
     },
     "Bayou": {
-      "elo": 1412.3091393149764,
-      "pickCount": 107737,
-      "cubeCount": 35600,
+      "elo": 1421.3007620273868,
+      "pickCount": 107970,
+      "cubeCount": 35699,
       "scryfallId": "56355ff3-2232-4a11-b868-aec9a50b9ee5"
     },
     "Overgrown Tomb": {
-      "elo": 1381.832317797779,
-      "pickCount": 167244,
-      "cubeCount": 61808,
+      "elo": 1320.1656384417006,
+      "pickCount": 167641,
+      "cubeCount": 61982,
       "scryfallId": "4fc75949-0bd1-4cd9-9e66-6624dcd41872"
     },
     "Underground Mortuary": {
-      "elo": 1297.9593662814807,
-      "pickCount": 85885,
-      "cubeCount": 17540,
+      "elo": 1324.8090856305262,
+      "pickCount": 86183,
+      "cubeCount": 17643,
       "scryfallId": "f6ca59cd-8779-4a84-a54b-e863b79c61f0"
     },
     "Verdant Catacombs": {
-      "elo": 1644.8030009339386,
-      "pickCount": 180755,
-      "cubeCount": 54434,
+      "elo": 1618.416132624634,
+      "pickCount": 181092,
+      "cubeCount": 54588,
       "scryfallId": "7abd2723-2851-4f1a-b2d0-dfcb526472c3"
     },
     "Arid Mesa": {
-      "elo": 1664.1639280371357,
-      "pickCount": 191459,
-      "cubeCount": 54496,
+      "elo": 1620.7280001475847,
+      "pickCount": 191736,
+      "cubeCount": 54661,
       "scryfallId": "16c8d2fa-54a7-46e8-980c-905258497c90"
     },
     "Elegant Parlor": {
-      "elo": 1392.9277908798167,
-      "pickCount": 79721,
-      "cubeCount": 16338,
+      "elo": 1326.931714600726,
+      "pickCount": 79864,
+      "cubeCount": 16424,
       "scryfallId": "72c6d541-e2cb-4d6e-acac-90a8f53b7006"
     },
     "Plateau": {
-      "elo": 1502.1464942242048,
-      "pickCount": 121586,
-      "cubeCount": 35199,
+      "elo": 1483.2995324666203,
+      "pickCount": 121756,
+      "cubeCount": 35307,
       "scryfallId": "c6ae9cff-8646-4069-8761-df734e067beb"
     },
     "Sacred Foundry": {
-      "elo": 1453.466942321368,
-      "pickCount": 184962,
-      "cubeCount": 60992,
+      "elo": 1398.0538306429728,
+      "pickCount": 185236,
+      "cubeCount": 61174,
       "scryfallId": "52e55b85-92c1-4b83-9a9d-4afb8e938e4f"
     },
     "Breeding Pool": {
-      "elo": 1416.8084973916282,
-      "pickCount": 153107,
-      "cubeCount": 61285,
+      "elo": 1397.3921633405778,
+      "pickCount": 153368,
+      "cubeCount": 61462,
       "scryfallId": "19477aca-b8db-4061-9a78-ebb189a9df22"
     },
     "Hedge Maze": {
-      "elo": 1375.7442300771186,
-      "pickCount": 81564,
-      "cubeCount": 17318,
+      "elo": 1331.54057781314,
+      "pickCount": 81746,
+      "cubeCount": 17404,
       "scryfallId": "5260f8ae-805b-4eae-badf-62de0f768867"
     },
     "Misty Rainforest": {
-      "elo": 1671.0578152694136,
-      "pickCount": 171843,
-      "cubeCount": 54503,
+      "elo": 1651.421035426463,
+      "pickCount": 172140,
+      "cubeCount": 54662,
       "scryfallId": "24a5cc2c-0fbf-4a5f-b175-6e0ffd0d0787"
     },
     "Tropical Island": {
-      "elo": 1530.4393601330362,
-      "pickCount": 101721,
-      "cubeCount": 35317,
+      "elo": 1517.8115991600653,
+      "pickCount": 101895,
+      "cubeCount": 35410,
       "scryfallId": "a0f5c6bc-65dc-42a1-a62d-a0b101310a1f"
     },
     "Spara's Headquarters": {
-      "elo": 1356.668775313625,
-      "pickCount": 75371,
-      "cubeCount": 24641,
+      "elo": 1340.8056271315465,
+      "pickCount": 75504,
+      "cubeCount": 24725,
       "scryfallId": "7363f1fb-9af3-4212-921f-d59533faf0e5"
     },
     "Raffine's Tower": {
-      "elo": 1380.4808176761348,
-      "pickCount": 84017,
-      "cubeCount": 24911,
+      "elo": 1374.0392867415055,
+      "pickCount": 84133,
+      "cubeCount": 24997,
       "scryfallId": "a2c56479-4bee-4edb-80d7-4af010b7c793"
     },
     "Xander's Lounge": {
-      "elo": 1450.280821862612,
-      "pickCount": 82116,
-      "cubeCount": 24852,
+      "elo": 1405.4514491284526,
+      "pickCount": 82231,
+      "cubeCount": 24949,
       "scryfallId": "54f449ff-4025-465e-9ec5-a5cf42c4c9d3"
     },
     "Ziatora's Proving Ground": {
-      "elo": 1290.638583117738,
-      "pickCount": 79797,
-      "cubeCount": 24402,
+      "elo": 1290.5687322538056,
+      "pickCount": 79933,
+      "cubeCount": 24479,
       "scryfallId": "75fdce80-e338-4a50-bdc6-786511feaeef"
     },
     "Jetmir's Garden": {
-      "elo": 1318.252309202795,
-      "pickCount": 83636,
-      "cubeCount": 24639,
+      "elo": 1317.355831497722,
+      "pickCount": 83776,
+      "cubeCount": 24727,
       "scryfallId": "26d40e03-6de4-4373-9fbf-04c1dd79e995"
     },
     "Savai Triome": {
-      "elo": 1329.242053590753,
-      "pickCount": 100715,
-      "cubeCount": 30647,
+      "elo": 1309.3018701732624,
+      "pickCount": 100853,
+      "cubeCount": 30743,
       "scryfallId": "748e6a61-9c1f-4225-9f04-e54002f63ac3"
     },
     "Ketria Triome": {
-      "elo": 1350.3620716188436,
-      "pickCount": 89002,
-      "cubeCount": 31097,
+      "elo": 1426.1499767161738,
+      "pickCount": 89164,
+      "cubeCount": 31190,
       "scryfallId": "a249b1f4-2b22-4b67-a207-e0c4ae95d2e1"
     },
     "Indatha Triome": {
-      "elo": 1286.0238910016064,
-      "pickCount": 95480,
-      "cubeCount": 30683,
+      "elo": 1256.6454815976713,
+      "pickCount": 95640,
+      "cubeCount": 30760,
       "scryfallId": "2b74bb81-fb9a-40e5-a941-e517430b52f5"
     },
     "Raugrin Triome": {
-      "elo": 1459.589170946274,
-      "pickCount": 95016,
-      "cubeCount": 30656,
+      "elo": 1417.1363806769466,
+      "pickCount": 95141,
+      "cubeCount": 30761,
       "scryfallId": "06dfe9da-c178-4f61-a8e8-6c0077bdce91"
     },
     "Zagoth Triome": {
-      "elo": 1362.1985104839468,
-      "pickCount": 90440,
-      "cubeCount": 30639,
+      "elo": 1367.6763145975513,
+      "pickCount": 90585,
+      "cubeCount": 30732,
       "scryfallId": "cc520518-2063-4b57-a0d4-10cf62a7175e"
     },
     "Ancient Tomb": {
-      "elo": 1674.2882196493274,
-      "pickCount": 89554,
-      "cubeCount": 32039,
+      "elo": 1613.2115509077214,
+      "pickCount": 89711,
+      "cubeCount": 32115,
       "scryfallId": "30e401e3-282b-4524-87e1-c6cd50cd6d00"
     },
     "Boseiju, Who Endures": {
-      "elo": 1351.6917137381633,
-      "pickCount": 66939,
-      "cubeCount": 23738,
+      "elo": 1336.6527994897035,
+      "pickCount": 67169,
+      "cubeCount": 23832,
       "scryfallId": "dda82840-1f3f-4be7-9bc7-66ff551ef5c0"
     },
     "City of Brass": {
-      "elo": 1469.1289488483649,
-      "pickCount": 71667,
-      "cubeCount": 30640,
+      "elo": 1478.6620908987036,
+      "pickCount": 71880,
+      "cubeCount": 30719,
       "scryfallId": "61e9c770-f05b-40df-a01f-82b734db1733"
     },
     "City of Traitors": {
-      "elo": 1400.1435639655356,
-      "pickCount": 38385,
-      "cubeCount": 11683,
+      "elo": 1392.1221913717886,
+      "pickCount": 38493,
+      "cubeCount": 11722,
       "scryfallId": "a7a8b6b8-b95f-4014-b17a-a6d44d965995"
     },
     "Gaea's Cradle": {
-      "elo": 1533.1422864587046,
-      "pickCount": 72664,
-      "cubeCount": 24085,
+      "elo": 1498.423236741685,
+      "pickCount": 72842,
+      "cubeCount": 24144,
       "scryfallId": "25b0b816-0583-44aa-9dc5-f3ff48993a51"
     },
     "Karakas": {
-      "elo": 1735.0822381908977,
-      "pickCount": 86910,
-      "cubeCount": 20085,
+      "elo": 1743.5134252244618,
+      "pickCount": 87028,
+      "cubeCount": 20140,
       "scryfallId": "31d2422a-bb7d-4cdd-9aac-e5a936a4be3b"
     },
     "Library of Alexandria": {
-      "elo": 1694.6361456496506,
-      "pickCount": 67121,
-      "cubeCount": 16863,
+      "elo": 1676.6643523712542,
+      "pickCount": 67207,
+      "cubeCount": 16909,
       "scryfallId": "ee266113-34ce-4189-84e7-ee2c86a2722c"
     },
     "Mana Confluence": {
-      "elo": 1467.1977720309083,
-      "pickCount": 75298,
-      "cubeCount": 28103,
+      "elo": 1517.2934333892551,
+      "pickCount": 75526,
+      "cubeCount": 28189,
       "scryfallId": "504a69eb-3c2d-4bb1-b117-252b15acf0c2"
     },
     "Mishra's Workshop": {
-      "elo": 1496.3499302027913,
-      "pickCount": 47432,
-      "cubeCount": 15633,
+      "elo": 1511.2080504052374,
+      "pickCount": 47526,
+      "cubeCount": 15673,
       "scryfallId": "135de5c7-6ac9-4b68-8f1a-97f120a4b125"
     },
     "Prismatic Vista": {
-      "elo": 1676.9046330912406,
-      "pickCount": 139193,
-      "cubeCount": 35554,
+      "elo": 1626.217748345362,
+      "pickCount": 139398,
+      "cubeCount": 35653,
       "scryfallId": "e37da81e-be12-45a2-9128-376f1ad7b3e8"
     },
     "Shelldock Isle": {
-      "elo": 1396.7822515095447,
-      "pickCount": 65790,
-      "cubeCount": 17556,
+      "elo": 1400.4875185682777,
+      "pickCount": 65894,
+      "cubeCount": 17600,
       "scryfallId": "4216656e-90e8-45fc-a0f6-0d0d79d0a021"
     },
     "Starting Town": {
-      "elo": 1538.5096337716016,
-      "pickCount": 10388,
-      "cubeCount": 4799,
+      "elo": 1543.0621430159824,
+      "pickCount": 10524,
+      "cubeCount": 4845,
       "scryfallId": "fc7d1912-7e27-49ef-bd98-375d975a42b0"
     },
     "Strip Mine": {
-      "elo": 1754.378388435199,
-      "pickCount": 101713,
-      "cubeCount": 32485,
+      "elo": 1737.2728889504215,
+      "pickCount": 101843,
+      "cubeCount": 32570,
       "scryfallId": "e0f6a92f-edd8-4cb6-be91-f3ec229b20a6"
     },
     "Tolarian Academy": {
-      "elo": 1720.0214438113812,
-      "pickCount": 78201,
-      "cubeCount": 21466,
+      "elo": 1727.569089937013,
+      "pickCount": 78331,
+      "cubeCount": 21515,
       "scryfallId": "ad7ac9a5-340f-4509-826c-7b9416d47887"
     },
     "Urza's Saga": {
-      "elo": 1717.7112978369476,
-      "pickCount": 109673,
-      "cubeCount": 24598,
+      "elo": 1675.38741192936,
+      "pickCount": 109804,
+      "cubeCount": 24688,
       "scryfallId": "c1e0f201-42cb-46a1-901a-65bb4fc18f6c"
     },
     "Wasteland": {
-      "elo": 1564.1874452974926,
-      "pickCount": 116893,
-      "cubeCount": 33370,
+      "elo": 1541.7243404125215,
+      "pickCount": 117078,
+      "cubeCount": 33468,
       "scryfallId": "99ff731b-8399-40c8-b539-ba6ba5783771"
-    },
-    "Candelabra of Tawnos": {
-      "elo": 1391.3367426729615,
-      "pickCount": 23601,
-      "cubeCount": 7225,
-      "scryfallId": "5e8416b8-aae1-4599-9e22-650dd86aefcb"
     }
   }
 }

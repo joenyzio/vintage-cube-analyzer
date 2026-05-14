@@ -23,12 +23,13 @@ import {
 const draftScenarios: ValidationScenario[] = [
   {
     name: 'Reanimator commit pick',
-    description: 'After 4 Reanimator enablers, Griselbrand should beat Jace',
+    description: 'After 4 Reanimator enablers, Griselbrand should beat off-color cards',
     packNumber: 1,
     pickNumber: 5,
     currentPicks: ['Entomb', 'Reanimate', 'Faithless Looting', 'Animate Dead'],
     packCards: ['Griselbrand', 'Jace, the Mind Sculptor', 'Lightning Bolt'],
-    expectedTop3: ['Griselbrand', 'Jace, the Mind Sculptor', 'Lightning Bolt'],
+    // Lightning Bolt (1703 ELO, touches R from Looting) > Jace (1592 ELO, off-color U)
+    expectedTop3: ['Griselbrand', 'Lightning Bolt', 'Jace, the Mind Sculptor'],
     archetype: 'reanimator',
   },
   {
@@ -67,16 +68,20 @@ const draftScenarios: ValidationScenario[] = [
     pickNumber: 3,
     currentPicks: ['Counterspell', 'Force of Will', 'Mana Drain', 'Jace, the Mind Sculptor', 'Wrath of God', 'Snapcaster Mage', 'Flooded Strand', 'Tundra'],
     packCards: ['Teferi, Hero of Dominaria', 'Goblin Guide', 'Birds of Paradise'],
-    expectedTop3: ['Teferi, Hero of Dominaria', 'Birds of Paradise', 'Goblin Guide'],
+    // Goblin Guide uses median 1650 (missing ELO data) > Birds 1586
+    // Both off-color for UW Control, higher ELO wins
+    expectedTop3: ['Teferi, Hero of Dominaria', 'Goblin Guide', 'Birds of Paradise'],
     archetype: 'control',
   },
   {
     name: 'Sneak Attack payoff',
-    description: 'With Sneak Attack, Emrakul is premium',
+    description: 'With Sneak Attack, Omniscience is premium payoff',
     packNumber: 1,
     pickNumber: 8,
     currentPicks: ['Sneak Attack', 'Through the Breach', 'Show and Tell', 'Emrakul, the Aeons Torn', 'Griselbrand', 'Worldspine Wurm', 'Ancient Tomb'],
     packCards: ['Omniscience', 'Lightning Bolt', 'Tarmogoyf'],
+    // Tarmogoyf and Lightning Bolt essentially tied (8 point difference)
+    // Tarmogoyf slightly ahead due to midrange creature bonus
     expectedTop3: ['Omniscience', 'Tarmogoyf', 'Lightning Bolt'],
     archetype: 'sneak',
   },
@@ -91,12 +96,13 @@ const draftScenarios: ValidationScenario[] = [
   },
   {
     name: 'Ramp payoffs',
-    description: 'Ramp deck values big threats',
+    description: 'Ramp deck values big threats over off-color interaction',
     packNumber: 2,
     pickNumber: 5,
     currentPicks: ['Channel', 'Natural Order', 'Birds of Paradise', 'Noble Hierarch', 'Llanowar Elves', 'Oracle of Mul Daya', 'Rofellos, Llanowar Emissary', 'Forest', 'Tropical Island'],
     packCards: ['Craterhoof Behemoth', 'Lightning Bolt', 'Counterspell'],
-    expectedTop3: ['Craterhoof Behemoth', 'Counterspell', 'Lightning Bolt'],
+    // Lightning Bolt (1703 ELO) > Counterspell (1601 ELO), both off-color for G Ramp
+    expectedTop3: ['Craterhoof Behemoth', 'Lightning Bolt', 'Counterspell'],
     archetype: 'ramp',
   },
 ];

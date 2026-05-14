@@ -52,7 +52,8 @@ export function rateCard(
   // 3. Calculate archetype boost (multiplicative)
   const archetypeFit = clamp(totalAffinity, AFFINITY_BOUNDS.minWeight, AFFINITY_BOUNDS.maxWeight);
   const archetypeBoost = 1 + (archetypeFit * commitmentMultiplier);
-  const archetypeAdjustedElo = baseElo * clamp(archetypeBoost, 1, AFFINITY_BOUNDS.maxMultiplier);
+  // Allow anti-synergy to reduce scores (minimum 0.5x multiplier)
+  const archetypeAdjustedElo = baseElo * clamp(archetypeBoost, 0.5, AFFINITY_BOUNDS.maxMultiplier);
 
   if (archetypeFit > 0.1 && commitmentMultiplier > 0) {
     const topArchetype = breakdown.sort((a, b) => b.contribution - a.contribution)[0];

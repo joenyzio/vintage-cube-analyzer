@@ -140,6 +140,31 @@ export const EXPLICIT_AFFINITIES: CardAffinity[] = [
   // ========== OATH ==========
   { cardName: 'Oath of Druids', archetypeId: 'oath', weight: 1.0, role: 'enabler' },
   { cardName: 'Forbidden Orchard', archetypeId: 'oath', weight: 0.85, role: 'enabler' },
+
+  // ========== MIDRANGE ==========
+  // Disruption
+  { cardName: 'Thoughtseize', archetypeId: 'midrange', weight: 0.85, role: 'support' },
+  { cardName: 'Inquisition of Kozilek', archetypeId: 'midrange', weight: 0.75, role: 'support' },
+  { cardName: 'Collective Brutality', archetypeId: 'midrange', weight: 0.6, role: 'support' },
+
+  // Efficient threats
+  { cardName: 'Hexdrinker', archetypeId: 'midrange', weight: 0.7, role: 'payoff' },
+  { cardName: 'Questing Beast', archetypeId: 'midrange', weight: 0.65, role: 'payoff' },
+  { cardName: 'Uro, Titan of Nature\'s Wrath', archetypeId: 'midrange', weight: 0.8, role: 'payoff' },
+
+  // Value engines
+  { cardName: 'Dark Confidant', archetypeId: 'midrange', weight: 0.8, role: 'enabler' },
+  { cardName: 'Tireless Tracker', archetypeId: 'midrange', weight: 0.75, role: 'payoff' },
+  { cardName: 'Liliana of the Veil', archetypeId: 'midrange', weight: 0.85, role: 'payoff' },
+  { cardName: 'Oko, Thief of Crowns', archetypeId: 'midrange', weight: 0.9, role: 'payoff' },
+  { cardName: 'Grist, the Hunger Tide', archetypeId: 'midrange', weight: 0.7, role: 'payoff' },
+
+  // Utility creatures
+  { cardName: 'Deathrite Shaman', archetypeId: 'midrange', weight: 0.7, role: 'utility' },
+  { cardName: 'Scavenging Ooze', archetypeId: 'midrange', weight: 0.6, role: 'utility' },
+
+  // Removal
+  { cardName: 'Fatal Push', archetypeId: 'midrange', weight: 0.5, role: 'support' },
 ];
 
 // ============================================
@@ -255,6 +280,29 @@ export const PROPERTY_RULES: PropertyRule[] = [
     weight: 0.5,
     role: 'payoff',
     reason: 'Cheat target',
+  },
+
+  // Midrange - efficient mid-curve creatures (CMC 2-4)
+  {
+    archetypeId: 'midrange',
+    check: (c) => {
+      const cmc = c.cmc ?? 0;
+      const isCreature = Boolean(c.type_line?.toLowerCase().includes('creature'));
+      return isCreature && cmc >= 2 && cmc <= 4;
+    },
+    weight: 0.25,
+    role: 'payoff',
+    reason: 'Efficient creature',
+  },
+
+  // Midrange - discard effects
+  {
+    archetypeId: 'midrange',
+    check: (c) => Boolean(c.oracle_text?.toLowerCase().includes('discard a card') ||
+                          c.oracle_text?.toLowerCase().includes('discard two')),
+    weight: 0.3,
+    role: 'support',
+    reason: 'Disruption',
   },
 ];
 
