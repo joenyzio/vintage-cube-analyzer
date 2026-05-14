@@ -15,13 +15,14 @@ import { PowerAnalysis } from './components/PowerAnalysis';
 import { GraphExplorer } from './components/GraphExplorer';
 import { ArchetypeOddsPage } from './components/ArchetypeOddsPage';
 import { PrepCalendar } from './components/PrepCalendar';
+import { SimulationAnalysis } from './components/SimulationAnalysis';
 import {
   BarChart3, Layers, Trophy, BookOpen, Search, Sparkles,
   Gamepad2, Link2, Swords, ExternalLink, FileStack, Lightbulb,
   Menu, ChevronLeft, Dices, FlaskConical, Network, Percent, Calendar
 } from 'lucide-react';
 
-type TabId = 'overview' | 'draft' | 'prep' | 'games' | 'graph' | 'archetypes' | 'odds' | 'decks' | 'matchups' | 'synergies' | 'buildaround' | 'power' | 'analysis' | 'guide' | 'cards';
+type TabId = 'overview' | 'draft' | 'prep' | 'games' | 'graph' | 'archetypes' | 'odds' | 'decks' | 'matchups' | 'synergies' | 'buildaround' | 'power' | 'analysis' | 'simulation' | 'guide' | 'cards';
 
 interface NavItem {
   id: TabId;
@@ -43,6 +44,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'buildaround', label: 'Build Around', icon: Lightbulb },
   { id: 'power', label: 'Power Rankings', icon: Trophy },
   { id: 'analysis', label: 'Power Analysis', icon: FlaskConical },
+  { id: 'simulation', label: 'Simulation', icon: BarChart3 },
   { id: 'guide', label: 'Draft Guide', icon: BookOpen },
   { id: 'cards', label: 'Card Browser', icon: Search },
 ];
@@ -172,6 +174,8 @@ function App() {
         return <PowerRankings cards={cards} />;
       case 'analysis':
         return <PowerAnalysis cards={cards} />;
+      case 'simulation':
+        return <SimulationAnalysis cards={cards} />;
       case 'guide':
         return <DraftGuide strategies={draftStrategies} />;
       case 'cards':

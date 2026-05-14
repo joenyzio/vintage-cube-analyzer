@@ -1,11 +1,26 @@
 /**
  * Contextual Card Rating Engine
  *
- * The core rating system that computes context-aware card scores.
- * Uses multiplicative archetype boost with continuous commitment scaling.
+ * Rating system adapted from madrury's mtg-draftbot methodology
+ * (https://github.com/madrury/mtg-draftbot)
+ *
+ * Implements multiplicative archetype-aware ratings with continuous
+ * commitment scaling. Key concepts from madrury's framework:
+ *   - Dynamic archetype preferences that evolve during draft
+ *   - Cards evaluated within current archetype context
+ *   - Multiplicative effect of archetype fit on base rating
+ *   - Continuous commitment scaling (not binary committed/uncommitted)
+ *
+ * Vintage Cube-specific additions (original work):
+ *   - 10 archetype definitions with key/signal cards
+ *   - 95 explicit card-to-archetype affinity mappings
+ *   - Property-based rules for unmapped cards
+ *   - Calibrated multiplier values for this cube's composition
+ *   - Color penalty system scaled to draft progress
  *
  * Key formula:
- *   contextualScore = baseElo * (1 + archetypeFit * commitmentMultiplier) + secondaryAdjustments
+ *   contextualScore = (baseElo * colorMultiplier) * archetypeBoost + secondaryAdjustments
+ *   where archetypeBoost = 1 + (archetypeFit * commitmentMultiplier)
  */
 
 import type { CubeCard } from '../../types/card';
