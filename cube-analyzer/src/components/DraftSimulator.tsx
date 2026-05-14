@@ -4235,7 +4235,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
   const recommendedCard = getRecommendedPick;
 
   return (
-    <div className="flex h-screen">
+    <div className="fixed top-0 bottom-0 right-0 left-0 lg:left-64 z-40 flex bg-black">
       {/* Achievement Popup */}
       {newAchievement && (
         <div className="fixed top-4 right-4 z-50 animate-pulse">
