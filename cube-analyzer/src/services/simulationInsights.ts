@@ -2,7 +2,12 @@
  * Simulation Insights Service
  *
  * Provides access to draft simulation data for UI display.
- * Data comes from running 500 simulated drafts with 8 bot drafters.
+ * Data comes from running 10,000 simulated drafts with 8 bot drafters.
+ *
+ * Key insight: Color combinations matter significantly within archetypes:
+ * - Midrange: Sultai (1929 ELO) >> Selesnya (1729 ELO)
+ * - Aggro: Jeskai (1893 ELO) >> Boros (1795 ELO)
+ * - Tempo: Sultai (1907 ELO) >> Mardu (1788 ELO)
  */
 
 import simulationData from '../data/simulation-data.json';
@@ -24,6 +29,15 @@ export interface ArchetypeStats {
   avgDeckQuality: number;
 }
 
+export interface ArchetypeSubtype {
+  colorCombo: string;
+  name: string;
+  count: number;
+  avgDeckQuality: number;
+  avgCmc: number;
+  topCards: string[];
+}
+
 export interface SimulationMetadata {
   draftCount: number;
   totalDecks: number;
@@ -32,9 +46,25 @@ export interface SimulationMetadata {
 // Extract data from JSON
 const CARD_STATS: Record<string, CardSimStats> = simulationData.cardStats;
 const ARCHETYPE_DISTRIBUTION: Record<string, ArchetypeStats> = simulationData.archetypeDistribution;
+const MIDRANGE_SUBTYPES: Record<string, ArchetypeSubtype> = (simulationData as any).midrangeSubtypes || {};
+const AGGRO_SUBTYPES: Record<string, ArchetypeSubtype> = (simulationData as any).aggroSubtypes || {};
+const TEMPO_SUBTYPES: Record<string, ArchetypeSubtype> = (simulationData as any).tempoSubtypes || {};
 const METADATA: SimulationMetadata = {
   draftCount: simulationData.draftCount,
   totalDecks: simulationData.totalDecks,
+};
+
+// Pre-computed best variants for each archetype
+const BEST_VARIANTS: Record<string, { name: string; colors: string; elo: number }> = {
+  midrange: { name: 'Sultai', colors: 'BGU', elo: 1929 },
+  aggro: { name: 'Jeskai', colors: 'RUW', elo: 1893 },
+  tempo: { name: 'Sultai', colors: 'BGU', elo: 1907 },
+};
+
+const WORST_VARIANTS: Record<string, { name: string; colors: string; elo: number }> = {
+  midrange: { name: 'Selesnya', colors: 'GW', elo: 1729 },
+  aggro: { name: 'Boros', colors: 'RW', elo: 1795 },
+  tempo: { name: 'Mardu', colors: 'BRW', elo: 1788 },
 };
 
 /**
@@ -221,3 +251,109 @@ export function getArchetypeContext(archetypeId: string): string | null {
 
 // Export metadata for components that need it
 export const SIMULATION_METADATA = METADATA;
+
+/**
+ * Get the archetype subtypes for a given archetype
+ */
+export function getArchetypeSubtypes(archetypeId: string): Record<string, ArchetypeSubtype> {
+  switch (archetypeId) {
+    case 'midrange': return MIDRANGE_SUBTYPES;
+    case 'aggro': return AGGRO_SUBTYPES;
+    case 'tempo': return TEMPO_SUBTYPES;
+    default: return {};
+  }
+}
+
+/**
+ * Get the best variant for an archetype
+ */
+export function getBestVariant(archetypeId: string): { name: string; colors: string; elo: number } | null {
+  return BEST_VARIANTS[archetypeId] || null;
+}
+
+/**
+ * Get the worst variant for an archetype
+ */
+export function getWorstVariant(archetypeId: string): { name: string; colors: string; elo: number } | null {
+  return WORST_VARIANTS[archetypeId] || null;
+}
+
+/**
+ * Get color-specific advice for an archetype based on current colors
+ */
+export function getColorAdvice(archetypeId: string, currentColors: string[]): string | null {
+  const subtypes = getArchetypeSubtypes(archetypeId);
+  if (Object.keys(subtypes).length === 0) return null;
+
+  const sortedColors = [...currentColors].sort().join('');
+  const currentSubtype = subtypes[sortedColors];
+  const best = getBestVariant(archetypeId);
+  const worst = getWorstVariant(archetypeId);
+
+  // If we have an exact match, show its ELO
+  if (currentSubtype) {
+    const delta = best ? currentSubtype.avgDeckQuality - best.elo : 0;
+    if (delta >= -20) {
+      return `${currentSubtype.name} variant: ${currentSubtype.avgDeckQuality} ELO`;
+    }
+  }
+
+  if (!best) return null;
+
+  // Check if current colors match best variant
+  const hasAllBestColors = best.colors.split('').every(c => currentColors.includes(c));
+
+  if (hasAllBestColors) {
+    return `Optimal colors for ${archetypeId}! ${best.name} averages ${best.elo} ELO.`;
+  }
+
+  // Check if current colors are heading toward worst variant
+  if (worst) {
+    const hasWorstColors = worst.colors.split('').every(c => currentColors.includes(c));
+    const missingBestColors = best.colors.split('').filter(c => !currentColors.includes(c));
+
+    if (hasWorstColors && missingBestColors.length > 0) {
+      const colorNames: Record<string, string> = { W: 'White', U: 'Blue', B: 'Black', R: 'Red', G: 'Green' };
+      const missingNames = missingBestColors.map(c => colorNames[c]).join('/');
+      return `Consider adding ${missingNames}. ${best.name} (${best.elo} ELO) beats ${worst.name} (${worst.elo} ELO) by ${best.elo - worst.elo} points.`;
+    }
+  }
+
+  // General advice based on what's missing
+  if (archetypeId === 'midrange' || archetypeId === 'tempo') {
+    if (!currentColors.includes('B')) {
+      return 'Black is key for top variants. Thoughtseize and Liliana elevate fair decks.';
+    }
+    if (!currentColors.includes('U')) {
+      return 'Blue adds card selection and protection. Top variants are Sultai/Grixis.';
+    }
+  }
+
+  if (archetypeId === 'aggro') {
+    if (!currentColors.includes('U') && currentColors.includes('R') && currentColors.includes('W')) {
+      return 'Splash Blue for Jeskai Aggro. Daze and counters protect your clock (+100 ELO over Boros).';
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Get ELO for a specific color combination within an archetype
+ */
+export function getSubtypeElo(archetypeId: string, colors: string[]): number | null {
+  const subtypes = getArchetypeSubtypes(archetypeId);
+  const sortedColors = [...colors].sort().join('');
+  const subtype = subtypes[sortedColors];
+  return subtype?.avgDeckQuality || null;
+}
+
+/**
+ * Get a ranked list of variants for an archetype
+ */
+export function getRankedVariants(archetypeId: string, limit = 5): ArchetypeSubtype[] {
+  const subtypes = getArchetypeSubtypes(archetypeId);
+  return Object.values(subtypes)
+    .sort((a, b) => b.avgDeckQuality - a.avgDeckQuality)
+    .slice(0, limit);
+}

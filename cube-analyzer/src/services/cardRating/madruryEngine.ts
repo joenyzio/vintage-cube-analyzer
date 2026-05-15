@@ -780,6 +780,78 @@ function preferenceToGrade(probability: number): { grade: string; gradeReason: s
 }
 
 /**
+ * Analyze pack composition for strategic insights.
+ * This is the "card counting" - using visible info to adjust strategy.
+ */
+export interface PackAnalysis {
+  colorDistribution: Record<string, number>;
+  dominantColors: string[];  // Colors with 3+ cards
+  archetypeSignals: { archetypeId: string; cardCount: number; cards: string[] }[];
+  likelyWheels: string[];  // Cards that probably come back
+  powerConcentration: 'high' | 'medium' | 'low';  // How much power is in this pack
+}
+
+export function analyzePackComposition(pack: CubeCard[]): PackAnalysis {
+  // Count colors
+  const colorDistribution: Record<string, number> = { W: 0, U: 0, B: 0, R: 0, G: 0 };
+  for (const card of pack) {
+    for (const color of card.color_identity || []) {
+      colorDistribution[color] = (colorDistribution[color] || 0) + 1;
+    }
+  }
+  const dominantColors = Object.entries(colorDistribution)
+    .filter(([_, count]) => count >= 3)
+    .map(([color]) => color);
+
+  // Count archetype signals
+  const archetypeCounts: Record<string, string[]> = {};
+  for (const arch of VINTAGE_CUBE_ARCHETYPES) {
+    archetypeCounts[arch.id] = [];
+    for (const card of pack) {
+      if (arch.keyCards.includes(card.name) || arch.signalCards.includes(card.name)) {
+        archetypeCounts[arch.id].push(card.name);
+      }
+    }
+  }
+  const archetypeSignals = Object.entries(archetypeCounts)
+    .filter(([_, cards]) => cards.length >= 2)
+    .map(([archetypeId, cards]) => ({ archetypeId, cardCount: cards.length, cards }))
+    .sort((a, b) => b.cardCount - a.cardCount);
+
+  // Identify likely wheels (low ELO cards, or cards that wheel often)
+  const likelyWheels: string[] = [];
+  for (const card of pack) {
+    const elo = getEloData(card.name)?.elo ?? ELO_RANGE.median;
+    // Cards below median ELO often wheel
+    if (elo < ELO_RANGE.median - 100) {
+      likelyWheels.push(card.name);
+    }
+  }
+
+  // Assess power concentration
+  const avgElo = pack.reduce((sum, c) => sum + (getEloData(c.name)?.elo ?? ELO_RANGE.median), 0) / pack.length;
+  const powerConcentration = avgElo > ELO_RANGE.median + 50 ? 'high' :
+                             avgElo < ELO_RANGE.median - 50 ? 'low' : 'medium';
+
+  return { colorDistribution, dominantColors, archetypeSignals, likelyWheels, powerConcentration };
+}
+
+/**
+ * Calculate how much to weight raw ELO vs archetype synergy.
+ * Early picks = pure power. Later picks = synergy matters more.
+ */
+function getEloWeight(pickNumber: number): number {
+  // P1P1-P1P3: 90% ELO, 10% synergy (take the best card)
+  // P1P4-P1P8: 70% ELO, 30% synergy (start considering fit)
+  // P1P9-P2P15: 50% ELO, 50% synergy (balanced)
+  // P3+: 30% ELO, 70% synergy (fit matters most)
+  if (pickNumber <= 3) return 0.9;
+  if (pickNumber <= 8) return 0.7;
+  if (pickNumber <= 23) return 0.5;
+  return 0.3;
+}
+
+/**
  * Rate all cards in a pack.
  * Main entry point for UI integration.
  */
@@ -796,6 +868,14 @@ export function rateAllCards(
   // Get dominant archetype for "on plan" calculation
   const dominant = getDominantArchetype(context.preferences, context.picks);
 
+  // Calculate ELO weight based on pick number
+  const totalPicks = context.picks.length;
+  const eloWeight = getEloWeight(totalPicks + 1);  // +1 because we're making the next pick
+  const synergyWeight = 1 - eloWeight;
+
+  // Analyze pack for context
+  const packAnalysis = analyzePackComposition(pack);
+
   // Convert to rating format
   return withProbs.map(({ card, preference, probability, contributions }) => {
     const { grade, gradeReason } = preferenceToGrade(probability);
@@ -803,14 +883,48 @@ export function rateAllCards(
     // Build reasons list
     const reasons: string[] = [];
     const topContrib = contributions[0];
-    if (topContrib && topContrib.contribution > 0.1) {
-      const arch = VINTAGE_CUBE_ARCHETYPES.find(a => a.id === topContrib.archetypeId);
-      reasons.push(`+${topContrib.contribution.toFixed(2)} ${arch?.shortName || topContrib.archetypeId}`);
+
+    // Get base ELO
+    const baseElo = getEloData(card.name)?.elo ?? ELO_RANGE.median;
+
+    // At early picks, emphasize ELO; later, emphasize synergy
+    // normalizedScore = weighted blend of pure ELO and synergy-adjusted score
+    const pureEloScore = baseElo;
+    const synergyAdjustedScore = baseElo + (preference * 200);
+    const normalizedScore = (pureEloScore * eloWeight) + (synergyAdjustedScore * synergyWeight);
+
+    // Provide context-aware reasons
+    if (totalPicks === 0) {
+      // P1P1: Focus on power and flexibility
+      if (baseElo >= ELO_RANGE.median + 150) {
+        reasons.push('High power first pick');
+      }
+      // Check if this card is in a color-heavy pack
+      const cardColors = card.color_identity || [];
+      const inDominantColor = cardColors.some(c => packAnalysis.dominantColors.includes(c));
+      if (inDominantColor && cardColors.length === 1) {
+        reasons.push(`${cardColors[0]} is deep in this pack`);
+      }
+      // Check for archetype signals
+      const relevantSignal = packAnalysis.archetypeSignals.find(s =>
+        VINTAGE_CUBE_ARCHETYPES.find(a => a.id === s.archetypeId)?.keyCards.includes(card.name) ||
+        VINTAGE_CUBE_ARCHETYPES.find(a => a.id === s.archetypeId)?.signalCards.includes(card.name)
+      );
+      if (relevantSignal && relevantSignal.cardCount >= 2) {
+        const arch = VINTAGE_CUBE_ARCHETYPES.find(a => a.id === relevantSignal.archetypeId);
+        reasons.push(`${arch?.shortName || relevantSignal.archetypeId}: ${relevantSignal.cardCount} cards in pack`);
+      }
+    } else {
+      // Later picks: show archetype contribution
+      if (topContrib && topContrib.contribution > 0.1) {
+        const arch = VINTAGE_CUBE_ARCHETYPES.find(a => a.id === topContrib.archetypeId);
+        reasons.push(`+${topContrib.contribution.toFixed(2)} ${arch?.shortName || topContrib.archetypeId}`);
+      }
     }
 
     // Check for anti-synergy
     const negContrib = contributions.find(c => c.contribution < -0.1);
-    if (negContrib) {
+    if (negContrib && totalPicks > 5) {
       const arch = VINTAGE_CUBE_ARCHETYPES.find(a => a.id === negContrib.archetypeId);
       reasons.push(`${negContrib.contribution.toFixed(2)} anti-${arch?.shortName || negContrib.archetypeId}`);
     }
@@ -819,11 +933,6 @@ export function rateAllCards(
     const isOnPlan = dominant === null || contributions.some(
       c => c.archetypeId === dominant.id && c.contribution > 0
     );
-
-    // Normalize score for display (scale preference to ELO-like range)
-    // Base ELO + preference contribution
-    const baseElo = getEloData(card.name)?.elo ?? ELO_RANGE.median;
-    const normalizedScore = baseElo + (preference * 200);
 
     return {
       cardName: card.name,
@@ -837,7 +946,7 @@ export function rateAllCards(
       reasons,
       isOnPlan,
     };
-  }).sort((a, b) => b.preference - a.preference);
+  }).sort((a, b) => b.normalizedScore - a.normalizedScore);  // Sort by blended score, not raw preference
 }
 
 /**

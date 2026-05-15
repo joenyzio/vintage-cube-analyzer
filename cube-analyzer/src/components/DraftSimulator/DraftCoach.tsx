@@ -18,7 +18,8 @@ interface DeckWinRateData {
   factors: { name: string; impact: number; description: string }[];
 }
 import { getCardImage } from '../../services/scryfall';
-import { getArchetypeContext } from '../../services/simulationInsights';
+import { getArchetypeContext, getColorAdvice, getBestVariant } from '../../services/simulationInsights';
+import { analyzePackComposition } from '../../services/cardRating';
 
 interface ArchetypeCommitment {
   archetype: string;
@@ -105,9 +106,70 @@ export function DraftCoach({
   onToggleCoachExplanation,
   onHoverCard,
 }: DraftCoachProps) {
+  // Get current pack (player 0's pack from tablePacks)
+  const currentPack = draftState.tablePacks?.[0] || [];
+
+  // Analyze current pack for strategic insights
+  const packAnalysis = currentPack.length > 0
+    ? analyzePackComposition(currentPack)
+    : null;
+
   return (
     <div className="w-[320px] flex-shrink-0 hidden lg:flex flex-col bg-white/[0.02] border-r border-white/[0.08]">
       <div className="flex-1 overflow-y-auto p-5 space-y-4">
+        {/* Pack Analysis - Shows throughout draft */}
+        {coachMode && packAnalysis && currentPack.length > 0 && (
+          <div className="bg-blue-500/5 border border-blue-500/20 rounded-lg p-3 space-y-2">
+            <div className="text-xs text-blue-400/80 uppercase tracking-wider font-medium">Pack Intel</div>
+
+            {/* Color concentration */}
+            {packAnalysis.dominantColors.length > 0 && (
+              <div className="text-xs text-white/60">
+                <span className="text-white/40">Heavy in: </span>
+                {packAnalysis.dominantColors.map(c => {
+                  const colorName: Record<string, string> = { W: 'White', U: 'Blue', B: 'Black', R: 'Red', G: 'Green' };
+                  return colorName[c] || c;
+                }).join(', ')}
+                <span className="text-white/30 ml-1">(3+ cards)</span>
+              </div>
+            )}
+
+            {/* Archetype signals */}
+            {packAnalysis.archetypeSignals.length > 0 && (
+              <div className="text-xs text-white/60">
+                <span className="text-white/40">Signals: </span>
+                {packAnalysis.archetypeSignals.slice(0, 2).map((s, i) => (
+                  <span key={s.archetypeId}>
+                    {i > 0 && ', '}
+                    <span className="text-purple-400/80">{s.archetypeId}</span>
+                    <span className="text-white/30"> ({s.cardCount})</span>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* Likely wheels */}
+            {packAnalysis.likelyWheels.length > 0 && packAnalysis.likelyWheels.length <= 5 && (
+              <div className="text-xs text-white/50">
+                <span className="text-white/40">May wheel: </span>
+                {packAnalysis.likelyWheels.slice(0, 3).join(', ')}
+              </div>
+            )}
+
+            {/* Power level */}
+            <div className="text-xs">
+              <span className="text-white/40">Pack power: </span>
+              <span className={
+                packAnalysis.powerConcentration === 'high' ? 'text-amber-400' :
+                packAnalysis.powerConcentration === 'low' ? 'text-red-400/60' :
+                'text-white/50'
+              }>
+                {packAnalysis.powerConcentration}
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Coach Panel - Spacious design */}
         {(coachMode || (quizDraftMode && showPickReveal)) && coachExplanation && (
           <div className="space-y-4">
@@ -137,20 +199,37 @@ export function DraftCoach({
                 </div>
               </div>
 
-              {/* Current Archetype with Emergence */}
+              {/* Current Archetype with Emergence and Color Advice */}
               {coachExplanation.currentArchetype && (
-                <div className="space-y-1">
+                <div className="space-y-2">
                   <div className="text-sm text-white/40">
                     Building: <span className="text-white/70 font-medium">{coachExplanation.currentArchetype}</span>
                   </div>
                   {(() => {
                     const archetypeId = coachExplanation.currentArchetype.toLowerCase();
                     const context = getArchetypeContext(archetypeId);
-                    if (!context) return null;
+                    const currentColors = Object.keys(colorCounts).filter(c => colorCounts[c] > 0);
+                    const colorAdvice = getColorAdvice(archetypeId, currentColors);
+                    const bestVariant = getBestVariant(archetypeId);
+
                     return (
-                      <div className="text-xs text-white/30 italic">
-                        {context}
-                      </div>
+                      <>
+                        {context && (
+                          <div className="text-xs text-white/30 italic">
+                            {context}
+                          </div>
+                        )}
+                        {bestVariant && (
+                          <div className="text-xs text-purple-400/80">
+                            Best variant: {bestVariant.name} ({bestVariant.colors}) at {bestVariant.elo} ELO
+                          </div>
+                        )}
+                        {colorAdvice && (
+                          <div className="text-xs text-amber-400/80 bg-amber-500/10 px-2 py-1 rounded">
+                            {colorAdvice}
+                          </div>
+                        )}
+                      </>
                     );
                   })()}
                 </div>

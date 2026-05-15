@@ -98,12 +98,29 @@ export interface DeckProfileStats {
   max: number;
 }
 
+export interface ArchetypeSubtype {
+  colorCombo: string;           // "BGU", "BRG", etc.
+  name: string;                 // "Sultai", "Jund", etc.
+  count: number;
+  avgDeckQuality: number;
+  avgCmc: number;
+  topCards: string[];           // Most common cards in this variant
+}
+
+// Legacy alias for backwards compatibility
+export type MidrangeSubtype = ArchetypeSubtype;
+
 export interface AggregateAnalysis {
   draftCount: number;
   totalDecks: number;
 
   // Archetype emergence
   archetypeDistribution: Record<string, ArchetypeStats>;
+
+  // Archetype breakdowns by color
+  midrangeSubtypes: Record<string, ArchetypeSubtype>;
+  aggroSubtypes: Record<string, ArchetypeSubtype>;
+  tempoSubtypes: Record<string, ArchetypeSubtype>;
 
   // Card-level data
   cardStats: Record<string, CardStats>;

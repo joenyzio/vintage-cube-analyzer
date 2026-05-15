@@ -134,6 +134,9 @@ function convertToMadruryContext(context: DraftContext): MadruryContext {
 // New Madrury-specific exports
 // ============================================
 
+// Import pack analysis
+import { analyzePackComposition, type PackAnalysis } from './madruryEngine';
+
 export {
   // New engine functions
   madruryRateCard,
@@ -145,10 +148,12 @@ export {
   updatePreferences,
   toLegacyContext,
   toLegacyRating,
+  analyzePackComposition,
 
   // Types
   type MadruryContext,
   type MadruryRating,
+  type PackAnalysis,
 };
 
 // ============================================

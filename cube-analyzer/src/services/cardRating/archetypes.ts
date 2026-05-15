@@ -69,8 +69,8 @@ export const VINTAGE_CUBE_ARCHETYPES: ArchetypeDefinition[] = [
     id: 'aggro',
     name: 'Aggro',
     shortName: 'Aggro',
-    description: 'Fast creature beatdown with burn support',
-    primaryColors: ['R', 'W'],
+    description: 'Fast creature beatdown with burn support. Best variant: Jeskai (RUW) at 1893 ELO.',
+    primaryColors: ['R', 'W', 'U'],
     keyCards: [
       'Monastery Swiftspear',
       'Goblin Guide',
@@ -197,8 +197,8 @@ export const VINTAGE_CUBE_ARCHETYPES: ArchetypeDefinition[] = [
     id: 'midrange',
     name: 'Midrange',
     shortName: 'Mid',
-    description: 'Efficient threats with flexible answers',
-    primaryColors: ['B', 'G'],
+    description: 'Efficient threats with flexible answers. Best variant: Sultai (BGU) at 1929 ELO.',
+    primaryColors: ['B', 'G', 'U'],
     keyCards: [
       'Tarmogoyf',
       'Tireless Tracker',
@@ -222,8 +222,8 @@ export const VINTAGE_CUBE_ARCHETYPES: ArchetypeDefinition[] = [
     id: 'tempo',
     name: 'Tempo',
     shortName: 'Tempo',
-    description: 'Efficient threats backed by cheap interaction',
-    primaryColors: ['U', 'R'],
+    description: 'Efficient threats backed by cheap interaction. Best variant: Sultai (BGU) at 1907 ELO.',
+    primaryColors: ['U', 'B', 'G'],
     keyCards: [
       'Daze',
       'Force Spike',

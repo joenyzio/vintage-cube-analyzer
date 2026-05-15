@@ -14,9 +14,28 @@ import type {
   ArchetypeStats,
   DeckProfileStats,
   AggregateAnalysis,
+  ArchetypeSubtype,
 } from './types';
 
 const COLORS = ['W', 'U', 'B', 'R', 'G'];
+
+// Color combination names
+const COLOR_COMBO_NAMES: Record<string, string> = {
+  // Two color
+  'WU': 'Azorius', 'UB': 'Dimir', 'BR': 'Rakdos', 'RG': 'Gruul', 'GW': 'Selesnya',
+  'WB': 'Orzhov', 'UR': 'Izzet', 'BG': 'Golgari', 'RW': 'Boros', 'GU': 'Simic',
+  'BU': 'Dimir', 'BW': 'Orzhov', 'GR': 'Gruul', 'RU': 'Izzet', 'UW': 'Azorius',
+  // Three color - Shards
+  'GUW': 'Bant', 'BUW': 'Esper', 'BRU': 'Grixis', 'BGR': 'Jund', 'GRW': 'Naya',
+  // Three color - Wedges
+  'BGW': 'Abzan', 'GRU': 'Temur', 'BRW': 'Mardu', 'BGU': 'Sultai', 'RUW': 'Jeskai',
+  // Four color
+  'BGRU': 'Sans-White', 'BGRW': 'Sans-Blue', 'GRUW': 'Sans-Black', 'BRUW': 'Sans-Green', 'BGUW': 'Sans-Red',
+  // Five color
+  'BGRUW': '5-Color',
+  // Mono
+  'W': 'Mono-White', 'U': 'Mono-Blue', 'B': 'Mono-Black', 'R': 'Mono-Red', 'G': 'Mono-Green',
+};
 
 // ============================================
 // Main Analysis Function
@@ -60,6 +79,18 @@ export function analyzeDrafts(
   // Anomaly tracking
   let insufficientPoolCount = 0;
 
+  // Archetype subtype tracking (by color)
+  const archetypeColorTracking: Record<string, Record<string, {
+    count: number;
+    totalQuality: number;
+    totalCmc: number;
+    cardCounts: Record<string, number>;
+  }>> = {
+    midrange: {},
+    aggro: {},
+    tempo: {},
+  };
+
   // Process each draft
   for (const draft of results) {
     // Analyze picks
@@ -80,6 +111,32 @@ export function analyzeDrafts(
 
       if (deck.insufficientPoolDepth) {
         insufficientPoolCount++;
+      }
+
+      // Track archetype subtypes by color combination (midrange, aggro, tempo)
+      const trackedArchetypes = ['midrange', 'aggro', 'tempo'];
+      if (deck.finalArchetype && trackedArchetypes.includes(deck.finalArchetype)) {
+        const tracking = archetypeColorTracking[deck.finalArchetype];
+        const colorKey = deck.colors.sort().join('');
+        if (!tracking[colorKey]) {
+          tracking[colorKey] = {
+            count: 0,
+            totalQuality: 0,
+            totalCmc: 0,
+            cardCounts: {},
+          };
+        }
+        tracking[colorKey].count++;
+        tracking[colorKey].totalQuality += deck.deckQuality;
+        tracking[colorKey].totalCmc += deck.avgCmc;
+
+        // Track card frequency in this variant
+        for (const card of deck.mainDeck) {
+          if (card.type_line && !card.type_line.includes('Land')) {
+            tracking[colorKey].cardCounts[card.name] =
+              (tracking[colorKey].cardCounts[card.name] || 0) + 1;
+          }
+        }
       }
     }
   }
@@ -110,10 +167,41 @@ export function analyzeDrafts(
   // Run sanity checks
   const sanityChecks = runSanityChecks(results, cardStats, archetypeDistribution, cubeCards);
 
+  // Build archetype subtypes for all tracked archetypes
+  function buildSubtypes(tracking: Record<string, { count: number; totalQuality: number; totalCmc: number; cardCounts: Record<string, number> }>): Record<string, ArchetypeSubtype> {
+    const subtypes: Record<string, ArchetypeSubtype> = {};
+    for (const [colorKey, data] of Object.entries(tracking)) {
+      if (data.count < 10) continue; // Skip very rare variants
+
+      // Get top cards for this variant
+      const sortedCards = Object.entries(data.cardCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10)
+        .map(([name]) => name);
+
+      subtypes[colorKey] = {
+        colorCombo: colorKey,
+        name: COLOR_COMBO_NAMES[colorKey] || colorKey,
+        count: data.count,
+        avgDeckQuality: Math.round(data.totalQuality / data.count),
+        avgCmc: Math.round((data.totalCmc / data.count) * 100) / 100,
+        topCards: sortedCards,
+      };
+    }
+    return subtypes;
+  }
+
+  const midrangeSubtypes = buildSubtypes(archetypeColorTracking.midrange);
+  const aggroSubtypes = buildSubtypes(archetypeColorTracking.aggro);
+  const tempoSubtypes = buildSubtypes(archetypeColorTracking.tempo);
+
   return {
     draftCount,
     totalDecks,
     archetypeDistribution,
+    midrangeSubtypes,
+    aggroSubtypes,
+    tempoSubtypes,
     cardStats,
     colorDistribution: colorAppearances,
     colorPairDistribution: colorPairCounts,

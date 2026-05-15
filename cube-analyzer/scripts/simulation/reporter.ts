@@ -108,6 +108,41 @@ function generateMarkdownReport(analysis: AggregateAnalysis & { playerCount?: nu
   }
   lines.push('');
 
+  // Archetype Subtypes - helper function
+  const renderArchetypeBreakdown = (
+    subtypes: Record<string, any> | undefined,
+    archetypeName: string,
+    archetypeId: string
+  ) => {
+    if (!subtypes || Object.keys(subtypes).length === 0) return;
+
+    const archetypeTotal = analysis.archetypeDistribution[archetypeId]?.count || 1;
+    const archetypePct = ((archetypeTotal / analysis.totalDecks) * 100).toFixed(1);
+
+    lines.push(`## ${archetypeName} Breakdown`);
+    lines.push('');
+    lines.push(`${archetypeName} is ${archetypePct}% of decks. Here's the breakdown by color:`);
+    lines.push('');
+    lines.push('| Variant | Decks | % of Archetype | Avg ELO | Avg CMC | Top Cards |');
+    lines.push('|---------|-------|----------------|---------|---------|-----------|');
+
+    const sorted = Object.entries(subtypes)
+      .sort((a, b) => (b[1] as any).avgDeckQuality - (a[1] as any).avgDeckQuality);
+
+    for (const [_, subtype] of sorted) {
+      const s = subtype as any;
+      const pctOfArchetype = ((s.count / archetypeTotal) * 100).toFixed(1);
+      const topCards = s.topCards.slice(0, 3).join(', ');
+      lines.push(`| ${s.name} (${s.colorCombo}) | ${s.count} | ${pctOfArchetype}% | ${s.avgDeckQuality} | ${s.avgCmc} | ${topCards} |`);
+    }
+    lines.push('');
+  };
+
+  // Render breakdowns for tracked archetypes
+  renderArchetypeBreakdown(analysis.midrangeSubtypes, 'Midrange', 'midrange');
+  renderArchetypeBreakdown((analysis as any).aggroSubtypes, 'Aggro', 'aggro');
+  renderArchetypeBreakdown((analysis as any).tempoSubtypes, 'Tempo', 'tempo');
+
   // Color Distribution
   lines.push('## Color Distribution');
   lines.push('');

@@ -2,7 +2,16 @@ import { useMemo, useState, useRef, useCallback } from 'react';
 import type { CubeCard } from '../types/card';
 import { getCardImage } from '../services/scryfall';
 import { TrendingUp, Users, Zap, Target, AlertTriangle, CheckCircle, X, Database } from 'lucide-react';
-import simulationData from '../data/simulation-data.json';
+import simulationData8p from '../data/simulation-data.json';
+import simulationData6p from '../data/simulation-data-6p.json';
+
+// Both simulation datasets
+const SIMULATIONS = {
+  '8': simulationData8p,
+  '6': simulationData6p,
+} as const;
+
+type PlayerCount = '8' | '6';
 
 interface Props {
   cards: CubeCard[];
@@ -36,7 +45,7 @@ const ARCHETYPE_META: Record<string, ArchetypeMeta> = {
     id: 'midrange',
     name: 'Midrange',
     description: 'Value-oriented decks with efficient threats and disruption',
-    strategy: 'Draft flexible, powerful cards. This is the "good stuff" fallback when combo doesn\'t come together.',
+    strategy: 'Aim for Sultai (BGU) at 1929 ELO — the best fair deck. Black is essential: Liliana, Thoughtseize, Dark Confidant. Avoid GW-based variants.',
     colors: ['B', 'G', 'U'],
     difficulty: 'Easy',
   },
@@ -44,8 +53,8 @@ const ARCHETYPE_META: Record<string, ArchetypeMeta> = {
     id: 'aggro',
     name: 'Aggro',
     description: 'Fast, aggressive decks that win before opponents stabilize',
-    strategy: 'Prioritize cheap, efficient creatures and burn. Keep your curve low. Ignore most cards over 4 mana.',
-    colors: ['R', 'W'],
+    strategy: 'Jeskai (RUW) at 1893 ELO beats Boros by 100 points. Splash Blue for Daze and Spell Pierce to protect your clock.',
+    colors: ['R', 'W', 'U'],
     difficulty: 'Easy',
   },
   reanimator: {
@@ -60,8 +69,8 @@ const ARCHETYPE_META: Record<string, ArchetypeMeta> = {
     id: 'tempo',
     name: 'Tempo',
     description: 'Efficient threats backed by cheap interaction',
-    strategy: 'Deploy threats early, protect them with counters and bounce. Win before opponent recovers.',
-    colors: ['U', 'W', 'R'],
+    strategy: 'Sultai Tempo (BGU) at 1907 ELO is tier-1. Black adds Thoughtseize for combo protection. True-Name Nemesis is core.',
+    colors: ['U', 'B', 'G'],
     difficulty: 'Medium',
   },
   ramp: {
@@ -128,15 +137,11 @@ interface ArchetypeStats {
   avgPickPosition: number;
 }
 
-// Get simulation data
-const simArchetypes = simulationData.archetypeDistribution as Record<string, SimulationArchetypeData>;
-const simCardStats = simulationData.cardStats as Record<string, CardStats>;
-const totalDecks = simulationData.totalDecks;
-
 // Get cards that actually appear in this archetype based on simulation data
 function getSimulatedArchetypeCards(
   cards: CubeCard[],
-  archetypeId: string
+  archetypeId: string,
+  simCardStats: Record<string, CardStats>
 ): { core: CubeCard[]; support: CubeCard[]; avgPickPosition: number } {
   const cardsByAffinity: { card: CubeCard; affinity: number; pickPos: number }[] = [];
 
@@ -192,7 +197,11 @@ function getSimulatedArchetypeCards(
 }
 
 // Calculate contestedness from simulation: how many other archetypes want these core cards
-function calculateSimContestedness(coreCards: CubeCard[], myArchetypeId: string): number {
+function calculateSimContestedness(
+  coreCards: CubeCard[],
+  myArchetypeId: string,
+  simCardStats: Record<string, CardStats>
+): number {
   if (coreCards.length === 0) return 50;
 
   let totalContestedness = 0;
@@ -225,6 +234,14 @@ function getSignalCost(draftOdds: number, coreCount: number): 'early' | 'mid' | 
 }
 
 export function ArchetypeOddsPage({ cards }: Props) {
+  const [playerCount, setPlayerCount] = useState<PlayerCount>('8');
+
+  // Get simulation data for selected player count
+  const simulationData = SIMULATIONS[playerCount];
+  const simArchetypes = simulationData.archetypeDistribution as Record<string, SimulationArchetypeData>;
+  const simCardStats = simulationData.cardStats as Record<string, CardStats>;
+  const totalDecks = simulationData.totalDecks;
+
   const stats = useMemo(() => {
     const results: ArchetypeStats[] = [];
 
@@ -237,10 +254,10 @@ export function ArchetypeOddsPage({ cards }: Props) {
       const realDraftOdds = (simData.count / totalDecks) * 100;
 
       // Get cards that ACTUALLY appear in this archetype
-      const { core, support, avgPickPosition } = getSimulatedArchetypeCards(cards, archetypeId);
+      const { core, support, avgPickPosition } = getSimulatedArchetypeCards(cards, archetypeId, simCardStats);
 
       // Calculate contestedness from simulation
-      const contestedness = calculateSimContestedness(core, archetypeId);
+      const contestedness = calculateSimContestedness(core, archetypeId, simCardStats);
 
       // Get deck quality from simulation (this is the real "power" metric)
       const avgDeckQuality = simData.avgDeckQuality;
@@ -264,7 +281,7 @@ export function ArchetypeOddsPage({ cards }: Props) {
 
     // Sort by draft odds descending (most draftable first)
     return results.sort((a, b) => b.draftOdds - a.draftOdds);
-  }, [cards]);
+  }, [cards, simArchetypes, simCardStats, totalDecks]);
 
   const [selectedArchetype, setSelectedArchetype] = useState<string | null>(null);
   const [hoveredCard, setHoveredCard] = useState<CubeCard | null>(null);
@@ -315,7 +332,7 @@ export function ArchetypeOddsPage({ cards }: Props) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between flex-wrap gap-4">
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold text-white">Archetype Draft Odds</h1>
@@ -326,27 +343,52 @@ export function ArchetypeOddsPage({ cards }: Props) {
           </div>
           <p className="text-white/50 mt-1">
             Based on {simulationData.draftCount.toLocaleString()} simulated drafts ({simulationData.totalDecks.toLocaleString()} decks)
+            {playerCount === '6' && <span className="text-amber-400"> • 90 cards undrafted per draft</span>}
           </p>
         </div>
 
-        {/* Build Mode Toggle */}
-        <div className="flex items-center gap-2 bg-white/5 rounded-lg p-1">
-          <button
-            onClick={() => setShowRealistic(false)}
-            className={`px-3 py-1.5 rounded text-sm font-medium transition-all ${
-              !showRealistic ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white/70'
-            }`}
-          >
-            Ideal Build
-          </button>
-          <button
-            onClick={() => setShowRealistic(true)}
-            className={`px-3 py-1.5 rounded text-sm font-medium transition-all ${
-              showRealistic ? 'bg-green-500/20 text-green-400' : 'text-white/50 hover:text-white/70'
-            }`}
-          >
-            Realistic Build
-          </button>
+        <div className="flex items-center gap-3">
+          {/* Player Count Toggle */}
+          <div className="flex items-center gap-2 bg-white/5 rounded-lg p-1">
+            <button
+              onClick={() => setPlayerCount('8')}
+              className={`px-3 py-1.5 rounded text-sm font-medium transition-all flex items-center gap-1.5 ${
+                playerCount === '8' ? 'bg-purple-500/20 text-purple-400' : 'text-white/50 hover:text-white/70'
+              }`}
+            >
+              <Users className="w-3.5 h-3.5" />
+              8 Players
+            </button>
+            <button
+              onClick={() => setPlayerCount('6')}
+              className={`px-3 py-1.5 rounded text-sm font-medium transition-all flex items-center gap-1.5 ${
+                playerCount === '6' ? 'bg-purple-500/20 text-purple-400' : 'text-white/50 hover:text-white/70'
+              }`}
+            >
+              <Users className="w-3.5 h-3.5" />
+              6 Players
+            </button>
+          </div>
+
+          {/* Build Mode Toggle */}
+          <div className="flex items-center gap-2 bg-white/5 rounded-lg p-1">
+            <button
+              onClick={() => setShowRealistic(false)}
+              className={`px-3 py-1.5 rounded text-sm font-medium transition-all ${
+                !showRealistic ? 'bg-white/10 text-white' : 'text-white/50 hover:text-white/70'
+              }`}
+            >
+              Ideal Build
+            </button>
+            <button
+              onClick={() => setShowRealistic(true)}
+              className={`px-3 py-1.5 rounded text-sm font-medium transition-all ${
+                showRealistic ? 'bg-green-500/20 text-green-400' : 'text-white/50 hover:text-white/70'
+              }`}
+            >
+              Realistic Build
+            </button>
+          </div>
         </div>
       </div>
 
@@ -486,6 +528,479 @@ export function ArchetypeOddsPage({ cards }: Props) {
           </div>
         </div>
       </div>
+
+      {/* Game Day Strategy - Draft Priority */}
+      <div className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/20 rounded-xl overflow-hidden">
+        <div className="p-4 border-b border-white/10">
+          <h2 className="text-lg font-bold text-white">Game Day Draft Priority</h2>
+          <p className="text-sm text-white/50 mt-1">Archetypes ranked by expected value (power × draftability)</p>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-white/10 text-xs uppercase tracking-wider">
+                <th className="text-left p-3 text-white/40 w-12">#</th>
+                <th className="text-left p-3 text-white/40">Archetype</th>
+                <th className="text-center p-3 text-white/40">ELO</th>
+                <th className="text-center p-3 text-white/40">Rate</th>
+                <th className="text-left p-3 text-white/40">Strategy</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[...stats]
+                .sort((a, b) => {
+                  // Sort by composite score: ELO weight + frequency penalty for extremes
+                  const scoreA = a.avgDeckQuality - (a.draftOdds > 20 ? 50 : 0) - (a.draftOdds < 4 ? 20 : 0);
+                  const scoreB = b.avgDeckQuality - (b.draftOdds > 20 ? 50 : 0) - (b.draftOdds < 4 ? 20 : 0);
+                  return scoreB - scoreA;
+                })
+                .map((stat, idx) => {
+                  const rank = idx + 1;
+                  const isTop3 = rank <= 3;
+                  const isBottom2 = rank >= 9;
+
+                  // Strategy text based on archetype
+                  const strategies: Record<string, string> = {
+                    reanimator: 'Best power + draftability combo. If you see Entomb + Reanimate early, commit.',
+                    oath: 'Highest ELO. Only needs Oath + fatty. If you see Oath P1, you\'re likely alone.',
+                    sneak: 'Second-highest ELO. ~5 enablers exist. See Sneak Attack? Take it and commit.',
+                    artifacts: 'Strong, deep (46 cards), underdrafted. Look for Tinker wheeling.',
+                    ramp: 'Solid power, reasonable frequency. Safe with green dorks + big payoffs.',
+                    control: 'Good power, underdrafted. 30 cards in cube but only 6.8% of decks.',
+                    tempo: 'Middle of the pack. Fine with efficient threats + cheap interaction.',
+                    storm: 'Only 9 cards total. High risk — only if you see Tendrils + rituals P1.',
+                    aggro: 'Common but weakest ELO. Fallback if nothing else is open.',
+                    midrange: 'The "didn\'t get there" deck. Everyone\'s fallback. Don\'t aim here.',
+                  };
+
+                  return (
+                    <tr
+                      key={stat.meta.id}
+                      className={`border-b border-white/5 hover:bg-white/[0.02] ${isTop3 ? 'bg-green-500/5' : ''} ${isBottom2 ? 'bg-red-500/5' : ''}`}
+                    >
+                      <td className="p-3">
+                        <span className={`font-bold ${isTop3 ? 'text-green-400' : isBottom2 ? 'text-red-400' : 'text-white/50'}`}>
+                          {rank}
+                        </span>
+                      </td>
+                      <td className="p-3">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-white">{stat.meta.name}</span>
+                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                            stat.meta.difficulty === 'Easy' ? 'bg-green-500/20 text-green-400' :
+                            stat.meta.difficulty === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                            stat.meta.difficulty === 'Hard' ? 'bg-orange-500/20 text-orange-400' :
+                            'bg-red-500/20 text-red-400'
+                          }`}>
+                            {stat.meta.difficulty}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="p-3 text-center">
+                        <span className={`font-medium ${
+                          stat.avgDeckQuality >= 1920 ? 'text-amber-400' :
+                          stat.avgDeckQuality >= 1890 ? 'text-purple-400' :
+                          'text-white/60'
+                        }`}>
+                          {stat.avgDeckQuality}
+                        </span>
+                      </td>
+                      <td className="p-3 text-center">
+                        <span className={`font-medium ${getOddsColor(stat.draftOdds)}`}>
+                          {stat.draftOdds.toFixed(1)}%
+                        </span>
+                      </td>
+                      <td className="p-3 text-white/50 text-xs max-w-xs">
+                        {strategies[stat.meta.id] || stat.meta.strategy}
+                      </td>
+                    </tr>
+                  );
+                })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Quick Reference */}
+        <div className="p-4 bg-white/[0.02] border-t border-white/10">
+          <div className="text-xs font-medium text-white/60 uppercase tracking-wider mb-3">Quick Reference</div>
+          <div className="grid md:grid-cols-2 gap-4 text-sm">
+            <div>
+              <div className="text-green-400 font-medium mb-1">P1P1-P1P3: Look for combo enablers</div>
+              <p className="text-white/50 text-xs">Oath, Sneak Attack, Entomb, Reanimate, Tendrils — if you see them, commit hard.</p>
+            </div>
+            <div>
+              <div className="text-yellow-400 font-medium mb-1">No combo pieces? Pivot to value</div>
+              <p className="text-white/50 text-xs">Artifacts and Ramp are both strong and underdrafted. Control is often open.</p>
+            </div>
+            <div>
+              <div className="text-orange-400 font-medium mb-1">Avoid intentionally drafting Midrange</div>
+              <p className="text-white/50 text-xs">25% of decks end up here — it's where you land when combo fails, not where you aim.</p>
+            </div>
+            <div>
+              <div className="text-purple-400 font-medium mb-1">Top-left quadrant = opportunity</div>
+              <p className="text-white/50 text-xs">High ELO, low frequency = if you get the pieces, you're probably alone at the table.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Midrange Breakdown */}
+      {simulationData.midrangeSubtypes && Object.keys(simulationData.midrangeSubtypes).length > 0 && (
+        <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-xl overflow-hidden">
+          <div className="p-4 border-b border-white/10">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-bold text-white">Midrange Breakdown</h2>
+                <p className="text-sm text-white/50 mt-1">
+                  {((simulationData.archetypeDistribution as any)?.midrange?.count / simulationData.totalDecks * 100).toFixed(0)}% of decks end up in midrange — here's which variants actually win
+                </p>
+              </div>
+              <div className="text-xs text-amber-400/60 bg-amber-500/10 px-2 py-1 rounded">
+                Not all midrange is equal
+              </div>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-white/10 text-xs uppercase tracking-wider">
+                  <th className="text-left p-3 text-white/40 w-12">#</th>
+                  <th className="text-left p-3 text-white/40">Variant</th>
+                  <th className="text-center p-3 text-white/40">Decks</th>
+                  <th className="text-center p-3 text-white/40">ELO</th>
+                  <th className="text-center p-3 text-white/40">CMC</th>
+                  <th className="text-left p-3 text-white/40">Key Cards</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.values(simulationData.midrangeSubtypes as Record<string, any>)
+                  .sort((a, b) => b.avgDeckQuality - a.avgDeckQuality)
+                  .slice(0, 12)
+                  .map((subtype: any, idx: number) => {
+                    const rank = idx + 1;
+                    const isTop3 = rank <= 3;
+                    const isWeak = subtype.avgDeckQuality < 1820;
+                    const midrangeTotal = (simulationData.archetypeDistribution as any)?.midrange?.count || 1;
+                    const pctOfMidrange = ((subtype.count / midrangeTotal) * 100).toFixed(1);
+
+                    return (
+                      <tr
+                        key={subtype.colorCombo}
+                        className={`border-b border-white/5 hover:bg-white/[0.02] ${isTop3 ? 'bg-green-500/5' : ''} ${isWeak ? 'bg-red-500/5' : ''}`}
+                      >
+                        <td className="p-3">
+                          <span className={`font-bold ${isTop3 ? 'text-green-400' : isWeak ? 'text-red-400' : 'text-white/50'}`}>
+                            {rank}
+                          </span>
+                        </td>
+                        <td className="p-3">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-white">{subtype.name}</span>
+                            <span className="text-white/30 text-xs">({subtype.colorCombo})</span>
+                            <div className="flex gap-0.5">
+                              {subtype.colorCombo.split('').map((c: string) => (
+                                <span
+                                  key={c}
+                                  className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold
+                                    ${c === 'W' ? 'bg-amber-100 text-amber-800' : ''}
+                                    ${c === 'U' ? 'bg-blue-500 text-white' : ''}
+                                    ${c === 'B' ? 'bg-gray-800 text-white border border-white/20' : ''}
+                                    ${c === 'R' ? 'bg-red-500 text-white' : ''}
+                                    ${c === 'G' ? 'bg-green-600 text-white' : ''}
+                                  `}
+                                >
+                                  {c}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="p-3 text-center">
+                          <span className="text-white/70">{subtype.count.toLocaleString()}</span>
+                          <span className="text-white/30 text-xs ml-1">({pctOfMidrange}%)</span>
+                        </td>
+                        <td className="p-3 text-center">
+                          <span className={`font-medium ${
+                            subtype.avgDeckQuality >= 1920 ? 'text-amber-400' :
+                            subtype.avgDeckQuality >= 1870 ? 'text-purple-400' :
+                            subtype.avgDeckQuality >= 1830 ? 'text-white/70' :
+                            'text-red-400'
+                          }`}>
+                            {subtype.avgDeckQuality}
+                          </span>
+                        </td>
+                        <td className="p-3 text-center text-white/50">
+                          {subtype.avgCmc}
+                        </td>
+                        <td className="p-3 text-white/50 text-xs">
+                          {subtype.topCards?.slice(0, 3).join(', ')}
+                        </td>
+                      </tr>
+                    );
+                  })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Midrange Insights */}
+          <div className="p-4 bg-white/[0.02] border-t border-white/10">
+            <div className="grid md:grid-cols-3 gap-4 text-sm">
+              <div className="bg-green-500/10 rounded-lg p-3">
+                <div className="text-green-400 font-medium mb-1">Best Midrange: Sultai</div>
+                <p className="text-white/50 text-xs">BGU with Uro, Oko, Dark Confidant. Actually rivals combo decks at 1930 ELO.</p>
+              </div>
+              <div className="bg-purple-500/10 rounded-lg p-3">
+                <div className="text-purple-400 font-medium mb-1">Black is Key</div>
+                <p className="text-white/50 text-xs">Top 5 midrange variants all include Black. Liliana, Thoughtseize, and Dark Confidant are core.</p>
+              </div>
+              <div className="bg-red-500/10 rounded-lg p-3">
+                <div className="text-red-400 font-medium mb-1">Avoid: GW-based</div>
+                <p className="text-white/50 text-xs">Naya, Selesnya, Boros are the weakest. No disruption, no card advantage.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Aggro Breakdown */}
+      {(simulationData as any).aggroSubtypes && Object.keys((simulationData as any).aggroSubtypes).length > 0 && (
+        <div className="bg-gradient-to-r from-red-500/10 to-orange-500/10 border border-red-500/20 rounded-xl overflow-hidden">
+          <div className="p-4 border-b border-white/10">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-bold text-white">Aggro Breakdown</h2>
+                <p className="text-sm text-white/50 mt-1">
+                  {((simulationData.archetypeDistribution as any)?.aggro?.count / simulationData.totalDecks * 100).toFixed(0)}% of decks are aggro — color choice matters more than you think
+                </p>
+              </div>
+              <div className="text-xs text-red-400/60 bg-red-500/10 px-2 py-1 rounded">
+                Blue aggro &gt; pure Boros
+              </div>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-white/10 text-xs uppercase tracking-wider">
+                  <th className="text-left p-3 text-white/40 w-12">#</th>
+                  <th className="text-left p-3 text-white/40">Variant</th>
+                  <th className="text-center p-3 text-white/40">Decks</th>
+                  <th className="text-center p-3 text-white/40">ELO</th>
+                  <th className="text-center p-3 text-white/40">CMC</th>
+                  <th className="text-left p-3 text-white/40">Key Cards</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.values((simulationData as any).aggroSubtypes as Record<string, any>)
+                  .sort((a, b) => b.avgDeckQuality - a.avgDeckQuality)
+                  .slice(0, 10)
+                  .map((subtype: any, idx: number) => {
+                    const rank = idx + 1;
+                    const isTop3 = rank <= 3;
+                    const isWeak = subtype.avgDeckQuality < 1820;
+                    const aggroTotal = (simulationData.archetypeDistribution as any)?.aggro?.count || 1;
+                    const pctOfAggro = ((subtype.count / aggroTotal) * 100).toFixed(1);
+
+                    return (
+                      <tr
+                        key={subtype.colorCombo}
+                        className={`border-b border-white/5 hover:bg-white/[0.02] ${isTop3 ? 'bg-green-500/5' : ''} ${isWeak ? 'bg-red-500/5' : ''}`}
+                      >
+                        <td className="p-3">
+                          <span className={`font-bold ${isTop3 ? 'text-green-400' : isWeak ? 'text-red-400' : 'text-white/50'}`}>
+                            {rank}
+                          </span>
+                        </td>
+                        <td className="p-3">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-white">{subtype.name}</span>
+                            <span className="text-white/30 text-xs">({subtype.colorCombo})</span>
+                            <div className="flex gap-0.5">
+                              {subtype.colorCombo.split('').map((c: string) => (
+                                <span
+                                  key={c}
+                                  className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold
+                                    ${c === 'W' ? 'bg-amber-100 text-amber-800' : ''}
+                                    ${c === 'U' ? 'bg-blue-500 text-white' : ''}
+                                    ${c === 'B' ? 'bg-gray-800 text-white border border-white/20' : ''}
+                                    ${c === 'R' ? 'bg-red-500 text-white' : ''}
+                                    ${c === 'G' ? 'bg-green-600 text-white' : ''}
+                                  `}
+                                >
+                                  {c}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="p-3 text-center">
+                          <span className="text-white/70">{subtype.count.toLocaleString()}</span>
+                          <span className="text-white/30 text-xs ml-1">({pctOfAggro}%)</span>
+                        </td>
+                        <td className="p-3 text-center">
+                          <span className={`font-medium ${
+                            subtype.avgDeckQuality >= 1880 ? 'text-amber-400' :
+                            subtype.avgDeckQuality >= 1850 ? 'text-purple-400' :
+                            subtype.avgDeckQuality >= 1820 ? 'text-white/70' :
+                            'text-red-400'
+                          }`}>
+                            {subtype.avgDeckQuality}
+                          </span>
+                        </td>
+                        <td className="p-3 text-center text-white/50">
+                          {subtype.avgCmc}
+                        </td>
+                        <td className="p-3 text-white/50 text-xs">
+                          {subtype.topCards?.slice(0, 3).join(', ')}
+                        </td>
+                      </tr>
+                    );
+                  })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Aggro Insights */}
+          <div className="p-4 bg-white/[0.02] border-t border-white/10">
+            <div className="grid md:grid-cols-3 gap-4 text-sm">
+              <div className="bg-green-500/10 rounded-lg p-3">
+                <div className="text-green-400 font-medium mb-1">Best Aggro: Jeskai</div>
+                <p className="text-white/50 text-xs">RUW with Ragavan, DRC, and counterspell backup. Blue adds protection.</p>
+              </div>
+              <div className="bg-purple-500/10 rounded-lg p-3">
+                <div className="text-purple-400 font-medium mb-1">Splash Blue or Black</div>
+                <p className="text-white/50 text-xs">Top 3 aggro variants all include Blue. Daze and Spell Pierce protect your clock.</p>
+              </div>
+              <div className="bg-red-500/10 rounded-lg p-3">
+                <div className="text-red-400 font-medium mb-1">Pure Boros is weak</div>
+                <p className="text-white/50 text-xs">Classic RW aggro underperforms. Add a third color for interaction.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tempo Breakdown */}
+      {(simulationData as any).tempoSubtypes && Object.keys((simulationData as any).tempoSubtypes).length > 0 && (
+        <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-xl overflow-hidden">
+          <div className="p-4 border-b border-white/10">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-bold text-white">Tempo Breakdown</h2>
+                <p className="text-sm text-white/50 mt-1">
+                  {((simulationData.archetypeDistribution as any)?.tempo?.count / simulationData.totalDecks * 100).toFixed(0)}% of decks are tempo — the best tempo decks add Black
+                </p>
+              </div>
+              <div className="text-xs text-blue-400/60 bg-blue-500/10 px-2 py-1 rounded">
+                Sultai tempo is tier-1
+              </div>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-white/10 text-xs uppercase tracking-wider">
+                  <th className="text-left p-3 text-white/40 w-12">#</th>
+                  <th className="text-left p-3 text-white/40">Variant</th>
+                  <th className="text-center p-3 text-white/40">Decks</th>
+                  <th className="text-center p-3 text-white/40">ELO</th>
+                  <th className="text-center p-3 text-white/40">CMC</th>
+                  <th className="text-left p-3 text-white/40">Key Cards</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.values((simulationData as any).tempoSubtypes as Record<string, any>)
+                  .sort((a, b) => b.avgDeckQuality - a.avgDeckQuality)
+                  .slice(0, 10)
+                  .map((subtype: any, idx: number) => {
+                    const rank = idx + 1;
+                    const isTop3 = rank <= 3;
+                    const isWeak = subtype.avgDeckQuality < 1850;
+                    const tempoTotal = (simulationData.archetypeDistribution as any)?.tempo?.count || 1;
+                    const pctOfTempo = ((subtype.count / tempoTotal) * 100).toFixed(1);
+
+                    return (
+                      <tr
+                        key={subtype.colorCombo}
+                        className={`border-b border-white/5 hover:bg-white/[0.02] ${isTop3 ? 'bg-green-500/5' : ''} ${isWeak ? 'bg-red-500/5' : ''}`}
+                      >
+                        <td className="p-3">
+                          <span className={`font-bold ${isTop3 ? 'text-green-400' : isWeak ? 'text-red-400' : 'text-white/50'}`}>
+                            {rank}
+                          </span>
+                        </td>
+                        <td className="p-3">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-white">{subtype.name}</span>
+                            <span className="text-white/30 text-xs">({subtype.colorCombo})</span>
+                            <div className="flex gap-0.5">
+                              {subtype.colorCombo.split('').map((c: string) => (
+                                <span
+                                  key={c}
+                                  className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold
+                                    ${c === 'W' ? 'bg-amber-100 text-amber-800' : ''}
+                                    ${c === 'U' ? 'bg-blue-500 text-white' : ''}
+                                    ${c === 'B' ? 'bg-gray-800 text-white border border-white/20' : ''}
+                                    ${c === 'R' ? 'bg-red-500 text-white' : ''}
+                                    ${c === 'G' ? 'bg-green-600 text-white' : ''}
+                                  `}
+                                >
+                                  {c}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="p-3 text-center">
+                          <span className="text-white/70">{subtype.count.toLocaleString()}</span>
+                          <span className="text-white/30 text-xs ml-1">({pctOfTempo}%)</span>
+                        </td>
+                        <td className="p-3 text-center">
+                          <span className={`font-medium ${
+                            subtype.avgDeckQuality >= 1890 ? 'text-amber-400' :
+                            subtype.avgDeckQuality >= 1870 ? 'text-purple-400' :
+                            subtype.avgDeckQuality >= 1850 ? 'text-white/70' :
+                            'text-red-400'
+                          }`}>
+                            {subtype.avgDeckQuality}
+                          </span>
+                        </td>
+                        <td className="p-3 text-center text-white/50">
+                          {subtype.avgCmc}
+                        </td>
+                        <td className="p-3 text-white/50 text-xs">
+                          {subtype.topCards?.slice(0, 3).join(', ')}
+                        </td>
+                      </tr>
+                    );
+                  })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Tempo Insights */}
+          <div className="p-4 bg-white/[0.02] border-t border-white/10">
+            <div className="grid md:grid-cols-3 gap-4 text-sm">
+              <div className="bg-green-500/10 rounded-lg p-3">
+                <div className="text-green-400 font-medium mb-1">Best Tempo: Sultai</div>
+                <p className="text-white/50 text-xs">BGU with Daze, TNN, and discard. Black adds Thoughtseize for combo protection.</p>
+              </div>
+              <div className="bg-purple-500/10 rounded-lg p-3">
+                <div className="text-purple-400 font-medium mb-1">True-Name Nemesis is core</div>
+                <p className="text-white/50 text-xs">TNN appears in every top tempo variant. It's the best tempo threat in the cube.</p>
+              </div>
+              <div className="bg-red-500/10 rounded-lg p-3">
+                <div className="text-red-400 font-medium mb-1">Avoid non-Blue tempo</div>
+                <p className="text-white/50 text-xs">Jund, Naya, Mardu tempo are weak. Blue is essential for Daze and protection.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Selected archetype info (shows when bubble clicked) */}
       {selectedStat && (
