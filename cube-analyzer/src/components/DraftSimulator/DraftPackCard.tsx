@@ -58,7 +58,8 @@ export function DraftPackCard({
   const keyboardNum = index + 1;
   const isTopGrade = grade === 'A+' || grade === 'A';
   const isLowGrade = grade.startsWith('C') || grade.startsWith('D') || grade === 'F';
-  const cardOpacity = isLowGrade ? 'opacity-60' : '';
+  // Only apply opacity visual indicator when coaching is enabled
+  const cardOpacity = showCoachVisuals && isLowGrade ? 'opacity-60' : '';
 
   return (
     <div
