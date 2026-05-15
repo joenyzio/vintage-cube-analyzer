@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useCubeData } from './hooks/useCubeData';
+import { DashboardPage } from './components/DashboardPage';
 import { OverviewPage } from './components/OverviewPage';
 import { ArchetypesPage } from './components/ArchetypesPage';
 import { PowerRankings } from './components/PowerRankings';
@@ -18,10 +19,10 @@ import { SimulationReports } from './components/SimulationReports';
 import {
   BarChart3, Layers, Trophy, BookOpen, Search, Sparkles,
   Gamepad2, Link2, Swords, ExternalLink, FileStack, Lightbulb,
-  Menu, ChevronLeft, Dices, FlaskConical, Network, Percent
+  Menu, ChevronLeft, Dices, FlaskConical, Network, Percent, Home
 } from 'lucide-react';
 
-type TabId = 'overview' | 'draft' | 'games' | 'graph' | 'archetypes' | 'odds' | 'decks' | 'matchups' | 'synergies' | 'buildaround' | 'power' | 'analysis' | 'simulation' | 'guide' | 'cards';
+type TabId = 'dashboard' | 'overview' | 'draft' | 'games' | 'graph' | 'archetypes' | 'odds' | 'decks' | 'matchups' | 'synergies' | 'buildaround' | 'power' | 'analysis' | 'simulation' | 'guide' | 'cards';
 
 interface NavItem {
   id: TabId;
@@ -30,7 +31,8 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { id: 'overview', label: 'Overview', icon: BarChart3 },
+  { id: 'dashboard', label: 'Dashboard', icon: Home },
+  { id: 'overview', label: 'Cube Overview', icon: BarChart3 },
   { id: 'draft', label: 'Draft Simulator', icon: Gamepad2 },
   { id: 'games', label: 'Games', icon: Dices },
   { id: 'graph', label: 'Card Graph', icon: Network },
@@ -116,7 +118,7 @@ function App() {
     progress,
   } = useCubeData();
 
-  const [activeTab, setActiveTab] = useState<TabId>('overview');
+  const [activeTab, setActiveTab] = useState<TabId>('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const mainRef = useRef<HTMLElement>(null);
@@ -136,6 +138,14 @@ function App() {
 
   const renderContent = () => {
     switch (activeTab) {
+      case 'dashboard':
+        return (
+          <DashboardPage
+            cards={cards}
+            onNavigate={(tab) => setActiveTab(tab as TabId)}
+            onStartDraft={() => setActiveTab('draft')}
+          />
+        );
       case 'overview':
         return (
           <OverviewPage
