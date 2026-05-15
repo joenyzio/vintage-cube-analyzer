@@ -19,7 +19,14 @@ interface DeckWinRateData {
 }
 import { getCardImage } from '../../services/scryfall';
 import { getArchetypeContext, getColorAdvice, getBestVariant } from '../../services/simulationInsights';
-import { analyzePackComposition } from '../../services/cardRating';
+import {
+  analyzePackComposition,
+  findSynergies,
+  analyzeViablePaths,
+  projectFinalDeck,
+  quantifySignals,
+  planPickSequence,
+} from '../../services/cardRating';
 
 interface ArchetypeCommitment {
   archetype: string;
@@ -114,6 +121,32 @@ export function DraftCoach({
     ? analyzePackComposition(currentPack)
     : null;
 
+  // Get pool synergies
+  const poolSynergies = draftState.picks.length >= 2
+    ? findSynergies(draftState.picks)
+    : [];
+
+  // Analyze viable paths
+  const viablePaths = draftState.picks.length >= 3
+    ? analyzeViablePaths(draftState.picks, colorCounts)
+    : [];
+
+  // Project final deck
+  const deckProjection = draftState.picks.length >= 8
+    ? projectFinalDeck(draftState.picks, colorCounts, draftState.picks.length)
+    : null;
+
+  // Signal strengths
+  const signalStrengths = draftState.picks.length >= 5
+    ? quantifySignals(draftState.passedCards, draftState.seenCards, draftState.picks.length)
+    : [];
+
+  // Pick sequence lookahead (find top card from pack)
+  const topCard = currentPack.length > 0 ? currentPack[0] : null; // Simplified - ideally use rated top
+  const pickSequence = topCard && draftState.picks.length >= 1
+    ? planPickSequence(currentPack, draftState.picks, topCard)
+    : null;
+
   return (
     <div className="w-[320px] flex-shrink-0 hidden lg:flex flex-col bg-white/[0.02] border-r border-white/[0.08]">
       <div className="flex-1 overflow-y-auto p-5 space-y-4">
@@ -167,6 +200,98 @@ export function DraftCoach({
                 {packAnalysis.powerConcentration}
               </span>
             </div>
+          </div>
+        )}
+
+        {/* Pool Synergies - Shows when you have combos */}
+        {coachMode && poolSynergies.length > 0 && (
+          <div className="bg-green-500/5 border border-green-500/20 rounded-lg p-3 space-y-2">
+            <div className="text-xs text-green-400/80 uppercase tracking-wider font-medium">Active Synergies</div>
+            {poolSynergies.slice(0, 3).map((syn, i) => (
+              <div key={i} className="text-xs">
+                <span className="text-green-400">{syn.card1}</span>
+                <span className="text-white/30"> + </span>
+                <span className="text-green-400">{syn.card2}</span>
+                <span className="text-white/50 ml-2">{syn.description}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Viable Paths - Shows draft direction options */}
+        {coachMode && viablePaths.length > 0 && draftState.picks.length >= 5 && (
+          <div className="bg-purple-500/5 border border-purple-500/20 rounded-lg p-3 space-y-2">
+            <div className="text-xs text-purple-400/80 uppercase tracking-wider font-medium">Draft Paths</div>
+            {viablePaths.slice(0, 3).map((path, i) => (
+              <div key={i} className="text-xs">
+                <div className="flex items-center justify-between">
+                  <span className={`font-medium ${path.probability >= 0.6 ? 'text-green-400' : path.probability >= 0.4 ? 'text-amber-400' : 'text-white/50'}`}>
+                    {path.archetype}
+                  </span>
+                  <span className="text-white/30">{Math.round(path.probability * 100)}%</span>
+                </div>
+                {path.keyCardsNeeded.length > 0 && (
+                  <div className="text-white/40 mt-0.5">
+                    Need: {path.keyCardsNeeded.slice(0, 2).join(', ')}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Signal Strengths - How open each archetype is */}
+        {coachMode && signalStrengths.length > 0 && (
+          <div className="bg-cyan-500/5 border border-cyan-500/20 rounded-lg p-3 space-y-2">
+            <div className="text-xs text-cyan-400/80 uppercase tracking-wider font-medium">Lane Openness</div>
+            {signalStrengths.filter(s => s.openness > 0.5 || s.openness < 0.4).slice(0, 4).map((signal, i) => (
+              <div key={i} className="text-xs flex items-center justify-between">
+                <span className="text-white/70">{signal.archetypeId}</span>
+                <span className={`font-medium ${
+                  signal.openness >= 0.7 ? 'text-green-400' :
+                  signal.openness >= 0.5 ? 'text-amber-400' :
+                  'text-red-400'
+                }`}>
+                  {signal.openness >= 0.7 ? 'Wide Open' :
+                   signal.openness >= 0.5 ? 'Open' :
+                   'Contested'}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Deck Projection - What your final deck looks like */}
+        {coachMode && deckProjection && (
+          <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-3 space-y-2">
+            <div className="text-xs text-amber-400/80 uppercase tracking-wider font-medium">Deck Projection</div>
+            <div className="text-xs">
+              <span className="text-white/70">{deckProjection.projectedArchetype}</span>
+              <span className="text-white/30 ml-2">~{deckProjection.estimatedElo} ELO</span>
+            </div>
+            {deckProjection.strengths.length > 0 && (
+              <div className="text-xs text-green-400/70">
+                + {deckProjection.strengths.slice(0, 2).join(', ')}
+              </div>
+            )}
+            {deckProjection.weaknesses.length > 0 && (
+              <div className="text-xs text-red-400/70">
+                - {deckProjection.weaknesses.slice(0, 2).join(', ')}
+              </div>
+            )}
+            {deckProjection.cardsNeeded.length > 0 && (
+              <div className="text-xs text-white/40">
+                Prioritize: {deckProjection.cardsNeeded.slice(0, 2).join(', ')}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Pick Sequence - Multi-pick lookahead */}
+        {coachMode && pickSequence && pickSequence.likelyWheel.length > 0 && (
+          <div className="bg-indigo-500/5 border border-indigo-500/20 rounded-lg p-3 space-y-1">
+            <div className="text-xs text-indigo-400/80 uppercase tracking-wider font-medium">Pick Plan</div>
+            <div className="text-xs text-white/60">{pickSequence.narrative}</div>
           </div>
         )}
 

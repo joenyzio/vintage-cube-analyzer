@@ -20,6 +20,7 @@ import type { CardRating, DraftContext, DeckStats } from './types';
 import { getEloData } from '../eloHelpers';
 import { VINTAGE_CUBE_ARCHETYPES, getArchetypeIds } from './archetypes';
 import { EXPLICIT_AFFINITIES, PROPERTY_RULES } from './archetypeAffinity';
+import { calculateSynergyBonus } from './draftIntelligence';
 
 // ============================================
 // Constants
@@ -887,11 +888,19 @@ export function rateAllCards(
     // Get base ELO
     const baseElo = getEloData(card.name)?.elo ?? ELO_RANGE.median;
 
+    // Calculate card-to-card synergy bonus (e.g., Entomb + Reanimate)
+    const cardSynergyBonus = calculateSynergyBonus(card, context.picks);
+
     // At early picks, emphasize ELO; later, emphasize synergy
     // normalizedScore = weighted blend of pure ELO and synergy-adjusted score
     const pureEloScore = baseElo;
-    const synergyAdjustedScore = baseElo + (preference * 200);
+    const synergyAdjustedScore = baseElo + (preference * 200) + cardSynergyBonus;
     const normalizedScore = (pureEloScore * eloWeight) + (synergyAdjustedScore * synergyWeight);
+
+    // Add synergy bonus to reasons if significant
+    if (cardSynergyBonus >= 50) {
+      reasons.push(`+${Math.round(cardSynergyBonus)} synergy with pool`);
+    }
 
     // Provide context-aware reasons
     if (totalPicks === 0) {

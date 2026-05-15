@@ -180,6 +180,37 @@ export {
 } from './archetypeAffinity';
 
 // ============================================
+// Draft Intelligence (Advanced Analysis)
+// ============================================
+
+export {
+  predictWheels,
+  modelOpponents,
+  findSynergies,
+  calculateSynergyBonus,
+  analyzeViablePaths,
+  analyzePackComplete,
+  generateStrategicAdvice,
+  generateDraftIntelligence,
+  trackCubeDepletion,
+  quantifySignals,
+  predictRegret,
+  projectFinalDeck,
+  planPickSequence,
+  type WheelPrediction,
+  type OpponentModel,
+  type CardSynergy,
+  type DraftPath,
+  type PickAnalysis,
+  type DraftIntelligence,
+  type CubeDepletionState,
+  type SignalStrength,
+  type RegretPrediction,
+  type DeckProjection,
+  type PickSequence,
+} from './draftIntelligence';
+
+// ============================================
 // Types
 // ============================================
 
