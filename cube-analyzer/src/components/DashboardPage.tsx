@@ -7,8 +7,8 @@
 
 import { useState } from 'react';
 import {
-  Play, Target, TrendingUp, Clock, Zap, BookOpen,
-  ChevronRight, AlertTriangle, Star, Layers
+  Play, Target, TrendingUp, Zap, BookOpen,
+  ChevronRight, AlertTriangle, Star, Layers, Dices, ArrowRight, Search
 } from 'lucide-react';
 import type { CubeCard } from '../types/card';
 import { getCardImage } from '../services/scryfall';
@@ -82,8 +82,53 @@ export function DashboardPage({ cards, onNavigate, onStartDraft }: Props) {
         </div>
       </div>
 
-      {/* Quick Stats */}
-      {totalDrafts > 0 && (
+      {/* First-Time User Welcome OR Quick Stats */}
+      {totalDrafts === 0 ? (
+        <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-6">
+          <h2 className="text-lg font-semibold text-white mb-4">Getting Started</h2>
+          <div className="grid sm:grid-cols-3 gap-4">
+            <button
+              onClick={onStartDraft}
+              className="flex items-center gap-3 p-4 bg-white/[0.04] border border-white/[0.08] rounded-xl text-left hover:bg-white/[0.06] transition-colors group"
+            >
+              <div className="w-10 h-10 rounded-lg bg-white/[0.06] flex items-center justify-center flex-shrink-0">
+                <Play className="w-5 h-5 text-white/60" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium text-white">Practice Draft</div>
+                <div className="text-xs text-white/40">Learn by doing</div>
+              </div>
+              <ArrowRight className="w-4 h-4 text-white/20 group-hover:text-white/40 transition-colors" />
+            </button>
+            <button
+              onClick={() => onNavigate('archetypes')}
+              className="flex items-center gap-3 p-4 bg-white/[0.04] border border-white/[0.08] rounded-xl text-left hover:bg-white/[0.06] transition-colors group"
+            >
+              <div className="w-10 h-10 rounded-lg bg-white/[0.06] flex items-center justify-center flex-shrink-0">
+                <Layers className="w-5 h-5 text-white/60" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium text-white">Archetypes</div>
+                <div className="text-xs text-white/40">Learn the decks</div>
+              </div>
+              <ArrowRight className="w-4 h-4 text-white/20 group-hover:text-white/40 transition-colors" />
+            </button>
+            <button
+              onClick={() => onNavigate('games')}
+              className="flex items-center gap-3 p-4 bg-white/[0.04] border border-white/[0.08] rounded-xl text-left hover:bg-white/[0.06] transition-colors group"
+            >
+              <div className="w-10 h-10 rounded-lg bg-white/[0.06] flex items-center justify-center flex-shrink-0">
+                <Dices className="w-5 h-5 text-white/60" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium text-white">Training Games</div>
+                <div className="text-xs text-white/40">Build skills</div>
+              </div>
+              <ArrowRight className="w-4 h-4 text-white/20 group-hover:text-white/40 transition-colors" />
+            </button>
+          </div>
+        </div>
+      ) : (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-4">
             <div className="text-2xl font-bold text-white">{totalDrafts}</div>
@@ -94,7 +139,7 @@ export function DashboardPage({ cards, onNavigate, onStartDraft }: Props) {
             <div className="text-xs text-white/30 uppercase tracking-wider">Avg ELO</div>
           </div>
           <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl p-4">
-            <div className="text-2xl font-bold text-white">
+            <div className="text-2xl font-bold text-white truncate">
               {draftHistory[0]?.archetype || '-'}
             </div>
             <div className="text-xs text-white/30 uppercase tracking-wider">Last Deck</div>
@@ -254,7 +299,7 @@ export function DashboardPage({ cards, onNavigate, onStartDraft }: Props) {
               onClick={() => onNavigate('cards')}
               className="flex items-center gap-3 p-4 bg-white/[0.02] border border-white/[0.06] rounded-xl text-left hover:bg-white/[0.04] transition-colors"
             >
-              <Clock className="w-5 h-5 text-white/40" />
+              <Search className="w-5 h-5 text-white/40" />
               <div>
                 <div className="text-sm font-medium text-white/80">Card Browser</div>
                 <div className="text-xs text-white/30">Search all cards</div>

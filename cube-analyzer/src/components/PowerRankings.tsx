@@ -47,6 +47,7 @@ export function PowerRankings({ cards }: PowerRankingsProps) {
   const [colorFilter, setColorFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [hoveredCard, setHoveredCard] = useState<CubeCard | null>(null);
+  const [selectedCard, setSelectedCard] = useState<CubeCard | null>(null);
   const [collapsedTiers, setCollapsedTiers] = useState<Set<string>>(new Set());
 
   // Filter cards
@@ -244,6 +245,7 @@ export function PowerRankings({ cards }: PowerRankingsProps) {
                       <div
                         key={card.id}
                         className="relative aspect-[488/680] rounded-lg overflow-hidden cursor-pointer hover:scale-105 active:scale-95 transition-transform hover:z-10 shadow-lg"
+                        onClick={() => setSelectedCard(card)}
                         onMouseEnter={() => setHoveredCard(card)}
                         onMouseLeave={() => setHoveredCard(null)}
                       >
@@ -292,8 +294,8 @@ export function PowerRankings({ cards }: PowerRankingsProps) {
         </div>
       )}
 
-      {/* Hover Preview */}
-      {hoveredCard && (
+      {/* Hover Preview - Desktop only */}
+      {hoveredCard && !selectedCard && (
         <div className="fixed bottom-4 right-4 z-50 hidden lg:block pointer-events-none">
           <div className="bg-black border border-white/10 p-2 rounded-xl shadow-2xl w-64">
             <img src={getCardImage(hoveredCard)} alt={hoveredCard.name} className="w-full rounded-lg" />
@@ -370,6 +372,124 @@ export function PowerRankings({ cards }: PowerRankingsProps) {
                         <Users className="w-3 h-3" />
                         {formatCubeCount(eloData.cubeCount)} cubes
                       </span>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Card Detail Modal - Works on all devices */}
+      {selectedCard && (
+        <div
+          className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4"
+          onClick={() => setSelectedCard(null)}
+        >
+          <div
+            className="bg-black border border-white/10 rounded-2xl max-w-md w-full max-h-[90vh] overflow-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-4">
+              {/* Header */}
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h2 className="text-lg font-semibold text-white">{selectedCard.name}</h2>
+                  <p className="text-white/40 text-sm">{selectedCard.type_line}</p>
+                </div>
+                <button
+                  onClick={() => setSelectedCard(null)}
+                  className="w-8 h-8 flex items-center justify-center bg-white/5 hover:bg-white/10 rounded-lg transition-colors text-white/50"
+                >
+                  ×
+                </button>
+              </div>
+
+              {/* Card Image */}
+              <img
+                src={getCardImage(selectedCard)}
+                alt={selectedCard.name}
+                className="w-full rounded-xl mb-4"
+              />
+
+              {/* Stats */}
+              {(() => {
+                const eloData = getEloData(selectedCard.name);
+                if (!eloData) return null;
+
+                const percentile = getPercentile(selectedCard.name);
+                const tier = getTierByPercentile(percentile);
+                const wheelLikelihood = getWheelLikelihood(selectedCard.name);
+                const barWidth = getEloBarWidth(selectedCard.name);
+
+                return (
+                  <div className="space-y-4">
+                    {/* Tier Badge */}
+                    <div className="flex items-center gap-3">
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-2xl ${tier.bg} ${tier.color}`}>
+                        {tier.id}
+                      </div>
+                      <div>
+                        <div className={`font-semibold ${tier.color}`}>{tier.label}</div>
+                        <div className="text-xs text-white/40">{tier.description}</div>
+                      </div>
+                    </div>
+
+                    {/* ELO Bar */}
+                    <div className="p-3 bg-white/5 rounded-xl">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm text-white/60 flex items-center gap-2">
+                          <TrendingUp className="w-4 h-4" />
+                          ELO Rating
+                        </span>
+                        <span className="text-xl font-mono font-semibold text-white">{Math.round(eloData.elo)}</span>
+                      </div>
+                      <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full ${
+                            percentile >= 75 ? 'bg-gradient-to-r from-amber-400 to-amber-500' :
+                            percentile >= 50 ? 'bg-gradient-to-r from-purple-400 to-purple-500' :
+                            percentile >= 25 ? 'bg-gradient-to-r from-blue-400 to-blue-500' :
+                            'bg-gradient-to-r from-white/30 to-white/40'
+                          }`}
+                          style={{ width: `${barWidth}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="bg-white/5 rounded-lg p-3 text-center">
+                        <div className="text-[10px] text-white/40 uppercase tracking-wider mb-1">Percentile</div>
+                        <div className={`text-lg font-semibold ${tier.color}`}>
+                          Top {100 - percentile}%
+                        </div>
+                      </div>
+                      <div className="bg-white/5 rounded-lg p-3 text-center">
+                        <div className="text-[10px] text-white/40 uppercase tracking-wider mb-1">Wheel</div>
+                        <div className={`text-lg font-semibold ${
+                          wheelLikelihood === 'likely' ? 'text-green-400' :
+                          wheelLikelihood === 'maybe' ? 'text-amber-400' :
+                          'text-red-400'
+                        }`}>
+                          {wheelLikelihood === 'likely' ? 'Yes' :
+                           wheelLikelihood === 'maybe' ? 'Maybe' :
+                           'No'}
+                        </div>
+                      </div>
+                      <div className="bg-white/5 rounded-lg p-3 text-center">
+                        <div className="text-[10px] text-white/40 uppercase tracking-wider mb-1">Picks</div>
+                        <div className="text-lg font-semibold text-white">
+                          {formatPickCount(eloData.pickCount)}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* In Cubes */}
+                    <div className="flex items-center gap-2 text-sm text-white/50">
+                      <Users className="w-4 h-4" />
+                      <span>In {formatCubeCount(eloData.cubeCount)} cubes on CubeCobra</span>
                     </div>
                   </div>
                 );

@@ -18,8 +18,8 @@ import { ArchetypeOddsPage } from './components/ArchetypeOddsPage';
 import { SimulationReports } from './components/SimulationReports';
 import {
   BarChart3, Layers, Trophy, BookOpen, Search, Sparkles,
-  Gamepad2, Link2, Swords, ExternalLink, FileStack, Lightbulb,
-  Menu, ChevronLeft, Dices, FlaskConical, Network, Percent, Home
+  Gamepad2, Link2, Swords, ExternalLink, FileStack,
+  Menu, ChevronLeft, ChevronDown, Dices, Percent, Home
 } from 'lucide-react';
 
 type TabId = 'dashboard' | 'overview' | 'draft' | 'games' | 'graph' | 'archetypes' | 'odds' | 'decks' | 'matchups' | 'synergies' | 'buildaround' | 'power' | 'analysis' | 'simulation' | 'guide' | 'cards';
@@ -30,24 +30,54 @@ interface NavItem {
   icon: React.ElementType;
 }
 
-const NAV_ITEMS: NavItem[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: Home },
-  { id: 'overview', label: 'Cube Overview', icon: BarChart3 },
-  { id: 'draft', label: 'Draft Simulator', icon: Gamepad2 },
-  { id: 'games', label: 'Games', icon: Dices },
-  { id: 'graph', label: 'Card Graph', icon: Network },
-  { id: 'archetypes', label: 'Archetypes', icon: Layers },
-  { id: 'odds', label: 'Draft Odds', icon: Percent },
-  { id: 'decks', label: 'Sample Decks', icon: FileStack },
-  { id: 'matchups', label: 'Matchups', icon: Swords },
-  { id: 'synergies', label: 'Synergies', icon: Link2 },
-  { id: 'buildaround', label: 'Build Around', icon: Lightbulb },
-  { id: 'power', label: 'Power Rankings', icon: Trophy },
-  { id: 'analysis', label: 'Power Analysis', icon: FlaskConical },
-  { id: 'simulation', label: 'Simulation', icon: BarChart3 },
-  { id: 'guide', label: 'Draft Guide', icon: BookOpen },
-  { id: 'cards', label: 'Card Browser', icon: Search },
+interface NavSection {
+  label: string;
+  items: NavItem[];
+  defaultOpen?: boolean;
+}
+
+// Organized navigation: 16 pages → 4 logical sections
+const NAV_SECTIONS: NavSection[] = [
+  {
+    label: 'Practice',
+    defaultOpen: true,
+    items: [
+      { id: 'dashboard', label: 'Dashboard', icon: Home },
+      { id: 'draft', label: 'Draft Simulator', icon: Gamepad2 },
+      { id: 'games', label: 'Training Games', icon: Dices },
+    ],
+  },
+  {
+    label: 'Learn',
+    defaultOpen: true,
+    items: [
+      { id: 'archetypes', label: 'Archetypes', icon: Layers },
+      { id: 'decks', label: 'Sample Decks', icon: FileStack },
+      { id: 'guide', label: 'Draft Guide', icon: BookOpen },
+      { id: 'synergies', label: 'Synergies', icon: Link2 },
+    ],
+  },
+  {
+    label: 'Reference',
+    defaultOpen: true,
+    items: [
+      { id: 'cards', label: 'Card Browser', icon: Search },
+      { id: 'power', label: 'Power Rankings', icon: Trophy },
+      { id: 'overview', label: 'Cube Overview', icon: BarChart3 },
+    ],
+  },
+  {
+    label: 'Meta',
+    defaultOpen: false,
+    items: [
+      { id: 'odds', label: 'Draft Odds', icon: Percent },
+      { id: 'matchups', label: 'Matchups', icon: Swords },
+    ],
+  },
 ];
+
+// Flat list for lookup
+const NAV_ITEMS: NavItem[] = NAV_SECTIONS.flatMap(s => s.items);
 
 function LoadingScreen({ progress }: { progress: number }) {
   return (
@@ -121,7 +151,16 @@ function App() {
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    NAV_SECTIONS.forEach(s => { initial[s.label] = s.defaultOpen ?? true; });
+    return initial;
+  });
   const mainRef = useRef<HTMLElement>(null);
+
+  const toggleSection = (label: string) => {
+    setExpandedSections(prev => ({ ...prev, [label]: !prev[label] }));
+  };
 
   // Scroll to top when tab changes
   useEffect(() => {
@@ -231,38 +270,68 @@ function App() {
           </div>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 py-4 overflow-y-auto">
-          <ul className="space-y-1 px-3">
-            {NAV_ITEMS.map((item, index) => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
+        {/* Navigation - Grouped Sections */}
+        <nav className="flex-1 py-3 overflow-y-auto">
+          <div className="space-y-1 px-3">
+            {NAV_SECTIONS.map((section) => {
+              const isExpanded = expandedSections[section.label];
+              const hasActiveItem = section.items.some(item => item.id === activeTab);
+
               return (
-                <li key={item.id} className="animate-in slide-up" style={{ animationDelay: `${index * 30}ms` }}>
-                  <button
-                    onClick={() => {
-                      setActiveTab(item.id);
-                      setMobileMenuOpen(false);
-                    }}
-                    className={`
-                      w-full flex items-center gap-3 rounded-xl transition-all duration-200 text-[13px] font-medium active:scale-[0.98]
-                      ${sidebarCollapsed ? 'px-3 py-3 justify-center' : 'px-3.5 py-3 lg:py-2.5'}
-                      ${isActive
-                        ? 'bg-white/[0.08] text-white shadow-sm'
-                        : 'text-white/50 hover:text-white/80 hover:bg-white/[0.04]'
-                      }
-                    `}
-                    title={sidebarCollapsed ? item.label : undefined}
-                  >
-                    <Icon className={`w-[18px] h-[18px] flex-shrink-0 ${isActive ? 'text-white' : ''}`} />
-                    {!sidebarCollapsed && (
-                      <span className="truncate">{item.label}</span>
-                    )}
-                  </button>
-                </li>
+                <div key={section.label}>
+                  {/* Section Header - clickable to expand/collapse */}
+                  {!sidebarCollapsed && (
+                    <button
+                      onClick={() => toggleSection(section.label)}
+                      className={`
+                        w-full flex items-center justify-between px-3 py-2 mb-1 rounded-lg
+                        text-[11px] font-semibold uppercase tracking-wider
+                        transition-colors
+                        ${hasActiveItem ? 'text-white/60' : 'text-white/30 hover:text-white/50'}
+                      `}
+                    >
+                      <span>{section.label}</span>
+                      <ChevronDown className={`w-3 h-3 transition-transform ${isExpanded ? '' : '-rotate-90'}`} />
+                    </button>
+                  )}
+
+                  {/* Section Items */}
+                  {(isExpanded || sidebarCollapsed) && (
+                    <ul className="space-y-0.5">
+                      {section.items.map((item) => {
+                        const Icon = item.icon;
+                        const isActive = activeTab === item.id;
+                        return (
+                          <li key={item.id}>
+                            <button
+                              onClick={() => {
+                                setActiveTab(item.id);
+                                setMobileMenuOpen(false);
+                              }}
+                              className={`
+                                w-full flex items-center gap-3 rounded-xl transition-all duration-200 text-[13px] font-medium active:scale-[0.98]
+                                ${sidebarCollapsed ? 'px-3 py-3 justify-center' : 'px-3.5 py-2.5'}
+                                ${isActive
+                                  ? 'bg-white/[0.08] text-white shadow-sm'
+                                  : 'text-white/50 hover:text-white/80 hover:bg-white/[0.04]'
+                                }
+                              `}
+                              title={sidebarCollapsed ? item.label : undefined}
+                            >
+                              <Icon className={`w-[18px] h-[18px] flex-shrink-0 ${isActive ? 'text-white' : ''}`} />
+                              {!sidebarCollapsed && (
+                                <span className="truncate">{item.label}</span>
+                              )}
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
               );
             })}
-          </ul>
+          </div>
         </nav>
 
         {/* CubeCobra Link - above the line */}
