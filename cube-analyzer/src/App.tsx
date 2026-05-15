@@ -10,96 +10,73 @@ import { DraftSimulator } from './components/DraftSimulator';
 import { SynergyExplorer } from './components/SynergyExplorer';
 import { MatchupMatrix } from './components/MatchupMatrix';
 import { SampleDecks } from './components/SampleDecks';
-import { BuildAround } from './components/BuildAround';
 import { GamesPage } from './components/GamesPage';
-import { PowerAnalysis } from './components/PowerAnalysis';
-import { GraphExplorer } from './components/GraphExplorer';
 import { ArchetypeOddsPage } from './components/ArchetypeOddsPage';
-import { SimulationReports } from './components/SimulationReports';
 import {
   BarChart3, Layers, Trophy, BookOpen, Search, Sparkles,
   Gamepad2, Link2, Swords, ExternalLink, FileStack,
-  Menu, ChevronLeft, ChevronDown, Dices, Percent, Home
+  ChevronLeft, Dices, Percent, Home
 } from 'lucide-react';
 
-type TabId = 'dashboard' | 'overview' | 'draft' | 'games' | 'graph' | 'archetypes' | 'odds' | 'decks' | 'matchups' | 'synergies' | 'buildaround' | 'power' | 'analysis' | 'simulation' | 'guide' | 'cards';
+// 4 Primary Sections (manabase pattern)
+type SectionId = 'home' | 'practice' | 'learn' | 'reference';
+
+// Sub-tabs within each section
+type PracticeTab = 'draft' | 'games';
+type LearnTab = 'archetypes' | 'decks' | 'guide' | 'synergies';
+type ReferenceTab = 'cards' | 'power' | 'overview' | 'odds' | 'matchups';
 
 interface NavItem {
-  id: TabId;
+  id: SectionId;
   label: string;
   icon: React.ElementType;
+  mobileLabel: string;
 }
 
-interface NavSection {
-  label: string;
-  items: NavItem[];
-  defaultOpen?: boolean;
-}
-
-// Organized navigation: 16 pages → 4 logical sections
-const NAV_SECTIONS: NavSection[] = [
-  {
-    label: 'Practice',
-    defaultOpen: true,
-    items: [
-      { id: 'dashboard', label: 'Dashboard', icon: Home },
-      { id: 'draft', label: 'Draft Simulator', icon: Gamepad2 },
-      { id: 'games', label: 'Training Games', icon: Dices },
-    ],
-  },
-  {
-    label: 'Learn',
-    defaultOpen: true,
-    items: [
-      { id: 'archetypes', label: 'Archetypes', icon: Layers },
-      { id: 'decks', label: 'Sample Decks', icon: FileStack },
-      { id: 'guide', label: 'Draft Guide', icon: BookOpen },
-      { id: 'synergies', label: 'Synergies', icon: Link2 },
-    ],
-  },
-  {
-    label: 'Reference',
-    defaultOpen: true,
-    items: [
-      { id: 'cards', label: 'Card Browser', icon: Search },
-      { id: 'power', label: 'Power Rankings', icon: Trophy },
-      { id: 'overview', label: 'Cube Overview', icon: BarChart3 },
-    ],
-  },
-  {
-    label: 'Meta',
-    defaultOpen: false,
-    items: [
-      { id: 'odds', label: 'Draft Odds', icon: Percent },
-      { id: 'matchups', label: 'Matchups', icon: Swords },
-    ],
-  },
+// 4 flat nav items - like manabase
+const NAV_ITEMS: NavItem[] = [
+  { id: 'home', label: 'Dashboard', icon: Home, mobileLabel: 'Home' },
+  { id: 'practice', label: 'Practice', icon: Gamepad2, mobileLabel: 'Practice' },
+  { id: 'learn', label: 'Learn', icon: BookOpen, mobileLabel: 'Learn' },
+  { id: 'reference', label: 'Reference', icon: Search, mobileLabel: 'Reference' },
 ];
 
-// Flat list for lookup
-const NAV_ITEMS: NavItem[] = NAV_SECTIONS.flatMap(s => s.items);
+// Tab definitions for each section
+const PRACTICE_TABS = [
+  { id: 'draft' as PracticeTab, label: 'Draft Simulator', icon: Gamepad2 },
+  { id: 'games' as PracticeTab, label: 'Training Games', icon: Dices },
+];
+
+const LEARN_TABS = [
+  { id: 'archetypes' as LearnTab, label: 'Archetypes', icon: Layers },
+  { id: 'decks' as LearnTab, label: 'Sample Decks', icon: FileStack },
+  { id: 'guide' as LearnTab, label: 'Draft Guide', icon: BookOpen },
+  { id: 'synergies' as LearnTab, label: 'Synergies', icon: Link2 },
+];
+
+const REFERENCE_TABS = [
+  { id: 'cards' as ReferenceTab, label: 'Cards', icon: Search },
+  { id: 'power' as ReferenceTab, label: 'Power Rankings', icon: Trophy },
+  { id: 'overview' as ReferenceTab, label: 'Cube Overview', icon: BarChart3 },
+  { id: 'odds' as ReferenceTab, label: 'Draft Odds', icon: Percent },
+  { id: 'matchups' as ReferenceTab, label: 'Matchups', icon: Swords },
+];
 
 function LoadingScreen({ progress }: { progress: number }) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-black">
-      {/* Subtle gradient background */}
       <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] via-transparent to-transparent" />
-
       <div className="relative text-center space-y-8">
-        {/* Logo with glow */}
         <div className="relative w-20 h-20 mx-auto">
           <div className="absolute inset-0 bg-white/5 rounded-2xl blur-xl animate-pulse-subtle" />
           <div className="relative glass-card rounded-2xl w-full h-full flex items-center justify-center">
             <Sparkles className="w-8 h-8 text-white/70 animate-pulse-subtle" />
           </div>
         </div>
-
         <div className="space-y-2">
           <h2 className="text-2xl font-semibold text-white tracking-tight">Vintage Cube Analyzer</h2>
           <p className="text-white/40 text-sm">Loading card data...</p>
         </div>
-
-        {/* Progress bar */}
         <div className="w-72 mx-auto">
           <div className="h-1 bg-white/[0.06] rounded-full overflow-hidden">
             <div
@@ -134,6 +111,42 @@ function ErrorScreen({ error }: { error: string }) {
   );
 }
 
+// Horizontal Tab Navigation component
+function TabNav<T extends string>({
+  tabs,
+  activeTab,
+  onTabChange,
+}: {
+  tabs: { id: T; label: string; icon: React.ElementType }[];
+  activeTab: T;
+  onTabChange: (tab: T) => void;
+}) {
+  return (
+    <div className="flex gap-1 p-1 bg-white/[0.02] rounded-xl border border-white/[0.06] overflow-x-auto">
+      {tabs.map((tab) => {
+        const Icon = tab.icon;
+        const isActive = activeTab === tab.id;
+        return (
+          <button
+            key={tab.id}
+            onClick={() => onTabChange(tab.id)}
+            className={`
+              flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all
+              ${isActive
+                ? 'bg-white/[0.08] text-white'
+                : 'text-white/50 hover:text-white/70 hover:bg-white/[0.04]'
+              }
+            `}
+          >
+            <Icon className="w-4 h-4" />
+            <span className="hidden sm:inline">{tab.label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function App() {
   const {
     cards,
@@ -148,24 +161,50 @@ function App() {
     progress,
   } = useCubeData();
 
-  const [activeTab, setActiveTab] = useState<TabId>('dashboard');
+  // Section state
+  const [activeSection, setActiveSection] = useState<SectionId>('home');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(() => {
-    const initial: Record<string, boolean> = {};
-    NAV_SECTIONS.forEach(s => { initial[s.label] = s.defaultOpen ?? true; });
-    return initial;
-  });
+
+  // Tab state for each section
+  const [practiceTab, setPracticeTab] = useState<PracticeTab>('draft');
+  const [learnTab, setLearnTab] = useState<LearnTab>('archetypes');
+  const [referenceTab, setReferenceTab] = useState<ReferenceTab>('cards');
+
   const mainRef = useRef<HTMLElement>(null);
 
-  const toggleSection = (label: string) => {
-    setExpandedSections(prev => ({ ...prev, [label]: !prev[label] }));
+  // Navigation helper for Dashboard
+  const handleNavigate = (target: string) => {
+    // Map old tab IDs to new section/tab structure
+    const mapping: Record<string, { section: SectionId; tab?: string }> = {
+      'draft': { section: 'practice', tab: 'draft' },
+      'games': { section: 'practice', tab: 'games' },
+      'archetypes': { section: 'learn', tab: 'archetypes' },
+      'decks': { section: 'learn', tab: 'decks' },
+      'guide': { section: 'learn', tab: 'guide' },
+      'synergies': { section: 'learn', tab: 'synergies' },
+      'cards': { section: 'reference', tab: 'cards' },
+      'power': { section: 'reference', tab: 'power' },
+      'overview': { section: 'reference', tab: 'overview' },
+      'odds': { section: 'reference', tab: 'odds' },
+      'matchups': { section: 'reference', tab: 'matchups' },
+    };
+
+    const nav = mapping[target];
+    if (nav) {
+      setActiveSection(nav.section);
+      if (nav.tab) {
+        if (nav.section === 'practice') setPracticeTab(nav.tab as PracticeTab);
+        if (nav.section === 'learn') setLearnTab(nav.tab as LearnTab);
+        if (nav.section === 'reference') setReferenceTab(nav.tab as ReferenceTab);
+      }
+    }
   };
 
-  // Scroll to top when tab changes
+  // Scroll to top when section changes
   useEffect(() => {
     mainRef.current?.scrollTo(0, 0);
-  }, [activeTab]);
+  }, [activeSection, practiceTab, learnTab, referenceTab]);
 
   if (loading) {
     return <LoadingScreen progress={progress} />;
@@ -176,64 +215,70 @@ function App() {
   }
 
   const renderContent = () => {
-    switch (activeTab) {
-      case 'dashboard':
+    switch (activeSection) {
+      case 'home':
         return (
           <DashboardPage
             cards={cards}
-            onNavigate={(tab) => setActiveTab(tab as TabId)}
-            onStartDraft={() => setActiveTab('draft')}
+            onNavigate={handleNavigate}
+            onStartDraft={() => {
+              setActiveSection('practice');
+              setPracticeTab('draft');
+            }}
           />
         );
-      case 'overview':
+
+      case 'practice':
         return (
-          <OverviewPage
-            cards={cards}
-            archetypes={archetypes}
-            colorDistribution={colorDistribution}
-            manaCurve={manaCurve}
-            typeDistribution={typeDistribution}
-            powerRankings={powerRankings}
-            onNavigate={(tab) => setActiveTab(tab as TabId)}
-          />
+          <div className="space-y-6">
+            <TabNav tabs={PRACTICE_TABS} activeTab={practiceTab} onTabChange={setPracticeTab} />
+            {practiceTab === 'draft' && <DraftSimulator cards={cards} />}
+            {practiceTab === 'games' && <GamesPage cards={cards} />}
+          </div>
         );
-      case 'draft':
-        return <DraftSimulator cards={cards} />;
-      case 'games':
-        return <GamesPage cards={cards} />;
-      case 'graph':
-        return <GraphExplorer cards={cards} />;
-      case 'archetypes':
-        return <ArchetypesPage archetypes={archetypes} cards={cards} />;
-      case 'odds':
-        return <ArchetypeOddsPage cards={cards} />;
-      case 'decks':
-        return <SampleDecks cards={cards} />;
-      case 'matchups':
-        return <MatchupMatrix archetypes={archetypes} cards={cards} />;
-      case 'synergies':
-        return <SynergyExplorer cards={cards} />;
-      case 'buildaround':
-        return <BuildAround cards={cards} />;
-      case 'power':
-        return <PowerRankings cards={cards} />;
-      case 'analysis':
-        return <PowerAnalysis cards={cards} />;
-      case 'simulation':
-        return <SimulationReports cards={cards} />;
-      case 'guide':
-        return <DraftGuide strategies={draftStrategies} />;
-      case 'cards':
-        return <CardBrowser cards={cards} />;
+
+      case 'learn':
+        return (
+          <div className="space-y-6">
+            <TabNav tabs={LEARN_TABS} activeTab={learnTab} onTabChange={setLearnTab} />
+            {learnTab === 'archetypes' && <ArchetypesPage archetypes={archetypes} cards={cards} />}
+            {learnTab === 'decks' && <SampleDecks cards={cards} />}
+            {learnTab === 'guide' && <DraftGuide strategies={draftStrategies} />}
+            {learnTab === 'synergies' && <SynergyExplorer cards={cards} />}
+          </div>
+        );
+
+      case 'reference':
+        return (
+          <div className="space-y-6">
+            <TabNav tabs={REFERENCE_TABS} activeTab={referenceTab} onTabChange={setReferenceTab} />
+            {referenceTab === 'cards' && <CardBrowser cards={cards} />}
+            {referenceTab === 'power' && <PowerRankings cards={cards} />}
+            {referenceTab === 'overview' && (
+              <OverviewPage
+                cards={cards}
+                archetypes={archetypes}
+                colorDistribution={colorDistribution}
+                manaCurve={manaCurve}
+                typeDistribution={typeDistribution}
+                powerRankings={powerRankings}
+                onNavigate={handleNavigate}
+              />
+            )}
+            {referenceTab === 'odds' && <ArchetypeOddsPage cards={cards} />}
+            {referenceTab === 'matchups' && <MatchupMatrix archetypes={archetypes} cards={cards} />}
+          </div>
+        );
+
       default:
         return null;
     }
   };
 
-  const activeNavItem = NAV_ITEMS.find(item => item.id === activeTab);
+  const activeNavItem = NAV_ITEMS.find(item => item.id === activeSection);
 
   return (
-    <div className="min-h-screen bg-black flex">
+    <div className="min-h-screen bg-black flex flex-col lg:flex-row">
       {/* Subtle background texture */}
       <div className="fixed inset-0 bg-gradient-to-br from-white/[0.01] via-transparent to-white/[0.005] pointer-events-none" />
 
@@ -245,14 +290,14 @@ function App() {
         />
       )}
 
-      {/* Sidebar */}
+      {/* Desktop Sidebar - Hidden on mobile */}
       <aside
         className={`
           fixed lg:sticky top-0 left-0 z-50 h-screen
           bg-[#0a0a0a]/95 backdrop-blur-xl border-r border-white/[0.06]
-          transition-all duration-300 ease-out flex flex-col safe-top
-          ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-          ${sidebarCollapsed ? 'w-[72px]' : 'w-64'}
+          transition-all duration-300 ease-out flex-col safe-top
+          hidden lg:flex
+          ${sidebarCollapsed ? 'w-[72px]' : 'w-56'}
         `}
       >
         {/* Logo */}
@@ -270,135 +315,104 @@ function App() {
           </div>
         </div>
 
-        {/* Navigation - Grouped Sections */}
-        <nav className="flex-1 py-3 overflow-y-auto">
-          <div className="space-y-1 px-3">
-            {NAV_SECTIONS.map((section) => {
-              const isExpanded = expandedSections[section.label];
-              const hasActiveItem = section.items.some(item => item.id === activeTab);
-
+        {/* Navigation - 4 flat items */}
+        <nav className="flex-1 py-4">
+          <ul className="space-y-1 px-3">
+            {NAV_ITEMS.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeSection === item.id;
               return (
-                <div key={section.label}>
-                  {/* Section Header - clickable to expand/collapse */}
-                  {!sidebarCollapsed && (
-                    <button
-                      onClick={() => toggleSection(section.label)}
-                      className={`
-                        w-full flex items-center justify-between px-3 py-2 mb-1 rounded-lg
-                        text-[11px] font-semibold uppercase tracking-wider
-                        transition-colors
-                        ${hasActiveItem ? 'text-white/60' : 'text-white/30 hover:text-white/50'}
-                      `}
-                    >
-                      <span>{section.label}</span>
-                      <ChevronDown className={`w-3 h-3 transition-transform ${isExpanded ? '' : '-rotate-90'}`} />
-                    </button>
-                  )}
-
-                  {/* Section Items */}
-                  {(isExpanded || sidebarCollapsed) && (
-                    <ul className="space-y-0.5">
-                      {section.items.map((item) => {
-                        const Icon = item.icon;
-                        const isActive = activeTab === item.id;
-                        return (
-                          <li key={item.id}>
-                            <button
-                              onClick={() => {
-                                setActiveTab(item.id);
-                                setMobileMenuOpen(false);
-                              }}
-                              className={`
-                                w-full flex items-center gap-3 rounded-xl transition-all duration-200 text-[13px] font-medium active:scale-[0.98]
-                                ${sidebarCollapsed ? 'px-3 py-3 justify-center' : 'px-3.5 py-2.5'}
-                                ${isActive
-                                  ? 'bg-white/[0.08] text-white shadow-sm'
-                                  : 'text-white/50 hover:text-white/80 hover:bg-white/[0.04]'
-                                }
-                              `}
-                              title={sidebarCollapsed ? item.label : undefined}
-                            >
-                              <Icon className={`w-[18px] h-[18px] flex-shrink-0 ${isActive ? 'text-white' : ''}`} />
-                              {!sidebarCollapsed && (
-                                <span className="truncate">{item.label}</span>
-                              )}
-                            </button>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  )}
-                </div>
+                <li key={item.id}>
+                  <button
+                    onClick={() => setActiveSection(item.id)}
+                    className={`
+                      w-full flex items-center gap-3 rounded-xl transition-all duration-200 text-[13px] font-medium active:scale-[0.98]
+                      ${sidebarCollapsed ? 'px-3 py-3.5 justify-center' : 'px-4 py-3'}
+                      ${isActive
+                        ? 'bg-white/[0.08] text-white shadow-sm'
+                        : 'text-white/50 hover:text-white/80 hover:bg-white/[0.04]'
+                      }
+                    `}
+                    title={sidebarCollapsed ? item.label : undefined}
+                  >
+                    <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-white' : ''}`} />
+                    {!sidebarCollapsed && <span>{item.label}</span>}
+                  </button>
+                </li>
               );
             })}
-          </div>
+          </ul>
         </nav>
 
-        {/* CubeCobra Link - above the line */}
+        {/* CubeCobra Link */}
         {!sidebarCollapsed && (
           <div className="px-3 pb-3">
             <a
               href="https://cubecobra.com/cube/list/8eec0c91-6c4e-4f96-957b-1ccc5ecac8fd"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2.5 px-3.5 py-2.5 text-[13px] text-white/40 hover:text-white/60 rounded-xl hover:bg-white/[0.04] transition-all duration-200"
+              className="flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-white/40 hover:text-white/60 rounded-xl hover:bg-white/[0.04] transition-all duration-200"
             >
               <ExternalLink className="w-4 h-4" />
-              <span>View on CubeCobra</span>
+              <span>CubeCobra</span>
             </a>
           </div>
         )}
 
-        {/* Collapse Button - desktop only */}
-        <div className={`hidden lg:block border-t border-white/[0.06] flex-shrink-0 ${sidebarCollapsed ? 'p-3' : 'px-3 py-2'}`}>
+        {/* Collapse Button */}
+        <div className={`border-t border-white/[0.06] flex-shrink-0 ${sidebarCollapsed ? 'p-3' : 'px-3 py-2'}`}>
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
             className={`
               flex items-center gap-2 text-white/30 hover:text-white/50 transition-all duration-200 text-[12px]
-              ${sidebarCollapsed ? 'w-full justify-center p-2' : 'px-3.5 py-2'}
+              ${sidebarCollapsed ? 'w-full justify-center p-2' : 'px-4 py-2'}
             `}
           >
             <ChevronLeft className={`w-3.5 h-3.5 transition-transform duration-300 ${sidebarCollapsed ? 'rotate-180' : ''}`} />
             {!sidebarCollapsed && <span>Collapse</span>}
           </button>
         </div>
-
-        {/* Mobile: Add safe area padding at bottom */}
-        <div className="lg:hidden h-4 flex-shrink-0" />
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0 relative">
-        {/* Top Bar */}
-        <header className="bg-[#0a0a0a]/80 backdrop-blur-xl border-b border-white/[0.06] flex items-center px-4 lg:px-6 sticky top-0 z-30 flex-shrink-0 safe-area-header min-h-16">
-            <button
-              onClick={() => setMobileMenuOpen(true)}
-              className="lg:hidden p-2.5 -ml-2 text-white/60 hover:text-white hover:bg-white/[0.04] rounded-xl transition-colors"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
-            <div className="flex items-center gap-3 lg:ml-0 ml-2">
-              {activeNavItem && (
-                <>
-                  <div className="w-8 h-8 rounded-lg bg-white/[0.04] flex items-center justify-center">
-                    <activeNavItem.icon className="w-4 h-4 text-white/50" />
-                  </div>
-                  <span className="text-sm font-medium text-white tracking-tight">{activeNavItem.label}</span>
-                </>
-              )}
+      <div className="flex-1 flex flex-col min-w-0 relative pb-16 lg:pb-0">
+        {/* Mobile Top Bar */}
+        <header className="lg:hidden bg-[#0a0a0a]/90 backdrop-blur-xl border-b border-white/[0.06] flex items-center justify-between px-4 sticky top-0 z-30 flex-shrink-0 safe-area-header min-h-14">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 glass-card rounded-lg flex items-center justify-center">
+              <Sparkles className="w-4 h-4 text-white/70" />
             </div>
-          </header>
+            <span className="text-sm font-semibold text-white">Vintage Cube</span>
+          </div>
+          {activeNavItem && (
+            <span className="text-xs text-white/40 font-medium">{activeNavItem.label}</span>
+          )}
+        </header>
+
+        {/* Desktop Top Bar */}
+        <header className="hidden lg:flex bg-[#0a0a0a]/80 backdrop-blur-xl border-b border-white/[0.06] items-center px-6 sticky top-0 z-30 flex-shrink-0 min-h-14">
+          <div className="flex items-center gap-3">
+            {activeNavItem && (
+              <>
+                <div className="w-8 h-8 rounded-lg bg-white/[0.04] flex items-center justify-center">
+                  <activeNavItem.icon className="w-4 h-4 text-white/50" />
+                </div>
+                <span className="text-sm font-medium text-white tracking-tight">{activeNavItem.label}</span>
+              </>
+            )}
+          </div>
+        </header>
 
         {/* Content */}
         <main ref={mainRef} className="flex-1 overflow-auto relative">
-          <div className="max-w-6xl mx-auto px-4 lg:px-8 py-8">
+          <div className="max-w-6xl mx-auto px-4 lg:px-8 py-6 lg:py-8">
             {renderContent()}
           </div>
         </main>
 
-        {/* Footer */}
-        <footer className="border-t border-white/[0.04] flex-shrink-0 bg-black/50 safe-bottom">
-          <div className="max-w-6xl mx-auto px-4 lg:px-8 py-5">
+        {/* Desktop Footer */}
+        <footer className="hidden lg:block border-t border-white/[0.04] flex-shrink-0 bg-black/50">
+          <div className="max-w-6xl mx-auto px-8 py-4">
             <p className="text-white/30 text-xs">
               Data from{' '}
               <a href="https://scryfall.com" className="text-white/50 hover:text-white/70 transition-colors" target="_blank" rel="noopener noreferrer">
@@ -409,6 +423,29 @@ function App() {
           </div>
         </footer>
       </div>
+
+      {/* Mobile Bottom Navigation - Like manabase */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-[#0a0a0a]/95 backdrop-blur-xl border-t border-white/[0.06] safe-bottom">
+        <div className="flex items-center justify-around h-16">
+          {NAV_ITEMS.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeSection === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setActiveSection(item.id)}
+                className={`
+                  flex flex-col items-center justify-center gap-1 w-full h-full transition-colors
+                  ${isActive ? 'text-white' : 'text-white/40'}
+                `}
+              >
+                <Icon className={`w-5 h-5 ${isActive ? 'text-white' : ''}`} />
+                <span className="text-[10px] font-medium">{item.mobileLabel}</span>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
     </div>
   );
 }

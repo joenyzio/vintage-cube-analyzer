@@ -238,43 +238,64 @@ export function GamesPage({ cards }: GamesPageProps) {
     });
   }, []);
 
-  // Cognitive loop games (new - self-contained)
-  const cognitiveLoopGames = [
-    { id: 'recognition' as GameType, name: 'Name That Card', desc: 'Identify from art only', icon: Eye, cognitive: true },
-    { id: 'estimation' as GameType, name: 'Guess the ELO', desc: 'How strong is this card?', icon: Gauge, cognitive: true },
-    { id: 'pick-order' as GameType, name: 'Pick Order', desc: 'Rank 3 cards best to worst', icon: ListTree, cognitive: true },
-    { id: 'archetype-sort' as GameType, name: 'Archetype Sort', desc: 'Which deck wants this?', icon: Target, cognitive: true },
-    { id: 'odd-one-out' as GameType, name: 'Odd One Out', desc: 'Find the misfit', icon: Search, cognitive: true },
-    { id: 'deck-doctor' as GameType, name: 'Deck Doctor', desc: 'What\'s wrong here?', icon: Stethoscope, cognitive: true },
-    { id: 'complete-curve' as GameType, name: 'Complete the Curve', desc: 'Fill the missing slot', icon: PuzzleIcon, cognitive: true },
-    { id: 'rules-quiz' as GameType, name: 'Rules Quiz', desc: 'Master MTG keywords', icon: BookOpen, cognitive: true },
-    { id: 'archetype-identify' as GameType, name: 'Name That Deck', desc: 'Identify archetype from cards', icon: LayoutGrid, cognitive: true },
-    { id: 'power-predictor' as GameType, name: 'Power Predictor', desc: 'Guess mechanic strength', icon: Zap, cognitive: true },
-    { id: 'mechanic-spot' as GameType, name: 'Mechanic Spot', desc: 'Quick binary: what does this card do?', icon: Target, cognitive: true },
-    { id: 'synergy-match' as GameType, name: 'Synergy Match', desc: 'Which card synergizes best?', icon: Link2, cognitive: true },
-    { id: 'speed-draft' as GameType, name: 'Speed Draft', desc: 'Timed P1P1 picks under pressure', icon: Clock, cognitive: true },
-    { id: 'combat-math' as GameType, name: 'Combat Math', desc: 'Can you attack profitably?', icon: Calculator, cognitive: true },
-    { id: 'counter-play' as GameType, name: 'Counter Play', desc: 'What beats this strategy?', icon: Shield, cognitive: true },
-    { id: 'wheel-prediction' as GameType, name: 'Wheel Prediction', desc: 'Which cards will table?', icon: RotateCcw, cognitive: true },
-    { id: 'mana-base' as GameType, name: 'Mana Base', desc: 'Build the right land split', icon: Droplets, cognitive: true },
-    { id: 'role-assessment' as GameType, name: 'Role Assessment', desc: 'Who\'s the beatdown?', icon: Users, cognitive: true },
+  // Difficulty levels for games
+  type Difficulty = 'beginner' | 'intermediate' | 'advanced';
+
+  // All games with difficulty ratings - organized by skill progression
+  const allGames: {
+    id: GameType;
+    name: string;
+    desc: string;
+    icon: React.ElementType;
+    difficulty: Difficulty;
+    cognitive?: boolean;
+    color?: string;
+    stats?: typeof stats.higherLower;
+    featured?: boolean;
+  }[] = [
+    // Beginner - Card Recognition & Basic Evaluation
+    { id: 'recognition', name: 'Name That Card', desc: 'Identify from art only', icon: Eye, difficulty: 'beginner', cognitive: true },
+    { id: 'guess-cmc', name: 'Guess the CMC', desc: 'What does this card cost?', icon: Hash, difficulty: 'beginner', color: 'cyan', stats: stats.guessCmc },
+    { id: 'higher-lower', name: 'Higher or Lower', desc: 'Which has higher ELO?', icon: Scale, difficulty: 'beginner', color: 'blue', stats: stats.higherLower },
+    { id: 'first-pick', name: 'First Pickable?', desc: 'Is this P1P1 worthy?', icon: Trophy, difficulty: 'beginner', color: 'amber', stats: stats.firstPick },
+    { id: 'estimation', name: 'Guess the ELO', desc: 'How strong is this card?', icon: Gauge, difficulty: 'beginner', cognitive: true },
+    { id: 'rules-quiz', name: 'Rules Quiz', desc: 'Master MTG keywords', icon: BookOpen, difficulty: 'beginner', cognitive: true },
+
+    // Intermediate - Draft Strategy
+    { id: 'pack-p1p1', name: 'Pack P1P1', desc: 'Pick the best card from a pack', icon: Package, difficulty: 'intermediate', color: 'orange', stats: stats.packP1P1, featured: true },
+    { id: 'pick-order', name: 'Pick Order', desc: 'Rank 3 cards best to worst', icon: ListTree, difficulty: 'intermediate', cognitive: true },
+    { id: 'wheel-or-not', name: 'Will It Wheel?', desc: 'Will it come back around?', icon: CircleDot, difficulty: 'intermediate', color: 'green', stats: stats.wheelOrNot },
+    { id: 'wheel-prediction', name: 'Wheel Prediction', desc: 'Which cards will table?', icon: RotateCcw, difficulty: 'intermediate', cognitive: true },
+    { id: 'archetype-sort', name: 'Archetype Sort', desc: 'Which deck wants this?', icon: Target, difficulty: 'intermediate', cognitive: true },
+    { id: 'archetype-identify', name: 'Name That Deck', desc: 'Identify archetype from cards', icon: LayoutGrid, difficulty: 'intermediate', cognitive: true },
+    { id: 'color-commit', name: 'Stay in Lane', desc: 'Pick the on-color card', icon: Layers, difficulty: 'intermediate', color: 'purple', stats: stats.colorCommit },
+    { id: 'signal-quiz', name: 'Signal Quiz', desc: 'What does this late pick mean?', icon: Radio, difficulty: 'intermediate', color: 'cyan', stats: stats.signalQuiz, featured: true },
+
+    // Advanced - Deck Building & Play
+    { id: 'synergy-match', name: 'Synergy Match', desc: 'Which card synergizes best?', icon: Link2, difficulty: 'advanced', cognitive: true },
+    { id: 'synergy-snap', name: 'Synergy Snap', desc: 'Do these cards combo?', icon: Sparkles, difficulty: 'advanced', color: 'pink', stats: stats.synergySnap },
+    { id: 'odd-one-out', name: 'Odd One Out', desc: 'Find the misfit', icon: Search, difficulty: 'advanced', cognitive: true },
+    { id: 'deck-doctor', name: 'Deck Doctor', desc: 'What\'s wrong here?', icon: Stethoscope, difficulty: 'advanced', cognitive: true },
+    { id: 'complete-curve', name: 'Complete the Curve', desc: 'Fill the missing slot', icon: PuzzleIcon, difficulty: 'advanced', cognitive: true },
+    { id: 'mana-base', name: 'Mana Base', desc: 'Build the right land split', icon: Droplets, difficulty: 'advanced', cognitive: true },
+    { id: 'mulligan-trainer', name: 'Mulligan Trainer', desc: 'Keep or mull this hand?', icon: Hand, difficulty: 'advanced', color: 'indigo', stats: stats.mulliganTrainer, featured: true },
+    { id: 'archetype-flashcards', name: 'Archetype Drills', desc: 'Name the key cards', icon: GraduationCap, difficulty: 'advanced', color: 'emerald', stats: stats.archetypeFlashcards, featured: true },
+    { id: 'speed-draft', name: 'Speed Draft', desc: 'Timed P1P1 picks under pressure', icon: Clock, difficulty: 'advanced', cognitive: true },
+    { id: 'sequencing', name: 'Sequencing', desc: 'Order your plays correctly', icon: ListOrdered, difficulty: 'advanced', color: 'violet', stats: stats.sequencing, featured: true },
+    { id: 'beatdown', name: 'Who\'s the Beatdown?', desc: 'Identify your role', icon: Swords, difficulty: 'advanced', color: 'sky', stats: stats.beatdown, featured: true },
+    { id: 'role-assessment', name: 'Role Assessment', desc: 'Who\'s the beatdown?', icon: Users, difficulty: 'advanced', cognitive: true },
+    { id: 'combat-math', name: 'Combat Math', desc: 'Can you attack profitably?', icon: Calculator, difficulty: 'advanced', cognitive: true },
+    { id: 'counter-play', name: 'Counter Play', desc: 'What beats this strategy?', icon: Shield, difficulty: 'advanced', cognitive: true },
+    { id: 'power-predictor', name: 'Power Predictor', desc: 'Guess mechanic strength', icon: Zap, difficulty: 'advanced', cognitive: true },
+    { id: 'mechanic-spot', name: 'Mechanic Spot', desc: 'Quick binary: what does this card do?', icon: Target, difficulty: 'advanced', cognitive: true },
+    { id: 'sideboard-drill', name: 'Sideboard Guide', desc: 'What comes in/out?', icon: ArrowLeftRight, difficulty: 'advanced', color: 'rose', stats: stats.sideboardDrill, featured: true },
   ];
 
-  const games = [
-    { id: 'pack-p1p1' as GameType, name: 'Pack P1P1', desc: 'Pick the best card from a pack', icon: Package, color: 'orange', stats: stats.packP1P1, featured: true },
-    { id: 'mulligan-trainer' as GameType, name: 'Mulligan Trainer', desc: 'Keep or mull this hand?', icon: Hand, color: 'indigo', stats: stats.mulliganTrainer, featured: true },
-    { id: 'signal-quiz' as GameType, name: 'Signal Quiz', desc: 'What does this late pick mean?', icon: Radio, color: 'cyan', stats: stats.signalQuiz, featured: true },
-    { id: 'archetype-flashcards' as GameType, name: 'Archetype Drills', desc: 'Name the key cards', icon: GraduationCap, color: 'emerald', stats: stats.archetypeFlashcards, featured: true },
-    { id: 'sideboard-drill' as GameType, name: 'Sideboard Guide', desc: 'What comes in/out?', icon: ArrowLeftRight, color: 'rose', stats: stats.sideboardDrill, featured: true },
-    { id: 'sequencing' as GameType, name: 'Sequencing', desc: 'Order your plays correctly', icon: ListOrdered, color: 'violet', stats: stats.sequencing, featured: true },
-    { id: 'beatdown' as GameType, name: 'Who\'s the Beatdown?', desc: 'Identify your role', icon: Swords, color: 'sky', stats: stats.beatdown, featured: true },
-    { id: 'higher-lower' as GameType, name: 'Higher or Lower', desc: 'Which has higher ELO?', icon: Scale, color: 'blue', stats: stats.higherLower },
-    { id: 'wheel-or-not' as GameType, name: 'Will It Wheel?', desc: 'Will it come back around?', icon: CircleDot, color: 'green', stats: stats.wheelOrNot },
-    { id: 'first-pick' as GameType, name: 'First Pickable?', desc: 'Is this P1P1 worthy?', icon: Trophy, color: 'amber', stats: stats.firstPick },
-    { id: 'guess-cmc' as GameType, name: 'Guess the CMC', desc: 'What does this card cost?', icon: Hash, color: 'cyan', stats: stats.guessCmc },
-    { id: 'synergy-snap' as GameType, name: 'Synergy Snap', desc: 'Do these cards combo?', icon: Sparkles, color: 'pink', stats: stats.synergySnap },
-    { id: 'color-commit' as GameType, name: 'Stay in Lane', desc: 'Pick the on-color card', icon: Layers, color: 'purple', stats: stats.colorCommit },
-  ];
+  // Filter games by type (with type guards for proper typing)
+  const cognitiveLoopGames = allGames.filter((g): g is typeof g & { cognitive: true } => g.cognitive === true);
+  const games = allGames.filter((g): g is typeof g & { color: string; stats: typeof stats.higherLower } =>
+    !g.cognitive && g.color !== undefined && g.stats !== undefined
+  );
 
   // Cognitive loop games route first (they manage their own state)
   if (game === 'recognition') {
