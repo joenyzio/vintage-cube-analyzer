@@ -246,7 +246,7 @@ export function DraftCoach({
 
           return (
             <div className="bg-orange-500/5 border border-orange-500/20 rounded-lg p-3 space-y-2">
-              <div className="text-xs text-orange-400/80 uppercase tracking-wider font-medium">⚡ Missing Pieces</div>
+              <div className="text-xs text-orange-400/80 uppercase tracking-wider font-medium">Missing Pieces</div>
               {missingPieces.map((piece, i) => (
                 <div key={i} className="text-xs">
                   <span className="text-white/40">Have </span>
@@ -267,8 +267,8 @@ export function DraftCoach({
 
           // Specific warnings for high-risk archetypes
           const warnings: { archetype: string; warning: string; severity: 'high' | 'medium' }[] = [
-            { archetype: 'oath', warning: '⚠️ Cube lacks Forbidden Orchard — only works vs creature decks', severity: 'high' },
-            { archetype: 'storm', warning: '⚠️ Only 9 storm cards in cube — high variance', severity: 'high' },
+            { archetype: 'oath', warning: 'Cube lacks Forbidden Orchard — only works vs creature decks', severity: 'high' },
+            { archetype: 'storm', warning: 'Only 9 storm cards in cube — high variance', severity: 'high' },
             { archetype: 'sneak', warning: '~5 enablers total — if taken, archetype is dead', severity: 'medium' },
           ];
 

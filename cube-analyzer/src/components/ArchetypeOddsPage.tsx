@@ -218,7 +218,7 @@ const ARCHETYPE_META: Record<string, ArchetypeMeta> = {
       vsCreature: 'favored',
       vsControl: 'unfavored',
       vsCombo: 'unfavored',
-      notes: '⚠️ WITHOUT ORCHARD: ~90% vs creatures, ~30% vs creatureless. Matchup lottery.'
+      notes: 'WITHOUT ORCHARD: ~90% vs creatures, ~30% vs creatureless. Matchup lottery.'
     },
     cardPoolSize: 8,
     failureModes: ['Opponent plays no creatures', 'Oath not drawn', 'Only copy taken by someone else', 'Missing Forbidden Orchard (NOT IN CUBE)']
@@ -1037,7 +1037,7 @@ export function ArchetypeOddsPage({ cards }: Props) {
                           stat.meta.riskLevel === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
                           'bg-red-500/20 text-red-400'
                         }`}>
-                          {stat.meta.riskLevel === 'low' ? '✓ Low' : stat.meta.riskLevel === 'medium' ? '~ Med' : '⚠ High'}
+                          {stat.meta.riskLevel === 'low' ? '✓ Low' : stat.meta.riskLevel === 'medium' ? '~ Med' : '! High'}
                         </span>
                       </td>
                       <td className="p-3 text-center">
@@ -1061,7 +1061,7 @@ export function ArchetypeOddsPage({ cards }: Props) {
 
         {/* Critical Warnings */}
         <div className="p-4 bg-red-500/5 border-t border-red-500/20">
-          <div className="text-xs font-medium text-red-400/80 uppercase tracking-wider mb-3">⚠️ Critical Warnings — What Our Data Can't Tell You</div>
+          <div className="text-xs font-medium text-red-400/80 uppercase tracking-wider mb-3">Critical Warnings — What Our Data Can't Tell You</div>
           <div className="grid md:grid-cols-2 gap-4 text-sm">
             <div className="bg-black/20 rounded-lg p-3">
               <div className="text-orange-400 font-medium mb-1">Oath of Druids: Matchup Lottery</div>
@@ -1773,7 +1773,7 @@ export function ArchetypeOddsPage({ cards }: Props) {
               {/* Failure modes - only show for high-risk archetypes */}
               {stat.meta.riskLevel === 'high' && (
                 <div className="mt-2 pt-2 border-t border-white/5">
-                  <div className="text-[10px] text-red-400/70 uppercase tracking-wider mb-1">⚠️ Failure Modes</div>
+                  <div className="text-[10px] text-red-400/70 uppercase tracking-wider mb-1">Failure Modes</div>
                   <p className="text-xs text-white/40">{stat.meta.failureModes.slice(0, 2).join(' • ')}</p>
                 </div>
               )}

@@ -6,6 +6,7 @@
  */
 
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { ArrowLeft, Undo2, Lightbulb, Eye, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 import type { CubeCard } from '../types/card';
 import type {
   SimulatorMode,
@@ -1273,8 +1274,8 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Header */}
-        <div className="flex-shrink-0 px-4 py-3 border-b border-white/[0.08] bg-black/50">
+        {/* Header - Desktop */}
+        <div className="hidden lg:block flex-shrink-0 px-4 py-3 border-b border-white/[0.08] bg-black/50">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
@@ -1326,6 +1327,54 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
           </div>
         </div>
 
+        {/* Header - Mobile: Clean, focused design */}
+        <div className="lg:hidden flex-shrink-0 border-b border-white/[0.08] bg-black/90 backdrop-blur-sm">
+          {/* Top row: Exit + Pack/Pick + Actions */}
+          <div className="flex items-center justify-between px-3 py-2">
+            <button
+              onClick={returnToMenu}
+              className="w-9 h-9 flex items-center justify-center bg-white/5 rounded-lg text-white/60"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+
+            {/* Center: Pack/Pick - THE MAIN FOCUS */}
+            <div className="flex-1 text-center">
+              <div className="text-lg font-bold text-white">
+                P{draftState.packNumber} · Pick {draftState.pickNumber}
+              </div>
+            </div>
+
+            {/* Right: Quick actions */}
+            <div className="flex items-center gap-1.5">
+              {canUndo && (
+                <button
+                  onClick={undoLastPick}
+                  className="w-9 h-9 flex items-center justify-center bg-amber-500/20 rounded-lg text-amber-400"
+                >
+                  <Undo2 className="w-4 h-4" />
+                </button>
+              )}
+              <button
+                onClick={() => setCoachMode(!coachMode)}
+                className={`w-9 h-9 flex items-center justify-center rounded-lg ${
+                  coachMode ? 'bg-amber-500/20 text-amber-400' : 'bg-white/5 text-white/30'
+                }`}
+              >
+                <Lightbulb className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Progress bar */}
+          <div className="h-1 bg-white/5">
+            <div
+              className="h-full bg-gradient-to-r from-purple-500 to-blue-500 transition-all duration-300"
+              style={{ width: `${progress * 100}%` }}
+            />
+          </div>
+        </div>
+
         {/* Pack Grid */}
         <div className="flex-1 overflow-y-auto p-4">
           <DraftPack
@@ -1344,29 +1393,97 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
           />
         </div>
 
-        {/* Mobile Bottom Bar */}
-        <div className="lg:hidden flex-shrink-0 p-3 border-t border-white/[0.08] bg-black">
-          <div className="flex items-center justify-between">
+        {/* Mobile Bottom Bar - Enhanced with key info */}
+        <div className="lg:hidden flex-shrink-0 border-t border-white/[0.08] bg-black/95 backdrop-blur-sm safe-area-bottom">
+          {/* Color distribution bar */}
+          <div className="flex h-1">
+            {Object.entries(colorCounts)
+              .filter(([_, count]) => count > 0)
+              .sort((a, b) => b[1] - a[1])
+              .map(([color, count]) => (
+                <div
+                  key={color}
+                  className={`${
+                    color === 'W' ? 'bg-amber-100' :
+                    color === 'U' ? 'bg-blue-500' :
+                    color === 'B' ? 'bg-gray-600' :
+                    color === 'R' ? 'bg-red-500' :
+                    'bg-green-500'
+                  }`}
+                  style={{ width: `${(count / Math.max(1, draftState.picks.length)) * 100}%` }}
+                />
+              ))}
+          </div>
+
+          {/* Main bottom row */}
+          <div className="flex items-center justify-between px-3 py-2">
+            {/* Deck button with color pips */}
+            <button
+              onClick={() => setShowMobileDeck(true)}
+              className="flex items-center gap-2 px-3 py-2 bg-white/10 rounded-xl text-white"
+            >
+              <span className="text-sm font-medium">Deck</span>
+              <span className="flex items-center justify-center min-w-[24px] h-6 px-1.5 bg-white/20 rounded-full text-sm font-bold">
+                {draftState.picks.length}
+              </span>
+              {/* Color pips */}
+              <div className="flex gap-0.5 ml-1">
+                {Object.entries(colorCounts)
+                  .filter(([_, count]) => count >= 3)
+                  .sort((a, b) => b[1] - a[1])
+                  .slice(0, 3)
+                  .map(([color]) => (
+                    <div
+                      key={color}
+                      className={`w-2 h-2 rounded-full ${
+                        color === 'W' ? 'bg-amber-100' :
+                        color === 'U' ? 'bg-blue-500' :
+                        color === 'B' ? 'bg-gray-500' :
+                        color === 'R' ? 'bg-red-500' :
+                        'bg-green-500'
+                      }`}
+                    />
+                  ))}
+              </div>
+            </button>
+
+            {/* Archetype hint (if committed) */}
+            {archetypeCommitments.length > 0 && archetypeCommitments[0].probability >= 30 && (
+              <div className="text-xs text-white/50 text-center flex-1 px-2 truncate">
+                {archetypeCommitments[0].archetype} {archetypeCommitments[0].probability}%
+              </div>
+            )}
+
+            {/* Passed cards + direction */}
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => setShowMobileDeck(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-white/10 rounded-lg text-sm text-white"
-              >
-                Deck ({draftState.picks.length})
-              </button>
               {draftState.passedCards.size > 0 && (
                 <button
                   onClick={() => setShowPassedCards(true)}
-                  className="flex items-center gap-2 px-3 py-2 bg-white/5 rounded-lg text-sm text-white/60"
+                  className="flex items-center gap-1.5 px-2.5 py-2 bg-white/5 rounded-xl text-white/50 text-sm"
                 >
-                  Passed ({draftState.passedCards.size})
+                  <Eye className="w-3.5 h-3.5 text-white/30" />
+                  {draftState.passedCards.size}
                 </button>
               )}
-            </div>
-            <div className="text-xs text-white/40">
-              Tap card to pick
+              <div className={`flex items-center justify-center w-8 h-8 rounded-lg ${
+                draftState.direction === 'left' ? 'bg-blue-500/10 text-blue-400' : 'bg-purple-500/10 text-purple-400'
+              }`}>
+                {draftState.direction === 'left' ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+              </div>
             </div>
           </div>
+
+          {/* Coach tip (when coach mode is on and we have a recommendation) */}
+          {coachMode && getRecommendedPick && (
+            <div className="px-3 pb-2">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-500/10 rounded-lg">
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                <span className="text-xs text-amber-400/80 truncate">
+                  Pick: <span className="font-medium text-amber-300">{getRecommendedPick.name}</span>
+                </span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
