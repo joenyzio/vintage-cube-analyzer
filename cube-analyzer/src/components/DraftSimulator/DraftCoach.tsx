@@ -218,6 +218,98 @@ export function DraftCoach({
           </div>
         )}
 
+        {/* Missing Synergy Pieces - Shows what you need to complete combos */}
+        {coachMode && draftState.picks.length >= 3 && (() => {
+          const poolNames = new Set(draftState.picks.map(c => c.name));
+          const COMBO_PIECES: { have: string; need: string; desc: string }[] = [
+            { have: 'Entomb', need: 'Reanimate', desc: 'Complete reanimation' },
+            { have: 'Entomb', need: 'Animate Dead', desc: 'Complete reanimation' },
+            { have: 'Reanimate', need: 'Griselbrand', desc: 'Best target' },
+            { have: 'Animate Dead', need: 'Griselbrand', desc: 'Best target' },
+            { have: 'Sneak Attack', need: 'Emrakul, the Aeons Torn', desc: 'Annihilator 6' },
+            { have: 'Show and Tell', need: 'Omniscience', desc: 'Free spells' },
+            { have: 'Tinker', need: 'Blightsteel Colossus', desc: 'One-shot kill' },
+            { have: 'Time Vault', need: 'Voltaic Key', desc: 'Infinite turns' },
+            { have: 'Voltaic Key', need: 'Time Vault', desc: 'Infinite turns' },
+            { have: 'Channel', need: 'Emrakul, the Aeons Torn', desc: 'Turn 2 Emrakul' },
+            { have: 'Oath of Druids', need: 'Griselbrand', desc: 'Best Oath target' },
+            { have: 'Dark Ritual', need: 'Tendrils of Agony', desc: 'Storm payoff' },
+            { have: "Yawgmoth's Will", need: 'Dark Ritual', desc: 'Replay rituals' },
+            { have: 'Natural Order', need: 'Craterhoof Behemoth', desc: 'Instant win' },
+          ];
+
+          const missingPieces = COMBO_PIECES.filter(combo =>
+            poolNames.has(combo.have) && !poolNames.has(combo.need)
+          ).slice(0, 3);
+
+          if (missingPieces.length === 0) return null;
+
+          return (
+            <div className="bg-orange-500/5 border border-orange-500/20 rounded-lg p-3 space-y-2">
+              <div className="text-xs text-orange-400/80 uppercase tracking-wider font-medium">⚡ Missing Pieces</div>
+              {missingPieces.map((piece, i) => (
+                <div key={i} className="text-xs">
+                  <span className="text-white/40">Have </span>
+                  <span className="text-green-400">{piece.have}</span>
+                  <span className="text-white/40">, need </span>
+                  <span className="text-orange-400 font-medium">{piece.need}</span>
+                  <span className="text-white/30 ml-1">({piece.desc})</span>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
+
+        {/* Archetype Warnings - Critical context */}
+        {coachMode && viablePaths.length > 0 && (() => {
+          const topPath = viablePaths[0];
+          const archId = topPath?.archetype?.toLowerCase();
+
+          // Specific warnings for high-risk archetypes
+          const warnings: { archetype: string; warning: string; severity: 'high' | 'medium' }[] = [
+            { archetype: 'oath', warning: '⚠️ Cube lacks Forbidden Orchard — only works vs creature decks', severity: 'high' },
+            { archetype: 'storm', warning: '⚠️ Only 9 storm cards in cube — high variance', severity: 'high' },
+            { archetype: 'sneak', warning: '~5 enablers total — if taken, archetype is dead', severity: 'medium' },
+          ];
+
+          const activeWarning = warnings.find(w => archId?.includes(w.archetype));
+          if (!activeWarning || topPath.probability < 0.4) return null;
+
+          return (
+            <div className={`${activeWarning.severity === 'high' ? 'bg-red-500/10 border-red-500/30' : 'bg-yellow-500/10 border-yellow-500/30'} border rounded-lg p-2`}>
+              <div className="text-xs text-white/70">{activeWarning.warning}</div>
+            </div>
+          );
+        })()}
+
+        {/* Pivot Suggestions - When archetype isn't coming together */}
+        {coachMode && draftState.picks.length >= 10 && viablePaths.length > 0 && viablePaths[0].probability < 0.5 && (() => {
+          const topPath = viablePaths[0];
+          const archId = topPath?.archetype?.toLowerCase();
+
+          const pivots: Record<string, { to: string; reason: string }[]> = {
+            'oath': [{ to: 'Reanimator', reason: 'Same fatties, add Entomb + Reanimate' }],
+            'storm': [{ to: 'Reanimator', reason: 'Same UB shell, Griselbrand works both ways' }],
+            'sneak': [{ to: 'Ramp', reason: 'Same fatties, hardcast with Channel/Natural Order' }],
+            'aggro': [{ to: 'Tempo', reason: 'Add blue for Daze protection' }],
+            'control': [{ to: 'Midrange', reason: 'Add proactive threats' }],
+          };
+
+          const pivotOptions = Object.entries(pivots).find(([key]) => archId?.includes(key));
+          if (!pivotOptions) return null;
+
+          return (
+            <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg p-2">
+              <div className="text-[10px] text-purple-400/70 uppercase tracking-wider mb-1">Pivot Option</div>
+              {pivotOptions[1].map((pivot, i) => (
+                <div key={i} className="text-xs text-white/60">
+                  → <span className="text-purple-400">{pivot.to}</span>: {pivot.reason}
+                </div>
+              ))}
+            </div>
+          );
+        })()}
+
         {/* Viable Paths - Shows draft direction options */}
         {coachMode && viablePaths.length > 0 && draftState.picks.length >= 5 && (
           <div className="bg-purple-500/5 border border-purple-500/20 rounded-lg p-3 space-y-2">
