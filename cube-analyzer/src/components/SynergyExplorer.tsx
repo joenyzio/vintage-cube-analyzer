@@ -15,12 +15,14 @@ interface SynergyCategory {
   cards: string[];
 }
 
-const SYNERGY_CATEGORIES: SynergyCategory[] = [
+const SYNERGY_CATEGORIES: (SynergyCategory & { howItWorks: string; keyCombo: string })[] = [
   {
     id: 'reanimator',
     name: 'Reanimator',
     color: 'bg-purple-500',
     description: 'Cheat creatures from graveyard into play',
+    howItWorks: 'Discard or Entomb a huge creature, then Reanimate it for 1-2 mana. T1 Entomb + T2 Reanimate = 8/8 draw 7 on turn 2.',
+    keyCombo: 'Entomb + Reanimate + Griselbrand',
     cards: ['Entomb', 'Reanimate', 'Animate Dead', 'Griselbrand', 'Archon of Cruelty', 'Shallow Grave', 'Necromancy', 'Recurring Nightmare'],
   },
   {
@@ -28,6 +30,8 @@ const SYNERGY_CATEGORIES: SynergyCategory[] = [
     name: 'Storm',
     color: 'bg-blue-500',
     description: 'Chain spells for massive storm counts',
+    howItWorks: 'Cast many cheap spells in one turn, then Brain Freeze or Tendrils. Underworld Breach + LED creates infinite loops.',
+    keyCombo: 'Underworld Breach + LED + Brain Freeze',
     cards: ['Underworld Breach', 'Brain Freeze', "Lion's Eye Diamond", 'Time Spiral', 'Frantic Search', "Yawgmoth's Will", 'Echo of Eons'],
   },
   {
@@ -35,6 +39,8 @@ const SYNERGY_CATEGORIES: SynergyCategory[] = [
     name: 'Artifacts',
     color: 'bg-amber-500',
     description: 'Artifact mana and Tinker targets',
+    howItWorks: 'Accumulate artifact mana, Tinker away a cheap artifact for Blightsteel Colossus. Tolarian Academy generates absurd mana.',
+    keyCombo: 'Tinker + Blightsteel Colossus',
     cards: ['Tinker', 'Tolarian Academy', 'Blightsteel Colossus', 'Mana Crypt', 'Sol Ring', 'Mox Sapphire'],
   },
   {
@@ -42,6 +48,8 @@ const SYNERGY_CATEGORIES: SynergyCategory[] = [
     name: 'Cheat In Play',
     color: 'bg-red-500',
     description: 'Put huge threats into play without paying',
+    howItWorks: 'Bypass mana costs entirely. Show and Tell is symmetric but you choose what to put in. Sneak Attack gives haste for one big attack.',
+    keyCombo: 'Sneak Attack + Emrakul',
     cards: ['Show and Tell', 'Sneak Attack', 'Through the Breach', 'Channel', 'Emrakul, the Aeons Torn', 'Omniscience'],
   },
   {
@@ -49,6 +57,8 @@ const SYNERGY_CATEGORIES: SynergyCategory[] = [
     name: 'Blink',
     color: 'bg-white',
     description: 'Flicker creatures for repeated ETB triggers',
+    howItWorks: 'Exile your creature and return it to trigger ETB again. Ephemerate has rebound for double value. Great with removal creatures.',
+    keyCombo: 'Ephemerate + Solitude',
     cards: ['Ephemerate', 'Restoration Angel', 'Flickerwisp', 'Solitude', 'Skyclave Apparition'],
   },
   {
@@ -56,6 +66,8 @@ const SYNERGY_CATEGORIES: SynergyCategory[] = [
     name: 'Green Ramp',
     color: 'bg-green-500',
     description: 'Accelerate into huge creatures',
+    howItWorks: 'Mana dorks into Natural Order, sacrifice a small creature to find Craterhoof Behemoth and win immediately.',
+    keyCombo: 'Natural Order + Craterhoof Behemoth',
     cards: ['Natural Order', "Green Sun's Zenith", 'Craterhoof Behemoth', 'Survival of the Fittest', 'Birds of Paradise', 'Llanowar Elves', 'Noble Hierarch'],
   },
   {
@@ -63,6 +75,8 @@ const SYNERGY_CATEGORIES: SynergyCategory[] = [
     name: 'Control',
     color: 'bg-sky-500',
     description: 'Counter everything and win with planeswalkers',
+    howItWorks: 'Use cheap cantrips to find counters, protect planeswalkers, and bury opponent in card advantage. Jace ultimates win the game.',
+    keyCombo: 'Brainstorm + Force of Will + Jace',
     cards: ['Jace, the Mind Sculptor', 'Force of Will', 'Counterspell', 'Mana Drain', 'Brainstorm', 'Ponder', 'Snapcaster Mage'],
   },
   {
@@ -70,6 +84,8 @@ const SYNERGY_CATEGORIES: SynergyCategory[] = [
     name: 'Aggro',
     color: 'bg-orange-500',
     description: 'Fast, efficient threats with disruption',
+    howItWorks: 'Cheap threats + disruption. Ragavan steals cards while attacking. Thoughtseize clears the way, Bolt finishes games.',
+    keyCombo: 'Ragavan + Thoughtseize + Bolt',
     cards: ['Ragavan, Nimble Pilferer', 'Lightning Bolt', 'Thoughtseize', 'Dark Confidant', 'Orcish Bowmasters'],
   },
 ];
@@ -316,115 +332,126 @@ export function SynergyExplorer({ cards }: SynergyExplorerProps) {
         <span className="text-xs text-white/30 ml-auto">{categoriesWithCards.length} synergy packages</span>
       </div>
 
-      {/* Selected Card Detail */}
+      {/* Selected Card Detail - Mobile-friendly stacked layout */}
       {selectedCard && (
-        <div className="bg-black border border-white/10 rounded-xl p-5">
-          <div className="flex gap-5">
-            <div className="flex-shrink-0">
+        <div className="bg-black border border-white/10 rounded-xl p-4 sm:p-5">
+          {/* Header with close button */}
+          <div className="flex items-start justify-between gap-2 mb-4">
+            <div>
+              <h3 className="text-lg sm:text-xl font-bold text-white">{selectedCard.name}</h3>
+              <p className="text-sm text-white/40">{selectedCard.type_line}</p>
+            </div>
+            <button
+              onClick={() => setSelectedCard(null)}
+              className="p-2 hover:bg-white/5 rounded-lg flex-shrink-0"
+            >
+              <X className="w-4 h-4 text-white/40" />
+            </button>
+          </div>
+
+          {/* Content - stacks on mobile */}
+          <div className="flex flex-col sm:flex-row gap-4 sm:gap-5">
+            {/* Card image - centered on mobile */}
+            <div className="flex-shrink-0 flex justify-center sm:block">
               <img
                 src={getCardImage(selectedCard)}
                 alt={selectedCard.name}
-                className="w-40 rounded-xl shadow-lg"
+                className="w-32 sm:w-40 rounded-xl shadow-lg"
               />
             </div>
 
-            <div className="flex-1 min-w-0">
-              <div className="flex items-start justify-between gap-2 mb-4">
+            {/* Synergies grid */}
+            <div className="flex-1 min-w-0 space-y-4">
+              {selectedCardSynergies.core.length > 0 && (
                 <div>
-                  <h3 className="text-xl font-bold text-white">{selectedCard.name}</h3>
-                  <p className="text-sm text-white/40">{selectedCard.type_line}</p>
+                  <div className="text-xs text-amber-400 font-medium mb-2 flex items-center gap-1">
+                    <Zap className="w-3 h-3" /> Core Synergies
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedCardSynergies.core.map(card => (
+                      <button
+                        key={card.id}
+                        onClick={() => setSelectedCard(card)}
+                        className="w-14 sm:w-16 aspect-[488/680] rounded-lg overflow-hidden hover:scale-105 active:scale-95 transition-transform ring-1 ring-amber-400/30 shadow-lg"
+                      >
+                        <img src={getCardImage(card)} alt={card.name} className="w-full h-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <button
-                  onClick={() => setSelectedCard(null)}
-                  className="p-2 hover:bg-white/5 rounded-lg"
-                >
-                  <X className="w-4 h-4 text-white/40" />
-                </button>
-              </div>
+              )}
 
-              <div className="grid md:grid-cols-3 gap-4">
-                {selectedCardSynergies.core.length > 0 && (
-                  <div>
-                    <div className="text-xs text-amber-400 font-medium mb-2 flex items-center gap-1">
-                      <Zap className="w-3 h-3" /> Core Synergies
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedCardSynergies.core.map(card => (
-                        <button
-                          key={card.id}
-                          onClick={() => setSelectedCard(card)}
-                          className="w-16 aspect-[488/680] rounded-lg overflow-hidden hover:scale-105 transition-transform ring-1 ring-amber-400/30 shadow-lg"
-                        >
-                          <img src={getCardImage(card)} alt={card.name} className="w-full h-full object-cover" />
-                        </button>
-                      ))}
-                    </div>
+              {selectedCardSynergies.strong.length > 0 && (
+                <div>
+                  <div className="text-xs text-white/40 font-medium mb-2">Strong Synergies</div>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedCardSynergies.strong.map(card => (
+                      <button
+                        key={card.id}
+                        onClick={() => setSelectedCard(card)}
+                        className="w-14 sm:w-16 aspect-[488/680] rounded-lg overflow-hidden hover:scale-105 active:scale-95 transition-transform ring-1 ring-white/10 shadow-lg"
+                      >
+                        <img src={getCardImage(card)} alt={card.name} className="w-full h-full object-cover" />
+                      </button>
+                    ))}
                   </div>
-                )}
+                </div>
+              )}
 
-                {selectedCardSynergies.strong.length > 0 && (
-                  <div>
-                    <div className="text-xs text-white/40 font-medium mb-2">Strong Synergies</div>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedCardSynergies.strong.map(card => (
-                        <button
-                          key={card.id}
-                          onClick={() => setSelectedCard(card)}
-                          className="w-16 aspect-[488/680] rounded-lg overflow-hidden hover:scale-105 transition-transform ring-1 ring-white/10 shadow-lg"
-                        >
-                          <img src={getCardImage(card)} alt={card.name} className="w-full h-full object-cover" />
-                        </button>
-                      ))}
-                    </div>
+              {wantsSelectedCard.length > 0 && (
+                <div>
+                  <div className="text-xs text-white/40 font-medium mb-2">Cards that want this</div>
+                  <div className="flex flex-wrap gap-2">
+                    {wantsSelectedCard.slice(0, 6).map(card => (
+                      <button
+                        key={card.id}
+                        onClick={() => setSelectedCard(card)}
+                        className="w-14 sm:w-16 aspect-[488/680] rounded-lg overflow-hidden hover:scale-105 active:scale-95 transition-transform ring-1 ring-white/10 shadow-lg"
+                      >
+                        <img src={getCardImage(card)} alt={card.name} className="w-full h-full object-cover" />
+                      </button>
+                    ))}
                   </div>
-                )}
+                </div>
+              )}
 
-                {wantsSelectedCard.length > 0 && (
-                  <div>
-                    <div className="text-xs text-white/40 font-medium mb-2">Cards that want this</div>
-                    <div className="flex flex-wrap gap-2">
-                      {wantsSelectedCard.slice(0, 6).map(card => (
-                        <button
-                          key={card.id}
-                          onClick={() => setSelectedCard(card)}
-                          className="w-16 aspect-[488/680] rounded-lg overflow-hidden hover:scale-105 transition-transform ring-1 ring-white/10 shadow-lg"
-                        >
-                          <img src={getCardImage(card)} alt={card.name} className="w-full h-full object-cover" />
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {selectedCardSynergies.core.length === 0 && selectedCardSynergies.strong.length === 0 && wantsSelectedCard.length === 0 && (
-                  <p className="text-sm text-white/30 col-span-3">No documented synergies for this card.</p>
-                )}
-              </div>
+              {selectedCardSynergies.core.length === 0 && selectedCardSynergies.strong.length === 0 && wantsSelectedCard.length === 0 && (
+                <p className="text-sm text-white/30">No documented synergies for this card.</p>
+              )}
             </div>
           </div>
         </div>
       )}
 
       {/* Synergy Categories Grid */}
-      <div className="grid md:grid-cols-2 gap-5">
+      <div className="grid md:grid-cols-2 gap-4 sm:gap-5">
         {categoriesWithCards.map(cat => (
           <div
             key={cat.id}
             className="bg-black border border-white/[0.06] rounded-xl overflow-hidden"
           >
-            {/* Header */}
-            <div className="flex items-center gap-3 p-4 border-b border-white/[0.04]">
-              <div className={`w-3 h-3 rounded-full ${cat.color}`} />
-              <div className="flex-1">
+            {/* Header with teaching context */}
+            <div className="p-4 border-b border-white/[0.04]">
+              <div className="flex items-center gap-3 mb-2">
+                <div className={`w-3 h-3 rounded-full ${cat.color} flex-shrink-0`} />
                 <h3 className="font-semibold text-white">{cat.name}</h3>
-                <p className="text-xs text-white/40">{cat.description}</p>
+                <span className="text-xs text-white/30 ml-auto">{cat.cardObjects.length} cards</span>
               </div>
-              <span className="text-xs text-white/30">{cat.cardObjects.length} cards</span>
+              <p className="text-xs text-white/50 mb-2">{cat.description}</p>
+              {/* Teaching context */}
+              <div className="bg-white/[0.02] rounded-lg p-3 space-y-1.5">
+                <p className="text-xs text-white/70 leading-relaxed">
+                  {'howItWorks' in cat && (cat as typeof cat & { howItWorks: string }).howItWorks}
+                </p>
+                <p className="text-[10px] text-amber-400/80 font-medium">
+                  Key: {'keyCombo' in cat && (cat as typeof cat & { keyCombo: string }).keyCombo}
+                </p>
+              </div>
             </div>
 
-            {/* Cards Grid */}
-            <div className="p-4">
-              <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+            {/* Cards Grid - responsive */}
+            <div className="p-3 sm:p-4">
+              <div className="grid grid-cols-4 sm:grid-cols-5 gap-1.5 sm:gap-2">
                 {cat.cardObjects.map(card => {
                   const synergyCount = getSynergyCount(card.name);
                   return (
@@ -435,7 +462,7 @@ export function SynergyExplorer({ cards }: SynergyExplorerProps) {
                       onMouseLeave={() => setHoveredCard(null)}
                       className={`
                         relative aspect-[488/680] rounded-lg overflow-hidden shadow-lg transition-all
-                        hover:scale-105 hover:z-10
+                        hover:scale-105 active:scale-95 hover:z-10
                         ${selectedCard?.id === card.id ? 'ring-2 ring-white scale-105 z-10' : ''}
                       `}
                     >
@@ -443,10 +470,11 @@ export function SynergyExplorer({ cards }: SynergyExplorerProps) {
                         src={getCardImage(card)}
                         alt={card.name}
                         className="w-full h-full object-cover"
+                        loading="lazy"
                       />
                       {synergyCount > 0 && (
-                        <div className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/80 flex items-center justify-center">
-                          <span className="text-[10px] text-white font-bold">{synergyCount}</span>
+                        <div className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-black/80 flex items-center justify-center">
+                          <span className="text-[8px] sm:text-[10px] text-white font-bold">{synergyCount}</span>
                         </div>
                       )}
                     </button>

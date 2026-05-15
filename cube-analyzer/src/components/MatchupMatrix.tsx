@@ -234,7 +234,7 @@ export function MatchupMatrix({ archetypes, cards: _cards }: MatchupMatrixProps)
               <button
                 key={analysis.archetype.id}
                 onClick={() => setSelectedArchetype(isSelected ? null : analysis.archetype.id)}
-                className={`w-full flex items-center gap-3 p-3 rounded-lg transition-all ${
+                className={`w-full flex items-center gap-2 sm:gap-3 p-3 sm:p-3 rounded-lg transition-all active:scale-[0.99] ${
                   isSelected ? 'bg-white/10 ring-1 ring-white/20' : 'bg-white/5 hover:bg-white/8'
                 }`}
               >
@@ -260,17 +260,17 @@ export function MatchupMatrix({ archetypes, cards: _cards }: MatchupMatrixProps)
                   <div className="font-medium text-white">{analysis.archetype.name}</div>
                 </div>
 
-                <div className={`flex items-center gap-1 px-2 py-1 rounded text-xs ${STRATEGY_COLORS[analysis.strategyType]}`}>
+                <div className={`hidden sm:flex items-center gap-1 px-2 py-1 rounded text-xs ${STRATEGY_COLORS[analysis.strategyType]}`}>
                   <Icon className="w-3 h-3" />
-                  {analysis.strategyType.replace('-', ' ')}
+                  <span className="hidden md:inline">{analysis.strategyType.replace('-', ' ')}</span>
                 </div>
 
-                <div className="text-right">
+                <div className="text-right flex-shrink-0">
                   <div className="text-sm font-mono text-white">{Math.round(analysis.avgElo)}</div>
-                  <div className="text-[10px] text-white/40">avg ELO</div>
+                  <div className="text-[10px] text-white/40 hidden sm:block">avg ELO</div>
                 </div>
 
-                <div className={`text-xs font-medium px-2 py-1 rounded ${
+                <div className={`text-[10px] sm:text-xs font-medium px-1.5 sm:px-2 py-0.5 sm:py-1 rounded flex-shrink-0 ${
                   analysis.avgPercentile >= 70 ? 'bg-green-500/20 text-green-400' :
                   analysis.avgPercentile >= 50 ? 'bg-amber-500/20 text-amber-400' :
                   'bg-white/10 text-white/50'
@@ -311,7 +311,7 @@ export function MatchupMatrix({ archetypes, cards: _cards }: MatchupMatrixProps)
           </div>
 
           {/* Key Stats */}
-          <div className="grid grid-cols-3 gap-3 mb-4">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3 mb-4">
             <div className="bg-white/5 rounded-lg p-3 text-center">
               <div className="text-[10px] text-white/40 uppercase mb-1">Speed</div>
               <div className="text-lg font-bold text-white">{selectedAnalysis.goldfish}</div>
