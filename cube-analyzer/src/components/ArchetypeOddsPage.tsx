@@ -398,90 +398,317 @@ export function ArchetypeOddsPage({ cards }: Props) {
         </div>
       )}
 
-      {/* Scatter Chart: Deck Quality vs Draft Frequency */}
-      <div className="bg-white/5 border border-white/10 rounded-xl p-6">
-        <div className="flex items-center justify-between mb-4">
+      {/* Scatter Chart: Deck Quality vs Draft Frequency - Enhanced */}
+      <div className="bg-gradient-to-br from-white/[0.03] to-white/[0.01] border border-white/10 rounded-2xl p-6 backdrop-blur-sm">
+        <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-lg font-semibold text-white">Deck Quality vs Draft Frequency</h2>
-            <p className="text-sm text-white/40">Higher = stronger decks. Right = more commonly drafted.</p>
+            <h2 className="text-xl font-bold text-white">Archetype Landscape</h2>
+            <p className="text-sm text-white/40 mt-1">Quality vs Frequency — includes all color variants</p>
           </div>
-          <div className="flex gap-3 text-xs">
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded-full bg-green-500" />
-              <span className="text-white/50">Easy</span>
+          <div className="flex gap-4 text-xs">
+            <div className="flex items-center gap-4 px-3 py-2 bg-white/5 rounded-lg">
+              <div className="flex items-center gap-1.5">
+                <div className="w-4 h-4 rounded-full border-2 border-white/40" />
+                <span className="text-white/50">Main</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-white/40" />
+                <span className="text-white/50">Variant</span>
+              </div>
             </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded-full bg-yellow-500" />
-              <span className="text-white/50">Medium</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded-full bg-orange-500" />
-              <span className="text-white/50">Hard</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded-full bg-red-500" />
-              <span className="text-white/50">Expert</span>
+            <div className="flex items-center gap-3 px-3 py-2 bg-white/5 rounded-lg">
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                <span className="text-white/40">Mid</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
+                <span className="text-white/40">Aggro</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+                <span className="text-white/40">Tempo</span>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="relative" style={{ height: 320 }}>
+        <div className="relative" style={{ height: 520 }}>
           {/* Y axis (Deck Quality) */}
-          <div className="absolute left-0 top-0 bottom-8 w-12 flex flex-col justify-between text-xs text-white/30">
-            <span>1950</span>
+          <div className="absolute left-0 top-0 bottom-10 w-14 flex flex-col justify-between text-[11px] text-white/30 font-mono pr-2 text-right">
+            <span>2000</span>
+            <span>1960</span>
             <span>1920</span>
-            <span>1890</span>
-            <span>1860</span>
-            <span>1830</span>
+            <span>1880</span>
+            <span>1840</span>
+            <span>1800</span>
           </div>
-          <div className="absolute -left-2 top-1/2 -translate-y-1/2 -rotate-90 text-xs text-white/40 whitespace-nowrap">
-            Avg Deck Quality
+          <div className="absolute left-0 top-1/2 -translate-y-1/2 -rotate-90 text-[10px] text-white/30 uppercase tracking-widest whitespace-nowrap" style={{ transformOrigin: 'center center', marginLeft: '-24px' }}>
+            Deck ELO
           </div>
 
           {/* X axis (Draft %) */}
-          <div className="absolute left-12 right-0 bottom-0 h-8 flex justify-between text-xs text-white/30 px-2">
+          <div className="absolute left-14 right-0 bottom-0 h-10 flex justify-between text-[11px] text-white/30 font-mono px-1 items-start pt-2">
             <span>0%</span>
             <span>5%</span>
             <span>10%</span>
             <span>15%</span>
             <span>20%</span>
             <span>25%</span>
+            <span>30%</span>
           </div>
-          <div className="absolute left-1/2 -translate-x-1/2 bottom-0 text-xs text-white/40">
-            Draft Frequency (% of all decks)
+          <div className="absolute left-1/2 -translate-x-1/2 bottom-0 text-[10px] text-white/30 uppercase tracking-widest">
+            Draft Frequency
           </div>
 
           {/* Chart area */}
-          <div className="absolute left-12 right-0 top-0 bottom-8 border-l border-b border-white/10">
-            {/* Grid lines */}
-            {[0, 1, 2, 3, 4].map(i => (
-              <div
-                key={`h-${i}`}
-                className="absolute left-0 right-0 border-t border-white/5"
-                style={{ top: `${i * 25}%` }}
-              />
-            ))}
+          <div className="absolute left-14 right-0 top-0 bottom-10 border-l border-b border-white/[0.08] bg-gradient-to-br from-white/[0.02] to-transparent rounded-br-lg overflow-hidden">
+            {/* Grid lines - more subtle */}
             {[0, 1, 2, 3, 4, 5].map(i => (
               <div
+                key={`h-${i}`}
+                className="absolute left-0 right-0 border-t border-white/[0.04]"
+                style={{ top: `${i * 20}%` }}
+              />
+            ))}
+            {[0, 1, 2, 3, 4, 5, 6].map(i => (
+              <div
                 key={`v-${i}`}
-                className="absolute top-0 bottom-0 border-l border-white/5"
-                style={{ left: `${i * 20}%` }}
+                className="absolute top-0 bottom-0 border-l border-white/[0.04]"
+                style={{ left: `${i * (100/6)}%` }}
               />
             ))}
 
-            {/* Data points */}
+            {/* Quadrant zones - subtle background */}
+            <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-green-500/[0.03]" />
+            <div className="absolute top-0 left-0 w-1/2 h-1/2 bg-purple-500/[0.03]" />
+            <div className="absolute bottom-0 right-0 w-1/2 h-1/2 bg-yellow-500/[0.02]" />
+
+            {/* Subtype data points - FIRST (behind main archetypes) */}
+            {/* Midrange subtypes */}
+            {simulationData.midrangeSubtypes && Object.values(simulationData.midrangeSubtypes as Record<string, any>)
+              .filter((s: any) => s.count >= 10)
+              .map((subtype: any) => {
+                const pctOfTotal = (subtype.count / totalDecks) * 100;
+                const x = (pctOfTotal / 30) * 100;
+                const y = ((2000 - subtype.avgDeckQuality) / 200) * 100;
+
+                return (
+                  <div
+                    key={`mid-${subtype.colorCombo}`}
+                    className="absolute transform -translate-x-1/2 -translate-y-1/2 group cursor-pointer z-10"
+                    style={{
+                      left: `${Math.max(2, Math.min(98, x))}%`,
+                      top: `${Math.max(2, Math.min(98, y))}%`,
+                    }}
+                  >
+                    <div className="w-3 h-3 rounded-full bg-amber-500/80 ring-1 ring-amber-400/30 transition-all duration-200 group-hover:scale-[2] group-hover:ring-2 group-hover:ring-amber-400/60 group-hover:z-50" />
+
+                    {/* Rich tooltip */}
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-50">
+                      <div className="bg-black/95 backdrop-blur-sm border border-white/20 rounded-xl p-3 shadow-2xl min-w-[180px]">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="flex gap-0.5">
+                            {subtype.colorCombo.split('').map((c: string) => (
+                              <span
+                                key={c}
+                                className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold
+                                  ${c === 'W' ? 'bg-amber-100 text-amber-800' : ''}
+                                  ${c === 'U' ? 'bg-blue-500 text-white' : ''}
+                                  ${c === 'B' ? 'bg-gray-800 text-white border border-white/20' : ''}
+                                  ${c === 'R' ? 'bg-red-500 text-white' : ''}
+                                  ${c === 'G' ? 'bg-green-600 text-white' : ''}
+                                `}
+                              >
+                                {c}
+                              </span>
+                            ))}
+                          </div>
+                          <span className="font-semibold text-white text-sm">{subtype.name}</span>
+                        </div>
+                        <div className="space-y-1 text-[11px]">
+                          <div className="flex justify-between">
+                            <span className="text-white/50">ELO</span>
+                            <span className="text-amber-400 font-mono font-medium">{subtype.avgDeckQuality}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-white/50">Decks</span>
+                            <span className="text-white/80 font-mono">{subtype.count}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-white/50">Rate</span>
+                            <span className="text-white/80 font-mono">{pctOfTotal.toFixed(1)}%</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-white/50">CMC</span>
+                            <span className="text-white/60 font-mono">{subtype.avgCmc}</span>
+                          </div>
+                        </div>
+                        {subtype.topCards?.length > 0 && (
+                          <div className="mt-2 pt-2 border-t border-white/10">
+                            <div className="text-[9px] text-white/40 uppercase tracking-wider mb-1">Top Cards</div>
+                            <div className="text-[10px] text-white/60">{subtype.topCards.slice(0, 2).join(', ')}</div>
+                          </div>
+                        )}
+                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-black/95 border-r border-b border-white/20 rotate-45" />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+
+            {/* Aggro subtypes */}
+            {(simulationData as any).aggroSubtypes && Object.values((simulationData as any).aggroSubtypes as Record<string, any>)
+              .filter((s: any) => s.count >= 10)
+              .map((subtype: any) => {
+                const pctOfTotal = (subtype.count / totalDecks) * 100;
+                const x = (pctOfTotal / 30) * 100;
+                const y = ((2000 - subtype.avgDeckQuality) / 200) * 100;
+
+                return (
+                  <div
+                    key={`aggro-${subtype.colorCombo}`}
+                    className="absolute transform -translate-x-1/2 -translate-y-1/2 group cursor-pointer z-10"
+                    style={{
+                      left: `${Math.max(2, Math.min(98, x))}%`,
+                      top: `${Math.max(2, Math.min(98, y))}%`,
+                    }}
+                  >
+                    <div className="w-3 h-3 rounded-full bg-red-500/80 ring-1 ring-red-400/30 transition-all duration-200 group-hover:scale-[2] group-hover:ring-2 group-hover:ring-red-400/60 group-hover:z-50" />
+
+                    {/* Rich tooltip */}
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-50">
+                      <div className="bg-black/95 backdrop-blur-sm border border-white/20 rounded-xl p-3 shadow-2xl min-w-[180px]">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="flex gap-0.5">
+                            {subtype.colorCombo.split('').map((c: string) => (
+                              <span
+                                key={c}
+                                className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold
+                                  ${c === 'W' ? 'bg-amber-100 text-amber-800' : ''}
+                                  ${c === 'U' ? 'bg-blue-500 text-white' : ''}
+                                  ${c === 'B' ? 'bg-gray-800 text-white border border-white/20' : ''}
+                                  ${c === 'R' ? 'bg-red-500 text-white' : ''}
+                                  ${c === 'G' ? 'bg-green-600 text-white' : ''}
+                                `}
+                              >
+                                {c}
+                              </span>
+                            ))}
+                          </div>
+                          <span className="font-semibold text-white text-sm">{subtype.name} Aggro</span>
+                        </div>
+                        <div className="space-y-1 text-[11px]">
+                          <div className="flex justify-between">
+                            <span className="text-white/50">ELO</span>
+                            <span className="text-red-400 font-mono font-medium">{subtype.avgDeckQuality}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-white/50">Decks</span>
+                            <span className="text-white/80 font-mono">{subtype.count}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-white/50">Rate</span>
+                            <span className="text-white/80 font-mono">{pctOfTotal.toFixed(1)}%</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-white/50">CMC</span>
+                            <span className="text-white/60 font-mono">{subtype.avgCmc}</span>
+                          </div>
+                        </div>
+                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-black/95 border-r border-b border-white/20 rotate-45" />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+
+            {/* Tempo subtypes */}
+            {(simulationData as any).tempoSubtypes && Object.values((simulationData as any).tempoSubtypes as Record<string, any>)
+              .filter((s: any) => s.count >= 10)
+              .map((subtype: any) => {
+                const pctOfTotal = (subtype.count / totalDecks) * 100;
+                const x = (pctOfTotal / 30) * 100;
+                const y = ((2000 - subtype.avgDeckQuality) / 200) * 100;
+
+                return (
+                  <div
+                    key={`tempo-${subtype.colorCombo}`}
+                    className="absolute transform -translate-x-1/2 -translate-y-1/2 group cursor-pointer z-10"
+                    style={{
+                      left: `${Math.max(2, Math.min(98, x))}%`,
+                      top: `${Math.max(2, Math.min(98, y))}%`,
+                    }}
+                  >
+                    <div className="w-3 h-3 rounded-full bg-blue-500/80 ring-1 ring-blue-400/30 transition-all duration-200 group-hover:scale-[2] group-hover:ring-2 group-hover:ring-blue-400/60 group-hover:z-50" />
+
+                    {/* Rich tooltip */}
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-50">
+                      <div className="bg-black/95 backdrop-blur-sm border border-white/20 rounded-xl p-3 shadow-2xl min-w-[180px]">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="flex gap-0.5">
+                            {subtype.colorCombo.split('').map((c: string) => (
+                              <span
+                                key={c}
+                                className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold
+                                  ${c === 'W' ? 'bg-amber-100 text-amber-800' : ''}
+                                  ${c === 'U' ? 'bg-blue-500 text-white' : ''}
+                                  ${c === 'B' ? 'bg-gray-800 text-white border border-white/20' : ''}
+                                  ${c === 'R' ? 'bg-red-500 text-white' : ''}
+                                  ${c === 'G' ? 'bg-green-600 text-white' : ''}
+                                `}
+                              >
+                                {c}
+                              </span>
+                            ))}
+                          </div>
+                          <span className="font-semibold text-white text-sm">{subtype.name} Tempo</span>
+                        </div>
+                        <div className="space-y-1 text-[11px]">
+                          <div className="flex justify-between">
+                            <span className="text-white/50">ELO</span>
+                            <span className="text-blue-400 font-mono font-medium">{subtype.avgDeckQuality}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-white/50">Decks</span>
+                            <span className="text-white/80 font-mono">{subtype.count}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-white/50">Rate</span>
+                            <span className="text-white/80 font-mono">{pctOfTotal.toFixed(1)}%</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-white/50">CMC</span>
+                            <span className="text-white/60 font-mono">{subtype.avgCmc}</span>
+                          </div>
+                        </div>
+                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-black/95 border-r border-b border-white/20 rotate-45" />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+
+            {/* Main archetype data points - ON TOP */}
             {stats.map((stat) => {
-              // X: draft odds 0-25% mapped to 0-100%
-              const x = (stat.draftOdds / 25) * 100;
-              // Y: deck quality 1830-1950 mapped to 100-0%
-              const y = ((1950 - stat.avgDeckQuality) / 120) * 100;
+              // X: draft odds 0-30% mapped to 0-100%
+              const x = (stat.draftOdds / 30) * 100;
+              // Y: deck quality 1800-2000 mapped to 100-0%
+              const y = ((2000 - stat.avgDeckQuality) / 200) * 100;
 
               const difficultyColor = {
-                'Easy': '#22c55e',
-                'Medium': '#eab308',
-                'Hard': '#f97316',
-                'Expert': '#ef4444'
-              }[stat.meta.difficulty] || '#888';
+                'Easy': 'from-green-400 to-green-600',
+                'Medium': 'from-yellow-400 to-yellow-600',
+                'Hard': 'from-orange-400 to-orange-600',
+                'Expert': 'from-red-400 to-red-600'
+              }[stat.meta.difficulty] || 'from-gray-400 to-gray-600';
+
+              const borderColor = {
+                'Easy': 'border-green-400/50',
+                'Medium': 'border-yellow-400/50',
+                'Hard': 'border-orange-400/50',
+                'Expert': 'border-red-400/50'
+              }[stat.meta.difficulty] || 'border-gray-400/50';
 
               const isSelected = selectedArchetype === stat.meta.id;
 
@@ -489,43 +716,104 @@ export function ArchetypeOddsPage({ cards }: Props) {
                 <div
                   key={stat.meta.id}
                   onClick={() => handleBubbleClick(stat.meta.id)}
-                  className="absolute transform -translate-x-1/2 -translate-y-1/2 group cursor-pointer"
+                  className="absolute transform -translate-x-1/2 -translate-y-1/2 group cursor-pointer z-20"
                   style={{
-                    left: `${Math.max(5, Math.min(95, x))}%`,
-                    top: `${Math.max(5, Math.min(95, y))}%`,
+                    left: `${Math.max(4, Math.min(96, x))}%`,
+                    top: `${Math.max(4, Math.min(96, y))}%`,
                   }}
                 >
-                  {/* Bubble */}
+                  {/* Main bubble - hollow circle with gradient border */}
                   <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center text-[10px] font-bold text-white shadow-lg transition-all group-hover:scale-125 ${isSelected ? 'ring-4 ring-white scale-125' : ''}`}
-                    style={{ backgroundColor: difficultyColor }}
+                    className={`w-7 h-7 rounded-full bg-black/80 border-2 ${borderColor} flex items-center justify-center transition-all duration-200 group-hover:scale-125 group-hover:bg-black ${isSelected ? 'ring-2 ring-white scale-125' : ''}`}
                   >
-                    {stat.draftOdds.toFixed(1)}%
+                    <div className={`w-3 h-3 rounded-full bg-gradient-to-br ${difficultyColor}`} />
                   </div>
 
-                  {/* Tooltip */}
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-black/90 rounded text-xs text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                    <div className="font-medium">{stat.meta.name}</div>
-                    <div className="text-white/60">Quality {stat.avgDeckQuality} · {stat.draftOdds.toFixed(1)}% of decks</div>
+                  {/* Rich tooltip */}
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 opacity-0 group-hover:opacity-100 transition-all duration-200 pointer-events-none z-50">
+                    <div className="bg-black/95 backdrop-blur-sm border border-white/20 rounded-xl p-4 shadow-2xl min-w-[220px]">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="font-bold text-white text-base">{stat.meta.name}</span>
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${getDifficultyColor(stat.meta.difficulty)}`}>
+                          {stat.meta.difficulty}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+                        <div>
+                          <div className="text-white/40 text-[10px] uppercase tracking-wider">ELO</div>
+                          <div className="text-white font-mono font-semibold text-lg">{stat.avgDeckQuality}</div>
+                        </div>
+                        <div>
+                          <div className="text-white/40 text-[10px] uppercase tracking-wider">Rate</div>
+                          <div className={`font-mono font-semibold text-lg ${getOddsColor(stat.draftOdds)}`}>{stat.draftOdds.toFixed(1)}%</div>
+                        </div>
+                        <div>
+                          <div className="text-white/40 text-[10px] uppercase tracking-wider">Contested</div>
+                          <div className="text-white/70 font-mono">{stat.contestedness}%</div>
+                        </div>
+                        <div>
+                          <div className="text-white/40 text-[10px] uppercase tracking-wider">Decks</div>
+                          <div className="text-white/70 font-mono">{stat.totalDecksInArchetype.toLocaleString()}</div>
+                        </div>
+                      </div>
+                      <div className="mt-3 pt-3 border-t border-white/10 flex gap-1">
+                        {stat.meta.colors.map(c => (
+                          <span
+                            key={c}
+                            className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold
+                              ${c === 'W' ? 'bg-amber-100 text-amber-800' : ''}
+                              ${c === 'U' ? 'bg-blue-500 text-white' : ''}
+                              ${c === 'B' ? 'bg-gray-800 text-white border border-white/20' : ''}
+                              ${c === 'R' ? 'bg-red-500 text-white' : ''}
+                              ${c === 'G' ? 'bg-green-600 text-white' : ''}
+                            `}
+                          >
+                            {c}
+                          </span>
+                        ))}
+                      </div>
+                      <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-black/95 border-r border-b border-white/20 rotate-45" />
+                    </div>
                   </div>
                 </div>
               );
             })}
 
-            {/* Quadrant labels */}
-            <div className="absolute top-2 right-2 text-[10px] text-green-400/60 font-medium">
+            {/* Quadrant labels - more subtle */}
+            <div className="absolute top-3 right-3 text-[9px] text-green-400/40 font-medium uppercase tracking-wider">
               Strong & Common
             </div>
-            <div className="absolute top-2 left-2 text-[10px] text-purple-400/60 font-medium">
-              Strong but Rare
+            <div className="absolute top-3 left-3 text-[9px] text-purple-400/40 font-medium uppercase tracking-wider">
+              Strong & Rare
             </div>
-            <div className="absolute bottom-2 right-2 text-[10px] text-yellow-400/60 font-medium">
-              Common fallback
+            <div className="absolute bottom-3 right-3 text-[9px] text-yellow-400/30 font-medium uppercase tracking-wider">
+              Common Fallback
             </div>
-            <div className="absolute bottom-2 left-2 text-[10px] text-white/30 font-medium">
-              Rare & Weak
+            <div className="absolute bottom-3 left-3 text-[9px] text-white/20 font-medium uppercase tracking-wider">
+              Avoid
             </div>
           </div>
+        </div>
+
+        {/* Quick insight bar */}
+        <div className="mt-4 flex items-center gap-4 text-[11px] text-white/40 px-2">
+          <span>
+            <span className="text-white/60 font-medium">{stats.length}</span> archetypes
+          </span>
+          <span className="text-white/20">•</span>
+          <span>
+            <span className="text-amber-400/80 font-medium">{simulationData.midrangeSubtypes ? Object.keys(simulationData.midrangeSubtypes).length : 0}</span> midrange variants
+          </span>
+          <span className="text-white/20">•</span>
+          <span>
+            <span className="text-red-400/80 font-medium">{(simulationData as any).aggroSubtypes ? Object.keys((simulationData as any).aggroSubtypes).length : 0}</span> aggro variants
+          </span>
+          <span className="text-white/20">•</span>
+          <span>
+            <span className="text-blue-400/80 font-medium">{(simulationData as any).tempoSubtypes ? Object.keys((simulationData as any).tempoSubtypes).length : 0}</span> tempo variants
+          </span>
+          <span className="flex-1" />
+          <span className="text-white/30">Hover for details</span>
         </div>
       </div>
 
