@@ -1,11 +1,10 @@
 /**
  * Card Detail Panel Component
  *
- * Desktop sidebar showing detailed card information, ELO rating,
- * simulation data, and rating trend sparkline.
+ * Desktop sidebar and mobile drawer showing card information.
+ * Redesigned for quick scannability while preserving all data.
  */
 
-// React is used for JSX
 import type { CubeCard } from '../../types/card';
 import type { CardEloHistory, ContextualGrade } from '../../types/draftSimulator';
 import { getCardImage } from '../../services/scryfall';
@@ -40,108 +39,136 @@ export function CardDetailPanel({
   const synergyData = getSynergyData(card);
   const hasAdjustment = synergyData && Math.abs(synergyData.adjustment) >= 10;
   const cardGrade = getGrade(card);
+  const cv = getConditionalValue(card.name, picks.map(p => p.name));
 
   return (
     <div className="w-[300px] flex-shrink-0 hidden lg:flex flex-col bg-white/[0.02] border-l border-white/[0.08]">
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div className="flex-1 overflow-y-auto p-3 space-y-2">
         {/* Card Image */}
         <img src={getCardImage(card)} alt={card.name} className="w-full rounded-lg shadow-lg" />
 
-        {/* Name & Grade */}
-        <div className="flex items-center justify-between">
-          <div className="text-base font-semibold text-white truncate pr-2">{card.name}</div>
-          <span className={`text-lg font-bold flex-shrink-0 ${getGradeColor(cardGrade.grade)}`}>
-            {cardGrade.grade}
-          </span>
+        {/* Header: Name + Grade + Type */}
+        <div className="space-y-0.5">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-base font-semibold text-white truncate">{card.name}</h2>
+            <span className={`text-lg font-bold flex-shrink-0 ${getGradeColor(cardGrade.grade)}`}>
+              {cardGrade.grade}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-white/40">
+            <span>{card.type_line?.split('—')[0]?.trim()}</span>
+            {cardGrade.reason && cardGrade.reason !== 'Raw power' && (
+              <>
+                <span className="text-white/20">·</span>
+                <span className="text-white/50">{cardGrade.reason}</span>
+              </>
+            )}
+          </div>
         </div>
 
-        {/* Type Line */}
-        <div className="text-sm text-white/50">{card.type_line?.split('—')[0]}</div>
-
-        {/* Conditional Value Badge */}
-        <ConditionalValueBadge cardName={card.name} poolCardNames={picks.map(p => p.name)} />
-
-        {/* ELO & Stats Section */}
-        {eloData && (
-          <div className="space-y-2 pt-2 border-t border-white/[0.08]">
-            {/* Grade reason */}
-            <div className="text-xs text-white/50 italic">{cardGrade.reason}</div>
-
-            {/* ELO Section */}
-            <div className="bg-white/[0.04] rounded-lg p-3">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-white/40 uppercase tracking-wider">ELO Rating</span>
-                <span className={`text-xs px-2 py-0.5 rounded font-medium ${
-                  wheelLikelihood === 'likely' ? 'bg-white/5 text-white/50' :
-                  wheelLikelihood === 'maybe' ? 'bg-amber-500/10 text-amber-400' :
-                  'bg-red-500/15 text-red-400'
-                }`}>
-                  {wheelLikelihood === 'likely' ? 'Likely wheels' :
-                   wheelLikelihood === 'maybe' ? 'May wheel' :
-                   'Take now'}
-                </span>
-              </div>
-              {hasAdjustment ? (
-                <div className="flex items-baseline gap-2">
-                  <span className="text-xl text-white/50 font-mono">
-                    {Math.round(eloData.elo)}
-                  </span>
-                  <span className={`text-lg font-bold ${
-                    synergyData.adjustment > 0 ? 'text-emerald-400' : 'text-red-400'
-                  }`}>
-                    {synergyData.adjustment > 0 ? '+' : ''}{synergyData.adjustment}
-                  </span>
-                  <span className="text-white/30">→</span>
-                  <span className="text-2xl font-bold text-white font-mono">
-                    {Math.round(synergyData.adjustedElo)}
-                  </span>
-                </div>
-              ) : (
-                <div className="text-2xl font-bold text-white font-mono">
-                  {Math.round(eloData.elo)}
-                </div>
-              )}
-            </div>
-
-            {/* Adjustment Reasons */}
-            {hasAdjustment && synergyData.reasons.length > 0 && (
-              <div className="space-y-1.5">
-                <div className="text-xs text-white/40 uppercase tracking-wider">Why this adjustment:</div>
-                <div className="flex flex-wrap gap-1.5">
-                  {synergyData.reasons.map((reason, i) => (
-                    <span key={i} className={`text-xs px-2 py-1 rounded font-medium ${
-                      reason.startsWith('+') ? 'bg-emerald-500/15 text-emerald-400' :
-                      reason.startsWith('-') ? 'bg-red-500/15 text-red-400' :
-                      'bg-white/5 text-white/60'
-                    }`}>
-                      {reason}
-                    </span>
-                  ))}
-                </div>
-              </div>
+        {/* Conditional Value Badge - only shows when relevant */}
+        {cv.hasConditionalValue && (
+          <div className={`px-2.5 py-1.5 rounded-md text-xs font-medium inline-flex items-center gap-1.5 ${
+            cv.isArchetypeDefining
+              ? 'bg-amber-500/15 text-amber-300'
+              : 'bg-purple-500/10 text-purple-300'
+          }`}>
+            {cv.isArchetypeDefining && <span className="text-amber-400">★</span>}
+            <span>{cv.inArchetypeValue}-tier in {cv.archetypeName}</span>
+            {cv.poolSupportCount > 0 && !cv.isArchetypeDefining && (
+              <span className="text-white/30 font-normal">· {cv.poolSupportCount} cards</span>
             )}
-
-            {/* Simulation Insights */}
-            <SimulationInsights card={card} />
-
-            {/* Rating Trend Sparkline */}
-            <RatingTrendSparkline
-              cardId={card.id}
-              cardEloHistory={cardEloHistory}
-              totalPicks={picks.length}
-            />
           </div>
         )}
+
+        {/* Main Rating Block */}
+        {eloData && (
+          <div className="bg-white/[0.03] rounded-lg p-3 space-y-2">
+            {/* ELO + Verdict */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-baseline gap-1.5">
+                {hasAdjustment ? (
+                  <>
+                    <span className="text-2xl font-bold text-white font-mono">
+                      {Math.round(synergyData.adjustedElo)}
+                    </span>
+                    <span className={`text-sm font-semibold ${
+                      synergyData.adjustment > 0 ? 'text-emerald-400' : 'text-red-400'
+                    }`}>
+                      {synergyData.adjustment > 0 ? '+' : ''}{synergyData.adjustment}
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-2xl font-bold text-white font-mono">
+                    {Math.round(eloData.elo)}
+                  </span>
+                )}
+              </div>
+              <WheelBadge likelihood={wheelLikelihood} />
+            </div>
+
+            {/* Synergy Reasons - inline, compact */}
+            {hasAdjustment && synergyData.reasons.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {synergyData.reasons.map((reason, i) => (
+                  <span key={i} className={`text-[11px] px-1.5 py-0.5 rounded ${
+                    reason.startsWith('+') ? 'text-emerald-400/90 bg-emerald-500/10' :
+                    reason.startsWith('-') ? 'text-red-400/90 bg-red-500/10' :
+                    'text-white/50 bg-white/5'
+                  }`}>
+                    {reason}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Simulation Stats - compact row */}
+        <SimulationStats card={card} />
+
+        {/* Trajectory Sparkline */}
+        <TrajectoryChart
+          cardId={card.id}
+          cardEloHistory={cardEloHistory}
+          totalPicks={picks.length}
+        />
       </div>
     </div>
   );
 }
 
 // =============================================================================
-// Sub-components
+// Wheel Badge - The key decision signal
 // =============================================================================
 
-function SimulationInsights({ card }: { card: CubeCard }) {
+function WheelBadge({ likelihood }: { likelihood: 'likely' | 'maybe' | 'unlikely' }) {
+  if (likelihood === 'likely') {
+    return (
+      <span className="text-xs px-2 py-1 rounded bg-white/5 text-white/50 font-medium">
+        Will wheel
+      </span>
+    );
+  }
+  if (likelihood === 'maybe') {
+    return (
+      <span className="text-xs px-2 py-1 rounded bg-amber-500/15 text-amber-400 font-medium">
+        May wheel
+      </span>
+    );
+  }
+  return (
+    <span className="text-xs px-2 py-1 rounded bg-red-500/20 text-red-400 font-medium">
+      Take now
+    </span>
+  );
+}
+
+// =============================================================================
+// Simulation Stats - Compact horizontal layout
+// =============================================================================
+
+function SimulationStats({ card }: { card: CubeCard }) {
   const simStats = getCardSimStats(card.name);
   if (!simStats) return null;
 
@@ -152,157 +179,125 @@ function SimulationInsights({ card }: { card: CubeCard }) {
   const insight = getCardInsightSummary(card.name);
 
   return (
-    <div className="space-y-2 pt-2 border-t border-white/[0.08]">
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-white/40 uppercase tracking-wider">Simulation Data</span>
-        <span className="text-[10px] text-white/30">500 drafts</span>
-      </div>
-
-      {/* Key insight callout */}
+    <div className="space-y-2">
+      {/* Insight callout - only if actionable */}
       {insight && (
-        <div className={`text-xs px-2 py-1.5 rounded font-medium ${
-          wheelCategory === 'high-wheel' ? 'bg-cyan-500/15 text-cyan-400' :
-          wheelCategory === 'low-wheel' ? 'bg-orange-500/15 text-orange-400' :
+        <div className={`text-xs px-2.5 py-1.5 rounded-md ${
+          wheelCategory === 'high-wheel' ? 'bg-sky-500/10 text-sky-400' :
+          wheelCategory === 'low-wheel' ? 'bg-orange-500/10 text-orange-400' :
           'bg-white/5 text-white/60'
         }`}>
           {insight}
         </div>
       )}
 
-      {/* Stats row */}
-      <div className="grid grid-cols-2 gap-2 text-xs">
-        <div className="bg-white/[0.03] rounded px-2 py-1.5">
-          <div className="text-white/40">Avg Pick</div>
-          <div className="text-white font-mono font-medium">
-            {avgPick ? `#${Math.round(avgPick)}` : 'N/A'}
-          </div>
+      {/* Stats row - minimal labels */}
+      <div className="flex items-center gap-3 text-xs">
+        <div className="flex items-center gap-1.5">
+          <span className="text-white/30">Pick</span>
+          <span className="text-white font-mono font-medium">
+            #{avgPick ? Math.round(avgPick) : '—'}
+          </span>
         </div>
-        <div className="bg-white/[0.03] rounded px-2 py-1.5">
-          <div className="text-white/40">Wheel Rate</div>
-          <div className={`font-mono font-medium ${
-            wheelCategory === 'high-wheel' ? 'text-cyan-400' :
+        <span className="text-white/10">|</span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-white/30">Wheels</span>
+          <span className={`font-mono font-medium ${
+            wheelCategory === 'high-wheel' ? 'text-sky-400' :
             wheelCategory === 'low-wheel' ? 'text-orange-400' :
             'text-white'
           }`}>
-            {wheelRate !== null ? `${Math.round(wheelRate)}%` : 'N/A'}
-          </div>
+            {wheelRate !== null ? `${Math.round(wheelRate)}%` : '—'}
+          </span>
         </div>
+        <span className="text-white/10">|</span>
+        <span className="text-[10px] text-white/25">500 sims</span>
       </div>
 
-      {/* Top archetypes */}
+      {/* Archetypes - subtle */}
       {topArchetypes.length > 0 && (
-        <div className="space-y-1">
-          <div className="text-[10px] text-white/40">Most picked by:</div>
-          <div className="flex flex-wrap gap-1">
-            {topArchetypes.map(arch => (
-              <span
-                key={arch.archetypeId}
-                className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-white/60"
-              >
-                {arch.archetypeId} ({Math.round(arch.percentage)}%)
-              </span>
-            ))}
-          </div>
+        <div className="flex flex-wrap gap-1">
+          {topArchetypes.map(arch => (
+            <span
+              key={arch.archetypeId}
+              className="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.03] text-white/40"
+            >
+              {arch.archetypeId} {Math.round(arch.percentage)}%
+            </span>
+          ))}
         </div>
       )}
     </div>
   );
 }
 
-interface RatingTrendSparklineProps {
+// =============================================================================
+// Trajectory Chart - Compact sparkline
+// =============================================================================
+
+interface TrajectoryChartProps {
   cardId: string;
   cardEloHistory: Map<string, CardEloHistory>;
   totalPicks: number;
 }
 
-function RatingTrendSparkline({ cardId, cardEloHistory, totalPicks }: RatingTrendSparklineProps) {
+function TrajectoryChart({ cardId, cardEloHistory, totalPicks }: TrajectoryChartProps) {
   const history = cardEloHistory.get(cardId);
-  const historyPoints = history?.history || [];
+  const points = history?.history || [];
 
-  if (!historyPoints || historyPoints.length === 0) {
-    return (
-      <div className="pt-2 border-t border-white/[0.06]">
-        <div className="text-[10px] text-white/30">No trajectory data yet</div>
-      </div>
-    );
-  }
+  if (points.length === 0) return null;
 
-  const points = historyPoints;
   const currentElo = points[points.length - 1].adjustedElo;
   const startElo = points[0].adjustedElo;
   const trend = currentElo - startElo;
   const velocity = points.length > 1 ? trend / (points.length - 1) : 0;
 
-  // Project forward based on velocity
   const remainingPicks = Math.max(0, 45 - totalPicks);
   const projectPicks = Math.min(5, remainingPicks);
   const projectedElo = currentElo + (velocity * projectPicks);
-  // Show projection when there's any meaningful velocity (lowered threshold)
   const showProjection = points.length > 1 && projectPicks > 0 && Math.abs(velocity) > 0;
 
-  // Momentum classification
-  const momentum = velocity > 8 ? 'rising-fast' :
-                   velocity > 3 ? 'rising' :
-                   velocity < -8 ? 'falling-fast' :
-                   velocity < -3 ? 'falling' : 'stable';
-
-  // Calculate range including projection
   const allValues = [...points.map(p => p.adjustedElo), ...(showProjection ? [projectedElo] : [])];
   const minElo = Math.min(...allValues) - 20;
   const maxElo = Math.max(...allValues) + 20;
   const range = maxElo - minElo || 100;
   const width = 260;
-  const height = 40;
+  const height = 32;
   const historyWidth = showProjection ? width * 0.8 : width;
 
-  const trendColor = points.length === 1 ? '#9ca3af' : (trend >= 0 ? '#4ade80' : '#f87171');
+  const trendColor = points.length === 1 ? '#6b7280' : (trend >= 0 ? '#4ade80' : '#f87171');
 
   return (
-    <div className="pt-2 mt-2 border-t border-white/[0.08]">
-      {/* Header with momentum indicator */}
+    <div className="pt-2 border-t border-white/[0.05]">
+      {/* Header */}
       <div className="flex items-center justify-between mb-1">
-        <div className="flex items-center gap-1.5">
-          <span className="text-[10px] text-white/40">Trajectory</span>
-          {momentum === 'rising-fast' && <span className="text-xs">🚀</span>}
-          {momentum === 'falling-fast' && <span className="text-xs">📉</span>}
-        </div>
-        <div className="flex items-center gap-2">
-          {points.length > 1 ? (
-            <>
-              {/* Current adjusted ELO */}
-              <span className="text-xs font-bold text-white">
-                {Math.round(currentElo)}
+        <span className="text-[10px] text-white/30">Trend</span>
+        {points.length > 1 && (
+          <div className="flex items-center gap-1.5 text-xs">
+            <span className="text-white font-mono">{Math.round(currentElo)}</span>
+            {showProjection && Math.abs(velocity) > 1 && (
+              <span className={velocity > 0 ? 'text-emerald-400/60' : 'text-red-400/60'}>
+                → {Math.round(projectedElo)}
               </span>
-              {/* Projection */}
-              {showProjection && Math.abs(velocity) > 1 && (
-                <span className={`text-xs ${velocity > 0 ? 'text-emerald-400/70' : 'text-red-400/70'}`}>
-                  → {Math.round(projectedElo)}
-                </span>
-              )}
-            </>
-          ) : (
-            <span className="text-[10px] text-white/30">baseline</span>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Sparkline SVG */}
-      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-10">
-        {/* Projection line (dashed) */}
+      {/* Sparkline */}
+      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-8">
         {showProjection && (
           <line
             x1={historyWidth}
-            y1={height - ((currentElo - minElo) / range) * (height - 8) - 4}
+            y1={height - ((currentElo - minElo) / range) * (height - 6) - 3}
             x2={width - 4}
-            y2={height - ((projectedElo - minElo) / range) * (height - 8) - 4}
+            y2={height - ((projectedElo - minElo) / range) * (height - 6) - 3}
             stroke={trendColor}
             strokeWidth="1.5"
-            strokeDasharray="4,4"
-            opacity="0.5"
+            strokeDasharray="3,3"
+            opacity="0.4"
           />
         )}
-
-        {/* History line */}
         {points.length > 1 && (
           <polyline
             fill="none"
@@ -312,70 +307,31 @@ function RatingTrendSparkline({ cardId, cardEloHistory, totalPicks }: RatingTren
             strokeLinejoin="round"
             points={points.map((p, i) => {
               const x = (i / (points.length - 1)) * historyWidth;
-              const y = height - ((p.adjustedElo - minElo) / range) * (height - 8) - 4;
+              const y = height - ((p.adjustedElo - minElo) / range) * (height - 6) - 3;
               return `${x},${y}`;
             }).join(' ')}
           />
         )}
-
-        {/* History dots */}
         {points.map((p, i) => {
           const x = points.length === 1 ? historyWidth / 2 : (i / (points.length - 1)) * historyWidth;
-          const y = height - ((p.adjustedElo - minElo) / range) * (height - 8) - 4;
+          const y = height - ((p.adjustedElo - minElo) / range) * (height - 6) - 3;
           return (
             <circle
               key={i}
               cx={x}
               cy={y}
-              r={i === points.length - 1 ? 4 : 3}
+              r={i === points.length - 1 ? 3 : 2}
               fill={trendColor}
             />
           );
         })}
-
-        {/* Projected dot */}
-        {showProjection && (
-          <circle
-            cx={width - 4}
-            cy={height - ((projectedElo - minElo) / range) * (height - 8) - 4}
-            r="3"
-            fill={trendColor}
-            opacity="0.5"
-          />
-        )}
       </svg>
 
-      {/* Velocity indicator */}
-      {points.length > 1 && Math.abs(velocity) > 3 && (
-        <div className={`text-[10px] ${velocity > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-          {velocity > 0 ? '↑' : '↓'} {Math.abs(Math.round(velocity))} ELO/pick
+      {/* Velocity - only if significant */}
+      {points.length > 1 && Math.abs(velocity) > 5 && (
+        <div className={`text-[10px] ${velocity > 0 ? 'text-emerald-400/70' : 'text-red-400/70'}`}>
+          {velocity > 0 ? '↑' : '↓'} {Math.abs(Math.round(velocity))}/pick
         </div>
-      )}
-    </div>
-  );
-}
-
-// =============================================================================
-// Conditional Value Badge
-// =============================================================================
-
-function ConditionalValueBadge({ cardName, poolCardNames }: { cardName: string; poolCardNames: string[] }) {
-  const cv = getConditionalValue(cardName, poolCardNames);
-
-  if (!cv.hasConditionalValue) return null;
-
-  return (
-    <div className={`mt-1 px-2 py-1 rounded text-xs inline-flex items-center gap-1.5 ${
-      cv.isArchetypeDefining
-        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-        : 'bg-purple-500/15 text-purple-300'
-    }`}>
-      {cv.isArchetypeDefining && (
-        <span className="text-amber-400 font-bold">★</span>
-      )}
-      <span>{cv.inArchetypeValue}-tier in {cv.archetypeName}</span>
-      {cv.poolSupportCount > 0 && !cv.isArchetypeDefining && (
-        <span className="text-white/40">({cv.poolSupportCount} cards)</span>
       )}
     </div>
   );
@@ -387,10 +343,12 @@ function ConditionalValueBadge({ cardName, poolCardNames }: { cardName: string; 
 
 function getGradeColor(grade: ContextualGrade): string {
   if (grade === 'A+') return 'text-emerald-400';
-  if (grade === 'A') return 'text-emerald-500';
-  if (grade === 'A-') return 'text-emerald-600';
+  if (grade === 'A') return 'text-emerald-400';
+  if (grade === 'A-') return 'text-emerald-500';
   if (grade === 'B+') return 'text-sky-400';
-  if (grade === 'B') return 'text-sky-500';
-  if (grade === 'B-') return 'text-sky-600';
-  return 'text-white/60';
+  if (grade === 'B') return 'text-sky-400';
+  if (grade === 'B-') return 'text-sky-500';
+  if (grade === 'C+') return 'text-white/60';
+  if (grade === 'C') return 'text-white/50';
+  return 'text-white/40';
 }
