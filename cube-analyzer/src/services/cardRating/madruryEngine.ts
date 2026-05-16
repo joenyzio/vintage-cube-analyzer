@@ -520,6 +520,30 @@ const COMBO_REQUIREMENTS = {
     minEnablerScore: 2.0,  // Need Tinker/Welder + rocks
     requiredColors: [],  // Artifacts are colorless
   },
+  doomsday: {
+    // Doomsday combo: Resolve Doomsday, draw through your 5-card pile
+    enablers: [
+      { card: 'Doomsday', weight: 2.0 },  // THE card - must have this
+      // Pile enablers (draw the pile)
+      { card: "Lion's Eye Diamond", weight: 1.0 },  // Key piece for piles
+      { card: 'Gitaxian Probe', weight: 0.5 },
+      { card: 'Street Wraith', weight: 0.5 },
+      { card: 'Consider', weight: 0.3 },
+      { card: 'Brainstorm', weight: 0.3 },
+      { card: 'Ponder', weight: 0.3 },
+      { card: 'Preordain', weight: 0.3 },
+      // Mana for pile execution
+      { card: 'Dark Ritual', weight: 0.5 },
+      { card: 'Cabal Ritual', weight: 0.4 },
+      { card: 'Lotus Petal', weight: 0.4 },
+    ],
+    payoffs: [
+      "Thassa's Oracle",  // The win condition
+      'Laboratory Maniac',  // Backup win con
+    ],
+    minEnablerScore: 2.0,  // Need Doomsday itself
+    requiredColors: ['B'],  // Doomsday is black
+  },
 };
 
 /**
@@ -712,7 +736,7 @@ export function getDominantArchetype(preferences: number[], picks?: CubeCard[]):
     .map(([color, _]) => color);
 
   // Check combo archetypes first (they have specific requirements)
-  const comboArchetypes = ['storm', 'reanimator', 'sneak', 'oath', 'artifacts'];
+  const comboArchetypes = ['storm', 'reanimator', 'sneak', 'oath', 'artifacts', 'doomsday'];
   let bestComboArch: string | null = null;
   let bestComboStrength = 0;
 

@@ -77,6 +77,7 @@ function generateMarkdownReport(analysis: AggregateAnalysis & { playerCount?: nu
   lines.push('- **Reanimator**: Requires reanimate spell + graveyard enabler + fatty target');
   lines.push('- **Sneak & Show**: Requires Sneak Attack/Show and Tell/Through the Breach + target');
   lines.push('- **Oath**: Requires Oath of Druids + creature payoff');
+  lines.push('- **Doomsday**: Requires Doomsday + Thassa\'s Oracle/Lab Man + pile enablers');
   lines.push('');
   lines.push('Fair archetypes (Midrange, Aggro, Control, Tempo, Ramp) are classified by card composition.');
   lines.push('');
@@ -301,6 +302,7 @@ function generateMarkdownReport(analysis: AggregateAnalysis & { playerCount?: nu
     'ramp': { cards: 16, pct: 8 },
     'storm': { cards: 9, pct: 4.5 },
     'sneak': { cards: 7, pct: 3.5 },
+    'doomsday': { cards: 4, pct: 2 },  // Doomsday, Thassa's Oracle, LED, Lab Man
     'oath': { cards: 1, pct: 0.5 },
   };
 
@@ -334,7 +336,7 @@ function generateMarkdownReport(analysis: AggregateAnalysis & { playerCount?: nu
   lines.push('The algorithm pushes drafters toward combo archetypes whose card pools can\'t');
   lines.push('support that many drafters:');
   lines.push('');
-  const comboArchetypes = ['storm', 'reanimator', 'sneak'];
+  const comboArchetypes = ['storm', 'reanimator', 'sneak', 'doomsday'];
   for (const arch of comboArchetypes) {
     const stats = analysis.archetypeDistribution[arch];
     const cube = cubeComposition[arch];
