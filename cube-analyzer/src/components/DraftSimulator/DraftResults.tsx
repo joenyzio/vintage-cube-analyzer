@@ -90,6 +90,48 @@ export function DraftResults({
       .slice(0, 2)
       .map(([color]) => color);
 
+    // ==========================================
+    // NEW: Calculate Pool ELO vs Built Deck ELO
+    // ==========================================
+
+    // Pool ELO = all 45 drafted cards (non-land spells)
+    const nonLands = picks.filter(c => !c.type_line?.toLowerCase().includes('land'));
+    const poolElos = nonLands.map(c => getEloData(c.name)?.elo || 1500);
+    const poolElo = poolElos.length > 0
+      ? Math.round(poolElos.reduce((a, b) => a + b, 0) / poolElos.length)
+      : 1500;
+    const totalPoolPower = poolElos.reduce((a, b) => a + b, 0);
+
+    // Built Deck ELO = best 23 castable spells (simulates actual deck building)
+    const castableSpells = nonLands.filter(c => {
+      const identity = c.color_identity || [];
+      if (identity.length === 0) return true; // colorless always castable
+      return identity.every(col => mainColors.includes(col));
+    });
+
+    // Sort by ELO and take top 23
+    const deckSpells = [...castableSpells]
+      .map(c => ({ card: c, elo: getEloData(c.name)?.elo || 1500 }))
+      .sort((a, b) => b.elo - a.elo)
+      .slice(0, 23);
+
+    const builtDeckElo = deckSpells.length > 0
+      ? Math.round(deckSpells.reduce((sum, d) => sum + d.elo, 0) / deckSpells.length)
+      : poolElo;
+    const totalDeckPower = deckSpells.reduce((sum, d) => sum + d.elo, 0);
+
+    // Power utilization = what % of pool power made the deck
+    const powerUtilization = totalPoolPower > 0
+      ? Math.round((totalDeckPower / totalPoolPower) * 100)
+      : 100;
+
+    // Cards that got "cut" (in pool but not in built deck)
+    const deckCardNames = new Set(deckSpells.map(d => d.card.name));
+    const cutCards = nonLands
+      .filter(c => !deckCardNames.has(c.name))
+      .map(c => ({ card: c, elo: getEloData(c.name)?.elo || 1500 }))
+      .sort((a, b) => b.elo - a.elo);
+
     // Detect archetype based on picks
     let archetype = 'Unknown';
     const hasChannel = picks.some(p => p.name === 'Channel');
@@ -158,11 +200,17 @@ export function DraftResults({
       topCards,
       avgCmc: avgCmc.toFixed(1),
       creatureCount,
+      // New deck analysis metrics
+      poolElo,
+      builtDeckElo,
+      powerUtilization,
+      deckSpells,
+      cutCards,
     };
   });
 
-  // Sort by ELO (highest first)
-  const rankedPlayers = [...playerStats].sort((a, b) => b.deckElo - a.deckElo);
+  // Sort by built deck ELO (highest first) - this is what actually matters
+  const rankedPlayers = [...playerStats].sort((a, b) => b.builtDeckElo - a.builtDeckElo);
   const yourRank = rankedPlayers.findIndex(p => p.playerIdx === 0) + 1;
 
   const colorMap: Record<string, string> = {
@@ -287,43 +335,32 @@ export function DraftResults({
                     )}
                   </div>
 
-                  {/* ELO Scores */}
-                  <div className="text-right flex items-center gap-4">
-                    {/* Synergy-Adjusted ELO */}
+                  {/* ELO Scores - New clearer metrics */}
+                  <div className="text-right flex items-center gap-3 sm:gap-4">
+                    {/* Pool ELO (all 45 cards) */}
                     <div className="hidden sm:block">
-                      <div className={`text-lg font-semibold ${
-                        player.avgAdjustedElo > player.deckElo
-                          ? 'text-green-400'
-                          : player.avgAdjustedElo < player.deckElo
-                            ? 'text-red-400'
-                            : 'text-white/70'
-                      }`}>
-                        {player.avgAdjustedElo}
-                        {player.avgAdjustedElo !== player.deckElo && (
-                          <span className="text-xs ml-1">
-                            ({player.avgAdjustedElo > player.deckElo ? '+' : ''}{player.avgAdjustedElo - player.deckElo})
-                          </span>
-                        )}
+                      <div className="text-lg font-semibold text-white/60">
+                        {player.poolElo}
                       </div>
-                      <div className="text-[9px] text-white/30 uppercase tracking-wide">Synergy ELO</div>
+                      <div className="text-[9px] text-white/30 uppercase tracking-wide">Pool</div>
                     </div>
-                    {/* Coherence */}
+                    {/* Power Utilization */}
                     <div className="hidden md:block">
                       <div className={`text-lg font-semibold ${
-                        player.archetypeCoherence >= 80 ? 'text-green-400' :
-                        player.archetypeCoherence >= 60 ? 'text-amber-400' :
+                        player.powerUtilization >= 90 ? 'text-green-400' :
+                        player.powerUtilization >= 75 ? 'text-amber-400' :
                         'text-red-400'
                       }`}>
-                        {player.archetypeCoherence}%
+                        {player.powerUtilization}%
                       </div>
-                      <div className="text-[9px] text-white/30 uppercase tracking-wide">Coherence</div>
+                      <div className="text-[9px] text-white/30 uppercase tracking-wide">Utilized</div>
                     </div>
-                    {/* Raw Deck ELO */}
+                    {/* Built Deck ELO (23 spells that made the cut) */}
                     <div>
                       <div className={`text-2xl font-bold ${
                         rank === 0 ? 'text-amber-400' : isYou ? 'text-purple-300' : 'text-white'
                       }`}>
-                        {player.deckElo}
+                        {player.builtDeckElo}
                       </div>
                       <div className="text-[10px] text-white/30 uppercase tracking-wide">Deck ELO</div>
                     </div>
