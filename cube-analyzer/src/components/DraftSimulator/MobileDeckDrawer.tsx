@@ -24,7 +24,7 @@ export function MobileDeckDrawer({
   const deckStats = calculateDeckStats(picks);
 
   return (
-    <div className="fixed inset-0 z-50 sm:hidden">
+    <div className="fixed inset-0 z-[70] sm:hidden">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/80 backdrop-blur-sm"

@@ -73,6 +73,7 @@ import {
 
 interface DraftSimulatorProps {
   cards: CubeCard[];
+  autoStart?: boolean;
 }
 
 // ============================================================================
@@ -344,9 +345,10 @@ function estimateDeckWinRate(picks: CubeCard[], archetypeCommitments: ArchetypeC
 // MAIN COMPONENT
 // ============================================================================
 
-export function DraftSimulator({ cards }: DraftSimulatorProps) {
+export function DraftSimulator({ cards, autoStart = false }: DraftSimulatorProps) {
   // Core state
-  const [mode, setMode] = useState<SimulatorMode>('menu');
+  const [mode, setMode] = useState<SimulatorMode>(autoStart ? 'draft' : 'menu');
+  const [hasAutoStarted, setHasAutoStarted] = useState(false);
   const [draftState, setDraftState] = useState<DraftState | null>(null);
   const [hoveredCard, setHoveredCard] = useState<CubeCard | null>(null);
   const lastHoveredCardRef = useRef<CubeCard | null>(null);
@@ -541,6 +543,14 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
     setLastPickResult(null);
     setMode('draft');
   }, [cards]);
+
+  // Auto-start draft when prop is true
+  useEffect(() => {
+    if (autoStart && !hasAutoStarted && cards.length > 0) {
+      setHasAutoStarted(true);
+      startDraft(false);
+    }
+  }, [autoStart, hasAutoStarted, cards.length, startDraft]);
 
   const returnToMenu = useCallback(() => {
     setDraftState(null);
@@ -1232,7 +1242,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
   const progress = ((draftState.packNumber - 1) * 15 + draftState.pickNumber - 1) / 45;
 
   return (
-    <div className="fixed top-0 bottom-0 right-0 left-0 lg:left-64 z-40 flex bg-black pt-[env(safe-area-inset-top)]">
+    <div className="fixed top-0 bottom-0 right-0 left-0 lg:left-64 z-[60] flex bg-black pt-[env(safe-area-inset-top)]">
       {/* Achievement Popup */}
       {newAchievement && (
         <div className="fixed top-4 right-4 z-50 animate-pulse">
@@ -1527,7 +1537,7 @@ export function DraftSimulator({ cards }: DraftSimulatorProps) {
 
       {/* Passed Cards Drawer */}
       {showPassedCards && (
-        <div className="fixed inset-0 z-50">
+        <div className="fixed inset-0 z-[70]">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowPassedCards(false)} />
           <div className="absolute bottom-0 left-0 right-0 bg-[#0a0a0a] border-t border-white/10 rounded-t-2xl max-h-[80vh] flex flex-col">
             <div className="flex items-center justify-between p-4 border-b border-white/10">

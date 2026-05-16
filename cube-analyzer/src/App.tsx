@@ -171,6 +171,9 @@ function App() {
   const [learnTab, setLearnTab] = useState<LearnTab>('archetypes');
   const [referenceTab, setReferenceTab] = useState<ReferenceTab>('cards');
 
+  // Auto-start draft flag (when coming from Dashboard "Start Draft")
+  const [autoStartDraft, setAutoStartDraft] = useState(false);
+
   const mainRef = useRef<HTMLElement>(null);
 
   // Navigation helper for Dashboard
@@ -206,6 +209,13 @@ function App() {
     mainRef.current?.scrollTo(0, 0);
   }, [activeSection, practiceTab, learnTab, referenceTab]);
 
+  // Clear autoStartDraft when leaving practice section
+  useEffect(() => {
+    if (activeSection !== 'practice') {
+      setAutoStartDraft(false);
+    }
+  }, [activeSection]);
+
   if (loading) {
     return <LoadingScreen progress={progress} />;
   }
@@ -222,6 +232,7 @@ function App() {
             cards={cards}
             onNavigate={handleNavigate}
             onStartDraft={() => {
+              setAutoStartDraft(true);
               setActiveSection('practice');
               setPracticeTab('draft');
             }}
@@ -231,8 +242,11 @@ function App() {
       case 'practice':
         return (
           <div className="space-y-6">
-            <TabNav tabs={PRACTICE_TABS} activeTab={practiceTab} onTabChange={setPracticeTab} />
-            {practiceTab === 'draft' && <DraftSimulator cards={cards} />}
+            <TabNav tabs={PRACTICE_TABS} activeTab={practiceTab} onTabChange={(tab) => {
+              setPracticeTab(tab);
+              if (tab !== 'draft') setAutoStartDraft(false);
+            }} />
+            {practiceTab === 'draft' && <DraftSimulator cards={cards} autoStart={autoStartDraft} />}
             {practiceTab === 'games' && <GamesPage cards={cards} />}
           </div>
         );
