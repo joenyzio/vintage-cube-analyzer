@@ -268,6 +268,29 @@ export const VINTAGE_CUBE_ARCHETYPES: ArchetypeDefinition[] = [
       'Llanowar Elves',
     ],
   },
+  {
+    id: 'doomsday',
+    name: 'Doomsday',
+    shortName: 'Doom',
+    description: 'Assemble a specific 5-card pile and resolve it in sequence to win',
+    primaryColors: ['U', 'B'],
+    keyCards: [
+      'Doomsday',
+      "Thassa's Oracle",
+      "Lion's Eye Diamond",
+    ],
+    signalCards: [
+      'Gitaxian Probe',
+      'Ponder',
+      'Brainstorm',
+      'Preordain',
+      'Dark Ritual',
+      'Cabal Ritual',
+      'Street Wraith',
+      'Consider',
+    ],
+    antiSynergyCards: [],
+  },
 ];
 
 /**

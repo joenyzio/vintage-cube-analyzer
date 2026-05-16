@@ -95,7 +95,7 @@ export function updateArchetypeWeights(
   const weights = getCardArchetypeWeights(pickedCard);
   const newWeights = new Map(currentWeights);
 
-  const archetypeIds = ['reanimator', 'storm', 'aggro', 'control', 'ramp', 'artifacts', 'sneak', 'midrange', 'tempo', 'oath'];
+  const archetypeIds = ['reanimator', 'storm', 'aggro', 'control', 'ramp', 'artifacts', 'sneak', 'midrange', 'tempo', 'oath', 'doomsday'];
   for (let i = 0; i < archetypeIds.length; i++) {
     const current = newWeights.get(archetypeIds[i]) || 0;
     // Convert madrury additive update to normalized 0-1 range
@@ -112,7 +112,7 @@ export function updateArchetypeWeights(
 
 function convertToMadruryContext(context: DraftContext): MadruryContext {
   // Convert archetype weights map back to preferences array
-  const archetypeIds = ['reanimator', 'storm', 'aggro', 'control', 'ramp', 'artifacts', 'sneak', 'midrange', 'tempo', 'oath'];
+  const archetypeIds = ['reanimator', 'storm', 'aggro', 'control', 'ramp', 'artifacts', 'sneak', 'midrange', 'tempo', 'oath', 'doomsday'];
   const preferences = archetypeIds.map(id => {
     const weight = context.archetypeWeights.get(id) || 0;
     // Convert from 0-1 range to additive range (1 + weight * 3)
@@ -175,8 +175,10 @@ export {
 export {
   calculateCardAffinity,
   getCardAffinities,
+  getConditionalValue,
   EXPLICIT_AFFINITIES,
   PROPERTY_RULES,
+  type ConditionalValueInfo,
 } from './archetypeAffinity';
 
 // ============================================
@@ -218,6 +220,7 @@ export type {
   ArchetypeDefinition,
   CardAffinity,
   AffinityRole,
+  InArchetypeValue,
   AffinityMap,
   DraftContext,
   DeckStats,

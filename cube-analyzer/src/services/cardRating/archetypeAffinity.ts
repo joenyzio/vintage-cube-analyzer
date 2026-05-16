@@ -1,20 +1,34 @@
 /**
  * Card-to-Archetype Affinity Mappings
  *
- * This file defines how well each card fits each archetype.
- * Initial values are bootstrapped from the existing hardcoded bonuses.
+ * This file defines how well each card fits each archetype, including
+ * archetype-defining flags and conditional in-archetype value tiers.
  *
- * Affinity weights are normalized to -1.0 to 1.0:
- *   1.0  = Perfect fit (was +100 bonus)
- *   0.7  = Strong fit (was +70 bonus)
- *   0.5  = Good fit (was +50 bonus)
+ * AFFINITY WEIGHTS (-1.0 to 1.0):
+ *   1.0  = Perfect fit (core card)
+ *   0.7  = Strong fit
+ *   0.5  = Good fit
  *   0.0  = Neutral
  *  -0.5  = Anti-synergy
  *  -1.0  = Actively hurts archetype
+ *
+ * ARCHETYPE-DEFINING (isArchetypeDefining: true):
+ *   The archetype literally cannot exist without this card.
+ *   Examples: Oath of Druids, Tinker, Channel, Show and Tell
+ *
+ * IN-ARCHETYPE VALUE (inArchetypeValue: 'S' | 'A' | 'B' | 'C'):
+ *   S = Strongest pick available when in-archetype
+ *   A = Very strong, archetype works without it but meaningfully weaker
+ *   B = Solid contributor, replaceable
+ *   C = Fine inclusion, easily swapped
+ *
+ * Used for conditional rating display in coaching UI:
+ * "General: B tier | In-Archetype: S tier" when pool has 2+ archetype cards
  */
 
 import type { CardAffinity, AffinityMap, AffinityRole } from './types';
 import type { CubeCard } from '../../types/card';
+import { COMPREHENSIVE_AFFINITIES } from './comprehensiveAffinities';
 
 /**
  * Role weight multipliers for affinity calculations.
@@ -38,43 +52,58 @@ const ROLE_WEIGHT_MULTIPLIERS: Record<AffinityRole, number> = {
 export const EXPLICIT_AFFINITIES: CardAffinity[] = [
   // ========== REANIMATOR ==========
   // Key enablers (verified in cube)
-  { cardName: 'Entomb', archetypeId: 'reanimator', weight: 1.0, role: 'enabler' },
-  { cardName: 'Reanimate', archetypeId: 'reanimator', weight: 1.0, role: 'enabler' },
-  { cardName: 'Animate Dead', archetypeId: 'reanimator', weight: 1.0, role: 'enabler' },
-  { cardName: 'Necromancy', archetypeId: 'reanimator', weight: 0.9, role: 'enabler' },
-  { cardName: 'Exhume', archetypeId: 'reanimator', weight: 0.85, role: 'enabler' },
-  { cardName: 'Life // Death', archetypeId: 'reanimator', weight: 0.8, role: 'enabler' },
-  { cardName: 'Shallow Grave', archetypeId: 'reanimator', weight: 0.7, role: 'enabler' },
+  { cardName: 'Entomb', archetypeId: 'reanimator', weight: 1.0, role: 'enabler', inArchetypeValue: 'A' },
+  { cardName: 'Reanimate', archetypeId: 'reanimator', weight: 1.0, role: 'enabler', inArchetypeValue: 'A' },
+  { cardName: 'Animate Dead', archetypeId: 'reanimator', weight: 1.0, role: 'enabler', inArchetypeValue: 'A' },
+  { cardName: 'Necromancy', archetypeId: 'reanimator', weight: 0.9, role: 'enabler', inArchetypeValue: 'B' },
+  { cardName: 'Exhume', archetypeId: 'reanimator', weight: 0.85, role: 'enabler', inArchetypeValue: 'B' },
+  { cardName: 'Life // Death', archetypeId: 'reanimator', weight: 0.8, role: 'enabler', inArchetypeValue: 'B' },
+  { cardName: 'Shallow Grave', archetypeId: 'reanimator', weight: 0.7, role: 'enabler', inArchetypeValue: 'B' },
+  { cardName: 'Recurring Nightmare', archetypeId: 'reanimator', weight: 0.95, role: 'enabler', inArchetypeValue: 'A' },
 
   // Discard outlets
-  { cardName: 'Faithless Looting', archetypeId: 'reanimator', weight: 0.7, role: 'support' },
-  { cardName: 'Collective Brutality', archetypeId: 'reanimator', weight: 0.5, role: 'support' },
+  { cardName: 'Faithless Looting', archetypeId: 'reanimator', weight: 0.7, role: 'support', inArchetypeValue: 'B' },
+  { cardName: 'Collective Brutality', archetypeId: 'reanimator', weight: 0.5, role: 'support', inArchetypeValue: 'C' },
 
-  // Payoffs (big creatures)
-  { cardName: 'Griselbrand', archetypeId: 'reanimator', weight: 1.0, role: 'payoff' },
-  { cardName: 'Archon of Cruelty', archetypeId: 'reanimator', weight: 0.9, role: 'payoff' },
-  { cardName: 'Atraxa, Grand Unifier', archetypeId: 'reanimator', weight: 0.85, role: 'payoff' },
-  { cardName: 'Emrakul, the Aeons Torn', archetypeId: 'reanimator', weight: 0.8, role: 'payoff' },
+  // Payoffs (big creatures) - S-tier payoffs
+  { cardName: 'Griselbrand', archetypeId: 'reanimator', weight: 1.0, role: 'payoff', inArchetypeValue: 'S' },
+  { cardName: 'Archon of Cruelty', archetypeId: 'reanimator', weight: 0.9, role: 'payoff', inArchetypeValue: 'A' },
+  { cardName: 'Atraxa, Grand Unifier', archetypeId: 'reanimator', weight: 0.85, role: 'payoff', inArchetypeValue: 'A' },
+  { cardName: 'Emrakul, the Aeons Torn', archetypeId: 'reanimator', weight: 0.8, role: 'payoff', inArchetypeValue: 'S' },
 
   // ========== STORM ==========
-  // Engines
-  { cardName: "Yawgmoth's Will", archetypeId: 'storm', weight: 1.0, role: 'enabler' },
-  { cardName: 'Underworld Breach', archetypeId: 'storm', weight: 0.95, role: 'enabler' },
-  { cardName: 'Time Spiral', archetypeId: 'storm', weight: 0.85, role: 'enabler' },
+  // Engines - ARCHETYPE-DEFINING
+  { cardName: "Yawgmoth's Will", archetypeId: 'storm', weight: 1.0, role: 'enabler', isArchetypeDefining: true, inArchetypeValue: 'S' },
+  { cardName: 'Underworld Breach', archetypeId: 'storm', weight: 0.95, role: 'enabler', isArchetypeDefining: true, inArchetypeValue: 'S' },
+  { cardName: 'Time Spiral', archetypeId: 'storm', weight: 0.85, role: 'enabler', inArchetypeValue: 'A' },
+  { cardName: "Bolas's Citadel", archetypeId: 'storm', weight: 0.9, role: 'enabler', inArchetypeValue: 'A' },
+  { cardName: 'Memory Jar', archetypeId: 'storm', weight: 0.85, role: 'enabler', inArchetypeValue: 'A' },
 
-  // Fast mana
-  { cardName: "Lion's Eye Diamond", archetypeId: 'storm', weight: 0.9, role: 'enabler' },
-  { cardName: 'Dark Ritual', archetypeId: 'storm', weight: 0.85, role: 'enabler' },
-  { cardName: 'Cabal Ritual', archetypeId: 'storm', weight: 0.8, role: 'enabler' },
-  { cardName: 'Lotus Petal', archetypeId: 'storm', weight: 0.75, role: 'support' },
+  // Fast mana - LED is ARCHETYPE-DEFINING for LED storm lines
+  { cardName: "Lion's Eye Diamond", archetypeId: 'storm', weight: 1.0, role: 'enabler', isArchetypeDefining: true, inArchetypeValue: 'S' },
+  { cardName: 'Dark Ritual', archetypeId: 'storm', weight: 0.85, role: 'enabler', inArchetypeValue: 'A' },
+  { cardName: 'Cabal Ritual', archetypeId: 'storm', weight: 0.8, role: 'enabler', inArchetypeValue: 'B' },
+  { cardName: 'Lotus Petal', archetypeId: 'storm', weight: 0.75, role: 'support', inArchetypeValue: 'B' },
 
-  // Payoffs
-  { cardName: 'Brain Freeze', archetypeId: 'storm', weight: 0.9, role: 'payoff' },
+  // Payoffs - Brain Freeze is THE storm payoff in this cube
+  { cardName: 'Brain Freeze', archetypeId: 'storm', weight: 1.0, role: 'payoff', inArchetypeValue: 'S' },
 
   // Draw/selection
-  { cardName: 'Wheel of Fortune', archetypeId: 'storm', weight: 0.8, role: 'support' },
-  { cardName: 'Timetwister', archetypeId: 'storm', weight: 0.75, role: 'support' },
-  { cardName: 'Echo of Eons', archetypeId: 'storm', weight: 0.7, role: 'support' },
+  { cardName: 'Wheel of Fortune', archetypeId: 'storm', weight: 0.8, role: 'support', inArchetypeValue: 'A' },
+  { cardName: 'Timetwister', archetypeId: 'storm', weight: 0.75, role: 'support', inArchetypeValue: 'A' },
+  { cardName: 'Echo of Eons', archetypeId: 'storm', weight: 0.7, role: 'support', inArchetypeValue: 'B' },
+  { cardName: 'Frantic Search', archetypeId: 'storm', weight: 0.7, role: 'support', inArchetypeValue: 'B' },
+
+  // ========== DOOMSDAY ==========
+  // ARCHETYPE-DEFINING
+  { cardName: 'Doomsday', archetypeId: 'doomsday', weight: 1.0, role: 'enabler', isArchetypeDefining: true, inArchetypeValue: 'S' },
+  { cardName: "Thassa's Oracle", archetypeId: 'doomsday', weight: 1.0, role: 'payoff', inArchetypeValue: 'S' },
+  { cardName: "Lion's Eye Diamond", archetypeId: 'doomsday', weight: 0.95, role: 'enabler', isArchetypeDefining: true, inArchetypeValue: 'S' },
+  // Support
+  { cardName: 'Gitaxian Probe', archetypeId: 'doomsday', weight: 0.7, role: 'support', inArchetypeValue: 'A' },
+  { cardName: 'Ponder', archetypeId: 'doomsday', weight: 0.6, role: 'support', inArchetypeValue: 'B' },
+  { cardName: 'Brainstorm', archetypeId: 'doomsday', weight: 0.65, role: 'support', inArchetypeValue: 'B' },
+  { cardName: 'Dark Ritual', archetypeId: 'doomsday', weight: 0.7, role: 'support', inArchetypeValue: 'A' },
 
   // ========== AGGRO ==========
   // Verified in cube
@@ -94,33 +123,45 @@ export const EXPLICIT_AFFINITIES: CardAffinity[] = [
   { cardName: 'Wrath of God', archetypeId: 'control', weight: 0.75, role: 'support' },
 
   // ========== RAMP ==========
-  // Verified in cube
-  { cardName: 'Channel', archetypeId: 'ramp', weight: 0.9, role: 'enabler' },
-  { cardName: 'Natural Order', archetypeId: 'ramp', weight: 0.85, role: 'enabler' },
-  { cardName: 'Rofellos, Llanowar Emissary', archetypeId: 'ramp', weight: 0.8, role: 'enabler' },
-  { cardName: 'Craterhoof Behemoth', archetypeId: 'ramp', weight: 0.9, role: 'payoff' },
-  { cardName: 'Primeval Titan', archetypeId: 'ramp', weight: 0.8, role: 'payoff' },
+  // ARCHETYPE-DEFINING
+  { cardName: 'Channel', archetypeId: 'ramp', weight: 1.0, role: 'enabler', isArchetypeDefining: true, inArchetypeValue: 'S' },
+  { cardName: 'Natural Order', archetypeId: 'ramp', weight: 1.0, role: 'enabler', isArchetypeDefining: true, inArchetypeValue: 'S' },
+  // Strong enablers
+  { cardName: 'Rofellos, Llanowar Emissary', archetypeId: 'ramp', weight: 0.85, role: 'enabler', inArchetypeValue: 'A' },
+  { cardName: 'Survival of the Fittest', archetypeId: 'ramp', weight: 0.85, role: 'enabler', inArchetypeValue: 'A' },
+  { cardName: 'Fastbond', archetypeId: 'ramp', weight: 0.8, role: 'enabler', inArchetypeValue: 'A' },
+  { cardName: 'Exploration', archetypeId: 'ramp', weight: 0.7, role: 'enabler', inArchetypeValue: 'B' },
+  // S-tier payoffs
+  { cardName: 'Craterhoof Behemoth', archetypeId: 'ramp', weight: 1.0, role: 'payoff', inArchetypeValue: 'S' },
+  { cardName: 'Emrakul, the Aeons Torn', archetypeId: 'ramp', weight: 0.95, role: 'payoff', inArchetypeValue: 'S' },
+  { cardName: 'Primeval Titan', archetypeId: 'ramp', weight: 0.85, role: 'payoff', inArchetypeValue: 'A' },
 
   // ========== ARTIFACTS ==========
-  // Verified in cube
-  { cardName: 'Tinker', archetypeId: 'artifacts', weight: 0.95, role: 'enabler' },
-  { cardName: 'Goblin Welder', archetypeId: 'artifacts', weight: 0.85, role: 'enabler' },
-  { cardName: 'Urza, Lord High Artificer', archetypeId: 'artifacts', weight: 0.9, role: 'payoff' },
-  { cardName: 'Tolarian Academy', archetypeId: 'artifacts', weight: 0.85, role: 'support' },
-  { cardName: 'Blightsteel Colossus', archetypeId: 'artifacts', weight: 0.9, role: 'payoff' },
-  { cardName: 'Myr Battlesphere', archetypeId: 'artifacts', weight: 0.75, role: 'payoff' },
-  { cardName: 'Wurmcoil Engine', archetypeId: 'artifacts', weight: 0.7, role: 'payoff' },
+  // ARCHETYPE-DEFINING
+  { cardName: 'Tinker', archetypeId: 'artifacts', weight: 1.0, role: 'enabler', isArchetypeDefining: true, inArchetypeValue: 'S' },
+  { cardName: 'Tolarian Academy', archetypeId: 'artifacts', weight: 1.0, role: 'enabler', isArchetypeDefining: true, inArchetypeValue: 'S' },
+  // Strong enablers
+  { cardName: 'Goblin Welder', archetypeId: 'artifacts', weight: 0.85, role: 'enabler', inArchetypeValue: 'A' },
+  { cardName: 'Urza, Lord High Artificer', archetypeId: 'artifacts', weight: 0.95, role: 'payoff', inArchetypeValue: 'S' },
+  { cardName: "Mishra's Workshop", archetypeId: 'artifacts', weight: 0.9, role: 'enabler', inArchetypeValue: 'A' },
+  // S-tier payoffs
+  { cardName: 'Blightsteel Colossus', archetypeId: 'artifacts', weight: 1.0, role: 'payoff', inArchetypeValue: 'S' },
+  { cardName: 'Myr Battlesphere', archetypeId: 'artifacts', weight: 0.75, role: 'payoff', inArchetypeValue: 'B' },
+  { cardName: 'Wurmcoil Engine', archetypeId: 'artifacts', weight: 0.7, role: 'payoff', inArchetypeValue: 'B' },
+  { cardName: 'Kappa Cannoneer', archetypeId: 'artifacts', weight: 0.8, role: 'payoff', inArchetypeValue: 'A' },
 
   // ========== SNEAK & SHOW ==========
-  // Verified in cube
-  { cardName: 'Show and Tell', archetypeId: 'sneak', weight: 1.0, role: 'enabler' },
-  { cardName: 'Sneak Attack', archetypeId: 'sneak', weight: 0.95, role: 'enabler' },
-  { cardName: 'Flash', archetypeId: 'sneak', weight: 0.95, role: 'enabler' },  // Flash-Hulk combo
-  { cardName: 'Through the Breach', archetypeId: 'sneak', weight: 0.85, role: 'enabler' },
-  { cardName: 'Protean Hulk', archetypeId: 'sneak', weight: 0.9, role: 'payoff' },  // Flash-Hulk combo
-  { cardName: 'Emrakul, the Aeons Torn', archetypeId: 'sneak', weight: 1.0, role: 'payoff' },
-  { cardName: 'Griselbrand', archetypeId: 'sneak', weight: 0.9, role: 'payoff' },
-  { cardName: 'Worldspine Wurm', archetypeId: 'sneak', weight: 0.8, role: 'payoff' },
+  // ARCHETYPE-DEFINING
+  { cardName: 'Show and Tell', archetypeId: 'sneak', weight: 1.0, role: 'enabler', isArchetypeDefining: true, inArchetypeValue: 'S' },
+  { cardName: 'Sneak Attack', archetypeId: 'sneak', weight: 1.0, role: 'enabler', isArchetypeDefining: true, inArchetypeValue: 'S' },
+  // Strong enablers
+  { cardName: 'Flash', archetypeId: 'sneak', weight: 0.8, role: 'enabler', inArchetypeValue: 'A' },
+  { cardName: 'Through the Breach', archetypeId: 'sneak', weight: 0.9, role: 'enabler', inArchetypeValue: 'A' },
+  // S-tier payoffs
+  { cardName: 'Emrakul, the Aeons Torn', archetypeId: 'sneak', weight: 1.0, role: 'payoff', inArchetypeValue: 'S' },
+  { cardName: 'Griselbrand', archetypeId: 'sneak', weight: 1.0, role: 'payoff', inArchetypeValue: 'S' },
+  { cardName: 'Worldspine Wurm', archetypeId: 'sneak', weight: 0.85, role: 'payoff', inArchetypeValue: 'A' },
+  { cardName: 'Atraxa, Grand Unifier', archetypeId: 'sneak', weight: 0.8, role: 'payoff', inArchetypeValue: 'A' },
 
   // ========== TEMPO ==========
   // Verified in cube - 13 cards total
@@ -148,31 +189,32 @@ export const EXPLICIT_AFFINITIES: CardAffinity[] = [
   { cardName: 'Gitaxian Probe', archetypeId: 'tempo', weight: 0.35, role: 'support' },
 
   // ========== OATH ==========
-  // Verified in cube
   // NOTE: Missing Forbidden Orchard and Omniscience - Oath support limited
 
-  // Core enabler
-  { cardName: 'Oath of Druids', archetypeId: 'oath', weight: 1.0, role: 'enabler' },
+  // ARCHETYPE-DEFINING - Oath literally cannot exist without Oath
+  { cardName: 'Oath of Druids', archetypeId: 'oath', weight: 1.0, role: 'enabler', isArchetypeDefining: true, inArchetypeValue: 'S' },
 
-  // Payoffs (creatures to cheat out)
-  { cardName: 'Griselbrand', archetypeId: 'oath', weight: 0.9, role: 'payoff' },
-  { cardName: 'Emrakul, the Aeons Torn', archetypeId: 'oath', weight: 0.85, role: 'payoff' },
-  { cardName: 'Atraxa, Grand Unifier', archetypeId: 'oath', weight: 0.8, role: 'payoff' },
-  { cardName: 'Archon of Cruelty', archetypeId: 'oath', weight: 0.75, role: 'payoff' },
-  { cardName: 'Craterhoof Behemoth', archetypeId: 'oath', weight: 0.7, role: 'payoff' },
-  { cardName: 'Blightsteel Colossus', archetypeId: 'oath', weight: 0.7, role: 'payoff' },
-  { cardName: 'Woodfall Primus', archetypeId: 'oath', weight: 0.65, role: 'payoff' },
+  // S-tier payoffs (creatures to cheat out)
+  { cardName: 'Griselbrand', archetypeId: 'oath', weight: 1.0, role: 'payoff', inArchetypeValue: 'S' },
+  { cardName: 'Emrakul, the Aeons Torn', archetypeId: 'oath', weight: 1.0, role: 'payoff', inArchetypeValue: 'S' },
+  { cardName: 'Atraxa, Grand Unifier', archetypeId: 'oath', weight: 0.85, role: 'payoff', inArchetypeValue: 'A' },
+  { cardName: 'Archon of Cruelty', archetypeId: 'oath', weight: 0.8, role: 'payoff', inArchetypeValue: 'A' },
+  { cardName: 'Craterhoof Behemoth', archetypeId: 'oath', weight: 0.75, role: 'payoff', inArchetypeValue: 'A' },
+  { cardName: 'Blightsteel Colossus', archetypeId: 'oath', weight: 0.75, role: 'payoff', inArchetypeValue: 'A' },
+  { cardName: 'Woodfall Primus', archetypeId: 'oath', weight: 0.65, role: 'payoff', inArchetypeValue: 'B' },
 
   // Protection/control (keep Oath alive)
-  { cardName: 'Force of Will', archetypeId: 'oath', weight: 0.55, role: 'support' },
-  { cardName: 'Counterspell', archetypeId: 'oath', weight: 0.45, role: 'support' },
-  { cardName: 'Mana Drain', archetypeId: 'oath', weight: 0.5, role: 'support' },
+  { cardName: 'Force of Will', archetypeId: 'oath', weight: 0.55, role: 'support', inArchetypeValue: 'B' },
+  { cardName: 'Counterspell', archetypeId: 'oath', weight: 0.45, role: 'support', inArchetypeValue: 'C' },
+  { cardName: 'Mana Drain', archetypeId: 'oath', weight: 0.5, role: 'support', inArchetypeValue: 'B' },
 
   // Anti-synergy: creature-makers (bad with Oath)
   { cardName: 'Birds of Paradise', archetypeId: 'oath', weight: -0.7, role: 'utility' },
   { cardName: 'Noble Hierarch', archetypeId: 'oath', weight: -0.7, role: 'utility' },
   { cardName: 'Llanowar Elves', archetypeId: 'oath', weight: -0.7, role: 'utility' },
   { cardName: 'Elvish Mystic', archetypeId: 'oath', weight: -0.7, role: 'utility' },
+  { cardName: 'Arbor Elf', archetypeId: 'oath', weight: -0.7, role: 'utility' },
+  { cardName: 'Ignoble Hierarch', archetypeId: 'oath', weight: -0.7, role: 'utility' },
 
   // ========== MIDRANGE ==========
   // Disruption
@@ -453,16 +495,33 @@ export const PROPERTY_RULES: PropertyRule[] = [
 let affinityMapCache: AffinityMap | null = null;
 
 /**
- * Build the complete affinity map from explicit affinities.
+ * Build the complete affinity map from explicit and comprehensive affinities.
+ * Comprehensive affinities take precedence for overlapping card+archetype pairs.
  */
 export function buildAffinityMap(): AffinityMap {
   if (affinityMapCache) return affinityMapCache;
 
   const map: AffinityMap = new Map();
 
+  // First, add all explicit affinities (base layer)
   for (const affinity of EXPLICIT_AFFINITIES) {
     const existing = map.get(affinity.cardName) || [];
     existing.push(affinity);
+    map.set(affinity.cardName, existing);
+  }
+
+  // Then, merge comprehensive affinities (takes precedence for same card+archetype)
+  for (const affinity of COMPREHENSIVE_AFFINITIES) {
+    const existing = map.get(affinity.cardName) || [];
+    // Check if this card+archetype combo already exists
+    const existingIndex = existing.findIndex(a => a.archetypeId === affinity.archetypeId);
+    if (existingIndex >= 0) {
+      // Replace with comprehensive data (more detailed)
+      existing[existingIndex] = affinity;
+    } else {
+      // Add new affinity
+      existing.push(affinity);
+    }
     map.set(affinity.cardName, existing);
   }
 
@@ -575,4 +634,129 @@ export function createInitialArchetypeWeights(): Map<string, number> {
   const weights = new Map<string, number>();
   // All archetypes start at 0 (completely open)
   return weights;
+}
+
+// ============================================
+// Conditional Value Functions
+// ============================================
+
+/**
+ * Get conditional value info for a card based on current pool.
+ * Returns archetype-defining status and in-archetype value when
+ * pool has 2+ cards supporting that archetype (the threshold where
+ * the archetype becomes a real consideration).
+ */
+export interface ConditionalValueInfo {
+  hasConditionalValue: boolean;
+  archetypeId: string | null;
+  archetypeName: string | null;
+  isArchetypeDefining: boolean;
+  inArchetypeValue: 'S' | 'A' | 'B' | 'C' | null;
+  poolSupportCount: number;
+  reason: string | null;
+}
+
+export function getConditionalValue(
+  cardName: string,
+  poolCardNames: string[]
+): ConditionalValueInfo {
+  const affinities = getCardAffinities(cardName);
+
+  // No affinities = no conditional value
+  if (affinities.length === 0) {
+    return {
+      hasConditionalValue: false,
+      archetypeId: null,
+      archetypeName: null,
+      isArchetypeDefining: false,
+      inArchetypeValue: null,
+      poolSupportCount: 0,
+      reason: null,
+    };
+  }
+
+  // Find the best archetype match based on pool support
+  let bestMatch: {
+    archetypeId: string;
+    affinity: CardAffinity;
+    supportCount: number;
+  } | null = null;
+
+  for (const affinity of affinities) {
+    if (!affinity.inArchetypeValue && !affinity.isArchetypeDefining) continue;
+
+    // Count how many pool cards support this archetype
+    let supportCount = 0;
+    for (const poolCard of poolCardNames) {
+      const poolAffinities = getCardAffinities(poolCard);
+      if (poolAffinities.some(a => a.archetypeId === affinity.archetypeId && a.weight > 0)) {
+        supportCount++;
+      }
+    }
+
+    if (!bestMatch || supportCount > bestMatch.supportCount) {
+      bestMatch = { archetypeId: affinity.archetypeId, affinity, supportCount };
+    }
+  }
+
+  // Threshold: need 2+ cards to show conditional value
+  if (!bestMatch || bestMatch.supportCount < 2) {
+    // Even if no pool support, flag archetype-defining cards
+    const definingAffinity = affinities.find(a => a.isArchetypeDefining);
+    if (definingAffinity) {
+      return {
+        hasConditionalValue: true,
+        archetypeId: definingAffinity.archetypeId,
+        archetypeName: getArchetypeDisplayName(definingAffinity.archetypeId),
+        isArchetypeDefining: true,
+        inArchetypeValue: definingAffinity.inArchetypeValue || 'S',
+        poolSupportCount: bestMatch?.supportCount || 0,
+        reason: `Archetype-defining for ${getArchetypeDisplayName(definingAffinity.archetypeId)}`,
+      };
+    }
+
+    return {
+      hasConditionalValue: false,
+      archetypeId: null,
+      archetypeName: null,
+      isArchetypeDefining: false,
+      inArchetypeValue: null,
+      poolSupportCount: 0,
+      reason: null,
+    };
+  }
+
+  const archName = getArchetypeDisplayName(bestMatch.archetypeId);
+
+  return {
+    hasConditionalValue: true,
+    archetypeId: bestMatch.archetypeId,
+    archetypeName: archName,
+    isArchetypeDefining: bestMatch.affinity.isArchetypeDefining || false,
+    inArchetypeValue: bestMatch.affinity.inArchetypeValue || null,
+    poolSupportCount: bestMatch.supportCount,
+    reason: bestMatch.affinity.isArchetypeDefining
+      ? `Archetype-defining for ${archName}`
+      : `${bestMatch.affinity.inArchetypeValue}-tier in ${archName}`,
+  };
+}
+
+/**
+ * Get display name for archetype ID
+ */
+function getArchetypeDisplayName(archetypeId: string): string {
+  const names: Record<string, string> = {
+    reanimator: 'Reanimator',
+    storm: 'Storm',
+    aggro: 'Aggro',
+    control: 'Control',
+    ramp: 'Ramp',
+    artifacts: 'Artifacts',
+    sneak: 'Sneak & Show',
+    tempo: 'Tempo',
+    oath: 'Oath',
+    midrange: 'Midrange',
+    doomsday: 'Doomsday',
+  };
+  return names[archetypeId] || archetypeId;
 }

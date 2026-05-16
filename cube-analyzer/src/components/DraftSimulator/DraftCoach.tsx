@@ -59,6 +59,16 @@ interface ManaBaseStatus {
   recommendation: string;
 }
 
+interface ConditionalValueInfo {
+  hasConditionalValue: boolean;
+  archetypeId: string | null;
+  archetypeName: string | null;
+  isArchetypeDefining: boolean;
+  inArchetypeValue: 'S' | 'A' | 'B' | 'C' | null;
+  poolSupportCount: number;
+  reason: string | null;
+}
+
 interface CoachExplanation {
   card: CubeCard;
   elo: number;
@@ -68,6 +78,7 @@ interface CoachExplanation {
   alternatives: { name: string; score: number; reason: string }[];
   deckNeeds: string[];
   currentArchetype: string;
+  conditionalValue?: ConditionalValueInfo;
 }
 
 interface DraftCoachProps {
@@ -410,6 +421,28 @@ export function DraftCoach({
                 <div className="flex-1 min-w-0">
                   <div className="text-base font-semibold text-white">{coachExplanation.card.name}</div>
                   <div className="text-sm text-white/40 font-mono">{Math.round(coachExplanation.elo)} ELO</div>
+
+                  {/* Conditional Value Display - shows when pool has 2+ archetype support */}
+                  {coachExplanation.conditionalValue?.hasConditionalValue && (
+                    <div className={`mt-1 px-2 py-1 rounded text-xs inline-flex items-center gap-1.5 ${
+                      coachExplanation.conditionalValue.isArchetypeDefining
+                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                        : 'bg-purple-500/15 text-purple-300'
+                    }`}>
+                      {coachExplanation.conditionalValue.isArchetypeDefining && (
+                        <span className="text-amber-400 font-bold">★</span>
+                      )}
+                      <span>
+                        {coachExplanation.conditionalValue.inArchetypeValue}-tier in {coachExplanation.conditionalValue.archetypeName}
+                      </span>
+                      {coachExplanation.conditionalValue.poolSupportCount >= 2 && (
+                        <span className="text-white/40">
+                          ({coachExplanation.conditionalValue.poolSupportCount} cards)
+                        </span>
+                      )}
+                    </div>
+                  )}
+
                   <div className="mt-1 text-sm text-white/60 leading-snug">
                     {coachExplanation.mainReason}
                   </div>
@@ -564,6 +597,9 @@ function DraftIntelligencePanel({
     'Ramp': { text: 'text-green-400', bar: 'bg-green-500' },
     'Sneak & Show': { text: 'text-rose-400', bar: 'bg-rose-500' },
     'Midrange': { text: 'text-amber-400', bar: 'bg-amber-500' },
+    'Doomsday': { text: 'text-fuchsia-400', bar: 'bg-fuchsia-500' },
+    'Oath': { text: 'text-emerald-400', bar: 'bg-emerald-500' },
+    'Tempo': { text: 'text-cyan-400', bar: 'bg-cyan-500' },
   };
 
   const colorBg: Record<string, string> = {

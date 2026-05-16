@@ -28,11 +28,33 @@ export interface ArchetypeDefinition {
 
 export type AffinityRole = 'enabler' | 'payoff' | 'support' | 'utility';
 
+/**
+ * In-archetype value tier for conditional rating display.
+ * S = Strongest pick when in-archetype (usually archetype-defining)
+ * A = Very strong, archetype works without it but meaningfully weaker
+ * B = Solid contributor, replaceable
+ * C = Fine inclusion, easily swapped
+ */
+export type InArchetypeValue = 'S' | 'A' | 'B' | 'C';
+
 export interface CardAffinity {
   cardName: string;
   archetypeId: string;
   weight: number;         // -1.0 (anti-synergy) to 1.0 (perfect fit)
   role?: AffinityRole;    // What role does this card play in the archetype?
+
+  /**
+   * True if this card CREATES the archetype - the deck literally cannot
+   * exist without it. Examples: Oath of Druids, Tinker, Channel
+   */
+  isArchetypeDefining?: boolean;
+
+  /**
+   * Conditional value tier when in-archetype. Used to show
+   * "General: B tier | In-Archetype: S tier" in coaching UI.
+   * Only shown when pool has 2+ cards supporting the archetype.
+   */
+  inArchetypeValue?: InArchetypeValue;
 }
 
 // Map structure: cardName → array of affinities

@@ -56,6 +56,7 @@ import {
 import {
   rateAllCards,
   createInitialContext,
+  getConditionalValue,
 } from '../services/cardRating';
 
 // Import extracted components
@@ -955,6 +956,9 @@ export function DraftSimulator({ cards, autoStart = false }: DraftSimulatorProps
       }
     }
 
+    // Get conditional value info for the recommended card
+    const conditionalValue = getConditionalValue(bestCard.name, picks.map(p => p.name));
+
     return {
       card: bestCard,
       elo,
@@ -964,6 +968,7 @@ export function DraftSimulator({ cards, autoStart = false }: DraftSimulatorProps
       alternatives,
       deckNeeds,
       currentArchetype,
+      conditionalValue,
     };
   }, [draftState, archetypeCommitments, deckStats]);
 
