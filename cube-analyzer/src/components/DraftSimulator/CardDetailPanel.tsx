@@ -10,6 +10,7 @@ import type { CubeCard } from '../../types/card';
 import type { CardEloHistory, ContextualGrade } from '../../types/draftSimulator';
 import { getCardImage } from '../../services/scryfall';
 import { getEloData, getWheelLikelihood } from '../../services/eloHelpers';
+import { getConditionalValue } from '../../services/cardRating/archetypeAffinity';
 import {
   getCardSimStats,
   getWheelRate,
@@ -56,6 +57,9 @@ export function CardDetailPanel({
 
         {/* Type Line */}
         <div className="text-sm text-white/50">{card.type_line?.split('—')[0]}</div>
+
+        {/* Conditional Value Badge */}
+        <ConditionalValueBadge cardName={card.name} poolCardNames={picks.map(p => p.name)} />
 
         {/* ELO & Stats Section */}
         {eloData && (
@@ -346,6 +350,32 @@ function RatingTrendSparkline({ cardId, cardEloHistory, totalPicks }: RatingTren
         <div className={`text-[10px] ${velocity > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
           {velocity > 0 ? '↑' : '↓'} {Math.abs(Math.round(velocity))} ELO/pick
         </div>
+      )}
+    </div>
+  );
+}
+
+// =============================================================================
+// Conditional Value Badge
+// =============================================================================
+
+function ConditionalValueBadge({ cardName, poolCardNames }: { cardName: string; poolCardNames: string[] }) {
+  const cv = getConditionalValue(cardName, poolCardNames);
+
+  if (!cv.hasConditionalValue) return null;
+
+  return (
+    <div className={`mt-1 px-2 py-1 rounded text-xs inline-flex items-center gap-1.5 ${
+      cv.isArchetypeDefining
+        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+        : 'bg-purple-500/15 text-purple-300'
+    }`}>
+      {cv.isArchetypeDefining && (
+        <span className="text-amber-400 font-bold">★</span>
+      )}
+      <span>{cv.inArchetypeValue}-tier in {cv.archetypeName}</span>
+      {cv.poolSupportCount > 0 && !cv.isArchetypeDefining && (
+        <span className="text-white/40">({cv.poolSupportCount} cards)</span>
       )}
     </div>
   );
