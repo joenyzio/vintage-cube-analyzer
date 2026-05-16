@@ -160,8 +160,8 @@ export function MobileCardDetail({
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex gap-3 p-4 pb-8 border-t border-white/10 bg-black">
+        {/* Action Buttons - pb-24 to clear mobile bottom nav */}
+        <div className="flex gap-3 p-4 pb-24 border-t border-white/10 bg-black">
           {isInDeck ? (
             <button
               onClick={onBackToDeck}

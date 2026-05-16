@@ -121,8 +121,8 @@ export function MobileDeckDrawer({
           )}
         </div>
 
-        {/* Close Button */}
-        <div className="p-4 pb-8 border-t border-white/10 bg-black">
+        {/* Close Button - pb-24 to clear mobile bottom nav */}
+        <div className="p-4 pb-24 border-t border-white/10 bg-black">
           <button
             onClick={onClose}
             className="w-full py-4 bg-white/10 border border-white/10 rounded-xl text-white font-medium active:scale-95 transition-transform"

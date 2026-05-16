@@ -1544,7 +1544,7 @@ export function DraftSimulator({ cards, autoStart = false }: DraftSimulatorProps
               <h3 className="text-lg font-semibold text-white">Cards You Passed ({draftState.passedCards.size})</h3>
               <button onClick={() => setShowPassedCards(false)} className="text-white/40 hover:text-white text-xl">×</button>
             </div>
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="flex-1 overflow-y-auto p-4 pb-24">
               {Array.from(draftState.passedCards.values())
                 .sort((a, b) => {
                   const eloA = getEloData(a.card.name)?.elo || 0;
