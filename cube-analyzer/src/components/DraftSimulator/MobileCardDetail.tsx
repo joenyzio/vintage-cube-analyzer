@@ -262,7 +262,8 @@ interface TrendSparklineProps {
 }
 
 function TrendSparkline({ historyPoints, totalPicks }: TrendSparklineProps) {
-  if (!historyPoints || historyPoints.length === 0) return null;
+  // Only show when there's actual trend data (2+ points)
+  if (!historyPoints || historyPoints.length < 2) return null;
 
   const points = historyPoints;
   const currentElo = points[points.length - 1].adjustedElo;

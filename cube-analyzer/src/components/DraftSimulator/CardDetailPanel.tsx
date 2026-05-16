@@ -245,7 +245,8 @@ function TrajectoryChart({ cardId, cardEloHistory, totalPicks }: TrajectoryChart
   const history = cardEloHistory.get(cardId);
   const points = history?.history || [];
 
-  if (points.length === 0) return null;
+  // Only show when there's actual trend data (2+ points)
+  if (points.length < 2) return null;
 
   const currentElo = points[points.length - 1].adjustedElo;
   const startElo = points[0].adjustedElo;
