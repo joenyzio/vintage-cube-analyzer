@@ -164,3 +164,18 @@ export interface SimulationConfig {
   seed?: number;
   verbose?: boolean;
 }
+
+// ============================================
+// Deck Analysis Types (re-exported)
+// ============================================
+
+export type {
+  DeckQualityMetrics,
+  PoolAnalysis,
+  CardInclusion,
+  DraftVsDeckComparison,
+  AggregatedDeckAnalysis,
+  CardCutPattern,
+  CardInclusionPattern,
+  DeckOutlier,
+} from './deck-analysis';

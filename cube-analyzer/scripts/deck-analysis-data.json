@@ -1,0 +1,852 @@
+{
+  "generatedAt": "2026-05-16T22:03:43.835Z",
+  "totalDecks": 8000,
+  "summary": {
+    "avgDeckQuality": 60,
+    "avgPoolPower": 54965,
+    "avgPowerUtilization": 84,
+    "avgQualityDelta": 28,
+    "builtWellCount": 7983,
+    "builtPoorlyCount": 0
+  },
+  "archetypeBreakdown": {
+    "tempo": {
+      "count": 854,
+      "avgDeckQuality": 60,
+      "avgQualityDelta": 29,
+      "avgPowerUtilization": 84
+    },
+    "midrange": {
+      "count": 2109,
+      "avgDeckQuality": 59,
+      "avgQualityDelta": 29,
+      "avgPowerUtilization": 82
+    },
+    "aggro": {
+      "count": 820,
+      "avgDeckQuality": 59,
+      "avgQualityDelta": 29,
+      "avgPowerUtilization": 82
+    },
+    "artifacts": {
+      "count": 567,
+      "avgDeckQuality": 60,
+      "avgQualityDelta": 27,
+      "avgPowerUtilization": 83
+    },
+    "ramp": {
+      "count": 919,
+      "avgDeckQuality": 58,
+      "avgQualityDelta": 26,
+      "avgPowerUtilization": 86
+    },
+    "sneak": {
+      "count": 373,
+      "avgDeckQuality": 58,
+      "avgQualityDelta": 25,
+      "avgPowerUtilization": 85
+    },
+    "doomsday": {
+      "count": 362,
+      "avgDeckQuality": 61,
+      "avgQualityDelta": 29,
+      "avgPowerUtilization": 84
+    },
+    "oath": {
+      "count": 424,
+      "avgDeckQuality": 58,
+      "avgQualityDelta": 25,
+      "avgPowerUtilization": 87
+    },
+    "control": {
+      "count": 426,
+      "avgDeckQuality": 62,
+      "avgQualityDelta": 32,
+      "avgPowerUtilization": 86
+    },
+    "reanimator": {
+      "count": 921,
+      "avgDeckQuality": 60,
+      "avgQualityDelta": 27,
+      "avgPowerUtilization": 83
+    },
+    "storm": {
+      "count": 225,
+      "avgDeckQuality": 62,
+      "avgQualityDelta": 30,
+      "avgPowerUtilization": 86
+    }
+  },
+  "cardPatterns": {
+    "frequentCuts": [
+      {
+        "cardName": "Boseiju, Who Endures",
+        "avgElo": 1337,
+        "avgPickPosition": 28.1,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 0,
+        "timesSideboarded": 1000,
+        "cutRate": 100,
+        "primaryCutReason": "low power"
+      },
+      {
+        "cardName": "Golos, Tireless Pilgrim",
+        "avgElo": 1339,
+        "avgPickPosition": 28.9,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 0,
+        "timesSideboarded": 1000,
+        "cutRate": 100,
+        "primaryCutReason": "low power"
+      },
+      {
+        "cardName": "Urza's Saga",
+        "avgElo": 1675,
+        "avgPickPosition": 17.3,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 0,
+        "timesSideboarded": 1000,
+        "cutRate": 100,
+        "primaryCutReason": "off-color or curve issues"
+      },
+      {
+        "cardName": "Ignoble Hierarch",
+        "avgElo": 1491,
+        "avgPickPosition": 25.5,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 33,
+        "timesSideboarded": 967,
+        "cutRate": 97,
+        "primaryCutReason": "low power"
+      },
+      {
+        "cardName": "Imperial Recruiter",
+        "avgElo": 1330,
+        "avgPickPosition": 29.5,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 59,
+        "timesSideboarded": 941,
+        "cutRate": 94,
+        "primaryCutReason": "low power"
+      },
+      {
+        "cardName": "Damn",
+        "avgElo": 1251,
+        "avgPickPosition": 30.1,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 71,
+        "timesSideboarded": 929,
+        "cutRate": 93,
+        "primaryCutReason": "low power"
+      },
+      {
+        "cardName": "Arbor Elf",
+        "avgElo": 1399,
+        "avgPickPosition": 29.1,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 66,
+        "timesSideboarded": 934,
+        "cutRate": 93,
+        "primaryCutReason": "low power"
+      },
+      {
+        "cardName": "Loran of the Third Path",
+        "avgElo": 1282,
+        "avgPickPosition": 29.9,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 85,
+        "timesSideboarded": 915,
+        "cutRate": 92,
+        "primaryCutReason": "low power"
+      },
+      {
+        "cardName": "Vindicate",
+        "avgElo": 1250,
+        "avgPickPosition": 29.7,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 79,
+        "timesSideboarded": 921,
+        "cutRate": 92,
+        "primaryCutReason": "low power"
+      },
+      {
+        "cardName": "Recruiter of the Guard",
+        "avgElo": 1322,
+        "avgPickPosition": 30,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 82,
+        "timesSideboarded": 918,
+        "cutRate": 92,
+        "primaryCutReason": "low power"
+      },
+      {
+        "cardName": "Pyrokinesis",
+        "avgElo": 1389,
+        "avgPickPosition": 29,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 88,
+        "timesSideboarded": 912,
+        "cutRate": 91,
+        "primaryCutReason": "low power"
+      },
+      {
+        "cardName": "Elvish Mystic",
+        "avgElo": 1427,
+        "avgPickPosition": 28.6,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 103,
+        "timesSideboarded": 897,
+        "cutRate": 90,
+        "primaryCutReason": "low power"
+      },
+      {
+        "cardName": "Monastery Mentor",
+        "avgElo": 1361,
+        "avgPickPosition": 29.1,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 105,
+        "timesSideboarded": 895,
+        "cutRate": 90,
+        "primaryCutReason": "low power"
+      },
+      {
+        "cardName": "Embereth Shieldbreaker // Battle Display",
+        "avgElo": 1243,
+        "avgPickPosition": 29.7,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 98,
+        "timesSideboarded": 902,
+        "cutRate": 90,
+        "primaryCutReason": "low power"
+      },
+      {
+        "cardName": "Endurance",
+        "avgElo": 1298,
+        "avgPickPosition": 30,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 112,
+        "timesSideboarded": 888,
+        "cutRate": 89,
+        "primaryCutReason": "low power"
+      },
+      {
+        "cardName": "Cathar Commando",
+        "avgElo": 1268,
+        "avgPickPosition": 30,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 109,
+        "timesSideboarded": 891,
+        "cutRate": 89,
+        "primaryCutReason": "low power"
+      },
+      {
+        "cardName": "Lingering Souls",
+        "avgElo": 1313,
+        "avgPickPosition": 29.2,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 122,
+        "timesSideboarded": 878,
+        "cutRate": 88,
+        "primaryCutReason": "low power"
+      },
+      {
+        "cardName": "Atraxa, Grand Unifier",
+        "avgElo": 1591,
+        "avgPickPosition": 17.2,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 122,
+        "timesSideboarded": 878,
+        "cutRate": 88,
+        "primaryCutReason": "low power"
+      },
+      {
+        "cardName": "Containment Priest",
+        "avgElo": 1274,
+        "avgPickPosition": 29.2,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 128,
+        "timesSideboarded": 872,
+        "cutRate": 87,
+        "primaryCutReason": "low power"
+      },
+      {
+        "cardName": "Seasoned Pyromancer",
+        "avgElo": 1370,
+        "avgPickPosition": 29.2,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 128,
+        "timesSideboarded": 872,
+        "cutRate": 87,
+        "primaryCutReason": "low power"
+      }
+    ],
+    "frequentInclusions": [
+      {
+        "cardName": "Black Lotus",
+        "avgElo": 2325,
+        "avgPickPosition": 16.2,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 1000,
+        "inclusionRate": 100,
+        "primaryArchetypes": [
+          "midrange",
+          "ramp",
+          "aggro"
+        ]
+      },
+      {
+        "cardName": "Chrome Mox",
+        "avgElo": 1722,
+        "avgPickPosition": 17.3,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 1000,
+        "inclusionRate": 100,
+        "primaryArchetypes": [
+          "midrange",
+          "ramp",
+          "tempo"
+        ]
+      },
+      {
+        "cardName": "Currency Converter",
+        "avgElo": 1474,
+        "avgPickPosition": 20.3,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 1000,
+        "inclusionRate": 100,
+        "primaryArchetypes": [
+          "midrange",
+          "aggro",
+          "tempo"
+        ]
+      },
+      {
+        "cardName": "Xander's Lounge",
+        "avgElo": 1405,
+        "avgPickPosition": 23.4,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 1000,
+        "inclusionRate": 100,
+        "primaryArchetypes": [
+          "midrange",
+          "tempo",
+          "aggro"
+        ]
+      },
+      {
+        "cardName": "Ketria Triome",
+        "avgElo": 1426,
+        "avgPickPosition": 23.1,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 999,
+        "inclusionRate": 100,
+        "primaryArchetypes": [
+          "midrange",
+          "tempo",
+          "aggro"
+        ]
+      },
+      {
+        "cardName": "The One Ring",
+        "avgElo": 1959,
+        "avgPickPosition": 16.9,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 1000,
+        "inclusionRate": 100,
+        "primaryArchetypes": [
+          "midrange",
+          "aggro",
+          "ramp"
+        ]
+      },
+      {
+        "cardName": "Mox Opal",
+        "avgElo": 1616,
+        "avgPickPosition": 18,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 1000,
+        "inclusionRate": 100,
+        "primaryArchetypes": [
+          "midrange",
+          "ramp",
+          "aggro"
+        ]
+      },
+      {
+        "cardName": "Chromatic Star",
+        "avgElo": 1389,
+        "avgPickPosition": 21.3,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 1000,
+        "inclusionRate": 100,
+        "primaryArchetypes": [
+          "midrange",
+          "ramp",
+          "reanimator"
+        ]
+      },
+      {
+        "cardName": "Mishra's Bauble",
+        "avgElo": 1522,
+        "avgPickPosition": 19.4,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 1000,
+        "inclusionRate": 100,
+        "primaryArchetypes": [
+          "midrange",
+          "aggro",
+          "ramp"
+        ]
+      },
+      {
+        "cardName": "Urza's Bauble",
+        "avgElo": 1509,
+        "avgPickPosition": 20.4,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 1000,
+        "inclusionRate": 100,
+        "primaryArchetypes": [
+          "midrange",
+          "aggro",
+          "tempo"
+        ]
+      },
+      {
+        "cardName": "Starting Town",
+        "avgElo": 1543,
+        "avgPickPosition": 20.2,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 1000,
+        "inclusionRate": 100,
+        "primaryArchetypes": [
+          "midrange",
+          "ramp",
+          "reanimator"
+        ]
+      },
+      {
+        "cardName": "Library of Alexandria",
+        "avgElo": 1677,
+        "avgPickPosition": 18,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 1000,
+        "inclusionRate": 100,
+        "primaryArchetypes": [
+          "midrange",
+          "aggro",
+          "tempo"
+        ]
+      },
+      {
+        "cardName": "Sol Ring",
+        "avgElo": 2193,
+        "avgPickPosition": 16.1,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 1000,
+        "inclusionRate": 100,
+        "primaryArchetypes": [
+          "midrange",
+          "tempo",
+          "aggro"
+        ]
+      },
+      {
+        "cardName": "Mana Confluence",
+        "avgElo": 1517,
+        "avgPickPosition": 21.1,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 1000,
+        "inclusionRate": 100,
+        "primaryArchetypes": [
+          "midrange",
+          "ramp",
+          "reanimator"
+        ]
+      },
+      {
+        "cardName": "Mishra's Workshop",
+        "avgElo": 1511,
+        "avgPickPosition": 18.3,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 1000,
+        "inclusionRate": 100,
+        "primaryArchetypes": [
+          "artifacts",
+          "midrange",
+          "ramp"
+        ]
+      },
+      {
+        "cardName": "Myr Battlesphere",
+        "avgElo": 1377,
+        "avgPickPosition": 18.5,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 1000,
+        "inclusionRate": 100,
+        "primaryArchetypes": [
+          "artifacts",
+          "ramp",
+          "reanimator"
+        ]
+      },
+      {
+        "cardName": "Mana Vault",
+        "avgElo": 1885,
+        "avgPickPosition": 15.7,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 1000,
+        "inclusionRate": 100,
+        "primaryArchetypes": [
+          "midrange",
+          "aggro",
+          "tempo"
+        ]
+      },
+      {
+        "cardName": "Grim Monolith",
+        "avgElo": 1707,
+        "avgPickPosition": 17.7,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 1000,
+        "inclusionRate": 100,
+        "primaryArchetypes": [
+          "midrange",
+          "ramp",
+          "aggro"
+        ]
+      },
+      {
+        "cardName": "Sensei's Divining Top",
+        "avgElo": 1526,
+        "avgPickPosition": 19.4,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 1000,
+        "inclusionRate": 100,
+        "primaryArchetypes": [
+          "midrange",
+          "ramp",
+          "aggro"
+        ]
+      },
+      {
+        "cardName": "Basalt Monolith",
+        "avgElo": 1506,
+        "avgPickPosition": 22.6,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 1000,
+        "inclusionRate": 100,
+        "primaryArchetypes": [
+          "midrange",
+          "tempo",
+          "ramp"
+        ]
+      }
+    ],
+    "surprisingInclusions": [
+      {
+        "cardName": "Lush Portico",
+        "avgElo": 1254,
+        "avgPickPosition": 29.9,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 904,
+        "inclusionRate": 90,
+        "primaryArchetypes": [
+          "midrange",
+          "reanimator",
+          "ramp"
+        ]
+      },
+      {
+        "cardName": "Indatha Triome",
+        "avgElo": 1257,
+        "avgPickPosition": 27.2,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 988,
+        "inclusionRate": 99,
+        "primaryArchetypes": [
+          "midrange",
+          "tempo",
+          "ramp"
+        ]
+      },
+      {
+        "cardName": "Wrath of God",
+        "avgElo": 1268,
+        "avgPickPosition": 25.5,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 771,
+        "inclusionRate": 77,
+        "primaryArchetypes": [
+          "control",
+          "midrange",
+          "tempo"
+        ]
+      },
+      {
+        "cardName": "Oath of Druids",
+        "avgElo": 1276,
+        "avgPickPosition": 23.9,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 760,
+        "inclusionRate": 76,
+        "primaryArchetypes": [
+          "oath",
+          "reanimator",
+          "sneak"
+        ]
+      },
+      {
+        "cardName": "Ziatora's Proving Ground",
+        "avgElo": 1291,
+        "avgPickPosition": 25.8,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 987,
+        "inclusionRate": 99,
+        "primaryArchetypes": [
+          "midrange",
+          "tempo",
+          "ramp"
+        ]
+      },
+      {
+        "cardName": "Shadowy Backstreet",
+        "avgElo": 1302,
+        "avgPickPosition": 29.5,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 914,
+        "inclusionRate": 91,
+        "primaryArchetypes": [
+          "midrange",
+          "reanimator",
+          "tempo"
+        ]
+      },
+      {
+        "cardName": "Commercial District",
+        "avgElo": 1302,
+        "avgPickPosition": 30.1,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 844,
+        "inclusionRate": 84,
+        "primaryArchetypes": [
+          "midrange",
+          "ramp",
+          "reanimator"
+        ]
+      },
+      {
+        "cardName": "Cabal Ritual",
+        "avgElo": 1303,
+        "avgPickPosition": 21,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 749,
+        "inclusionRate": 75,
+        "primaryArchetypes": [
+          "midrange",
+          "doomsday",
+          "tempo"
+        ]
+      },
+      {
+        "cardName": "Savai Triome",
+        "avgElo": 1309,
+        "avgPickPosition": 25.4,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 996,
+        "inclusionRate": 100,
+        "primaryArchetypes": [
+          "midrange",
+          "tempo",
+          "ramp"
+        ]
+      },
+      {
+        "cardName": "Expedition Map",
+        "avgElo": 1312,
+        "avgPickPosition": 26.9,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 837,
+        "inclusionRate": 84,
+        "primaryArchetypes": [
+          "midrange",
+          "ramp",
+          "reanimator"
+        ]
+      },
+      {
+        "cardName": "Doomsday",
+        "avgElo": 1316,
+        "avgPickPosition": 23.7,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 854,
+        "inclusionRate": 85,
+        "primaryArchetypes": [
+          "doomsday",
+          "midrange",
+          "ramp"
+        ]
+      },
+      {
+        "cardName": "Jetmir's Garden",
+        "avgElo": 1317,
+        "avgPickPosition": 25.8,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 995,
+        "inclusionRate": 100,
+        "primaryArchetypes": [
+          "midrange",
+          "tempo",
+          "ramp"
+        ]
+      },
+      {
+        "cardName": "Overgrown Tomb",
+        "avgElo": 1320,
+        "avgPickPosition": 28.2,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 878,
+        "inclusionRate": 88,
+        "primaryArchetypes": [
+          "midrange",
+          "reanimator",
+          "ramp"
+        ]
+      },
+      {
+        "cardName": "Temple Garden",
+        "avgElo": 1321,
+        "avgPickPosition": 29,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 907,
+        "inclusionRate": 91,
+        "primaryArchetypes": [
+          "midrange",
+          "reanimator",
+          "ramp"
+        ]
+      },
+      {
+        "cardName": "Questing Beast",
+        "avgElo": 1324,
+        "avgPickPosition": 24.2,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 755,
+        "inclusionRate": 76,
+        "primaryArchetypes": [
+          "midrange",
+          "reanimator",
+          "aggro"
+        ]
+      }
+    ],
+    "surprisingCuts": [
+      {
+        "cardName": "Mox Ruby",
+        "avgElo": 2191,
+        "avgPickPosition": 15.8,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 564,
+        "timesSideboarded": 436,
+        "cutRate": 44,
+        "primaryCutReason": "likely off-color"
+      },
+      {
+        "cardName": "Mox Emerald",
+        "avgElo": 2134,
+        "avgPickPosition": 16.4,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 597,
+        "timesSideboarded": 403,
+        "cutRate": 40,
+        "primaryCutReason": "likely off-color"
+      },
+      {
+        "cardName": "Forth Eorlingas!",
+        "avgElo": 1750,
+        "avgPickPosition": 17.8,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 382,
+        "timesSideboarded": 618,
+        "cutRate": 62,
+        "primaryCutReason": "likely off-color"
+      },
+      {
+        "cardName": "Minsc & Boo, Timeless Heroes",
+        "avgElo": 1749,
+        "avgPickPosition": 17.7,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 312,
+        "timesSideboarded": 688,
+        "cutRate": 69,
+        "primaryCutReason": "likely off-color"
+      },
+      {
+        "cardName": "Oko, Thief of Crowns",
+        "avgElo": 1723,
+        "avgPickPosition": 16.9,
+        "timesPickedIn": 1000,
+        "timesMainDecked": 474,
+        "timesSideboarded": 526,
+        "cutRate": 53,
+        "primaryCutReason": "likely off-color"
+      }
+    ]
+  },
+  "outliers": [
+    {
+      "drafterId": 5,
+      "seed": 1778968981501,
+      "type": "low_draft_high_deck",
+      "description": "Drafted average cards but built an excellent deck (delta: +42)",
+      "details": {
+        "draftQuality": 1546,
+        "deckQuality": 66,
+        "delta": 42
+      }
+    },
+    {
+      "drafterId": 7,
+      "seed": 1778968981629,
+      "type": "low_draft_high_deck",
+      "description": "Drafted average cards but built an excellent deck (delta: +42)",
+      "details": {
+        "draftQuality": 1564,
+        "deckQuality": 69,
+        "delta": 42
+      }
+    },
+    {
+      "drafterId": 6,
+      "seed": 1778968981704,
+      "type": "low_draft_high_deck",
+      "description": "Drafted average cards but built an excellent deck (delta: +42)",
+      "details": {
+        "draftQuality": 1559,
+        "deckQuality": 69,
+        "delta": 42
+      }
+    },
+    {
+      "drafterId": 4,
+      "seed": 1778968980948,
+      "type": "low_draft_high_deck",
+      "description": "Drafted average cards but built an excellent deck (delta: +43)",
+      "details": {
+        "draftQuality": 1532,
+        "deckQuality": 65,
+        "delta": 43
+      }
+    },
+    {
+      "drafterId": 3,
+      "seed": 1778968981134,
+      "type": "low_draft_high_deck",
+      "description": "Drafted average cards but built an excellent deck (delta: +43)",
+      "details": {
+        "draftQuality": 1552,
+        "deckQuality": 68,
+        "delta": 43
+      }
+    }
+  ]
+}
