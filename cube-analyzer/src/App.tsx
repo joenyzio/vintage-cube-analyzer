@@ -12,10 +12,17 @@ import { MatchupMatrix } from './components/MatchupMatrix';
 import { SampleDecks } from './components/SampleDecks';
 import { GamesPage } from './components/GamesPage';
 import { ArchetypeOddsPage } from './components/ArchetypeOddsPage';
+// Restored pages
+import { BuildAround } from './components/BuildAround';
+import { GraphExplorer } from './components/GraphExplorer';
+import { PrepCalendar } from './components/PrepCalendar';
+import { PowerAnalysis } from './components/PowerAnalysis';
+import { SimulationReports } from './components/SimulationReports';
 import {
   BarChart3, Layers, Trophy, BookOpen, Search, Sparkles,
   Gamepad2, Link2, Swords, ExternalLink, FileStack,
-  ChevronLeft, Dices, Percent, Home
+  ChevronLeft, Dices, Percent, Home, Target, Network,
+  Calendar, Wrench, FlaskConical
 } from 'lucide-react';
 
 // 4 Primary Sections (manabase pattern)
@@ -23,8 +30,8 @@ type SectionId = 'home' | 'practice' | 'learn' | 'reference';
 
 // Sub-tabs within each section
 type PracticeTab = 'draft' | 'games';
-type LearnTab = 'archetypes' | 'decks' | 'guide' | 'synergies';
-type ReferenceTab = 'cards' | 'power' | 'overview' | 'odds' | 'matchups';
+type LearnTab = 'archetypes' | 'decks' | 'guide' | 'synergies' | 'buildaround' | 'graph' | 'prep';
+type ReferenceTab = 'cards' | 'power' | 'overview' | 'odds' | 'matchups' | 'mechanics' | 'simulation';
 
 interface NavItem {
   id: SectionId;
@@ -52,6 +59,9 @@ const LEARN_TABS = [
   { id: 'decks' as LearnTab, label: 'Sample Decks', icon: FileStack },
   { id: 'guide' as LearnTab, label: 'Draft Guide', icon: BookOpen },
   { id: 'synergies' as LearnTab, label: 'Synergies', icon: Link2 },
+  { id: 'buildaround' as LearnTab, label: 'Build-Arounds', icon: Target },
+  { id: 'graph' as LearnTab, label: 'Synergy Graph', icon: Network },
+  { id: 'prep' as LearnTab, label: 'Draft Prep', icon: Calendar },
 ];
 
 const REFERENCE_TABS = [
@@ -60,6 +70,8 @@ const REFERENCE_TABS = [
   { id: 'overview' as ReferenceTab, label: 'Cube Overview', icon: BarChart3 },
   { id: 'odds' as ReferenceTab, label: 'Draft Odds', icon: Percent },
   { id: 'matchups' as ReferenceTab, label: 'Matchups', icon: Swords },
+  { id: 'mechanics' as ReferenceTab, label: 'Mechanics', icon: Wrench },
+  { id: 'simulation' as ReferenceTab, label: 'Simulation', icon: FlaskConical },
 ];
 
 function LoadingScreen({ progress }: { progress: number }) {
@@ -186,11 +198,16 @@ function App() {
       'decks': { section: 'learn', tab: 'decks' },
       'guide': { section: 'learn', tab: 'guide' },
       'synergies': { section: 'learn', tab: 'synergies' },
+      'buildaround': { section: 'learn', tab: 'buildaround' },
+      'graph': { section: 'learn', tab: 'graph' },
+      'prep': { section: 'learn', tab: 'prep' },
       'cards': { section: 'reference', tab: 'cards' },
       'power': { section: 'reference', tab: 'power' },
       'overview': { section: 'reference', tab: 'overview' },
       'odds': { section: 'reference', tab: 'odds' },
       'matchups': { section: 'reference', tab: 'matchups' },
+      'mechanics': { section: 'reference', tab: 'mechanics' },
+      'simulation': { section: 'reference', tab: 'simulation' },
     };
 
     const nav = mapping[target];
@@ -259,6 +276,9 @@ function App() {
             {learnTab === 'decks' && <SampleDecks cards={cards} />}
             {learnTab === 'guide' && <DraftGuide strategies={draftStrategies} />}
             {learnTab === 'synergies' && <SynergyExplorer cards={cards} />}
+            {learnTab === 'buildaround' && <BuildAround cards={cards} />}
+            {learnTab === 'graph' && <GraphExplorer cards={cards} />}
+            {learnTab === 'prep' && <PrepCalendar />}
           </div>
         );
 
@@ -281,6 +301,8 @@ function App() {
             )}
             {referenceTab === 'odds' && <ArchetypeOddsPage cards={cards} />}
             {referenceTab === 'matchups' && <MatchupMatrix archetypes={archetypes} cards={cards} />}
+            {referenceTab === 'mechanics' && <PowerAnalysis cards={cards} />}
+            {referenceTab === 'simulation' && <SimulationReports cards={cards} />}
           </div>
         );
 
