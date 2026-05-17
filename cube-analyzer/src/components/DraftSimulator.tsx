@@ -1247,7 +1247,7 @@ export function DraftSimulator({ cards, autoStart = false }: DraftSimulatorProps
   const progress = ((draftState.packNumber - 1) * 15 + draftState.pickNumber - 1) / 45;
 
   return (
-    <div className="fixed top-0 bottom-0 right-0 left-0 lg:left-64 z-[60] flex bg-black pt-[env(safe-area-inset-top)]">
+    <div className="fixed top-0 bottom-0 right-0 left-0 lg:left-56 z-[60] flex bg-black pt-[env(safe-area-inset-top)]">
       {/* Achievement Popup */}
       {newAchievement && (
         <div className="fixed top-4 right-4 z-50 animate-pulse">
