@@ -14,3 +14,4 @@ export { QuizMode } from './QuizMode';
 export { DraftResults } from './DraftResults';
 export { DraftCoach } from './DraftCoach';
 export { DraftComplete } from './DraftComplete';
+export { ArchetypeModeSelector } from './ArchetypeModeSelector';

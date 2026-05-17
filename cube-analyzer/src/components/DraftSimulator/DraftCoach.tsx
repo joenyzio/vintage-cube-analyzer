@@ -9,6 +9,8 @@
 import { Lightbulb } from 'lucide-react';
 import type { CubeCard } from '../../types/card';
 import type { DraftState, DraftPhase, CurveAnalysis } from '../../types/draftSimulator';
+import type { DraftMode } from '../../services/cardRating/archetypeMode';
+import { ArchetypeModeSelector } from './ArchetypeModeSelector';
 
 // Local type for win rate data (matches what main component uses)
 interface DeckWinRateData {
@@ -101,6 +103,11 @@ interface DraftCoachProps {
   progress: number;
   onToggleCoachExplanation: () => void;
   onHoverCard: (card: CubeCard) => void;
+  // Archetype Mode props
+  draftMode: DraftMode;
+  selectedArchetype: string | null;
+  onModeChange: (mode: DraftMode) => void;
+  onArchetypeSelect: (archetypeId: string | null) => void;
 }
 
 export function DraftCoach({
@@ -123,6 +130,10 @@ export function DraftCoach({
   progress,
   onToggleCoachExplanation,
   onHoverCard,
+  draftMode,
+  selectedArchetype,
+  onModeChange,
+  onArchetypeSelect,
 }: DraftCoachProps) {
   // Get current pack (player 0's pack from tablePacks)
   const currentPack = draftState.tablePacks?.[0] || [];
@@ -161,6 +172,17 @@ export function DraftCoach({
   return (
     <div className="w-[320px] flex-shrink-0 hidden lg:flex flex-col bg-white/[0.02] border-r border-white/[0.08]">
       <div className="flex-1 overflow-y-auto p-5 space-y-4">
+        {/* Archetype Mode Selector - Primary control */}
+        {coachMode && (
+          <ArchetypeModeSelector
+            picks={draftState.picks}
+            draftMode={draftMode}
+            selectedArchetype={selectedArchetype}
+            onModeChange={onModeChange}
+            onArchetypeSelect={onArchetypeSelect}
+          />
+        )}
+
         {/* Pack Analysis - Shows throughout draft */}
         {coachMode && packAnalysis && currentPack.length > 0 && (
           <div className="bg-blue-500/5 border border-blue-500/20 rounded-lg p-3 space-y-2">

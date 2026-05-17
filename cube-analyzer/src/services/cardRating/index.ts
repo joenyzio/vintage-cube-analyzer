@@ -230,3 +230,21 @@ export type {
   ValidationScenario,
   CardRatingService,
 } from './types';
+
+// ============================================
+// Archetype Mode (Floor/Ceiling, Drift Detection)
+// ============================================
+
+export {
+  getFloorCeiling,
+  getArchetypeWeightedRating,
+  getAllArchetypeRatings,
+  detectArchetypeDrift,
+  getDominantDrift,
+  getTierGrade,
+  getTierColor,
+  type DraftMode,
+  type FloorCeiling,
+  type ArchetypeRating,
+  type DriftSignal,
+} from './archetypeMode';

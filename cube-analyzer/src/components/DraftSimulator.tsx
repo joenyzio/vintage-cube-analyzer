@@ -6,7 +6,7 @@
  */
 
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { ArrowLeft, Undo2, Lightbulb, Eye, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
+import { ArrowLeft, Undo2, Lightbulb, Eye, ChevronLeft, ChevronRight, Sparkles, Target, Compass, Lock } from 'lucide-react';
 import type { CubeCard } from '../types/card';
 import type {
   SimulatorMode,
@@ -57,7 +57,9 @@ import {
   rateAllCards,
   createInitialContext,
   getConditionalValue,
+  type DraftMode,
 } from '../services/cardRating';
+import { getArchetypeWeightedRating } from '../services/cardRating/archetypeMode';
 
 // Import extracted components
 import {
@@ -398,6 +400,11 @@ export function DraftSimulator({ cards, autoStart = false }: DraftSimulatorProps
   const [quizDraftMode, setQuizDraftMode] = useState(false);
   const [pendingPick, setPendingPick] = useState<CubeCard | null>(null);
   const [showPickReveal, setShowPickReveal] = useState(false);
+
+  // Archetype Mode state
+  const [draftMode, setDraftMode] = useState<DraftMode>('open');
+  const [selectedArchetype, setSelectedArchetype] = useState<string | null>(null);
+  const [showMobileArchetypeModal, setShowMobileArchetypeModal] = useState(false);
   const [lastPickResult, setLastPickResult] = useState<{
     yourPick: CubeCard;
     optimalPick: CubeCard;
@@ -888,13 +895,28 @@ export function DraftSimulator({ cards, autoStart = false }: DraftSimulatorProps
     };
   }, [draftState]);
 
-  // Recommended pick - uses synergy-adjusted ELO for consistency with displayed values
+  // Recommended pick - NOW ARCHETYPE-AWARE
   const getRecommendedPick = useMemo(() => {
     if (!draftState || draftState.isComplete) return null;
     const currentPack = draftState.tablePacks[0];
     if (!currentPack.length) return null;
 
-    // Get synergy-adjusted ELO for each card (same system shown on cards)
+    // When committed to an archetype, sort by archetype-adjusted ELO
+    if (draftMode !== 'open' && selectedArchetype) {
+      const cardsWithArchetypeElo = currentPack.map(card => {
+        const archRating = getArchetypeWeightedRating(card.name, selectedArchetype);
+        return {
+          card,
+          adjustedElo: archRating?.adjustedElo || (getEloData(card.name)?.elo || 1500),
+          tier: archRating?.tier,
+        };
+      });
+      // Sort by adjusted ELO (highest first)
+      cardsWithArchetypeElo.sort((a, b) => b.adjustedElo - a.adjustedElo);
+      return cardsWithArchetypeElo[0]?.card || null;
+    }
+
+    // Default: Get synergy-adjusted ELO for each card
     const cardsWithAdjustedElo = currentPack.map(card => {
       const synergy = getSynergyAdjustedElo(card, draftState.picks, currentPack);
       return { card, adjustedElo: synergy.adjustedElo };
@@ -904,7 +926,7 @@ export function DraftSimulator({ cards, autoStart = false }: DraftSimulatorProps
     cardsWithAdjustedElo.sort((a, b) => b.adjustedElo - a.adjustedElo);
 
     return cardsWithAdjustedElo[0]?.card || null;
-  }, [draftState]);
+  }, [draftState, draftMode, selectedArchetype]);
 
   // Coach explanation - uses synergy-adjusted ELO for consistency
   const coachExplanation = useMemo(() => {
@@ -972,21 +994,73 @@ export function DraftSimulator({ cards, autoStart = false }: DraftSimulatorProps
     };
   }, [draftState, archetypeCommitments, deckStats]);
 
-  // Helper functions for grading
+  // Helper functions for grading - NOW ARCHETYPE-AWARE
   const getGrade = useCallback((card: CubeCard): { grade: ContextualGrade; reason: string } => {
     if (!draftState) return { grade: 'C', reason: '' };
+
+    // When committed to an archetype, use archetype-based grading
+    if (draftMode !== 'open' && selectedArchetype) {
+      const archRating = getArchetypeWeightedRating(card.name, selectedArchetype);
+      if (archRating) {
+        // Convert tier to grade
+        const tierToGrade: Record<string, ContextualGrade> = {
+          'S': 'A+', 'A': 'A', 'B': 'B+', 'C': 'C'
+        };
+        const grade = archRating.tier ? tierToGrade[archRating.tier] || 'C' :
+                      archRating.boost > 100 ? 'A' :
+                      archRating.boost > 50 ? 'B+' :
+                      archRating.boost > 0 ? 'B' :
+                      archRating.boost < -50 ? 'C' : 'C+';
+        const reason = archRating.tier
+          ? `${archRating.tier}-tier in ${archRating.archetypeName}`
+          : archRating.boost > 0 ? `+${archRating.boost} in ${archRating.archetypeName}` : 'Off-plan';
+        return { grade, reason };
+      }
+    }
+
+    // Default: general grading
     return getContextualGrade(card, draftState.picks, draftState.tablePacks[0]);
-  }, [draftState]);
+  }, [draftState, draftMode, selectedArchetype]);
 
   const getSynergyData = useCallback((card: CubeCard) => {
     if (!draftState) return { adjustedElo: 1500, adjustment: 0, reasons: [] };
+
+    // When committed to an archetype, use archetype-weighted ELO
+    if (draftMode !== 'open' && selectedArchetype) {
+      const archRating = getArchetypeWeightedRating(card.name, selectedArchetype);
+      if (archRating) {
+        const baseElo = getEloData(card.name)?.elo || 1500;
+        return {
+          adjustedElo: archRating.adjustedElo,
+          adjustment: archRating.boost,
+          reasons: archRating.tier
+            ? [`${archRating.tier}-tier ${archRating.archetypeName}`]
+            : archRating.boost !== 0
+            ? [`${archRating.boost > 0 ? '+' : ''}${archRating.boost} ${archRating.archetypeName}`]
+            : [],
+          baseElo,
+        };
+      }
+    }
+
+    // Default: general synergy
     return getSynergyAdjustedElo(card, draftState.picks, draftState.tablePacks[0]);
-  }, [draftState]);
+  }, [draftState, draftMode, selectedArchetype]);
 
   const getSynergyAdjustment = useCallback((card: CubeCard): number => {
     if (!draftState) return 0;
+
+    // When committed to an archetype, show archetype boost
+    if (draftMode !== 'open' && selectedArchetype) {
+      const archRating = getArchetypeWeightedRating(card.name, selectedArchetype);
+      if (archRating) {
+        return archRating.boost;
+      }
+    }
+
+    // Default: general synergy
     return getSynergyAdjustedElo(card, draftState.picks, draftState.tablePacks[0]).adjustment;
-  }, [draftState]);
+  }, [draftState, draftMode, selectedArchetype]);
 
   // ============================================================================
   // EFFECTS
@@ -1285,6 +1359,10 @@ export function DraftSimulator({ cards, autoStart = false }: DraftSimulatorProps
         progress={progress}
         onToggleCoachExplanation={() => setShowCoachExplanation(!showCoachExplanation)}
         onHoverCard={setHoveredCard}
+        draftMode={draftMode}
+        selectedArchetype={selectedArchetype}
+        onModeChange={setDraftMode}
+        onArchetypeSelect={setSelectedArchetype}
       />
 
       {/* Main Content */}
@@ -1462,12 +1540,28 @@ export function DraftSimulator({ cards, autoStart = false }: DraftSimulatorProps
               </div>
             </button>
 
-            {/* Archetype hint (if committed) */}
-            {archetypeCommitments.length > 0 && archetypeCommitments[0].probability >= 30 && (
-              <div className="text-xs text-white/50 text-center flex-1 px-2 truncate">
-                {archetypeCommitments[0].archetype} {archetypeCommitments[0].probability}%
-              </div>
-            )}
+            {/* Archetype Mode Button - Mobile */}
+            <button
+              onClick={() => setShowMobileArchetypeModal(true)}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                draftMode === 'open'
+                  ? 'bg-white/5 text-white/50'
+                  : draftMode === 'leaning'
+                  ? 'bg-amber-500/20 text-amber-400'
+                  : 'bg-emerald-500/20 text-emerald-400'
+              }`}
+            >
+              {draftMode === 'open' ? (
+                <Compass className="w-3 h-3" />
+              ) : draftMode === 'leaning' ? (
+                <Target className="w-3 h-3" />
+              ) : (
+                <Lock className="w-3 h-3" />
+              )}
+              <span className="truncate max-w-[80px]">
+                {draftMode === 'open' ? 'Open' : selectedArchetype || 'Select'}
+              </span>
+            </button>
 
             {/* Passed cards + direction */}
             <div className="flex items-center gap-2">
@@ -1510,6 +1604,8 @@ export function DraftSimulator({ cards, autoStart = false }: DraftSimulatorProps
           cardEloHistory={draftState.cardEloHistory}
           getGrade={getGrade}
           getSynergyData={getSynergyData}
+          draftMode={draftMode}
+          selectedArchetype={selectedArchetype}
         />
       )}
 
@@ -1538,6 +1634,94 @@ export function DraftSimulator({ cards, autoStart = false }: DraftSimulatorProps
             setShowMobileDeck(false);
           }}
         />
+      )}
+
+      {/* Mobile Archetype Mode Drawer */}
+      {showMobileArchetypeModal && (
+        <div className="fixed inset-0 z-[70] lg:hidden">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowMobileArchetypeModal(false)} />
+          <div className="absolute bottom-0 left-0 right-0 bg-[#0a0a0a] border-t border-white/10 rounded-t-2xl max-h-[70vh] flex flex-col safe-area-bottom">
+            <div className="flex items-center justify-between p-4 border-b border-white/10">
+              <h3 className="text-lg font-semibold text-white">Draft Mode</h3>
+              <button onClick={() => setShowMobileArchetypeModal(false)} className="text-white/40 hover:text-white text-xl">×</button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {/* Mode Selection */}
+              <div className="space-y-2">
+                <div className="text-xs text-white/40 uppercase tracking-wider">Mode</div>
+                <div className="flex gap-2">
+                  {(['open', 'leaning', 'committed'] as DraftMode[]).map((mode) => (
+                    <button
+                      key={mode}
+                      onClick={() => {
+                        setDraftMode(mode);
+                        if (mode === 'open') setSelectedArchetype(null);
+                      }}
+                      disabled={mode !== 'open' && !selectedArchetype}
+                      className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium capitalize transition-all ${
+                        draftMode === mode
+                          ? mode === 'open' ? 'bg-white/10 text-white ring-1 ring-white/20'
+                          : mode === 'leaning' ? 'bg-amber-500/20 text-amber-400 ring-1 ring-amber-500/30'
+                          : 'bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/30'
+                          : 'bg-white/5 text-white/40'
+                      } ${mode !== 'open' && !selectedArchetype ? 'opacity-50' : ''}`}
+                    >
+                      {mode}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Archetype Selection */}
+              <div className="space-y-2">
+                <div className="text-xs text-white/40 uppercase tracking-wider">Archetype</div>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { id: 'storm', name: 'Storm' },
+                    { id: 'reanimator', name: 'Reanimator' },
+                    { id: 'artifacts', name: 'Artifacts' },
+                    { id: 'sneak', name: 'Sneak & Show' },
+                    { id: 'control', name: 'Control' },
+                    { id: 'aggro', name: 'Aggro' },
+                    { id: 'midrange', name: 'Midrange' },
+                    { id: 'ramp', name: 'Ramp' },
+                    { id: 'tempo', name: 'Tempo' },
+                    { id: 'oath', name: 'Oath' },
+                    { id: 'doomsday', name: 'Doomsday' },
+                  ].map((arch) => (
+                    <button
+                      key={arch.id}
+                      onClick={() => {
+                        if (selectedArchetype === arch.id) {
+                          setSelectedArchetype(null);
+                          setDraftMode('open');
+                        } else {
+                          setSelectedArchetype(arch.id);
+                          if (draftMode === 'open') setDraftMode('leaning');
+                        }
+                      }}
+                      className={`py-2.5 px-3 rounded-lg text-sm font-medium transition-all ${
+                        selectedArchetype === arch.id
+                          ? 'bg-amber-500/20 text-amber-400 ring-1 ring-amber-500/30'
+                          : 'bg-white/5 text-white/60 hover:bg-white/10'
+                      }`}
+                    >
+                      {arch.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Apply Button */}
+              <button
+                onClick={() => setShowMobileArchetypeModal(false)}
+                className="w-full py-3 bg-white/10 rounded-lg text-white font-medium"
+              >
+                Apply
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Passed Cards Drawer */}

@@ -18,11 +18,14 @@ import { GraphExplorer } from './components/GraphExplorer';
 import { PrepCalendar } from './components/PrepCalendar';
 import { PowerAnalysis } from './components/PowerAnalysis';
 import { SimulationReports } from './components/SimulationReports';
+import { LandingPage } from './components/LandingPage';
+import { SimulationAnalysis } from './components/SimulationAnalysis';
+import { StatsOverview } from './components/StatsOverview';
 import {
   BarChart3, Layers, Trophy, BookOpen, Search, Sparkles,
   Gamepad2, Link2, Swords, ExternalLink, FileStack,
   ChevronLeft, Dices, Percent, Home, Target, Network,
-  Calendar, Wrench, FlaskConical
+  Calendar, Wrench, FlaskConical, Info, LineChart, PieChart
 } from 'lucide-react';
 
 // 4 Primary Sections (manabase pattern)
@@ -31,7 +34,7 @@ type SectionId = 'home' | 'practice' | 'learn' | 'reference';
 // Sub-tabs within each section
 type PracticeTab = 'draft' | 'games';
 type LearnTab = 'archetypes' | 'decks' | 'guide' | 'synergies' | 'buildaround' | 'graph' | 'prep';
-type ReferenceTab = 'cards' | 'power' | 'overview' | 'odds' | 'matchups' | 'mechanics' | 'simulation';
+type ReferenceTab = 'cards' | 'power' | 'overview' | 'odds' | 'matchups' | 'mechanics' | 'simulation' | 'analysis' | 'stats' | 'about';
 
 interface NavItem {
   id: SectionId;
@@ -68,10 +71,13 @@ const REFERENCE_TABS = [
   { id: 'cards' as ReferenceTab, label: 'Cards', icon: Search },
   { id: 'power' as ReferenceTab, label: 'Power Rankings', icon: Trophy },
   { id: 'overview' as ReferenceTab, label: 'Cube Overview', icon: BarChart3 },
+  { id: 'stats' as ReferenceTab, label: 'Stats', icon: PieChart },
   { id: 'odds' as ReferenceTab, label: 'Draft Odds', icon: Percent },
   { id: 'matchups' as ReferenceTab, label: 'Matchups', icon: Swords },
   { id: 'mechanics' as ReferenceTab, label: 'Mechanics', icon: Wrench },
   { id: 'simulation' as ReferenceTab, label: 'Simulation', icon: FlaskConical },
+  { id: 'analysis' as ReferenceTab, label: 'Analysis', icon: LineChart },
+  { id: 'about' as ReferenceTab, label: 'About', icon: Info },
 ];
 
 function LoadingScreen({ progress }: { progress: number }) {
@@ -208,6 +214,9 @@ function App() {
       'matchups': { section: 'reference', tab: 'matchups' },
       'mechanics': { section: 'reference', tab: 'mechanics' },
       'simulation': { section: 'reference', tab: 'simulation' },
+      'analysis': { section: 'reference', tab: 'analysis' },
+      'stats': { section: 'reference', tab: 'stats' },
+      'about': { section: 'reference', tab: 'about' },
     };
 
     const nav = mapping[target];
@@ -303,6 +312,9 @@ function App() {
             {referenceTab === 'matchups' && <MatchupMatrix archetypes={archetypes} cards={cards} />}
             {referenceTab === 'mechanics' && <PowerAnalysis cards={cards} />}
             {referenceTab === 'simulation' && <SimulationReports cards={cards} />}
+            {referenceTab === 'analysis' && <SimulationAnalysis cards={cards} />}
+            {referenceTab === 'stats' && <StatsOverview cards={cards} colorDistribution={colorDistribution} typeDistribution={typeDistribution} />}
+            {referenceTab === 'about' && <LandingPage onEnterApp={() => setActiveSection('home')} />}
           </div>
         );
 

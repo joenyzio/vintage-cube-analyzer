@@ -10,6 +10,7 @@ import type { CardEloHistory, ContextualGrade } from '../../types/draftSimulator
 import { getCardImage } from '../../services/scryfall';
 import { getEloData, getWheelLikelihood } from '../../services/eloHelpers';
 import { getConditionalValue } from '../../services/cardRating/archetypeAffinity';
+import { getFloorCeiling, getArchetypeWeightedRating, type DraftMode } from '../../services/cardRating/archetypeMode';
 import {
   getCardSimStats,
   getWheelRate,
@@ -25,6 +26,8 @@ interface CardDetailPanelProps {
   cardEloHistory: Map<string, CardEloHistory>;
   getGrade: (card: CubeCard) => { grade: ContextualGrade; reason: string };
   getSynergyData: (card: CubeCard) => { adjustedElo: number; adjustment: number; reasons: string[] };
+  draftMode?: DraftMode;
+  selectedArchetype?: string | null;
 }
 
 export function CardDetailPanel({
@@ -33,6 +36,8 @@ export function CardDetailPanel({
   cardEloHistory,
   getGrade,
   getSynergyData,
+  draftMode = 'open',
+  selectedArchetype = null,
 }: CardDetailPanelProps) {
   const eloData = getEloData(card.name);
   const wheelLikelihood = getWheelLikelihood(card.name);
@@ -40,6 +45,14 @@ export function CardDetailPanel({
   const hasAdjustment = synergyData && Math.abs(synergyData.adjustment) >= 10;
   const cardGrade = getGrade(card);
   const cv = getConditionalValue(card.name, picks.map(p => p.name));
+
+  // Floor/Ceiling data
+  const floorCeiling = getFloorCeiling(card.name);
+
+  // Archetype-specific rating (when committed or leaning)
+  const archetypeRating = selectedArchetype
+    ? getArchetypeWeightedRating(card.name, selectedArchetype)
+    : null;
 
   return (
     <div className="w-[300px] flex-shrink-0 hidden lg:flex flex-col bg-white/[0.02] border-l border-white/[0.08]">
@@ -87,7 +100,23 @@ export function CardDetailPanel({
             {/* ELO + Verdict */}
             <div className="flex items-center justify-between">
               <div className="flex items-baseline gap-1.5">
-                {hasAdjustment ? (
+                {/* Show archetype-adjusted ELO when committed/leaning */}
+                {archetypeRating && draftMode !== 'open' ? (
+                  <>
+                    <span className="text-2xl font-bold text-white font-mono">
+                      {Math.round(archetypeRating.adjustedElo)}
+                    </span>
+                    <span className={`text-sm font-semibold ${
+                      archetypeRating.boost > 0 ? 'text-emerald-400' :
+                      archetypeRating.boost < 0 ? 'text-red-400' : 'text-white/40'
+                    }`}>
+                      {archetypeRating.boost > 0 ? '+' : ''}{archetypeRating.boost}
+                    </span>
+                    <span className="text-[10px] text-white/30 ml-1">
+                      (base: {Math.round(eloData.elo)})
+                    </span>
+                  </>
+                ) : hasAdjustment ? (
                   <>
                     <span className="text-2xl font-bold text-white font-mono">
                       {Math.round(synergyData.adjustedElo)}
@@ -107,8 +136,25 @@ export function CardDetailPanel({
               <WheelBadge likelihood={wheelLikelihood} />
             </div>
 
+            {/* Archetype Tier Badge (when in archetype mode) */}
+            {archetypeRating && draftMode !== 'open' && archetypeRating.tier && (
+              <div className={`inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium ${
+                archetypeRating.isArchetypeDefining
+                  ? 'bg-amber-500/15 text-amber-300'
+                  : archetypeRating.tier === 'S' ? 'bg-purple-500/15 text-purple-300'
+                  : archetypeRating.tier === 'A' ? 'bg-blue-500/15 text-blue-300'
+                  : 'bg-white/5 text-white/60'
+              }`}>
+                {archetypeRating.isArchetypeDefining && <span className="text-amber-400">*</span>}
+                {archetypeRating.tier}-tier in {archetypeRating.archetypeName}
+                {archetypeRating.role && (
+                  <span className="text-white/30 font-normal">({archetypeRating.role})</span>
+                )}
+              </div>
+            )}
+
             {/* Synergy Reasons - inline, compact */}
-            {hasAdjustment && synergyData.reasons.length > 0 && (
+            {hasAdjustment && synergyData.reasons.length > 0 && draftMode === 'open' && (
               <div className="flex flex-wrap gap-1">
                 {synergyData.reasons.map((reason, i) => (
                   <span key={i} className={`text-[11px] px-1.5 py-0.5 rounded ${
@@ -119,6 +165,51 @@ export function CardDetailPanel({
                     {reason}
                   </span>
                 ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Floor/Ceiling Spread - shows build-around potential */}
+        {floorCeiling.spread > 100 && (
+          <div className="bg-white/[0.02] border border-white/[0.06] rounded-lg p-2.5 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] text-white/30 uppercase tracking-wider">Floor / Ceiling</span>
+              {floorCeiling.isHighVariance && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 font-medium">
+                  Build-Around
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {/* Floor */}
+              <div className="flex-1">
+                <div className="text-xs text-red-400/70 font-mono">{floorCeiling.floor.elo}</div>
+                <div className="text-[10px] text-white/30 truncate">{floorCeiling.floor.archetype}</div>
+              </div>
+              {/* Visual bar */}
+              <div className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden relative">
+                <div
+                  className="absolute inset-y-0 left-0 bg-gradient-to-r from-red-500/30 to-emerald-500/30 rounded-full"
+                  style={{ width: '100%' }}
+                />
+                <div
+                  className="absolute inset-y-0 bg-white/20 rounded-full"
+                  style={{
+                    left: `${((floorCeiling.baseElo - floorCeiling.floor.elo) / floorCeiling.spread) * 100}%`,
+                    width: '4px',
+                  }}
+                />
+              </div>
+              {/* Ceiling */}
+              <div className="flex-1 text-right">
+                <div className="text-xs text-emerald-400/70 font-mono">{floorCeiling.ceiling.elo}</div>
+                <div className="text-[10px] text-white/30 truncate">{floorCeiling.ceiling.archetype}</div>
+              </div>
+            </div>
+            {floorCeiling.ceiling.tier && (
+              <div className="text-[10px] text-white/40">
+                {floorCeiling.ceiling.tier}-tier in {floorCeiling.ceiling.archetype}
               </div>
             )}
           </div>
