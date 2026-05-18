@@ -69,7 +69,7 @@ function IWDHistogram({ data }: { data: number[] }) {
   const maxCount = Math.max(...buckets.map(b => b.count));
 
   return (
-    <div className="flex items-end gap-[2px] h-32">
+    <div className="flex items-end gap-[2px] h-32 relative">
       {buckets.map((bucket, i) => {
         const height = maxCount > 0 ? (bucket.count / maxCount) * 100 : 0;
         const isNegative = bucket.min < 0;
@@ -77,7 +77,7 @@ function IWDHistogram({ data }: { data: number[] }) {
         return (
           <div
             key={i}
-            className="flex-1 flex flex-col items-center group relative"
+            className="flex-1 flex flex-col items-center group relative hover:z-[100]"
           >
             <div
               className={`w-full rounded-t transition-all ${
@@ -86,7 +86,7 @@ function IWDHistogram({ data }: { data: number[] }) {
               style={{ height: `${height}%` }}
             />
             {/* Tooltip */}
-            <div className="absolute bottom-full mb-2 hidden group-hover:block bg-black/90 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-10">
+            <div className="absolute bottom-full mb-2 hidden group-hover:block bg-black text-white text-xs px-3 py-2 rounded-lg shadow-xl whitespace-nowrap z-[200] border border-white/20 pointer-events-none">
               {(bucket.min * 100).toFixed(0)}% to {(bucket.max * 100).toFixed(0)}%: {bucket.count} cards
             </div>
           </div>
@@ -110,15 +110,15 @@ function EloIwdScatter({ data }: { data: { name: string; elo: number; iwd: numbe
   });
 
   return (
-    <div className="relative h-64 bg-white/[0.02] rounded-lg border border-white/10 overflow-hidden">
+    <div className="relative h-64 bg-white/[0.02] rounded-lg border border-white/10">
       {/* Quadrant labels */}
-      <div className="absolute top-2 left-2 text-[10px] text-emerald-400/60">STEALS</div>
-      <div className="absolute top-2 right-2 text-[10px] text-amber-400/60">STARS</div>
-      <div className="absolute bottom-2 left-2 text-[10px] text-white/30">WEAK</div>
-      <div className="absolute bottom-2 right-2 text-[10px] text-red-400/60">TRAPS</div>
+      <div className="absolute top-2 left-2 text-[10px] text-emerald-400/60 z-0">STEALS</div>
+      <div className="absolute top-2 right-2 text-[10px] text-amber-400/60 z-0">STARS</div>
+      <div className="absolute bottom-2 left-2 text-[10px] text-white/30 z-0">WEAK</div>
+      <div className="absolute bottom-2 right-2 text-[10px] text-red-400/60 z-0">TRAPS</div>
 
       {/* Grid lines */}
-      <div className="absolute inset-0">
+      <div className="absolute inset-0 z-0">
         {/* Vertical center (ELO 50th percentile ~1600) */}
         <div className="absolute top-0 bottom-0 left-1/3 w-px bg-white/10" />
         {/* Horizontal center (IWD ~3%) */}
@@ -134,13 +134,12 @@ function EloIwdScatter({ data }: { data: { name: string; elo: number; iwd: numbe
         return (
           <div
             key={i}
-            className={`absolute w-2 h-2 rounded-full ${color} hover:w-3 hover:h-3 hover:z-10 transition-all cursor-pointer group`}
+            className={`absolute w-2 h-2 rounded-full ${color} hover:w-3 hover:h-3 hover:z-[100] transition-all cursor-pointer group z-10`}
             style={{ left: `${pos.x}%`, top: `${pos.y}%`, transform: 'translate(-50%, -50%)' }}
           >
-            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block bg-black/95 text-white text-xs px-2 py-1 rounded whitespace-nowrap z-20">
-              {item.name}
-              <br />
-              ELO: {item.elo.toFixed(0)} | IWD: {(item.iwd * 100).toFixed(1)}%
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block bg-black text-white text-xs px-3 py-2 rounded-lg shadow-xl whitespace-nowrap z-[200] border border-white/20 pointer-events-none">
+              <div className="font-semibold">{item.name}</div>
+              <div className="text-white/70">ELO: {item.elo.toFixed(0)} | IWD: {(item.iwd * 100).toFixed(1)}%</div>
             </div>
           </div>
         );
