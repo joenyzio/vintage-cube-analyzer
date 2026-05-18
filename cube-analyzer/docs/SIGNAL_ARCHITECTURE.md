@@ -97,3 +97,42 @@ These thresholds exist to ensure statistical reliability:
 - Card overlays: `src/components/DraftSimulator/DraftPackCard.tsx`
 - Detail panel: `src/components/DraftSimulator/CardDetailPanel.tsx`
 - Coach integration: `src/components/DraftSimulator.tsx` (getRecommendedPick)
+
+---
+
+## Divergent Cards to Monitor
+
+Cards where ELO and color-filtered IWD diverge significantly are worth monitoring across data refreshes. First observations as of May 2026:
+
+| Card | Context | ELO | IWD | Signal |
+|------|---------|-----|-----|--------|
+| Lightning Bolt | RG | 1689 | -0.5% | TRAP |
+| Lightning Bolt | UR | 1689 | +4.6% | Aligned |
+| Thoughtseize | BG | 1719 | -0.5% | Divergent |
+
+**Thoughtseize in BG** is notable: high ELO (1719, top 25%) but negative IWD in green decks. Possible explanations:
+- BG decks in this cube may be stompy/ramp, where 2-life disruption matters less
+- Sample noise (check on next data refresh)
+- Real pattern: Thoughtseize underperforms when your plan is "go bigger"
+
+Track these across refreshes to distinguish persistent patterns from noise.
+
+---
+
+## What's Not Done
+
+Potential extensions that aren't shipping in this stretch:
+
+**Update cadence automation**
+Currently manual refresh via `scripts/fetch-17lands.ts`. Could be automated with cron or CI hook.
+
+**Coverage for combo enablers**
+Cards like Doomsday, Cabal Ritual, Lion's Eye Diamond have no 17lands data (not in Arena cube). Would require a different data source or manual annotation.
+
+**Historical IWD tracking**
+No mechanism to track IWD trends over time. Would enable "this card is getting worse/better as meta evolves" insights.
+
+**Per-archetype IWD beyond color filtering**
+Current system filters by color pair (UR, BG, etc). Could extend to archetype-specific IWD (Storm, Reanimator) if that data becomes available.
+
+These aren't to-dos. They're documented here so future work knows where the architecture can extend.
