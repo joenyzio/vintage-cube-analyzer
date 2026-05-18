@@ -380,6 +380,9 @@ export function DraftSimulator({ cards, autoStart = false }: DraftSimulatorProps
   // Passed cards drawer
   const [showPassedCards, setShowPassedCards] = useState(false);
 
+  // View mode: 'pack' shows current pack, 'picks' shows your picks in the main area
+  const [mainViewMode, setMainViewMode] = useState<'pack' | 'picks'>('pack');
+
   // Persistence state
   const [draftHistory, setDraftHistory] = useState<DraftHistoryEntry[]>(() =>
     loadFromStorage(STORAGE_KEYS.DRAFT_HISTORY, [])
@@ -1439,6 +1442,25 @@ export function DraftSimulator({ cards, autoStart = false }: DraftSimulatorProps
               </div>
             </div>
             <div className="flex items-center gap-2">
+              {/* View Toggle: Pack vs Picks */}
+              <div className="flex items-center bg-white/5 rounded-lg p-0.5">
+                <button
+                  onClick={() => setMainViewMode('pack')}
+                  className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
+                    mainViewMode === 'pack' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white/60'
+                  }`}
+                >
+                  Pack
+                </button>
+                <button
+                  onClick={() => setMainViewMode('picks')}
+                  className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
+                    mainViewMode === 'picks' ? 'bg-purple-500/30 text-purple-300' : 'text-white/40 hover:text-white/60'
+                  }`}
+                >
+                  Picks ({draftState.picks.length})
+                </button>
+              </div>
               <button
                 onClick={() => {
                   const newMuted = !soundMuted;
@@ -1475,10 +1497,20 @@ export function DraftSimulator({ cards, autoStart = false }: DraftSimulatorProps
               <ArrowLeft className="w-4 h-4" />
             </button>
 
-            {/* Center: Pack/Pick - THE MAIN FOCUS */}
-            <div className="flex-1 text-center">
+            {/* Center: View Toggle + Pack/Pick */}
+            <div className="flex-1 flex items-center justify-center gap-2">
+              <button
+                onClick={() => setMainViewMode(mainViewMode === 'pack' ? 'picks' : 'pack')}
+                className={`px-2 py-1 rounded text-xs font-medium ${
+                  mainViewMode === 'picks'
+                    ? 'bg-purple-500/30 text-purple-300'
+                    : 'bg-white/5 text-white/50'
+                }`}
+              >
+                {mainViewMode === 'picks' ? `Picks (${draftState.picks.length})` : 'Pack'}
+              </button>
               <div className="text-lg font-bold text-white">
-                P{draftState.packNumber} · Pick {draftState.pickNumber}
+                P{draftState.packNumber}·{draftState.pickNumber}
               </div>
             </div>
 
@@ -1512,42 +1544,118 @@ export function DraftSimulator({ cards, autoStart = false }: DraftSimulatorProps
           </div>
         </div>
 
-        {/* Pack Grid */}
+        {/* Pack Grid / Picks Grid */}
         <div className="flex-1 overflow-y-auto p-4">
-          {/* Sort Controls - compact pill buttons */}
-          {coachMode && (
-            <div className="flex items-center gap-1 mb-3">
-              <span className="text-[10px] text-white/30 uppercase tracking-wider mr-1">Sort</span>
-              {(['default', 'elo', 'iwd', 'divergence'] as const).map(mode => (
+          {mainViewMode === 'pack' ? (
+            <>
+              {/* Sort Controls - compact pill buttons */}
+              {coachMode && (
+                <div className="flex items-center gap-1 mb-3">
+                  <span className="text-[10px] text-white/30 uppercase tracking-wider mr-1">Sort</span>
+                  {(['default', 'elo', 'iwd', 'divergence'] as const).map(mode => (
+                    <button
+                      key={mode}
+                      onClick={() => setPackSortMode(mode)}
+                      className={`px-2 py-0.5 rounded text-[10px] font-medium transition-all ${
+                        packSortMode === mode
+                          ? 'bg-purple-500/30 text-purple-300 ring-1 ring-purple-500/50'
+                          : 'bg-white/5 text-white/40 hover:bg-white/10'
+                      }`}
+                    >
+                      {mode === 'default' ? 'Pack' : mode === 'elo' ? 'ELO' : mode === 'iwd' ? 'IWD' : 'Signals'}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <DraftPack
+                pack={sortedPack}
+                draftState={draftState}
+                recommendedCardId={getRecommendedPick?.id}
+                showCoachVisuals={coachMode}
+                currentColors={currentColors}
+                isQuizMode={quizDraftMode}
+                isShowingReveal={showPickReveal}
+                pendingPickId={pendingPick?.id}
+                lastPickResult={lastPickResult}
+                onCardClick={handleCardClick}
+                onCardHover={setHoveredCard}
+                getGrade={getGrade}
+                getSynergyAdjustment={getSynergyAdjustment}
+              />
+            </>
+          ) : (
+            /* Picks View - Show your picks in a large grid */
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-white">
+                  Your Picks ({draftState.picks.length}/45)
+                </h2>
                 <button
-                  key={mode}
-                  onClick={() => setPackSortMode(mode)}
-                  className={`px-2 py-0.5 rounded text-[10px] font-medium transition-all ${
-                    packSortMode === mode
-                      ? 'bg-purple-500/30 text-purple-300 ring-1 ring-purple-500/50'
-                      : 'bg-white/5 text-white/40 hover:bg-white/10'
-                  }`}
+                  onClick={() => setMainViewMode('pack')}
+                  className="text-sm text-white/50 hover:text-white/70"
                 >
-                  {mode === 'default' ? 'Pack' : mode === 'elo' ? 'ELO' : mode === 'iwd' ? 'IWD' : 'Signals'}
+                  ← Back to Pack
                 </button>
-              ))}
+              </div>
+              {draftState.picks.length === 0 ? (
+                <div className="text-center py-16 text-white/40">
+                  No picks yet. Select cards from the pack to build your deck.
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3">
+                  {draftState.picks.map((card, index) => {
+                    const gradeInfo = getGrade(card);
+                    const synergyAdj = getSynergyAdjustment(card);
+                    return (
+                      <div
+                        key={card.id}
+                        className="relative aspect-[488/680] rounded-xl overflow-hidden cursor-pointer hover:scale-[1.04] hover:-translate-y-1 hover:z-10 transition-all duration-200"
+                        onMouseEnter={() => setHoveredCard(card)}
+                        onMouseLeave={() => setHoveredCard(null)}
+                      >
+                        <img
+                          src={`https://api.scryfall.com/cards/named?exact=${encodeURIComponent(card.name)}&format=image&version=normal`}
+                          alt={card.name}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                        {/* Pick number badge */}
+                        <div className="absolute bottom-1.5 left-1.5 w-5 h-5 rounded bg-black/70 flex items-center justify-center text-[10px] font-mono text-white/50">
+                          {index + 1}
+                        </div>
+                        {/* Grade overlay */}
+                        {coachMode && (
+                          <div className="absolute top-1.5 right-1.5 flex flex-col items-end gap-1">
+                            <div className={`
+                              px-1.5 py-0.5 rounded text-[11px] font-bold shadow
+                              ${gradeInfo.grade === 'A+' ? 'bg-emerald-500/90 text-white' : ''}
+                              ${gradeInfo.grade === 'A' ? 'bg-emerald-600/80 text-white' : ''}
+                              ${gradeInfo.grade === 'A-' ? 'bg-emerald-700/70 text-white' : ''}
+                              ${gradeInfo.grade === 'B+' ? 'bg-sky-600/70 text-white' : ''}
+                              ${gradeInfo.grade === 'B' ? 'bg-sky-700/60 text-white/90' : ''}
+                              ${gradeInfo.grade === 'B-' ? 'bg-sky-800/50 text-white/80' : ''}
+                              ${gradeInfo.grade === 'C+' || gradeInfo.grade === 'C' || gradeInfo.grade === 'C-' ? 'bg-black/60 text-white/70' : ''}
+                              ${gradeInfo.grade === 'D' || gradeInfo.grade === 'F' ? 'bg-black/50 text-white/50' : ''}
+                            `}>
+                              {gradeInfo.grade}
+                            </div>
+                            {Math.abs(synergyAdj) >= 20 && (
+                              <div className={`
+                                text-[10px] font-bold px-1 rounded
+                                ${synergyAdj > 0 ? 'text-emerald-400 bg-black/40' : 'text-red-400 bg-black/40'}
+                              `}>
+                                {synergyAdj > 0 ? '+' : ''}{synergyAdj}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
-          <DraftPack
-            pack={sortedPack}
-            draftState={draftState}
-            recommendedCardId={getRecommendedPick?.id}
-            showCoachVisuals={coachMode}
-            currentColors={currentColors}
-            isQuizMode={quizDraftMode}
-            isShowingReveal={showPickReveal}
-            pendingPickId={pendingPick?.id}
-            lastPickResult={lastPickResult}
-            onCardClick={handleCardClick}
-            onCardHover={setHoveredCard}
-            getGrade={getGrade}
-            getSynergyAdjustment={getSynergyAdjustment}
-          />
         </div>
 
         {/* Mobile Bottom Bar - Enhanced with key info */}

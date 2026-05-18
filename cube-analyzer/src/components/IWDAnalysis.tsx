@@ -166,6 +166,7 @@ export function IWDAnalysis({ cards }: IWDAnalysisProps) {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [currentPage, setCurrentPage] = useState(1);
   const [showOnlyWithIWD, setShowOnlyWithIWD] = useState(true);
+  const [hoveredCard, setHoveredCard] = useState<CubeCard | null>(null);
 
   // Get all card signals
   const allSignals = useMemo(() => {
@@ -862,7 +863,12 @@ export function IWDAnalysis({ cards }: IWDAnalysisProps) {
                   </thead>
                   <tbody>
                     {paginatedCards.map((item) => (
-                      <tr key={item.card.name} className="border-b border-white/5 hover:bg-white/[0.02]">
+                      <tr
+                        key={item.card.name}
+                        className="border-b border-white/5 hover:bg-white/[0.04] cursor-pointer"
+                        onMouseEnter={() => setHoveredCard(item.card)}
+                        onMouseLeave={() => setHoveredCard(null)}
+                      >
                         <td className="p-4">
                           <div className="flex items-center gap-3">
                             <img src={getCardImage(item.card)} alt={item.card.name} className="w-8 h-11 rounded object-cover" />
@@ -959,6 +965,19 @@ export function IWDAnalysis({ cards }: IWDAnalysisProps) {
               </div>
             );
           })()}
+        </div>
+      )}
+
+      {/* Card Hover Preview - Fixed at bottom right */}
+      {hoveredCard && (
+        <div className="fixed bottom-4 right-4 z-[300] pointer-events-none">
+          <div className="bg-black/90 rounded-xl p-2 shadow-2xl border border-white/20">
+            <img
+              src={getCardImage(hoveredCard)}
+              alt={hoveredCard.name}
+              className="w-64 h-auto rounded-lg"
+            />
+          </div>
         </div>
       )}
     </div>
