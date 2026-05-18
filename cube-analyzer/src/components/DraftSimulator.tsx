@@ -927,6 +927,49 @@ export function DraftSimulator({ cards, autoStart = false }: DraftSimulatorProps
     return cardsWithScore[0]?.card || null;
   }, [draftState, draftMode, selectedArchetype, colorCounts]);
 
+  // Get current colors for IWD filtering (colors with 2+ cards)
+  const currentColors = useMemo(() => {
+    return Object.entries(colorCounts).filter(([_, count]) => count >= 2).map(([color]) => color);
+  }, [colorCounts]);
+
+  // Sort pack based on selected sort mode - MUST be before early returns
+  const sortedPack = useMemo(() => {
+    if (!draftState) return [];
+    const currentPack = draftState.tablePacks[0];
+    if (!currentPack || currentPack.length === 0 || packSortMode === 'default') {
+      return currentPack || [];
+    }
+
+    return [...currentPack].sort((a, b) => {
+      if (packSortMode === 'elo') {
+        return compareByElo(a.name, b.name);
+      }
+
+      if (packSortMode === 'iwd') {
+        const signalA = getCardSignal(a.name, currentColors);
+        const signalB = getCardSignal(b.name, currentColors);
+        const iwdA = signalA.iwd.value ?? -1;
+        const iwdB = signalB.iwd.value ?? -1;
+        return iwdB - iwdA;
+      }
+
+      if (packSortMode === 'divergence') {
+        const signalA = getCardSignal(a.name, currentColors);
+        const signalB = getCardSignal(b.name, currentColors);
+        // Divergent cards first (steals, then traps), then aligned, then unknown
+        const scoreA = signalA.divergence
+          ? (signalA.divergence.direction === 'steal' ? 3 : 2)
+          : (signalA.confidence === 'aligned' ? 1 : 0);
+        const scoreB = signalB.divergence
+          ? (signalB.divergence.direction === 'steal' ? 3 : 2)
+          : (signalB.confidence === 'aligned' ? 1 : 0);
+        return scoreB - scoreA;
+      }
+
+      return 0;
+    });
+  }, [draftState, packSortMode, currentColors]);
+
   // Coach explanation - uses synergy-adjusted ELO for consistency
   const coachExplanation = useMemo(() => {
     if (!draftState || draftState.isComplete) return null;
@@ -1319,47 +1362,7 @@ export function DraftSimulator({ cards, autoStart = false }: DraftSimulatorProps
   // Active draft
   if (!draftState) return null;
 
-  const currentPack = draftState.tablePacks[0];
   const progress = ((draftState.packNumber - 1) * 15 + draftState.pickNumber - 1) / 45;
-
-  // Get current colors for IWD filtering (colors with 2+ cards)
-  const currentColors = Object.entries(colorCounts).filter(([_, count]) => count >= 2).map(([color]) => color);
-
-  // Sort pack based on selected sort mode
-  const sortedPack = useMemo(() => {
-    if (!currentPack || currentPack.length === 0 || packSortMode === 'default') {
-      return currentPack;
-    }
-
-    return [...currentPack].sort((a, b) => {
-      if (packSortMode === 'elo') {
-        return compareByElo(a.name, b.name);
-      }
-
-      if (packSortMode === 'iwd') {
-        const signalA = getCardSignal(a.name, currentColors);
-        const signalB = getCardSignal(b.name, currentColors);
-        const iwdA = signalA.iwd.value ?? -1;
-        const iwdB = signalB.iwd.value ?? -1;
-        return iwdB - iwdA;
-      }
-
-      if (packSortMode === 'divergence') {
-        const signalA = getCardSignal(a.name, currentColors);
-        const signalB = getCardSignal(b.name, currentColors);
-        // Divergent cards first (steals, then traps), then aligned, then unknown
-        const scoreA = signalA.divergence
-          ? (signalA.divergence.direction === 'steal' ? 3 : 2)
-          : (signalA.confidence === 'aligned' ? 1 : 0);
-        const scoreB = signalB.divergence
-          ? (signalB.divergence.direction === 'steal' ? 3 : 2)
-          : (signalB.confidence === 'aligned' ? 1 : 0);
-        return scoreB - scoreA;
-      }
-
-      return 0;
-    });
-  }, [currentPack, packSortMode, currentColors]);
 
   return (
     <div className="fixed top-0 bottom-0 right-0 left-0 lg:left-56 z-[60] flex bg-black pt-[env(safe-area-inset-top)]">

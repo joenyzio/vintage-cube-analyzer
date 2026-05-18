@@ -8,15 +8,14 @@
 import { useState, useMemo } from 'react';
 import {
   AlertTriangle, Gem, TrendingUp, TrendingDown,
-  Target, BarChart3, Search, Filter, Info,
-  ChevronDown, ChevronUp, Zap, Shield
+  BarChart3, Search, Filter, Info,
+  ChevronDown, ChevronUp
 } from 'lucide-react';
-import { getCardSignal, getPackSignals, type CardSignal } from '../services/simulationInsights';
+import { getCardSignal } from '../services/simulationInsights';
 import { getEloData, getPercentile } from '../services/eloHelpers';
 import { getCardImage } from '../services/scryfall';
 import type { CubeCard } from '../types/card';
 import simulationData from '../data/simulation-data.json';
-import winrateData from '../data/17lands-winrates.json';
 
 interface IWDAnalysisProps {
   cards: CubeCard[];
