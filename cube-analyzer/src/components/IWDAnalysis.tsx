@@ -165,6 +165,7 @@ export function IWDAnalysis({ cards }: IWDAnalysisProps) {
   const [sortBy, setSortBy] = useState<'iwd' | 'elo' | 'name' | 'delta'>('iwd');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [currentPage, setCurrentPage] = useState(1);
+  const [showOnlyWithIWD, setShowOnlyWithIWD] = useState(true);
 
   // Get all card signals
   const allSignals = useMemo(() => {
@@ -265,9 +266,13 @@ export function IWDAnalysis({ cards }: IWDAnalysisProps) {
 
   // Filtered cards for data table
   const filteredCards = useMemo(() => {
-    let filtered = allSignals.filter(s =>
-      s.card.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    let filtered = allSignals.filter(s => {
+      // Search filter
+      if (!s.card.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+      // IWD filter
+      if (showOnlyWithIWD && s.signal.iwd.value === null) return false;
+      return true;
+    });
 
     filtered.sort((a, b) => {
       let cmp = 0;
@@ -291,7 +296,7 @@ export function IWDAnalysis({ cards }: IWDAnalysisProps) {
     });
 
     return filtered;
-  }, [allSignals, searchQuery, sortBy, sortDir]);
+  }, [allSignals, searchQuery, sortBy, sortDir, showOnlyWithIWD]);
 
   const toggleSort = (field: typeof sortBy) => {
     if (sortBy === field) {
@@ -804,6 +809,16 @@ export function IWDAnalysis({ cards }: IWDAnalysisProps) {
                 <option key={combo.id} value={combo.id}>{combo.label}</option>
               ))}
             </select>
+            <button
+              onClick={() => { setShowOnlyWithIWD(!showOnlyWithIWD); setCurrentPage(1); }}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                showOnlyWithIWD
+                  ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
+                  : 'bg-white/5 text-white/50 border border-white/10 hover:text-white/70'
+              }`}
+            >
+              {showOnlyWithIWD ? '✓ IWD Only' : 'Show All'}
+            </button>
           </div>
 
           {(() => {
