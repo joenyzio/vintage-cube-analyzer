@@ -2,12 +2,14 @@
  * Draft Pack Card Component
  *
  * Renders a single card in the draft pack with all its overlays and indicators.
+ * Includes IWD-based divergence badges (trap/steal signals).
  */
 
 // React is used for JSX
-import { Star, History, CheckCircle, XCircle } from 'lucide-react';
+import { Star, History, CheckCircle, XCircle, AlertTriangle, Gem } from 'lucide-react';
 import type { CubeCard } from '../../types/card';
 import type { ContextualGrade } from '../../types/draftSimulator';
+import type { CardSignal } from '../../services/simulationInsights';
 import { getCardImage } from '../../services/scryfall';
 
 interface DraftPackCardProps {
@@ -17,10 +19,10 @@ interface DraftPackCardProps {
   grade: ContextualGrade;
   synergyAdjustment: number;
   wheelCategory: 'high-wheel' | 'low-wheel' | 'normal';
-  wheelLikelihood: string;
-  isPremium: boolean;
   actuallyWheeled: boolean;
   showCoachVisuals: boolean;
+  // IWD signal data
+  cardSignal?: CardSignal;
   // Quiz mode props
   isQuizMode: boolean;
   isShowingReveal: boolean;
@@ -41,10 +43,9 @@ export function DraftPackCard({
   grade,
   synergyAdjustment,
   wheelCategory,
-  wheelLikelihood,
-  isPremium,
   actuallyWheeled,
   showCoachVisuals,
+  cardSignal,
   isQuizMode,
   isShowingReveal,
   isPendingPick,
@@ -140,10 +141,32 @@ export function DraftPackCard({
         </div>
       )}
 
-      {/* Take now banner for premium cards */}
-      {showCoachVisuals && wheelLikelihood === 'unlikely' && isPremium && !isRecommended && (
-        <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-center py-1">
-          <span className="text-[9px] font-medium text-white/80 uppercase tracking-wider">Take now</span>
+      {/* Divergence badge - PRIMARY attention grabber for trap/steal */}
+      {showCoachVisuals && cardSignal?.divergence && (
+        <div className={`absolute bottom-0 left-0 right-0 text-center py-1.5 ${
+          cardSignal.divergence.direction === 'trap'
+            ? 'bg-gradient-to-t from-red-900/95 to-red-900/80'
+            : 'bg-gradient-to-t from-emerald-900/95 to-emerald-900/80'
+        }`}>
+          <div className="flex items-center justify-center gap-1">
+            {cardSignal.divergence.direction === 'trap' ? (
+              <AlertTriangle className="w-3 h-3 text-red-400" />
+            ) : (
+              <Gem className="w-3 h-3 text-emerald-400" />
+            )}
+            <span className={`text-[10px] font-bold uppercase tracking-wider ${
+              cardSignal.divergence.direction === 'trap' ? 'text-red-300' : 'text-emerald-300'
+            }`}>
+              {cardSignal.divergence.direction === 'trap' ? 'Trap' : 'Steal'}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Aligned IWD indicator - quiet, just the number */}
+      {showCoachVisuals && cardSignal?.confidence === 'aligned' && !cardSignal.divergence && cardSignal.iwd.value !== null && (
+        <div className="absolute bottom-1 left-7 text-[9px] text-white/30 font-mono">
+          {cardSignal.iwd.value >= 0 ? '+' : ''}{(cardSignal.iwd.value * 100).toFixed(1)}%
         </div>
       )}
 

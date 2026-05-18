@@ -8,7 +8,7 @@
 import type { CubeCard } from '../../types/card';
 import type { CardEloHistory, ContextualGrade } from '../../types/draftSimulator';
 import { getCardImage } from '../../services/scryfall';
-import { getEloData, getWheelLikelihood } from '../../services/eloHelpers';
+import { getEloData } from '../../services/eloHelpers';
 import { getConditionalValue } from '../../services/cardRating/archetypeAffinity';
 import { getFloorCeiling, getArchetypeWeightedRating, type DraftMode } from '../../services/cardRating/archetypeMode';
 import {
@@ -18,6 +18,10 @@ import {
   getAvgPickPosition,
   getTopArchetypesForCard,
   getCardInsightSummary,
+  getCardSignal,
+  formatIWD,
+  isMissingWinRateData,
+  getMissingReason,
 } from '../../services/simulationInsights';
 
 interface CardDetailPanelProps {
@@ -28,6 +32,7 @@ interface CardDetailPanelProps {
   getSynergyData: (card: CubeCard) => { adjustedElo: number; adjustment: number; reasons: string[] };
   draftMode?: DraftMode;
   selectedArchetype?: string | null;
+  currentColors?: string[];
 }
 
 export function CardDetailPanel({
@@ -38,13 +43,18 @@ export function CardDetailPanel({
   getSynergyData,
   draftMode = 'open',
   selectedArchetype = null,
+  currentColors = [],
 }: CardDetailPanelProps) {
   const eloData = getEloData(card.name);
-  const wheelLikelihood = getWheelLikelihood(card.name);
   const synergyData = getSynergyData(card);
   const hasAdjustment = synergyData && Math.abs(synergyData.adjustment) >= 10;
   const cardGrade = getGrade(card);
   const cv = getConditionalValue(card.name, picks.map(p => p.name));
+
+  // IWD-based card signal
+  const cardSignal = getCardSignal(card.name, currentColors);
+  const hasMissingData = isMissingWinRateData(card.name);
+  const missingReason = hasMissingData ? getMissingReason(card.name) : null;
 
   // Floor/Ceiling data
   const floorCeiling = getFloorCeiling(card.name);
@@ -133,7 +143,7 @@ export function CardDetailPanel({
                   </span>
                 )}
               </div>
-              <WheelBadge likelihood={wheelLikelihood} />
+              <SignalBadge cardSignal={cardSignal} hasMissingData={hasMissingData} missingReason={missingReason} />
             </div>
 
             {/* Archetype Tier Badge (when in archetype mode) */}
@@ -230,28 +240,63 @@ export function CardDetailPanel({
 }
 
 // =============================================================================
-// Wheel Badge - The key decision signal
+// Signal Badge - Integrated ELO + IWD signal
 // =============================================================================
 
-function WheelBadge({ likelihood }: { likelihood: 'likely' | 'maybe' | 'unlikely' }) {
-  if (likelihood === 'likely') {
+import type { CardSignal } from '../../services/simulationInsights';
+
+function SignalBadge({
+  cardSignal,
+  hasMissingData,
+  missingReason
+}: {
+  cardSignal: CardSignal;
+  hasMissingData: boolean;
+  missingReason: string | null;
+}) {
+  // Divergent: Show trap/steal prominently
+  if (cardSignal.divergence) {
+    const isTrap = cardSignal.divergence.direction === 'trap';
     return (
-      <span className="text-xs px-2 py-1 rounded bg-white/5 text-white/50 font-medium">
-        Will wheel
-      </span>
+      <div className={`px-2 py-1 rounded text-xs font-bold ${
+        isTrap
+          ? 'bg-red-500/20 text-red-400 ring-1 ring-red-500/30'
+          : 'bg-emerald-500/20 text-emerald-400 ring-1 ring-emerald-500/30'
+      }`}>
+        {isTrap ? '⚠ Trap' : '💎 Steal'}
+      </div>
     );
   }
-  if (likelihood === 'maybe') {
+
+  // Missing data: Show factual message
+  if (hasMissingData) {
     return (
-      <span className="text-xs px-2 py-1 rounded bg-amber-500/15 text-amber-400 font-medium">
-        May wheel
-      </span>
+      <div className="px-2 py-1 rounded bg-white/5 text-white/40 text-xs" title={missingReason || undefined}>
+        ELO only
+      </div>
     );
   }
+
+  // Aligned: Show IWD quietly - no background, muted color, smaller text
+  if (cardSignal.confidence === 'aligned' && cardSignal.iwd.value !== null) {
+    const iwdPercent = (cardSignal.iwd.value * 100).toFixed(1);
+    const isPositive = cardSignal.iwd.value > 0;
+    return (
+      <div className="flex items-baseline gap-1 text-white/40">
+        <span className="text-[9px] text-white/25">IWD</span>
+        <span className="text-[10px]">{isPositive ? '+' : ''}{iwdPercent}%</span>
+        {cardSignal.iwd.colorCombo && (
+          <span className="text-[9px] text-white/20">({cardSignal.iwd.colorCombo})</span>
+        )}
+      </div>
+    );
+  }
+
+  // Unknown confidence
   return (
-    <span className="text-xs px-2 py-1 rounded bg-red-500/20 text-red-400 font-medium">
-      Take now
-    </span>
+    <div className="px-2 py-1 rounded bg-white/5 text-white/40 text-xs">
+      {cardSignal.iwd.source === 'none' ? 'No IWD' : `${formatIWD(cardSignal.iwd)}`}
+    </div>
   );
 }
 

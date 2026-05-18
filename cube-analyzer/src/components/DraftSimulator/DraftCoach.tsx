@@ -20,7 +20,7 @@ interface DeckWinRateData {
   factors: { name: string; impact: number; description: string }[];
 }
 import { getCardImage } from '../../services/scryfall';
-import { getArchetypeContext, getColorAdvice, getBestVariant } from '../../services/simulationInsights';
+import { getArchetypeContext, getColorAdvice, getBestVariant, getPackSignals } from '../../services/simulationInsights';
 import {
   analyzePackComposition,
   findSynergies,
@@ -44,14 +44,6 @@ interface DraftSignals {
   lateSignals: { card: CubeCard; pick: number; pack: number; colors: string[] }[];
   rightNeighborColors: string[];
   leftNeighborColors: string[];
-}
-
-interface EnablerPayoffBalance {
-  archetype: string;
-  enablers: { card: CubeCard; role: string }[];
-  payoffs: { card: CubeCard; role: string }[];
-  balance: 'needs-enablers' | 'needs-payoffs' | 'balanced' | 'not-applicable';
-  recommendation: string;
 }
 
 interface ManaBaseStatus {
@@ -93,7 +85,6 @@ interface DraftCoachProps {
   draftPhase: { phase: DraftPhase; description: string; priority: string } | null;
   archetypeCommitments: ArchetypeCommitment[];
   draftSignals: DraftSignals | null;
-  enablerPayoffBalance: EnablerPayoffBalance[];
   manaBaseStatus: ManaBaseStatus | null;
   curveAnalysis: CurveAnalysis | null;
   deckWinRate: DeckWinRateData | null;
@@ -108,6 +99,8 @@ interface DraftCoachProps {
   selectedArchetype: string | null;
   onModeChange: (mode: DraftMode) => void;
   onArchetypeSelect: (archetypeId: string | null) => void;
+  // Current colors for IWD filtering
+  currentColors?: string[];
 }
 
 export function DraftCoach({
@@ -120,7 +113,6 @@ export function DraftCoach({
   draftPhase,
   archetypeCommitments,
   draftSignals,
-  enablerPayoffBalance,
   manaBaseStatus,
   curveAnalysis,
   deckWinRate,
@@ -134,6 +126,7 @@ export function DraftCoach({
   selectedArchetype,
   onModeChange,
   onArchetypeSelect,
+  currentColors = [],
 }: DraftCoachProps) {
   // Get current pack (player 0's pack from tablePacks)
   const currentPack = draftState.tablePacks?.[0] || [];
@@ -235,6 +228,59 @@ export function DraftCoach({
             </div>
           </div>
         )}
+
+        {/* Win Rate Signals - Shows traps and steals in the pack */}
+        {coachMode && currentPack.length > 0 && (() => {
+          const packSignals = getPackSignals(currentPack.map(c => c.name), currentColors);
+          const divergentSignals = packSignals.filter(s => s.divergence);
+
+          if (divergentSignals.length === 0) return null;
+
+          // Sort: steals first, then traps
+          const sortedSignals = [...divergentSignals].sort((a, b) => {
+            if (a.divergence?.direction === 'steal' && b.divergence?.direction !== 'steal') return -1;
+            if (b.divergence?.direction === 'steal' && a.divergence?.direction !== 'steal') return 1;
+            return 0;
+          }).slice(0, 3);
+
+          return (
+            <div className="bg-purple-500/5 border border-purple-500/20 rounded-lg p-3 space-y-2">
+              <div className="text-xs text-purple-400/80 uppercase tracking-wider font-medium">
+                Win Rate Signals
+              </div>
+              <div className="text-[10px] text-white/40 -mt-1">
+                ELO vs actual win rate divergence
+              </div>
+              {sortedSignals.map(signal => {
+                const isTrap = signal.divergence?.direction === 'trap';
+                return (
+                  <div
+                    key={signal.cardName}
+                    className={`text-xs p-1.5 rounded ${
+                      isTrap ? 'bg-red-500/10' : 'bg-emerald-500/10'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className={`font-medium ${
+                        isTrap ? 'text-red-400' : 'text-emerald-400'
+                      }`}>
+                        {isTrap ? '⚠' : '💎'} {signal.cardName}
+                      </span>
+                      <span className={`text-[10px] font-bold ${
+                        isTrap ? 'text-red-400/80' : 'text-emerald-400/80'
+                      }`}>
+                        {isTrap ? 'Trap' : 'Steal'}
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-white/40 mt-0.5">
+                      {signal.divergence?.explanation.split('.')[0]}.
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
 
         {/* Pool Synergies - Shows when you have combos */}
         {coachMode && poolSynergies.length > 0 && (
@@ -550,7 +596,6 @@ export function DraftCoach({
             draftPhase={draftPhase}
             archetypeCommitments={archetypeCommitments}
             draftSignals={draftSignals}
-            enablerPayoffBalance={enablerPayoffBalance}
             manaBaseStatus={manaBaseStatus}
             curveAnalysis={curveAnalysis}
             topRegrets={topRegrets}
@@ -594,7 +639,6 @@ interface DraftIntelligencePanelProps {
   draftPhase: { phase: DraftPhase; description: string; priority: string } | null;
   archetypeCommitments: ArchetypeCommitment[];
   draftSignals: DraftSignals | null;
-  enablerPayoffBalance: EnablerPayoffBalance[];
   manaBaseStatus: ManaBaseStatus | null;
   curveAnalysis: CurveAnalysis | null;
   topRegrets: { card: CubeCard; passedAt: number; whyRegret: string }[];
@@ -605,7 +649,6 @@ function DraftIntelligencePanel({
   draftPhase,
   archetypeCommitments,
   draftSignals,
-  enablerPayoffBalance,
   manaBaseStatus,
   curveAnalysis,
   topRegrets,
@@ -707,17 +750,6 @@ function DraftIntelligencePanel({
               </div>
             )}
           </div>
-        </div>
-      )}
-
-      {/* Combo Balance */}
-      {enablerPayoffBalance.length > 0 && enablerPayoffBalance.some(b => b.balance !== 'balanced') && (
-        <div className="p-2 border-b border-white/[0.06]">
-          {enablerPayoffBalance.filter(b => b.balance !== 'balanced').slice(0, 1).map((balance, i) => (
-            <div key={i} className="text-[10px] text-white/50">
-              <span className="text-white/70">{balance.archetype}:</span> {balance.recommendation}
-            </div>
-          ))}
         </div>
       )}
 

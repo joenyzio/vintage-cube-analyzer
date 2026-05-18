@@ -1,16 +1,17 @@
 /**
- * Simulation Insights Service
+ * Simulation & Win Rate Insights Service
  *
- * Provides access to draft simulation data for UI display.
- * Data comes from running 10,000 simulated drafts with 8 bot drafters.
+ * Provides access to:
+ * 1. Draft simulation data (from bot drafts) - pick patterns, wheel rates, archetype fit
+ * 2. 17lands win rate data (from Arena) - IWD (Improvement When Drawn), GIH WR
  *
- * Key insight: Color combinations matter significantly within archetypes:
- * - Midrange: Sultai (1929 ELO) >> Selesnya (1729 ELO)
- * - Aggro: Jeskai (1893 ELO) >> Boros (1795 ELO)
- * - Tempo: Sultai (1907 ELO) >> Mardu (1788 ELO)
+ * Key insight: ELO (what drafters believe) and IWD (what actually wins) can diverge.
+ * When they agree = high confidence. When they disagree = trap or steal signal.
  */
 
 import simulationData from '../data/simulation-data.json';
+import winRateData from '../data/17lands-winrates.json';
+import { getEloData, getPercentile } from './eloHelpers';
 
 // Type definitions
 export interface CardSimStats {
@@ -43,6 +44,67 @@ export interface SimulationMetadata {
   totalDecks: number;
 }
 
+// ============================================================================
+// 17LANDS WIN RATE TYPES
+// ============================================================================
+
+interface WinRateCardData {
+  gihWR: number | null;
+  iwd: number | null;
+  avgPick: number | null;
+  gameCount: number;
+  playRate: number | null;
+  iwdByColor: Record<string, { iwd: number | null; games: number }>;
+}
+
+interface WinRateDataFile {
+  metadata: {
+    fetchedAt: string;
+    expansion: string;
+    totalCards: number;
+    cardsWithIWD: number;
+  };
+  cards: Record<string, WinRateCardData>;
+  missingCards: { name: string; reason: string }[];
+}
+
+// ============================================================================
+// CARD SIGNAL TYPES (Combined ELO + IWD)
+// ============================================================================
+
+export type AffinityTier = 'S' | 'A' | 'B' | 'C' | null;
+export type SignalConfidence = 'aligned' | 'divergent' | 'unknown';
+export type DivergenceDirection = 'trap' | 'steal';
+export type IWDSource = 'color-filtered' | 'global' | 'none';
+
+export interface IWDData {
+  value: number | null;
+  source: IWDSource;
+  gameCount: number;
+  colorCombo?: string;
+}
+
+export interface DivergenceInfo {
+  direction: DivergenceDirection;
+  magnitude: number;
+  explanation: string;
+}
+
+export interface CardSignal {
+  cardName: string;
+  elo: number | null;
+  eloPercentile: number | null;
+  affinityTier: AffinityTier;
+  iwd: IWDData;
+  gihWR: number | null;
+  confidence: SignalConfidence;
+  divergence?: DivergenceInfo;
+}
+
+// ============================================================================
+// DATA LOADING
+// ============================================================================
+
 // Extract data from JSON
 const CARD_STATS: Record<string, CardSimStats> = simulationData.cardStats;
 const ARCHETYPE_DISTRIBUTION: Record<string, ArchetypeStats> = simulationData.archetypeDistribution;
@@ -66,6 +128,21 @@ const WORST_VARIANTS: Record<string, { name: string; colors: string; elo: number
   aggro: { name: 'Boros', colors: 'RW', elo: 1795 },
   tempo: { name: 'Mardu', colors: 'BRW', elo: 1788 },
 };
+
+// 17lands win rate data
+const WIN_RATE_DATA = winRateData as WinRateDataFile;
+const WIN_RATE_CARDS = WIN_RATE_DATA.cards;
+const WIN_RATE_MISSING = new Set(WIN_RATE_DATA.missingCards.map(m => m.name));
+
+// Thresholds for win rate signal reliability
+const MIN_GAMES_GLOBAL = 500;
+const MIN_GAMES_COLOR = 100;
+
+// Thresholds for divergence detection
+const IWD_TRAP_THRESHOLD = 0.01;   // <1% IWD = weak card
+const IWD_STEAL_THRESHOLD = 0.03;  // >3% IWD = strong card
+const ELO_HIGH_PERCENTILE = 75;    // Top 25% by ELO
+const ELO_LOW_PERCENTILE = 50;     // Bottom 50% by ELO
 
 /**
  * Normalize card name for lookup
@@ -357,3 +434,257 @@ export function getRankedVariants(archetypeId: string, limit = 5): ArchetypeSubt
     .sort((a, b) => b.avgDeckQuality - a.avgDeckQuality)
     .slice(0, limit);
 }
+
+// ============================================================================
+// 17LANDS WIN RATE FUNCTIONS
+// ============================================================================
+
+/**
+ * Get raw win rate data for a card
+ */
+export function getWinRateData(cardName: string): WinRateCardData | null {
+  // Try direct lookup
+  if (WIN_RATE_CARDS[cardName]) return WIN_RATE_CARDS[cardName];
+
+  // Try normalized name (front face of split cards)
+  const normalized = normalizeCardName(cardName);
+  if (WIN_RATE_CARDS[normalized]) return WIN_RATE_CARDS[normalized];
+
+  return null;
+}
+
+/**
+ * Check if card is missing from 17lands (falls back to ELO)
+ */
+export function isMissingWinRateData(cardName: string): boolean {
+  return WIN_RATE_MISSING.has(cardName) || getWinRateData(cardName) === null;
+}
+
+/**
+ * Get why a card is missing from 17lands
+ */
+export function getMissingReason(cardName: string): string | null {
+  const missing = WIN_RATE_DATA.missingCards.find(m => m.name === cardName);
+  if (!missing) return null;
+
+  if (missing.reason === 'not_in_arena') {
+    return 'Not in Arena Powered Cube — using ELO and affinity matrix';
+  }
+  if (missing.reason === 'low_sample') {
+    return 'Low sample size (<500 games) — using ELO only';
+  }
+  return 'No win rate data available';
+}
+
+/**
+ * Get IWD (Improvement When Drawn) for a card, optionally filtered by colors.
+ * Handles sample size thresholds and falls back to global IWD when needed.
+ */
+export function getIWD(cardName: string, colors?: string[]): IWDData {
+  const data = getWinRateData(cardName);
+
+  // No data at all
+  if (!data) {
+    return { value: null, source: 'none', gameCount: 0 };
+  }
+
+  // Try color-filtered IWD if colors provided
+  if (colors && colors.length > 0) {
+    // Sort colors in WUBRG order for lookup
+    const wubrgOrder = ['W', 'U', 'B', 'R', 'G'];
+    const sortedColors = [...colors].sort((a, b) =>
+      wubrgOrder.indexOf(a) - wubrgOrder.indexOf(b)
+    ).join('');
+
+    const colorData = data.iwdByColor[sortedColors];
+    if (colorData && colorData.games >= MIN_GAMES_COLOR && colorData.iwd !== null) {
+      return {
+        value: colorData.iwd,
+        source: 'color-filtered',
+        gameCount: colorData.games,
+        colorCombo: sortedColors,
+      };
+    }
+
+    // Try two-color subsets if three-color didn't match
+    if (colors.length >= 2) {
+      for (let i = 0; i < colors.length; i++) {
+        for (let j = i + 1; j < colors.length; j++) {
+          const pair = [colors[i], colors[j]].sort((a, b) =>
+            wubrgOrder.indexOf(a) - wubrgOrder.indexOf(b)
+          ).join('');
+          const pairData = data.iwdByColor[pair];
+          if (pairData && pairData.games >= MIN_GAMES_COLOR && pairData.iwd !== null) {
+            return {
+              value: pairData.iwd,
+              source: 'color-filtered',
+              gameCount: pairData.games,
+              colorCombo: pair,
+            };
+          }
+        }
+      }
+    }
+  }
+
+  // Fall back to global IWD
+  if (data.iwd !== null && data.gameCount >= MIN_GAMES_GLOBAL) {
+    return {
+      value: data.iwd,
+      source: 'global',
+      gameCount: data.gameCount,
+    };
+  }
+
+  // No reliable data
+  return { value: null, source: 'none', gameCount: data.gameCount };
+}
+
+/**
+ * Get GIH WR (Games In Hand Win Rate) for a card
+ */
+export function getGIHWR(cardName: string): number | null {
+  const data = getWinRateData(cardName);
+  if (!data || data.gameCount < MIN_GAMES_GLOBAL) return null;
+  return data.gihWR;
+}
+
+// ============================================================================
+// CARD SIGNAL - Combined ELO + IWD Analysis
+// ============================================================================
+
+/**
+ * Get combined card signal with ELO, IWD, and divergence detection.
+ * This is the primary function for Phase 3 (UI) and Phase 4 (coach) to consume.
+ *
+ * @param cardName - Card name to analyze
+ * @param colors - User's current colors for archetype-filtered IWD
+ * @param affinityTier - Optional affinity tier from comprehensiveAffinities
+ */
+export function getCardSignal(
+  cardName: string,
+  colors?: string[],
+  affinityTier?: AffinityTier
+): CardSignal {
+  // Get ELO data
+  const eloData = getEloData(cardName);
+  const elo = eloData?.elo ?? null;
+  const eloPercentile = elo !== null ? getPercentile(cardName) : null;
+
+  // Get IWD data (with color filtering)
+  const iwdData = getIWD(cardName, colors);
+
+  // Get GIH WR
+  const gihWR = getGIHWR(cardName);
+
+  // Determine confidence and divergence
+  let confidence: SignalConfidence = 'unknown';
+  let divergence: DivergenceInfo | undefined;
+
+  if (iwdData.source === 'none' || iwdData.value === null) {
+    // No win rate data - confidence is unknown
+    confidence = 'unknown';
+  } else if (eloPercentile !== null) {
+    const iwd = iwdData.value;
+
+    // Check for TRAP: High ELO but low IWD
+    if (eloPercentile >= ELO_HIGH_PERCENTILE && iwd < IWD_TRAP_THRESHOLD) {
+      confidence = 'divergent';
+      divergence = {
+        direction: 'trap',
+        magnitude: Math.abs(iwd - IWD_TRAP_THRESHOLD),
+        explanation: `High pick priority (top ${100 - eloPercentile}% by ELO) but weak performance (${(iwd * 100).toFixed(1)}% IWD). Often picked too early.`,
+      };
+    }
+    // Check for STEAL: Low ELO but high IWD
+    else if (eloPercentile < ELO_LOW_PERCENTILE && iwd > IWD_STEAL_THRESHOLD) {
+      confidence = 'divergent';
+      divergence = {
+        direction: 'steal',
+        magnitude: iwd - IWD_STEAL_THRESHOLD,
+        explanation: `Lower pick priority (${eloPercentile}th percentile ELO) but strong performance (+${(iwd * 100).toFixed(1)}% IWD). Often available late.`,
+      };
+    }
+    // Signals agree
+    else {
+      confidence = 'aligned';
+    }
+  }
+
+  return {
+    cardName,
+    elo,
+    eloPercentile,
+    affinityTier: affinityTier ?? null,
+    iwd: iwdData,
+    gihWR,
+    confidence,
+    divergence,
+  };
+}
+
+/**
+ * Get card signals for multiple cards (e.g., a pack)
+ */
+export function getPackSignals(
+  cardNames: string[],
+  colors?: string[],
+  affinityTiers?: Record<string, AffinityTier>
+): CardSignal[] {
+  return cardNames.map(name =>
+    getCardSignal(name, colors, affinityTiers?.[name])
+  );
+}
+
+/**
+ * Format IWD for display
+ */
+export function formatIWD(iwd: IWDData): string {
+  if (iwd.source === 'none' || iwd.value === null) {
+    return 'N/A';
+  }
+  const sign = iwd.value >= 0 ? '+' : '';
+  const suffix = iwd.source === 'color-filtered' && iwd.colorCombo
+    ? ` (${iwd.colorCombo})`
+    : '';
+  return `${sign}${(iwd.value * 100).toFixed(1)}%${suffix}`;
+}
+
+/**
+ * Format GIH WR for display
+ */
+export function formatGIHWR(gihWR: number | null): string {
+  if (gihWR === null) return 'N/A';
+  return `${(gihWR * 100).toFixed(1)}%`;
+}
+
+/**
+ * Get a brief divergence summary for UI display
+ */
+export function getDivergenceSummary(signal: CardSignal): string | null {
+  if (!signal.divergence) return null;
+
+  if (signal.divergence.direction === 'trap') {
+    return `⚠️ Trap: ${signal.divergence.explanation}`;
+  }
+  if (signal.divergence.direction === 'steal') {
+    return `💎 Steal: ${signal.divergence.explanation}`;
+  }
+  return null;
+}
+
+/**
+ * Get win rate metadata for UI display
+ */
+export function getWinRateMetadata(): {
+  fetchedAt: string;
+  totalCards: number;
+  cardsWithIWD: number;
+} {
+  return {
+    fetchedAt: WIN_RATE_DATA.metadata.fetchedAt,
+    totalCards: WIN_RATE_DATA.metadata.totalCards,
+    cardsWithIWD: WIN_RATE_DATA.metadata.cardsWithIWD,
+  };
+}
+

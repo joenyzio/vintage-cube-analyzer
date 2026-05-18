@@ -257,6 +257,92 @@ function generateMarkdownReport(analysis: AggregateAnalysis & { playerCount?: nu
     lines.push('');
   }
 
+  // Key Card Routing - Shows where archetype-defining cards end up
+  lines.push('## Key Card Routing');
+  lines.push('');
+  lines.push('Where do archetype-defining cards actually end up? This shows the breakdown');
+  lines.push('of which archetypes take each key card, revealing whether similar archetypes');
+  lines.push('(like Storm and Doomsday) are producing meaningfully different decks.');
+  lines.push('');
+
+  // Define key cards for each combo archetype
+  const keyCardsByArchetype: Record<string, string[]> = {
+    'doomsday': ['Doomsday', "Thassa's Oracle", "Lion's Eye Diamond"],
+    'storm': ['Tendrils of Agony', 'Brain Freeze', 'Yawgmoth\'s Will', 'Past in Flames'],
+    'reanimator': ['Entomb', 'Reanimate', 'Exhume', 'Griselbrand'],
+    'sneak': ['Sneak Attack', 'Through the Breach', 'Show and Tell'],
+  };
+
+  // Shared cards between archetypes (interesting to see where they route)
+  const sharedKeyCards = [
+    'Dark Ritual', 'Cabal Ritual', 'Lotus Petal', "Lion's Eye Diamond",
+    'Gitaxian Probe', 'Brainstorm', 'Ponder', 'Preordain'
+  ];
+
+  for (const [archetypeId, keyCards] of Object.entries(keyCardsByArchetype)) {
+    const archetypeName = archetypeId.charAt(0).toUpperCase() + archetypeId.slice(1);
+    lines.push(`### ${archetypeName} Key Cards`);
+    lines.push('');
+    lines.push('| Card | Times Picked | Primary Archetype | Secondary | Third |');
+    lines.push('|------|--------------|-------------------|-----------|-------|');
+
+    for (const cardName of keyCards) {
+      const stats = analysis.cardStats[cardName];
+      if (!stats || stats.pickCount === 0) continue;
+
+      const archetypes = Object.entries(stats.archetypeBreakdown)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3);
+
+      const formatArch = (entry: [string, number] | undefined) => {
+        if (!entry) return '-';
+        const [arch, count] = entry;
+        const pct = ((count / stats.pickCount) * 100).toFixed(0);
+        return `${arch} (${pct}%)`;
+      };
+
+      lines.push(`| ${cardName} | ${stats.pickCount} | ${formatArch(archetypes[0])} | ${formatArch(archetypes[1])} | ${formatArch(archetypes[2])} |`);
+    }
+    lines.push('');
+  }
+
+  // Storm vs Doomsday Split Analysis
+  lines.push('### Storm vs Doomsday Split');
+  lines.push('');
+  lines.push('Cards shared between Storm and Doomsday - do they split appropriately?');
+  lines.push('');
+  lines.push('| Card | Storm % | Doomsday % | Other % | Verdict |');
+  lines.push('|------|---------|------------|---------|---------|');
+
+  for (const cardName of sharedKeyCards) {
+    const stats = analysis.cardStats[cardName];
+    if (!stats || stats.pickCount === 0) continue;
+
+    const stormCount = stats.archetypeBreakdown['storm'] || 0;
+    const doomsdayCount = stats.archetypeBreakdown['doomsday'] || 0;
+    const otherCount = stats.pickCount - stormCount - doomsdayCount;
+
+    const stormPct = ((stormCount / stats.pickCount) * 100).toFixed(0);
+    const doomsdayPct = ((doomsdayCount / stats.pickCount) * 100).toFixed(0);
+    const otherPct = ((otherCount / stats.pickCount) * 100).toFixed(0);
+
+    let verdict = '';
+    if (stormCount === 0 && doomsdayCount === 0) {
+      verdict = 'Neither combo takes it';
+    } else if (stormCount > doomsdayCount * 2) {
+      verdict = 'Storm-leaning';
+    } else if (doomsdayCount > stormCount * 2) {
+      verdict = 'Doomsday-leaning';
+    } else if (stormCount > 0 && doomsdayCount > 0) {
+      verdict = 'Healthy split';
+    } else {
+      verdict = '-';
+    }
+
+    lines.push(`| ${cardName} | ${stormPct}% | ${doomsdayPct}% | ${otherPct}% | ${verdict} |`);
+  }
+  lines.push('');
+
   // Anomalies
   lines.push('## Anomalies');
   lines.push('');

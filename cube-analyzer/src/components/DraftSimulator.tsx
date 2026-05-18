@@ -18,7 +18,6 @@ import type {
   CardEloHistory,
   ArchetypeCommitment,
   DraftSignals,
-  EnablerPayoffBalance,
   ManaBaseStatus,
   ContextualGrade,
 } from '../types/draftSimulator';
@@ -53,6 +52,7 @@ import {
   calculateDeckElo,
   compareByElo,
 } from '../services/eloHelpers';
+import { getCardSignal } from '../services/simulationInsights';
 import {
   rateAllCards,
   createInitialContext,
@@ -238,10 +238,6 @@ function getDraftSignals(
   };
 }
 
-function getEnablerPayoffBalance(_picks: CubeCard[]): EnablerPayoffBalance[] {
-  return []; // Simplified for now
-}
-
 // Helper to get card from pack by rating
 function getCardByRating(pack: CubeCard[], cardName: string): CubeCard | undefined {
   return pack.find(c => c.name === cardName);
@@ -405,6 +401,10 @@ export function DraftSimulator({ cards, autoStart = false }: DraftSimulatorProps
   const [draftMode, setDraftMode] = useState<DraftMode>('open');
   const [selectedArchetype, setSelectedArchetype] = useState<string | null>(null);
   const [showMobileArchetypeModal, setShowMobileArchetypeModal] = useState(false);
+
+  // Pack sort state
+  type PackSortMode = 'default' | 'elo' | 'iwd' | 'divergence';
+  const [packSortMode, setPackSortMode] = useState<PackSortMode>('default');
   const [lastPickResult, setLastPickResult] = useState<{
     yourPick: CubeCard;
     optimalPick: CubeCard;
@@ -835,11 +835,6 @@ export function DraftSimulator({ cards, autoStart = false }: DraftSimulatorProps
     return getDraftSignals(draftState.wheeledCards, draftState.allPlayerPicks);
   }, [draftState?.wheeledCards, draftState?.allPlayerPicks]);
 
-  const enablerPayoffBalance = useMemo(() => {
-    if (!draftState || draftState.picks.length < 3) return [];
-    return getEnablerPayoffBalance(draftState.picks);
-  }, [draftState?.picks]);
-
   const manaBaseStatus = useMemo(() => {
     if (!draftState || draftState.picks.length < 5) return null;
     return getManaBaseStatus(draftState.picks);
@@ -895,38 +890,42 @@ export function DraftSimulator({ cards, autoStart = false }: DraftSimulatorProps
     };
   }, [draftState]);
 
-  // Recommended pick - NOW ARCHETYPE-AWARE
+  // Recommended pick - ARCHETYPE + IWD AWARE
   const getRecommendedPick = useMemo(() => {
     if (!draftState || draftState.isComplete) return null;
     const currentPack = draftState.tablePacks[0];
     if (!currentPack.length) return null;
 
-    // When committed to an archetype, sort by archetype-adjusted ELO
+    // Get current colors for IWD filtering
+    const colors = Object.entries(colorCounts).filter(([_, count]) => count >= 2).map(([color]) => color);
+
+    // Get IWD-adjusted score: penalize traps (-100), boost steals (+50)
+    const getIwdAdjustment = (cardName: string): number => {
+      const signal = getCardSignal(cardName, colors);
+      if (signal.divergence?.direction === 'trap') return -100;
+      if (signal.divergence?.direction === 'steal') return 50;
+      return 0;
+    };
+
+    // When committed to an archetype, sort by archetype-adjusted ELO + IWD
     if (draftMode !== 'open' && selectedArchetype) {
-      const cardsWithArchetypeElo = currentPack.map(card => {
+      const cardsWithScore = currentPack.map(card => {
         const archRating = getArchetypeWeightedRating(card.name, selectedArchetype);
-        return {
-          card,
-          adjustedElo: archRating?.adjustedElo || (getEloData(card.name)?.elo || 1500),
-          tier: archRating?.tier,
-        };
+        const baseElo = archRating?.adjustedElo || (getEloData(card.name)?.elo || 1500);
+        return { card, score: baseElo + getIwdAdjustment(card.name) };
       });
-      // Sort by adjusted ELO (highest first)
-      cardsWithArchetypeElo.sort((a, b) => b.adjustedElo - a.adjustedElo);
-      return cardsWithArchetypeElo[0]?.card || null;
+      cardsWithScore.sort((a, b) => b.score - a.score);
+      return cardsWithScore[0]?.card || null;
     }
 
-    // Default: Get synergy-adjusted ELO for each card
-    const cardsWithAdjustedElo = currentPack.map(card => {
+    // Default: synergy-adjusted ELO + IWD
+    const cardsWithScore = currentPack.map(card => {
       const synergy = getSynergyAdjustedElo(card, draftState.picks, currentPack);
-      return { card, adjustedElo: synergy.adjustedElo };
+      return { card, score: synergy.adjustedElo + getIwdAdjustment(card.name) };
     });
-
-    // Sort by adjusted ELO (highest first)
-    cardsWithAdjustedElo.sort((a, b) => b.adjustedElo - a.adjustedElo);
-
-    return cardsWithAdjustedElo[0]?.card || null;
-  }, [draftState, draftMode, selectedArchetype]);
+    cardsWithScore.sort((a, b) => b.score - a.score);
+    return cardsWithScore[0]?.card || null;
+  }, [draftState, draftMode, selectedArchetype, colorCounts]);
 
   // Coach explanation - uses synergy-adjusted ELO for consistency
   const coachExplanation = useMemo(() => {
@@ -954,8 +953,11 @@ export function DraftSimulator({ cards, autoStart = false }: DraftSimulatorProps
     picks.forEach((c: CubeCard) => c.color_identity?.forEach(col => { colorCts[col] = (colorCts[col] || 0) + 1; }));
     const mainColors = Object.entries(colorCts).filter(([_, count]) => count >= 2).map(([color]) => color);
 
+    // IWD-aware reasoning
+    const bestSignal = getCardSignal(bestCard.name, mainColors);
     let mainReason = 'Best card in pack';
-    if (percentile >= 95) mainReason = 'Premium bomb - always take';
+    if (bestSignal.divergence?.direction === 'steal') mainReason = 'Undervalued gem - high win rate';
+    else if (percentile >= 95) mainReason = 'Premium bomb - always take';
     else if (bestSynergy.adjustment > 50) mainReason = 'Strong synergy with your deck';
     else if (mainColors.length > 0 && bestCard.color_identity?.every(c => mainColors.includes(c))) mainReason = 'On-color and powerful';
 
@@ -1320,6 +1322,45 @@ export function DraftSimulator({ cards, autoStart = false }: DraftSimulatorProps
   const currentPack = draftState.tablePacks[0];
   const progress = ((draftState.packNumber - 1) * 15 + draftState.pickNumber - 1) / 45;
 
+  // Get current colors for IWD filtering (colors with 2+ cards)
+  const currentColors = Object.entries(colorCounts).filter(([_, count]) => count >= 2).map(([color]) => color);
+
+  // Sort pack based on selected sort mode
+  const sortedPack = useMemo(() => {
+    if (!currentPack || currentPack.length === 0 || packSortMode === 'default') {
+      return currentPack;
+    }
+
+    return [...currentPack].sort((a, b) => {
+      if (packSortMode === 'elo') {
+        return compareByElo(a.name, b.name);
+      }
+
+      if (packSortMode === 'iwd') {
+        const signalA = getCardSignal(a.name, currentColors);
+        const signalB = getCardSignal(b.name, currentColors);
+        const iwdA = signalA.iwd.value ?? -1;
+        const iwdB = signalB.iwd.value ?? -1;
+        return iwdB - iwdA;
+      }
+
+      if (packSortMode === 'divergence') {
+        const signalA = getCardSignal(a.name, currentColors);
+        const signalB = getCardSignal(b.name, currentColors);
+        // Divergent cards first (steals, then traps), then aligned, then unknown
+        const scoreA = signalA.divergence
+          ? (signalA.divergence.direction === 'steal' ? 3 : 2)
+          : (signalA.confidence === 'aligned' ? 1 : 0);
+        const scoreB = signalB.divergence
+          ? (signalB.divergence.direction === 'steal' ? 3 : 2)
+          : (signalB.confidence === 'aligned' ? 1 : 0);
+        return scoreB - scoreA;
+      }
+
+      return 0;
+    });
+  }, [currentPack, packSortMode, currentColors]);
+
   return (
     <div className="fixed top-0 bottom-0 right-0 left-0 lg:left-56 z-[60] flex bg-black pt-[env(safe-area-inset-top)]">
       {/* Achievement Popup */}
@@ -1349,7 +1390,6 @@ export function DraftSimulator({ cards, autoStart = false }: DraftSimulatorProps
         draftPhase={draftPhase}
         archetypeCommitments={archetypeCommitments}
         draftSignals={draftSignals}
-        enablerPayoffBalance={enablerPayoffBalance}
         manaBaseStatus={manaBaseStatus}
         curveAnalysis={curveAnalysis}
         deckWinRate={deckWinRate}
@@ -1363,6 +1403,7 @@ export function DraftSimulator({ cards, autoStart = false }: DraftSimulatorProps
         selectedArchetype={selectedArchetype}
         onModeChange={setDraftMode}
         onArchetypeSelect={setSelectedArchetype}
+        currentColors={currentColors}
       />
 
       {/* Main Content */}
@@ -1470,11 +1511,31 @@ export function DraftSimulator({ cards, autoStart = false }: DraftSimulatorProps
 
         {/* Pack Grid */}
         <div className="flex-1 overflow-y-auto p-4">
+          {/* Sort Controls - compact pill buttons */}
+          {coachMode && (
+            <div className="flex items-center gap-1 mb-3">
+              <span className="text-[10px] text-white/30 uppercase tracking-wider mr-1">Sort</span>
+              {(['default', 'elo', 'iwd', 'divergence'] as const).map(mode => (
+                <button
+                  key={mode}
+                  onClick={() => setPackSortMode(mode)}
+                  className={`px-2 py-0.5 rounded text-[10px] font-medium transition-all ${
+                    packSortMode === mode
+                      ? 'bg-purple-500/30 text-purple-300 ring-1 ring-purple-500/50'
+                      : 'bg-white/5 text-white/40 hover:bg-white/10'
+                  }`}
+                >
+                  {mode === 'default' ? 'Pack' : mode === 'elo' ? 'ELO' : mode === 'iwd' ? 'IWD' : 'Signals'}
+                </button>
+              ))}
+            </div>
+          )}
           <DraftPack
-            pack={currentPack}
+            pack={sortedPack}
             draftState={draftState}
             recommendedCardId={getRecommendedPick?.id}
             showCoachVisuals={coachMode}
+            currentColors={currentColors}
             isQuizMode={quizDraftMode}
             isShowingReveal={showPickReveal}
             pendingPickId={pendingPick?.id}
@@ -1606,6 +1667,7 @@ export function DraftSimulator({ cards, autoStart = false }: DraftSimulatorProps
           getSynergyData={getSynergyData}
           draftMode={draftMode}
           selectedArchetype={selectedArchetype}
+          currentColors={Object.entries(colorCounts).filter(([_, count]) => count >= 2).map(([color]) => color)}
         />
       )}
 

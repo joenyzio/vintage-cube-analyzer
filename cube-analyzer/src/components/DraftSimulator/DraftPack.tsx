@@ -2,20 +2,22 @@
  * Draft Pack Component
  *
  * Renders the grid of cards in the current pack.
+ * Integrates IWD-based CardSignal for divergence detection.
  */
 
 // React is used for JSX
 import type { CubeCard } from '../../types/card';
 import type { ContextualGrade, DraftState } from '../../types/draftSimulator';
 import { DraftPackCard } from './DraftPackCard';
-import { getPercentile, getWheelLikelihood } from '../../services/eloHelpers';
-import { getWheelCategory } from '../../services/simulationInsights';
+import { getWheelCategory, getCardSignal } from '../../services/simulationInsights';
 
 interface DraftPackProps {
   pack: CubeCard[];
   draftState: DraftState;
   recommendedCardId?: string;
   showCoachVisuals: boolean;
+  // Current deck colors for IWD filtering
+  currentColors?: string[];
   // Quiz mode
   isQuizMode: boolean;
   isShowingReveal: boolean;
@@ -37,6 +39,7 @@ export function DraftPack({
   draftState,
   recommendedCardId,
   showCoachVisuals,
+  currentColors = [],
   isQuizMode,
   isShowingReveal,
   pendingPickId,
@@ -50,13 +53,12 @@ export function DraftPack({
     <div className="grid grid-cols-3 md:grid-cols-4 gap-3 md:gap-4">
       {pack.map((card, index) => {
         const isRecommended = recommendedCardId === card.id;
-        const wheelLikelihood = getWheelLikelihood(card.name);
-        const percentile = getPercentile(card.name);
-        const isPremium = percentile >= 75;
         const wheelCategory = getWheelCategory(card.name);
         const actuallyWheeled = draftState.wheeledCards.has(card.id);
         const cardGrade = getGrade(card);
         const synergyAdjustment = getSynergyAdjustment(card);
+        // Get IWD-based card signal for divergence detection
+        const cardSignal = showCoachVisuals ? getCardSignal(card.name, currentColors) : undefined;
 
         // Quiz mode state
         const isPendingPick = isQuizMode && pendingPickId === card.id;
@@ -78,10 +80,9 @@ export function DraftPack({
             grade={cardGrade.grade}
             synergyAdjustment={synergyAdjustment}
             wheelCategory={wheelCategory}
-            wheelLikelihood={wheelLikelihood}
-            isPremium={isPremium}
             actuallyWheeled={actuallyWheeled}
             showCoachVisuals={showCoachVisuals}
+            cardSignal={cardSignal}
             isQuizMode={isQuizMode}
             isShowingReveal={isShowingReveal}
             isPendingPick={isPendingPick}
