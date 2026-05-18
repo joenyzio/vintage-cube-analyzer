@@ -15,6 +15,7 @@ import {
   updateArchetypeWeights,
 } from '../../src/services/cardRating';
 import { buildDeck } from './deck-builder';
+import { applyIwdAdjustments, getCurrentColors } from './iwd-adjustment';
 
 // Defaults - can be overridden via options
 const DEFAULT_DRAFTER_COUNT = 8;
@@ -24,6 +25,7 @@ const TOTAL_PICKS = PACKS_PER_DRAFTER * CARDS_PER_PACK;  // 45
 
 export interface SimulationOptions {
   drafterCount?: number;
+  useIwdSignals?: boolean;  // Apply 17lands IWD adjustments to picks
 }
 
 // ============================================
@@ -82,6 +84,7 @@ function generatePacks(cube: CubeCard[], seed: number, drafterCount: number): Pa
 
 export function simulateDraft(cube: CubeCard[], seed: number, options?: SimulationOptions): DraftResult {
   const drafterCount = options?.drafterCount ?? DEFAULT_DRAFTER_COUNT;
+  const useIwdSignals = options?.useIwdSignals ?? false;
   const totalCardsNeeded = drafterCount * PACKS_PER_DRAFTER * CARDS_PER_PACK;
 
   // Validate cube size
@@ -130,7 +133,14 @@ export function simulateDraft(cube: CubeCard[], seed: number, options?: Simulati
         };
 
         // Rate all cards in pack
-        const ratings = rateAllCards(pack.cards, drafter.context);
+        let ratings = rateAllCards(pack.cards, drafter.context);
+
+        // Apply IWD adjustments if enabled (bot uses CardSignal like a human would)
+        if (useIwdSignals) {
+          const currentColors = getCurrentColors(drafter.context.colorCounts);
+          ratings = applyIwdAdjustments(ratings, currentColors);
+        }
+
         const sorted = [...ratings].sort((a, b) => b.contextualScore - a.contextualScore);
 
         // Pick the highest-rated card (pure optimal strategy)

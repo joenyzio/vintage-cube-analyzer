@@ -32,6 +32,7 @@ interface Config {
   sampleCount: number;
   playerCount: number;
   outputSuffix: string;
+  useIwdSignals: boolean;  // Apply 17lands IWD adjustments
 }
 
 function parseArgs(): Config {
@@ -43,6 +44,7 @@ function parseArgs(): Config {
     sampleCount: 5,
     playerCount: 8,
     outputSuffix: '',
+    useIwdSignals: false,
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -60,6 +62,8 @@ function parseArgs(): Config {
       i++;
     } else if (args[i] === '--no-samples') {
       config.showSamples = false;
+    } else if (args[i] === '--iwd') {
+      config.useIwdSignals = true;
     } else if (args[i] === '--samples' && args[i + 1]) {
       config.sampleCount = parseInt(args[i + 1], 10);
       i++;
@@ -75,6 +79,7 @@ Options:
   --players N     Number of players per draft (default: 8)
   --seed N        Random seed for reproducibility
   --output NAME   Suffix for output files (e.g., "6p" -> simulation-data-6p.json)
+  --iwd           Use IWD signals (17lands win rate data) in bot picks
   --no-samples    Don't display sample decks
   --samples N     Number of sample drafts to display (default: 5)
   --help          Show this help message
@@ -83,14 +88,18 @@ Examples:
   npx tsx scripts/simulate-drafts.ts --count 100
   npx tsx scripts/simulate-drafts.ts --count 1000 --players 6 --output 6p
   npx tsx scripts/simulate-drafts.ts --count 1000 --seed 42
+  npx tsx scripts/simulate-drafts.ts --count 10000 --iwd --output iwd
 `);
       process.exit(0);
     }
   }
 
-  // Auto-generate output suffix if using non-standard player count
+  // Auto-generate output suffix if using non-standard player count or IWD
   if (config.playerCount !== 8 && !config.outputSuffix) {
     config.outputSuffix = `${config.playerCount}p`;
+  }
+  if (config.useIwdSignals && !config.outputSuffix) {
+    config.outputSuffix = 'iwd';
   }
 
   return config;
@@ -117,6 +126,7 @@ async function main(): Promise<void> {
   console.log(`Drafts to simulate: ${config.draftCount}`);
   console.log(`Players per draft: ${config.playerCount}`);
   console.log(`Cards used per draft: ${cardsPerDraft} (${undraftedCards} undrafted)`);
+  console.log(`IWD signals: ${config.useIwdSignals ? 'ENABLED' : 'disabled'}`);
   if (config.seed !== undefined) {
     console.log(`Seed: ${config.seed}`);
   }
@@ -137,6 +147,7 @@ async function main(): Promise<void> {
 
   const results = simulateMultipleDrafts(cube, config.draftCount, config.seed, {
     drafterCount: config.playerCount,
+    useIwdSignals: config.useIwdSignals,
   });
 
   const draftTime = Date.now() - startTime;
