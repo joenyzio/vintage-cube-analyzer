@@ -21,6 +21,7 @@ import { SimulationReports } from './components/SimulationReports';
 import { LandingPage } from './components/LandingPage';
 import { SimulationAnalysis } from './components/SimulationAnalysis';
 import { StatsOverview } from './components/StatsOverview';
+import { IWDAnalysis } from './components/IWDAnalysis';
 import {
   BarChart3, Layers, Trophy, BookOpen, Search, Sparkles,
   Gamepad2, Link2, Swords, ExternalLink, FileStack,
@@ -34,7 +35,7 @@ type SectionId = 'home' | 'practice' | 'learn' | 'reference';
 // Sub-tabs within each section
 type PracticeTab = 'draft' | 'games';
 type LearnTab = 'archetypes' | 'decks' | 'guide' | 'synergies' | 'buildaround' | 'graph' | 'prep';
-type ReferenceTab = 'cards' | 'power' | 'overview' | 'odds' | 'matchups' | 'mechanics' | 'simulation' | 'analysis' | 'stats' | 'about';
+type ReferenceTab = 'cards' | 'power' | 'overview' | 'odds' | 'matchups' | 'mechanics' | 'simulation' | 'analysis' | 'winrates' | 'stats' | 'about';
 
 interface NavItem {
   id: SectionId;
@@ -77,6 +78,7 @@ const REFERENCE_TABS = [
   { id: 'mechanics' as ReferenceTab, label: 'Mechanics', icon: Wrench },
   { id: 'simulation' as ReferenceTab, label: 'Simulation', icon: FlaskConical },
   { id: 'analysis' as ReferenceTab, label: 'Analysis', icon: LineChart },
+  { id: 'winrates' as ReferenceTab, label: 'Win Rates', icon: Target },
   { id: 'about' as ReferenceTab, label: 'About', icon: Info },
 ];
 
@@ -215,6 +217,7 @@ function App() {
       'mechanics': { section: 'reference', tab: 'mechanics' },
       'simulation': { section: 'reference', tab: 'simulation' },
       'analysis': { section: 'reference', tab: 'analysis' },
+      'winrates': { section: 'reference', tab: 'winrates' },
       'stats': { section: 'reference', tab: 'stats' },
       'about': { section: 'reference', tab: 'about' },
     };
@@ -313,6 +316,7 @@ function App() {
             {referenceTab === 'mechanics' && <PowerAnalysis cards={cards} />}
             {referenceTab === 'simulation' && <SimulationReports cards={cards} />}
             {referenceTab === 'analysis' && <SimulationAnalysis cards={cards} />}
+            {referenceTab === 'winrates' && <IWDAnalysis cards={cards} />}
             {referenceTab === 'stats' && <StatsOverview cards={cards} colorDistribution={colorDistribution} typeDistribution={typeDistribution} />}
             {referenceTab === 'about' && <LandingPage onEnterApp={() => setActiveSection('home')} />}
           </div>

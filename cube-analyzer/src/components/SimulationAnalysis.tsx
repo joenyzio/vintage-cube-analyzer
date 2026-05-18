@@ -92,7 +92,7 @@ export function SimulationAnalysis({ cards, simulationData: propData, playerCoun
     }
 
     return stats;
-  }, []);
+  }, [simData]);
 
   // Filter and sort cards
   const filteredCards = useMemo(() => {
@@ -134,7 +134,7 @@ export function SimulationAnalysis({ cards, simulationData: propData, playerCoun
         avgQuality: stats.avgDeckQuality,
       }))
       .sort((a, b) => b.percentage - a.percentage);
-  }, []);
+  }, [simData]);
 
   // Gap analysis - comparing algorithm results vs cube composition
   const gapAnalysis = useMemo(() => {
