@@ -271,6 +271,16 @@ export function IWDAnalysis({ cards }: IWDAnalysisProps) {
       if (!s.card.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
       // IWD filter
       if (showOnlyWithIWD && s.signal.iwd.value === null) return false;
+      // Color filter - filter to cards that contain the selected color(s)
+      if (colorFilter) {
+        const cardColors = s.card.color_identity || [];
+        const filterColors = colorFilter.split('');
+        // Card must have at least one of the filter colors
+        const hasMatchingColor = filterColors.some(fc => cardColors.includes(fc));
+        // Also include colorless cards if they're artifacts/lands
+        const isColorless = cardColors.length === 0;
+        if (!hasMatchingColor && !isColorless) return false;
+      }
       return true;
     });
 
@@ -296,7 +306,7 @@ export function IWDAnalysis({ cards }: IWDAnalysisProps) {
     });
 
     return filtered;
-  }, [allSignals, searchQuery, sortBy, sortDir, showOnlyWithIWD]);
+  }, [allSignals, searchQuery, sortBy, sortDir, showOnlyWithIWD, colorFilter]);
 
   const toggleSort = (field: typeof sortBy) => {
     if (sortBy === field) {
