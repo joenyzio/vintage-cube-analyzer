@@ -117,18 +117,35 @@ export function DraftPackCard({
       {/* Grade and adjustment overlay */}
       {showCoachVisuals && (
         <div className="absolute top-1.5 right-1.5 flex flex-col items-end gap-1">
-          <div className={`
-            px-1.5 py-0.5 rounded text-[11px] font-bold shadow
-            ${grade === 'A+' ? 'bg-emerald-500/90 text-white' : ''}
-            ${grade === 'A' ? 'bg-emerald-600/80 text-white' : ''}
-            ${grade === 'A-' ? 'bg-emerald-700/70 text-white' : ''}
-            ${grade === 'B+' ? 'bg-sky-600/70 text-white' : ''}
-            ${grade === 'B' ? 'bg-sky-700/60 text-white/90' : ''}
-            ${grade === 'B-' ? 'bg-sky-800/50 text-white/80' : ''}
-            ${grade === 'C+' || grade === 'C' || grade === 'C-' ? 'bg-black/60 text-white/70' : ''}
-            ${grade === 'D' || grade === 'F' ? 'bg-black/50 text-white/50' : ''}
-          `}>
-            {grade}
+          {/* Traffic light: ELO vs IWD alignment */}
+          <div className="flex items-center gap-1">
+            <div className={`w-2.5 h-2.5 rounded-full shadow-lg ${
+              cardSignal?.divergence?.direction === 'trap'
+                ? 'bg-red-500 ring-1 ring-red-400'
+                : cardSignal?.divergence?.direction === 'steal'
+                ? 'bg-emerald-500 ring-1 ring-emerald-400'
+                : cardSignal?.confidence === 'aligned'
+                ? 'bg-amber-400 ring-1 ring-amber-300'
+                : 'bg-gray-500/50 ring-1 ring-gray-400/50'
+            }`} title={
+              cardSignal?.divergence?.direction === 'trap' ? 'Trap: High ELO, low win rate'
+                : cardSignal?.divergence?.direction === 'steal' ? 'Steal: Low ELO, high win rate'
+                : cardSignal?.confidence === 'aligned' ? 'Aligned: ELO matches win rate'
+                : 'No IWD data'
+            } />
+            <div className={`
+              px-1.5 py-0.5 rounded text-[11px] font-bold shadow
+              ${grade === 'A+' ? 'bg-emerald-500/90 text-white' : ''}
+              ${grade === 'A' ? 'bg-emerald-600/80 text-white' : ''}
+              ${grade === 'A-' ? 'bg-emerald-700/70 text-white' : ''}
+              ${grade === 'B+' ? 'bg-sky-600/70 text-white' : ''}
+              ${grade === 'B' ? 'bg-sky-700/60 text-white/90' : ''}
+              ${grade === 'B-' ? 'bg-sky-800/50 text-white/80' : ''}
+              ${grade === 'C+' || grade === 'C' || grade === 'C-' ? 'bg-black/60 text-white/70' : ''}
+              ${grade === 'D' || grade === 'F' ? 'bg-black/50 text-white/50' : ''}
+            `}>
+              {grade}
+            </div>
           </div>
           {Math.abs(synergyAdjustment) >= 20 && (
             <div className={`
