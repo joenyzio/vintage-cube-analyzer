@@ -9,8 +9,8 @@ import { useState, useMemo } from 'react';
 import {
   AlertTriangle, Gem, TrendingUp, TrendingDown,
   BarChart3, Search, Info, Target,
-  ChevronDown, ChevronUp, Lightbulb, ArrowRight,
-  Zap, Shield, Award, PieChart
+  ChevronDown, ChevronUp, ChevronLeft, ChevronRight,
+  Lightbulb, ArrowRight, Zap, Shield, Award, PieChart
 } from 'lucide-react';
 import { getCardSignal } from '../services/simulationInsights';
 import { getEloData, getPercentile } from '../services/eloHelpers';
@@ -156,12 +156,15 @@ function EloIwdScatter({ data }: { data: { name: string; elo: number; iwd: numbe
   );
 }
 
+const ITEMS_PER_PAGE = 50;
+
 export function IWDAnalysis({ cards }: IWDAnalysisProps) {
   const [activeTab, setActiveTab] = useState<'executive' | 'distribution' | 'colors' | 'traps' | 'steals' | 'data'>('executive');
   const [searchQuery, setSearchQuery] = useState('');
   const [colorFilter, setColorFilter] = useState('');
   const [sortBy, setSortBy] = useState<'iwd' | 'elo' | 'name' | 'delta'>('iwd');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Get all card signals
   const allSignals = useMemo(() => {
@@ -788,13 +791,13 @@ export function IWDAnalysis({ cards }: IWDAnalysisProps) {
                 type="text"
                 placeholder="Search cards..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
                 className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/30 focus:outline-none focus:border-white/30"
               />
             </div>
             <select
               value={colorFilter}
-              onChange={(e) => setColorFilter(e.target.value)}
+              onChange={(e) => { setColorFilter(e.target.value); setCurrentPage(1); }}
               className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none"
             >
               {COLOR_COMBOS.map(combo => (
@@ -803,66 +806,134 @@ export function IWDAnalysis({ cards }: IWDAnalysisProps) {
             </select>
           </div>
 
-          <div className="bg-white/[0.02] border border-white/10 rounded-xl overflow-hidden">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-white/10">
-                  <th className="text-left p-4 text-sm font-medium text-white/50 cursor-pointer hover:text-white/70" onClick={() => toggleSort('name')}>
+          {(() => {
+            const totalPages = Math.ceil(filteredCards.length / ITEMS_PER_PAGE);
+            const startIdx = (currentPage - 1) * ITEMS_PER_PAGE;
+            const endIdx = startIdx + ITEMS_PER_PAGE;
+            const paginatedCards = filteredCards.slice(startIdx, endIdx);
+
+            return (
+              <div className="bg-white/[0.02] border border-white/10 rounded-xl overflow-hidden">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-white/10">
+                      <th className="text-left p-4 text-sm font-medium text-white/50 cursor-pointer hover:text-white/70" onClick={() => { toggleSort('name'); setCurrentPage(1); }}>
+                        <div className="flex items-center gap-1">
+                          Card {sortBy === 'name' && (sortDir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
+                        </div>
+                      </th>
+                      <th className="text-right p-4 text-sm font-medium text-white/50 cursor-pointer hover:text-white/70" onClick={() => { toggleSort('elo'); setCurrentPage(1); }}>
+                        <div className="flex items-center justify-end gap-1">
+                          ELO {sortBy === 'elo' && (sortDir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
+                        </div>
+                      </th>
+                      <th className="text-right p-4 text-sm font-medium text-white/50 cursor-pointer hover:text-white/70" onClick={() => { toggleSort('iwd'); setCurrentPage(1); }}>
+                        <div className="flex items-center justify-end gap-1">
+                          IWD {sortBy === 'iwd' && (sortDir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
+                        </div>
+                      </th>
+                      <th className="text-center p-4 text-sm font-medium text-white/50">Signal</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedCards.map((item) => (
+                      <tr key={item.card.name} className="border-b border-white/5 hover:bg-white/[0.02]">
+                        <td className="p-4">
+                          <div className="flex items-center gap-3">
+                            <img src={getCardImage(item.card)} alt={item.card.name} className="w-8 h-11 rounded object-cover" />
+                            <div className="text-sm text-white">{item.card.name}</div>
+                          </div>
+                        </td>
+                        <td className="p-4 text-right text-sm text-white/70">{item.elo?.toFixed(0) || 'N/A'}</td>
+                        <td className="p-4 text-right">
+                          <div className={`text-sm font-medium ${getIwdColor(item.signal.iwd.value)}`}>
+                            {formatIwd(item.signal.iwd.value)}
+                          </div>
+                        </td>
+                        <td className="p-4 text-center">
+                          {item.signal.divergence ? (
+                            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${
+                              item.signal.divergence.direction === 'trap' ? 'bg-red-500/20 text-red-400' : 'bg-emerald-500/20 text-emerald-400'
+                            }`}>
+                              {item.signal.divergence.direction === 'trap' ? <><AlertTriangle className="w-3 h-3" /> Trap</> : <><Gem className="w-3 h-3" /> Steal</>}
+                            </span>
+                          ) : item.signal.confidence === 'aligned' ? (
+                            <span className="text-xs text-white/40">Aligned</span>
+                          ) : (
+                            <span className="text-xs text-white/30">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                {/* Pagination Controls */}
+                <div className="flex items-center justify-between p-4 border-t border-white/10">
+                  <div className="text-sm text-white/50">
+                    Showing {startIdx + 1}-{Math.min(endIdx, filteredCards.length)} of {filteredCards.length} cards
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setCurrentPage(1)}
+                      disabled={currentPage === 1}
+                      className="px-3 py-1.5 text-sm bg-white/5 border border-white/10 rounded-lg text-white/70 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      First
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="p-1.5 bg-white/5 border border-white/10 rounded-lg text-white/70 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
                     <div className="flex items-center gap-1">
-                      Card {sortBy === 'name' && (sortDir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        let pageNum;
+                        if (totalPages <= 5) {
+                          pageNum = i + 1;
+                        } else if (currentPage <= 3) {
+                          pageNum = i + 1;
+                        } else if (currentPage >= totalPages - 2) {
+                          pageNum = totalPages - 4 + i;
+                        } else {
+                          pageNum = currentPage - 2 + i;
+                        }
+                        return (
+                          <button
+                            key={pageNum}
+                            onClick={() => setCurrentPage(pageNum)}
+                            className={`w-8 h-8 text-sm rounded-lg ${
+                              currentPage === pageNum
+                                ? 'bg-purple-500 text-white'
+                                : 'bg-white/5 text-white/70 hover:bg-white/10'
+                            }`}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      })}
                     </div>
-                  </th>
-                  <th className="text-right p-4 text-sm font-medium text-white/50 cursor-pointer hover:text-white/70" onClick={() => toggleSort('elo')}>
-                    <div className="flex items-center justify-end gap-1">
-                      ELO {sortBy === 'elo' && (sortDir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
-                    </div>
-                  </th>
-                  <th className="text-right p-4 text-sm font-medium text-white/50 cursor-pointer hover:text-white/70" onClick={() => toggleSort('iwd')}>
-                    <div className="flex items-center justify-end gap-1">
-                      IWD {sortBy === 'iwd' && (sortDir === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />)}
-                    </div>
-                  </th>
-                  <th className="text-center p-4 text-sm font-medium text-white/50">Signal</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredCards.slice(0, 100).map((item) => (
-                  <tr key={item.card.name} className="border-b border-white/5 hover:bg-white/[0.02]">
-                    <td className="p-4">
-                      <div className="flex items-center gap-3">
-                        <img src={getCardImage(item.card)} alt={item.card.name} className="w-8 h-11 rounded object-cover" />
-                        <div className="text-sm text-white">{item.card.name}</div>
-                      </div>
-                    </td>
-                    <td className="p-4 text-right text-sm text-white/70">{item.elo?.toFixed(0) || 'N/A'}</td>
-                    <td className="p-4 text-right">
-                      <div className={`text-sm font-medium ${getIwdColor(item.signal.iwd.value)}`}>
-                        {formatIwd(item.signal.iwd.value)}
-                      </div>
-                    </td>
-                    <td className="p-4 text-center">
-                      {item.signal.divergence ? (
-                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${
-                          item.signal.divergence.direction === 'trap' ? 'bg-red-500/20 text-red-400' : 'bg-emerald-500/20 text-emerald-400'
-                        }`}>
-                          {item.signal.divergence.direction === 'trap' ? <><AlertTriangle className="w-3 h-3" /> Trap</> : <><Gem className="w-3 h-3" /> Steal</>}
-                        </span>
-                      ) : item.signal.confidence === 'aligned' ? (
-                        <span className="text-xs text-white/40">Aligned</span>
-                      ) : (
-                        <span className="text-xs text-white/30">—</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {filteredCards.length > 100 && (
-              <div className="p-4 text-center text-sm text-white/40">
-                Showing 100 of {filteredCards.length} cards. Use search to filter.
+                    <button
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className="p-1.5 bg-white/5 border border-white/10 rounded-lg text-white/70 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage(totalPages)}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-1.5 text-sm bg-white/5 border border-white/10 rounded-lg text-white/70 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      Last
+                    </button>
+                  </div>
+                </div>
               </div>
-            )}
-          </div>
+            );
+          })()}
         </div>
       )}
     </div>
